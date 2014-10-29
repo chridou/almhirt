@@ -36,7 +36,7 @@ object CommandStatusNotExecutedWarpPackaging extends WarpPacker[CommandStatus.No
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[CommandStatus.NotExecuted] =
     withFastLookUp(from) { lookup ⇒
       for {
-        cause <- lookup.getWith("cause", ProblemCauseUnpacker)
+        cause ← lookup.getWith("cause", ProblemCauseUnpacker)
       } yield CommandStatus.NotExecuted(cause)
     }
 }

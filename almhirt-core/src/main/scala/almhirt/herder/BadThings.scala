@@ -46,9 +46,9 @@ class MutableBadThingsHistories[K, T: GetsSeverity: ClassTag](val maxQueueSize: 
 
   def add(key: K, what: T) {
     entries get key match {
-      case Some(entry) =>
+      case Some(entry) ⇒
         entry.add(what)
-      case None =>
+      case None ⇒
         val newEntry = new MutableBadThingsHistory[T](maxQueueSize)
         newEntry.add(what)
         entries.put(key, newEntry)
@@ -58,8 +58,8 @@ class MutableBadThingsHistories[K, T: GetsSeverity: ClassTag](val maxQueueSize: 
   def get(key: K) = entries get key
   def getImmutable(key: K) = (entries get key).map(_.immutable)
   def getImmutableReversed(key: K) = (entries get key).map(_.immutableReversed)
-  def all: Vector[(K, BadThingsHistory[T])] = entries.map(x => (x._1, x._2.immutable)).toVector
-  def allReversed: Vector[(K, BadThingsHistory[T])] = entries.map(x => (x._1, x._2.immutableReversed)).toVector
+  def all: Vector[(K, BadThingsHistory[T])] = entries.map(x ⇒ (x._1, x._2.immutable)).toVector
+  def allReversed: Vector[(K, BadThingsHistory[T])] = entries.map(x ⇒ (x._1, x._2.immutableReversed)).toVector
 
   def clear(key: K) { get(key).foreach(_.clear()) }
   def resize(key: K, newSize: Int) { get(key).foreach(_.resize(newSize)) }

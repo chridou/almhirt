@@ -53,13 +53,13 @@ object MongoAggregateRootEventLog {
     import almhirt.almvalidation.kit._
     val path = "almhirt.components.event-logs.aggregate-root-event-log" + configName.map("." + _).getOrElse("")
     for {
-      section <- ctx.config.v[com.typesafe.config.Config](path)
-      collectionName <- section.v[String]("collection-name")
-      writeWarnThreshold <- section.v[FiniteDuration]("write-warn-threshold")
-      readWarnThreshold <- section.v[FiniteDuration]("read-warn-threshold")
-      circuitControlSettings <- section.v[CircuitControlSettings]("circuit-control")
-      retrySettings <- section.v[RetrySettings]("retry-settings")
-      readOnly <- section.v[Boolean]("read-only")
+      section ← ctx.config.v[com.typesafe.config.Config](path)
+      collectionName ← section.v[String]("collection-name")
+      writeWarnThreshold ← section.v[FiniteDuration]("write-warn-threshold")
+      readWarnThreshold ← section.v[FiniteDuration]("read-warn-threshold")
+      circuitControlSettings ← section.v[CircuitControlSettings]("circuit-control")
+      retrySettings ← section.v[RetrySettings]("retry-settings")
+      readOnly ← section.v[Boolean]("read-only")
     } yield propsRaw(
       db,
       collectionName,
@@ -81,10 +81,10 @@ object MongoAggregateRootEventLog {
     import almhirt.almvalidation.kit._
     val path = "almhirt.components.event-logs.aggregate-root-event-log" + configName.map("." + _).getOrElse("")
     for {
-      section <- ctx.config.v[com.typesafe.config.Config](path)
-      dbName <- section.v[String]("db-name")
-      db <- inTryCatch { connection(dbName)(ctx.futuresContext) }
-      props <- propsWithDb(
+      section ← ctx.config.v[com.typesafe.config.Config](path)
+      dbName ← section.v[String]("db-name")
+      db ← inTryCatch { connection(dbName)(ctx.futuresContext) }
+      props ← propsWithDb(
         db,
         serializeAggregateRootEvent,
         deserializeAggregateRootEvent,
@@ -122,7 +122,7 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
 
   def aggregateRootEventToDocument(aggregateRootEvent: AggregateRootEvent): AlmValidation[BSONDocument] = {
     (for {
-      serialized <- serializeAggregateRootEvent(aggregateRootEvent)
+      serialized ← serializeAggregateRootEvent(aggregateRootEvent)
     } yield {
       BSONDocument(
         ("_id" -> BSONString(aggregateRootEvent.eventId.value)),
@@ -153,8 +153,8 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
     val collection = db(collectionName)
     val start = Deadline.now
     for {
-      lastError <- collection.insert(document).toAlmFuture
-      _ <- if (lastError.ok)
+      lastError ← collection.insert(document).toAlmFuture
+      _ ← if (lastError.ok)
         AlmFuture.successful(())
       else {
         val msg = lastError.errMsg.getOrElse("unknown error")
@@ -165,8 +165,8 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
 
   def storeEvent(event: AggregateRootEvent): AlmFuture[Deadline] =
     for {
-      serialized <- AlmFuture { aggregateRootEventToDocument(event: AggregateRootEvent) }(serializationExecutor)
-      start <- insertDocument(serialized)
+      serialized ← AlmFuture { aggregateRootEventToDocument(event: AggregateRootEvent) }(serializationExecutor)
+      start ← insertDocument(serialized)
     } yield start
 
   def commitEvent(event: AggregateRootEvent, respondTo: ActorRef) {
@@ -199,21 +199,21 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
 
   def createQueryAndSort(m: AggregateRootEventLogQueryManyMessage): (BSONDocument, BSONDocument) = {
     m match {
-      case m: GetAllAggregateRootEvents =>
+      case m: GetAllAggregateRootEvents ⇒
         (BSONDocument.empty, BSONDocument.empty)
-      case GetAggregateRootEventsFor(aggId, start, end, _) =>
+      case GetAggregateRootEventsFor(aggId, start, end, _) ⇒
         (start, end) match {
-          case (FromStart, ToEnd) =>
+          case (FromStart, ToEnd) ⇒
             (BSONDocument("aggid" -> BSONString(aggId.value)), sortByVersion)
-          case (FromVersion(fromVersion), ToEnd) =>
+          case (FromVersion(fromVersion), ToEnd) ⇒
             (BSONDocument(
               "aggid" -> BSONString(aggId.value),
               "version" -> BSONDocument("$gte" -> BSONLong(fromVersion.value))), sortByVersion)
-          case (FromStart, ToVersion(toVersion)) =>
+          case (FromStart, ToVersion(toVersion)) ⇒
             (BSONDocument(
               "aggid" -> BSONString(aggId.value),
               "version" -> BSONDocument("$lte" -> BSONLong(toVersion.value))), sortByVersion)
-          case (FromVersion(fromVersion), ToVersion(toVersion)) =>
+          case (FromVersion(fromVersion), ToVersion(toVersion)) ⇒
             (BSONDocument(
               "aggid" -> BSONString(aggId.value),
               "$and" -> BSONArray(
@@ -242,9 +242,9 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
   def uninitializedReadWrite: Receive = {
     case Initialize ⇒
       log.info("Initializing(read/write)")
-      val toTry = () => (for {
-        collectinNames <- db.collectionNames
-        createonRes <- if (collectinNames.contains(collectionName)) {
+      val toTry = () ⇒ (for {
+        collectinNames ← db.collectionNames
+        createonRes ← if (collectinNames.contains(collectionName)) {
           log.info(s"""Collection "$collectionName" already exists.""")
           Future.successful(false)
         } else {
@@ -257,11 +257,11 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
       context.retryWithLogging[Boolean](
         retryContext = s"Initialize collection $collectionName",
         toTry = toTry,
-        onSuccess = createRes => {
+        onSuccess = createRes ⇒ {
           log.info(s"""Index on "aggid, version" created: $createRes""")
           self ! Initialized
         },
-        onFinalFailure = (t, n, p) => {
+        onFinalFailure = (t, n, p) ⇒ {
           val prob = MandatoryDataProblem(s"Initialize collection '$collectionName' finally failed after $n attempts and ${t.defaultUnitString}.", cause = Some(p))
           self ! InitializeFailed(PersistenceProblem("Failed to initialize", cause = Some(prob)))
         },
@@ -301,16 +301,16 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
       log.info("Initializing(read-only)")
       context.retryWithLogging[Unit](
         retryContext = s"Find collection $collectionName",
-        toTry = () => db.collectionNames.toAlmFuture.foldV(
-          fail => fail.failure,
-          collectionNames => {
+        toTry = () ⇒ db.collectionNames.toAlmFuture.foldV(
+          fail ⇒ fail.failure,
+          collectionNames ⇒ {
             if (collectionNames.contains(collectionName))
               ().success
             else
               MandatoryDataProblem(s"""Collection "$collectionName" is not among [${collectionNames.mkString(", ")}] in database "${db.name}".""").failure
           }),
-        onSuccess = _ => { self ! Initialized },
-        onFinalFailure = (t, n, p) => {
+        onSuccess = _ ⇒ { self ! Initialized },
+        onFinalFailure = (t, n, p) ⇒ {
           val prob = MandatoryDataProblem(s"Look up collection '$collectionName' finally failed after $n attempts and ${t.defaultUnitString}.", cause = Some(p))
           self ! InitializeFailed(PersistenceProblem("Failed to initialize", cause = Some(prob)))
         },
@@ -360,8 +360,8 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
       val collection = db(collectionName)
       val query = BSONDocument("_id" -> BSONString(eventId.value))
       (for {
-        docs <- collection.find(query).cursor.collect[List](2, true).toAlmFuture
-        aggregateRootEvent <- AlmFuture {
+        docs ← collection.find(query).cursor.collect[List](2, true).toAlmFuture
+        aggregateRootEvent ← AlmFuture {
           docs match {
             case Nil ⇒ None.success
             case d :: Nil ⇒ documentToAggregateRootEvent(d).map(Some(_))

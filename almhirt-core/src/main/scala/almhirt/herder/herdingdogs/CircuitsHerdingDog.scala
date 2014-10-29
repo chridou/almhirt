@@ -20,52 +20,52 @@ private[almhirt] class CircuitsHerdingDog()(implicit override val almhirtContext
   var circuitControls: Map[ComponentId, CircuitControl] = Map.empty
 
   def receiveRunning: Receive = {
-    case RegisterCircuitControl(ownerId, cb) =>
+    case RegisterCircuitControl(ownerId, cb) ⇒
       log.info(s"""Circuit control registered for "${ownerId}".""")
       circuitControls = circuitControls + (ownerId -> cb)
 
-    case DeregisterCircuitControl(ownerId) =>
+    case DeregisterCircuitControl(ownerId) ⇒
       log.info(s"""Circuit control deregistered for "${ownerId}".""")
       circuitControls = circuitControls - ownerId
 
-    case ReportCircuitStates =>
+    case ReportCircuitStates ⇒
       val pinnedSender = sender()
-      val futs = circuitControls.map({ case (ownerId, cb) => cb.state.map(st => (ownerId, st)) })
+      val futs = circuitControls.map({ case (ownerId, cb) ⇒ cb.state.map(st ⇒ (ownerId, st)) })
       val statesF = AlmFuture.sequence(futs.toSeq)
       statesF.onComplete(
-        fail => log.error(s"Could not determine circuit states:\n$fail"),
-        states => pinnedSender ! CircuitStates(states.toSeq.sortBy(_._1)))
+        fail ⇒ log.error(s"Could not determine circuit states:\n$fail"),
+        states ⇒ pinnedSender ! CircuitStates(states.toSeq.sortBy(_._1)))
 
-    case AttemptCloseCircuit(ownerId) =>
+    case AttemptCloseCircuit(ownerId) ⇒
       circuitControls.find(_._1 == ownerId) match {
-        case Some(cc) =>
+        case Some(cc) ⇒
           cc._2.attemptClose
           log.info(s"""Sent close request to circuit control "$ownerId".""")
-        case None => log.warning(s"""There is no circuit control named "$ownerId".""")
+        case None ⇒ log.warning(s"""There is no circuit control named "$ownerId".""")
       }
 
-    case RemoveFuseFromCircuit(ownerId) =>
+    case RemoveFuseFromCircuit(ownerId) ⇒
       circuitControls.find(_._1 == ownerId) match {
-        case Some(cc) =>
+        case Some(cc) ⇒
           cc._2.removeFuse
           log.info(s"""Sent remove fuse request to circuit control "$ownerId".""")
-        case None => log.warning(s"""There is no circuit control named "$ownerId".""")
+        case None ⇒ log.warning(s"""There is no circuit control named "$ownerId".""")
       }
 
-    case DestroyCircuit(ownerId) =>
+    case DestroyCircuit(ownerId) ⇒
       circuitControls.find(_._1 == ownerId) match {
-        case Some(cc) =>
+        case Some(cc) ⇒
           cc._2.destroy
           log.info(s"""Sent destroy request to circuit control "$ownerId".""")
-        case None => log.warning(s"""There is no circuit control named "$ownerId".""")
+        case None ⇒ log.warning(s"""There is no circuit control named "$ownerId".""")
       }
 
-    case CircumventCircuit(ownerId) =>
+    case CircumventCircuit(ownerId) ⇒
       circuitControls.find(_._1 == ownerId) match {
-        case Some(cc) =>
+        case Some(cc) ⇒
           cc._2.circumvent
           log.info(s"""Sent circumvent request to circuit control "$ownerId".""")
-        case None => log.warning(s"""There is no circuit control named "$ownerId".""")
+        case None ⇒ log.warning(s"""There is no circuit control named "$ownerId".""")
       }
   
   }

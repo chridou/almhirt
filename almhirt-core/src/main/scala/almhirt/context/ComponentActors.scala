@@ -42,7 +42,7 @@ private[almhirt] object componentactors {
   class ComponentsSupervisor(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging with ActorLogging {
     import akka.actor.SupervisorStrategy._
     override val supervisorStrategy = OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1.minute) {
-      case exn =>
+      case exn ⇒
         logError("Stopping a child", exn)
         reportCriticalFailure(exn)
         Stop
@@ -58,7 +58,7 @@ private[almhirt] object componentactors {
         log.info("Unfolding components.")
 
         factories.buildEventLogs.foreach({
-          case ComponentFactoryBuilderEntry(factoryBuilder, severity) =>
+          case ComponentFactoryBuilderEntry(factoryBuilder, severity) ⇒
             factoryBuilder(almhirtContext).onComplete(
               problem ⇒ {
                 logError(s"Could not create component factory for event logs:\n$problem")
@@ -75,7 +75,7 @@ private[almhirt] object componentactors {
           factory ⇒ self ! ActorMessages.CreateChildActor(factory, false, None))(context.dispatcher))
 
         factories.buildViews.foreach({
-          case ComponentFactoryBuilderEntry(factoryBuilder, severity) =>
+          case ComponentFactoryBuilderEntry(factoryBuilder, severity) ⇒
             factoryBuilder(almhirtContext).onComplete(
               problem ⇒ {
                 logError(s"Could not create component factory for views:\n$problem")
@@ -85,7 +85,7 @@ private[almhirt] object componentactors {
         })
 
         factories.buildMisc.foreach({
-          case ComponentFactoryBuilderEntry(factoryBuilder, severity) =>
+          case ComponentFactoryBuilderEntry(factoryBuilder, severity) ⇒
             factoryBuilder(almhirtContext).onComplete(
               problem ⇒ {
                 logError(s"Could not create component factory for misc:\n$problem")
@@ -95,7 +95,7 @@ private[almhirt] object componentactors {
         })
 
         factories.buildApps.foreach({
-          case ComponentFactoryBuilderEntry(factoryBuilder, severity) =>
+          case ComponentFactoryBuilderEntry(factoryBuilder, severity) ⇒
             factoryBuilder(almhirtContext).onComplete(
               problem ⇒ {
                 logError(s"Could not create component factory for apps:\n$problem")
@@ -124,7 +124,7 @@ private[almhirt] object componentactors {
   private[almhirt] abstract class SimpleUnfolder(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging with ActorLogging {
     import akka.actor.SupervisorStrategy._
     override val supervisorStrategy = OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1.minute) {
-      case exn =>
+      case exn ⇒
         logError("Stopping a child", exn)
         reportCriticalFailure(exn)
         Stop

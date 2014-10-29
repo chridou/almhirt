@@ -53,11 +53,11 @@ object CommandStatusTracker {
     import almhirt.configuration._
     import almhirt.almvalidation.kit._
     for {
-      section <- ctx.config.v[com.typesafe.config.Config]("almhirt.components.misc.command-status-tracker")
-      targetCacheSize <- section.v[Int]("target-cache-size")
-      shrinkCacheAt <- section.v[Int]("shrink-cache-at")
-      checkTimeoutInterval <- section.v[FiniteDuration]("check-timeout-interval")
-      autoConnect <- section.v[Boolean]("auto-connect")
+      section ← ctx.config.v[com.typesafe.config.Config]("almhirt.components.misc.command-status-tracker")
+      targetCacheSize ← section.v[Int]("target-cache-size")
+      shrinkCacheAt ← section.v[Int]("shrink-cache-at")
+      checkTimeoutInterval ← section.v[FiniteDuration]("check-timeout-interval")
+      autoConnect ← section.v[Boolean]("auto-connect")
     } yield propsRaw(targetCacheSize, shrinkCacheAt, checkTimeoutInterval, autoConnect)
   }
 
@@ -170,7 +170,7 @@ private[almhirt] class MyCommandStatusTracker(
         timedOut.foreach {
           case (commandId, timedOutEntryIds) ⇒
             currentSubscriptions.get(commandId) match {
-              case Some(activeSubscriptionsForCommand) =>
+              case Some(activeSubscriptionsForCommand) ⇒
                 activeSubscriptionsForCommand.view
                   .filter { case (id, entry) ⇒ timedOutEntryIds.contains(id) }
                   .foreach {
@@ -179,11 +179,11 @@ private[almhirt] class MyCommandStatusTracker(
                       reportMinorFailure(OperationTimedOutProblem("Tracking timed out."))
                     }
                   }
-              case None =>
+              case None ⇒
                 ()
             }
         }
-      }.onFailure { p =>
+      }.onFailure { p ⇒
         reportMajorFailure(p)
       }
       trackingSubscriptions = trackingSubscriptions.map {

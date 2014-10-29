@@ -16,9 +16,9 @@ object MissedEventsHerdingDog {
     import almhirt.configuration._
     val configPath = "almhirt.herder.herding-dogs.missed-events"
     for {
-      section <- ctx.config.v[Config](configPath)
-      historySize <- section.v[Int]("history-size")
-      unwrapFailures <- section.v[Boolean]("unwrap-failures")
+      section ← ctx.config.v[Config](configPath)
+      historySize ← section.v[Int]("history-size")
+      unwrapFailures ← section.v[Boolean]("unwrap-failures")
     } yield Props(new MissedEventsHerdingDog(historySize, unwrapFailures))
   }
 
@@ -37,14 +37,14 @@ private[almhirt] class MissedEventsHerdingDog(historySize: Int, unwrapFailures: 
   val history = new MutableBadThingsHistories[ComponentId, MissedEventsEntry](historySize)
 
   def receiveRunning: Receive = {
-    case MissedEvent(componentId, event, severity, cause, timestamp) =>
+    case MissedEvent(componentId, event, severity, cause, timestamp) ⇒
       history.add(componentId, (event, if (unwrapFailures) cause.unwrap() else cause, severity, timestamp))
 
-    case ReportMissedEvents =>
+    case ReportMissedEvents ⇒
       val missed = history.allReversed.sorted
       sender() ! MissedEvents(missed)
       
-    case ReportMissedEventsFor(componentId) =>
+    case ReportMissedEventsFor(componentId) ⇒
       sender() ! ReportedMissedEventsFor(componentId, history getImmutableReversed componentId)
       
   }

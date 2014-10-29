@@ -21,18 +21,18 @@ object AggregateRootViewMessages {
 }
 
 object AggregateRootUnprojectedView {
-  def propsRawMaker(returnToUnitializedAfter: Option[FiniteDuration], maker: Option[FiniteDuration] => Props): Props = {
+  def propsRawMaker(returnToUnitializedAfter: Option[FiniteDuration], maker: Option[FiniteDuration] ⇒ Props): Props = {
     maker(returnToUnitializedAfter)
   }
 
   def propsMaker(
-    maker: Option[FiniteDuration] => Props,
+    maker: Option[FiniteDuration] ⇒ Props,
     viewConfigName: Option[String] = None)(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
     import almhirt.configuration._
     val path = "almhirt.components.views.unprojected-view" + viewConfigName.map("." + _).getOrElse("")
     for {
-      section <- ctx.config.v[com.typesafe.config.Config](path)
-      returnToUnitializedAfter <- section.magicOption[FiniteDuration]("return-to-unitialized-after")
+      section ← ctx.config.v[com.typesafe.config.Config](path)
+      returnToUnitializedAfter ← section.magicOption[FiniteDuration]("return-to-unitialized-after")
     } yield propsRawMaker(returnToUnitializedAfter, maker)
   }
 }
@@ -185,7 +185,7 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
           onError(Vector.empty, 1)(RebuildAggregateRootFailedException(aggregateRootId, "An error has occured building the aggregate root. Nothing can be built from a dead aggregate root."))
       }
 
-    case AggregateRootViewInternal.ReturnToUninitialized =>
+    case AggregateRootViewInternal.ReturnToUninitialized ⇒
       if (log.isDebugEnabled)
         log.debug("Returning to uninitialized.")
       context.become(receiveUninitialized)
@@ -193,7 +193,7 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
   }
 
   private def becomeReceiveServe(currentState: AggregateRootLifecycle[T]) {
-    returnToUnitializedAfter.foreach(dur =>
+    returnToUnitializedAfter.foreach(dur ⇒
       context.system.scheduler.scheduleOnce(dur, self, AggregateRootViewInternal.ReturnToUninitialized)(context.dispatcher))
     context.become(receiveServe(currentState))
   }

@@ -183,7 +183,7 @@ trait AlmValidationOps5[P <: Problem, T] extends Ops[Validation[P, T]] {
       succ ⇒ if (cond(succ)) succ.success else ConstraintViolatedProblem(msg(succ)).failure)
 
   def failureDidNotConfigure(component: String): AlmValidation[T] =
-    self.leftMap(implicit p => ConfigurationProblem.in(component))
+    self.leftMap(implicit p ⇒ ConfigurationProblem.in(component))
 
 }
 

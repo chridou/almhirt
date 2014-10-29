@@ -21,10 +21,10 @@ trait AggregateRootCommandWarpPackagingTemplate[TCommand <: AggregateRootCommand
   override def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[TCommand] =
     withFastLookUp(from) { lookup ⇒
       for {
-        header <- lookup.getWith("header", CommandHeaderWarpPackaging)
-        aggId <- lookup.getAs[String]("aggId").flatMap(ValidatedAggregateRootId(_))
-        version <- lookup.getAs[Long]("aggVersion").flatMap(ValidatedAggregateRootVersion(_))
-        cmd <- extractCommandParams(lookup, header, aggId, version)
+        header ← lookup.getWith("header", CommandHeaderWarpPackaging)
+        aggId ← lookup.getAs[String]("aggId").flatMap(ValidatedAggregateRootId(_))
+        version ← lookup.getAs[Long]("aggVersion").flatMap(ValidatedAggregateRootVersion(_))
+        cmd ← extractCommandParams(lookup, header, aggId, version)
       } yield cmd
     }
 

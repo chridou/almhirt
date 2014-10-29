@@ -49,12 +49,12 @@ object MongoEventLog {
     import almhirt.almvalidation.kit._
     val path = "almhirt.components.event-logs.event-log" + configName.map("." + _).getOrElse("")
     for {
-      section <- ctx.config.v[com.typesafe.config.Config](path)
-      collectionName <- section.v[String]("collection-name")
-      writeWarnThreshold <- section.v[FiniteDuration]("write-warn-threshold")
-      circuitControlSettings <- section.v[CircuitControlSettings]("circuit-control")
-      retrySettings <- section.v[RetrySettings]("retry-settings")
-      readOnly <- section.v[Boolean]("read-only")
+      section ← ctx.config.v[com.typesafe.config.Config](path)
+      collectionName ← section.v[String]("collection-name")
+      writeWarnThreshold ← section.v[FiniteDuration]("write-warn-threshold")
+      circuitControlSettings ← section.v[CircuitControlSettings]("circuit-control")
+      retrySettings ← section.v[RetrySettings]("retry-settings")
+      readOnly ← section.v[Boolean]("read-only")
     } yield propsRaw(
       db,
       collectionName,
@@ -75,10 +75,10 @@ object MongoEventLog {
     import almhirt.almvalidation.kit._
     val path = "almhirt.components.event-logs.event-log" + configName.map("." + _).getOrElse("")
     for {
-      section <- ctx.config.v[com.typesafe.config.Config](path)
-      dbName <- section.v[String]("db-name")
-      db <- inTryCatch { connection(dbName)(ctx.futuresContext) }
-      props <- propsWithDb(
+      section ← ctx.config.v[com.typesafe.config.Config](path)
+      dbName ← section.v[String]("db-name")
+      db ← inTryCatch { connection(dbName)(ctx.futuresContext) }
+      props ← propsWithDb(
         db,
         serializeEvent,
         deserializeEvent,
@@ -114,7 +114,7 @@ private[almhirt] class MongoEventLogImpl(
 
   def eventToDocument(event: Event): AlmValidation[BSONDocument] = {
     (for {
-      serialized <- serializeEvent(event)
+      serialized ← serializeEvent(event)
     } yield {
       BSONDocument(
         ("_id" -> BSONString(event.eventId.value)),
@@ -136,8 +136,8 @@ private[almhirt] class MongoEventLogImpl(
     val collection = db(collectionName)
     val start = Deadline.now
     for {
-      lastError <- collection.insert(document).toAlmFuture
-      _ <- if (lastError.ok)
+      lastError ← collection.insert(document).toAlmFuture
+      _ ← if (lastError.ok)
         AlmFuture.successful(())
       else {
         val msg = lastError.errMsg.getOrElse("unknown error")
@@ -148,8 +148,8 @@ private[almhirt] class MongoEventLogImpl(
 
   def storeEvent(event: Event): AlmFuture[Deadline] =
     for {
-      serialized <- AlmFuture { eventToDocument(event: Event) }(serializationExecutor)
-      start <- insertDocument(serialized)
+      serialized ← AlmFuture { eventToDocument(event: Event) }(serializationExecutor)
+      start ← insertDocument(serialized)
     } yield start
 
   def commitEvent(event: Event, respondTo: Option[ActorRef]) {
@@ -161,10 +161,10 @@ private[almhirt] class MongoEventLogImpl(
         reportMajorFailure(fail)
 
         respondTo match {
-          case Some(r) =>
+          case Some(r) ⇒
             log.warning(msg)
             r ! EventNotLogged(event.eventId, PersistenceProblem(msg, cause = Some(fail)))
-          case None =>
+          case None ⇒
             log.error(msg)
         }
       },
@@ -178,26 +178,26 @@ private[almhirt] class MongoEventLogImpl(
 
   def createQuery(dateRange: LocalDateTimeRange): BSONDocument = {
     dateRange match {
-      case LocalDateTimeRange(BeginningOfTime, EndOfTime) =>
+      case LocalDateTimeRange(BeginningOfTime, EndOfTime) ⇒
         BSONDocument()
 
-      case LocalDateTimeRange(From(from), EndOfTime) =>
+      case LocalDateTimeRange(From(from), EndOfTime) ⇒
         BSONDocument(
           "timestamp" -> BSONDocument("$gte" -> localDateTimeToBsonDateTime(from)))
 
-      case LocalDateTimeRange(After(after), EndOfTime) =>
+      case LocalDateTimeRange(After(after), EndOfTime) ⇒
         BSONDocument(
           "timestamp" -> BSONDocument("$gt" -> localDateTimeToBsonDateTime(after)))
 
-      case LocalDateTimeRange(BeginningOfTime, To(to)) =>
+      case LocalDateTimeRange(BeginningOfTime, To(to)) ⇒
         BSONDocument(
           "timestamp" -> BSONDocument("$lte" -> localDateTimeToBsonDateTime(to)))
 
-      case LocalDateTimeRange(BeginningOfTime, Until(until)) =>
+      case LocalDateTimeRange(BeginningOfTime, Until(until)) ⇒
         BSONDocument(
           "timestamp" -> BSONDocument("$lt" -> localDateTimeToBsonDateTime(until)))
 
-      case LocalDateTimeRange(From(from), To(to)) =>
+      case LocalDateTimeRange(From(from), To(to)) ⇒
         BSONDocument(
           "$and" -> BSONDocument(
             "timestamp" -> BSONDocument(
@@ -205,7 +205,7 @@ private[almhirt] class MongoEventLogImpl(
             "timestamp" -> BSONDocument(
               "$lte" -> localDateTimeToBsonDateTime(to))))
 
-      case LocalDateTimeRange(From(from), Until(until)) =>
+      case LocalDateTimeRange(From(from), Until(until)) ⇒
         BSONDocument(
           "$and" -> BSONDocument(
             "timestamp" -> BSONDocument(
@@ -213,7 +213,7 @@ private[almhirt] class MongoEventLogImpl(
             "timestamp" -> BSONDocument(
               "$lt" -> localDateTimeToBsonDateTime(until))))
 
-      case LocalDateTimeRange(After(after), To(to)) =>
+      case LocalDateTimeRange(After(after), To(to)) ⇒
         BSONDocument(
           "$and" -> BSONDocument(
             "timestamp" -> BSONDocument(
@@ -221,7 +221,7 @@ private[almhirt] class MongoEventLogImpl(
             "timestamp" -> BSONDocument(
               "$lte" -> localDateTimeToBsonDateTime(to))))
 
-      case LocalDateTimeRange(After(after), Until(until)) =>
+      case LocalDateTimeRange(After(after), Until(until)) ⇒
         BSONDocument(
           "$and" -> BSONDocument(
             "timestamp" -> BSONDocument(
@@ -251,21 +251,21 @@ private[almhirt] class MongoEventLogImpl(
     case Initialize ⇒
       log.info("Initializing(read/write)")
 
-      val toTry = () => {
+      val toTry = () ⇒ {
         val collection = db(collectionName)
         (for {
-          idxRes <- collection.indexesManager.ensure(MIndex(List("timestamp" -> IndexType.Ascending), name = Some("idx_timestamp"), unique = false))
+          idxRes ← collection.indexesManager.ensure(MIndex(List("timestamp" -> IndexType.Ascending), name = Some("idx_timestamp"), unique = false))
         } yield (idxRes)).toAlmFuture
       }
 
       context.retryWithLogging[Boolean](
         retryContext = s"Initialize collection $collectionName",
         toTry = toTry,
-        onSuccess = idxRes => {
+        onSuccess = idxRes ⇒ {
           log.info(s"""Index on "timestamp" created: $idxRes""")
           self ! Initialized
         },
-        onFinalFailure = (t, n, p) => {
+        onFinalFailure = (t, n, p) ⇒ {
           val prob = MandatoryDataProblem(s"Initialize collection '$collectionName' finally failed after $n attempts and ${t.defaultUnitString}.", cause = Some(p))
           self ! InitializeFailed(PersistenceProblem("Failed to initialize", cause = Some(prob)))
         },
@@ -295,16 +295,16 @@ private[almhirt] class MongoEventLogImpl(
       log.info("Initializing(read-only)")
       context.retryWithLogging[Unit](
         retryContext = s"Find collection $collectionName",
-        toTry = () => db.collectionNames.toAlmFuture.foldV(
-          fail => fail.failure,
-          collectionNames => {
+        toTry = () ⇒ db.collectionNames.toAlmFuture.foldV(
+          fail ⇒ fail.failure,
+          collectionNames ⇒ {
             if (collectionNames.contains(collectionName))
               ().success
             else
               MandatoryDataProblem(s"""Collection "$collectionName" is not among [${collectionNames.mkString(", ")}] in database "${db.name}".""").failure
           }),
-        onSuccess = _ => { self ! Initialized },
-        onFinalFailure = (t, n, p) => {
+        onSuccess = _ ⇒ { self ! Initialized },
+        onFinalFailure = (t, n, p) ⇒ {
           val prob = MandatoryDataProblem(s"Look up collection '$collectionName' finally failed after $n attempts and ${t.defaultUnitString}.", cause = Some(p))
           self ! InitializeFailed(PersistenceProblem("Failed to initialize", cause = Some(prob)))
         },
@@ -348,8 +348,8 @@ private[almhirt] class MongoEventLogImpl(
       val query = BSONDocument("_id" -> BSONString(eventId.value))
       val res =
         for {
-          docs <- collection.find(query).cursor.collect[List](2, true).toAlmFuture
-          Event <- AlmFuture {
+          docs ← collection.find(query).cursor.collect[List](2, true).toAlmFuture
+          Event ← AlmFuture {
             docs match {
               case Nil ⇒ None.success
               case d :: Nil ⇒ documentToEvent(d).map(Some(_))
@@ -365,7 +365,7 @@ private[almhirt] class MongoEventLogImpl(
         },
         eventOpt ⇒ pinnedSender ! FoundEvent(eventId, eventOpt))
 
-    case m: FetchEvents =>
+    case m: FetchEvents ⇒
       fetchAndDispatchEvents(m, sender())
 
   }

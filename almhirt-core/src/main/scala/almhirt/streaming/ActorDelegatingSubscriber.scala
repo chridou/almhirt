@@ -46,8 +46,8 @@ private[almhirt] class ActorDelegatingSubscriberImpl[T](delegateTo: Option[Actor
 
   private object Start
   def receive: Receive = {
-    case Start =>
-      autoConnectTo.foreach(pub => Source(pub).connect(SubscriberDrain(ActorSubscriber[T](self))).run())// .publishTo(ActorSubscriber[T](self)))
+    case Start ⇒
+      autoConnectTo.foreach(pub ⇒ Source(pub).connect(SubscriberDrain(ActorSubscriber[T](self))).run())// .publishTo(ActorSubscriber[T](self)))
       this.request(bufferSize)
 
     case ActorSubscriberMessage.OnNext(element: Any) ⇒

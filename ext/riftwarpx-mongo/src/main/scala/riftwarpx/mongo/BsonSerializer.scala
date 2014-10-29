@@ -21,9 +21,9 @@ object BsonDocumentSerializer {
     new BsonDocumentSerializer[T] {
       def serialize(what: T)(implicit params: SerializationParams): AlmValidation[BSONDocument] =
         for {
-          packer <- riftWarp.packers.getFor(what, None, None)
-          packed <- packer.packBlind(what)(riftWarp.packers)
-          packedWithReplacedId <- idLabel match {
+          packer ← riftWarp.packers.getFor(what, None, None)
+          packed ← packer.packBlind(what)(riftWarp.packers)
+          packedWithReplacedId ← idLabel match {
             case Some(idLabel) ⇒
               packed match {
                 case WarpObject(wd, elements) ⇒
@@ -40,7 +40,7 @@ object BsonDocumentSerializer {
             case None ⇒
               packed.success
           }
-          res <- ToBsonDematerializer.dematerialize(packedWithReplacedId, Map.empty) match {
+          res ← ToBsonDematerializer.dematerialize(packedWithReplacedId, Map.empty) match {
             case d: BSONDocument ⇒ d.success
             case x ⇒ SerializationProblem(s"""The warp package did not dematerialize to a BSON document(which should be impossible...).""").failure
           }
@@ -48,8 +48,8 @@ object BsonDocumentSerializer {
 
       def deserialize(what: BSONDocument)(implicit params: SerializationParams): AlmValidation[T] =
         for {
-          rematerializedPackage <- FromBsonRematerializer.rematerialize(what, Map.empty)
-          rematerializedObjectWithIdLabel <- rematerializedPackage match {
+          rematerializedPackage ← FromBsonRematerializer.rematerialize(what, Map.empty)
+          rematerializedObjectWithIdLabel ← rematerializedPackage match {
             case wo: WarpObject ⇒
               idLabel match {
                 case Some(idLabel) ⇒
@@ -65,14 +65,14 @@ object BsonDocumentSerializer {
             case x ⇒
               SerializationProblem(s"""The BSON did not rematerialize to an object.""").failure
           }
-          unpacker <- rematerializedObjectWithIdLabel.warpDescriptor match {
+          unpacker ← rematerializedObjectWithIdLabel.warpDescriptor match {
             case Some(wd) ⇒
               riftWarp.unpackers.get(wd)
             case None ⇒
               riftWarp.unpackers.getByTag(tag)
           }
-          unpackedUntyped <- unpacker.unpack(rematerializedObjectWithIdLabel)(riftWarp.unpackers)
-          unpackedTyped <- unpackedUntyped.castTo[T]
+          unpackedUntyped ← unpacker.unpack(rematerializedObjectWithIdLabel)(riftWarp.unpackers)
+          unpackedTyped ← unpackedUntyped.castTo[T]
         } yield unpackedTyped
     }
 }

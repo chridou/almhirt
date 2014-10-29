@@ -33,18 +33,18 @@ object ElasticSearchEventPublisher {
   def props(elConfigName: Option[String] = None)(implicit ctx: AlmhirtContext, serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem]): AlmValidation[Props] = {
     val path = "almhirt.components.misc.event-sink-hub.event-publishers.http-event-publishers.elastic-search-event-publisher" + elConfigName.map("." + _).getOrElse("")
     for {
-      section <- ctx.config.v[com.typesafe.config.Config](path)
-      enabled <- section.v[Boolean]("enabled")
-      autoConnect <- section.v[Boolean]("auto-connect")
-      res <- if (enabled) {
+      section ← ctx.config.v[com.typesafe.config.Config](path)
+      enabled ← section.v[Boolean]("enabled")
+      autoConnect ← section.v[Boolean]("auto-connect")
+      res ← if (enabled) {
         for {
-          host <- section.v[String]("host")
-          index <- section.v[String]("index")
-          fixedTypeName <- section.magicOption[String]("index")
-          ttl <- section.v[FiniteDuration]("ttl")
-          missedEventSeverity <- section.v[almhirt.problem.Severity]("missed-event-severity")
-          circuitControlSettings <- section.v[CircuitControlSettings]("circuit-control")
-          circuitStateReportingInterval <- section.magicOption[FiniteDuration]("circuit-state-reporting-interval")
+          host ← section.v[String]("host")
+          index ← section.v[String]("index")
+          fixedTypeName ← section.magicOption[String]("index")
+          ttl ← section.v[FiniteDuration]("ttl")
+          missedEventSeverity ← section.v[almhirt.problem.Severity]("missed-event-severity")
+          circuitControlSettings ← section.v[CircuitControlSettings]("circuit-control")
+          circuitStateReportingInterval ← section.magicOption[FiniteDuration]("circuit-state-reporting-interval")
         } yield propsRaw(host, index, fixedTypeName, ttl, if (autoConnect) Some(ctx.eventStream) else None, circuitControlSettings, circuitStateReportingInterval, missedEventSeverity)
       } else {
         ActorDevNullSubscriberWithAutoSubscribe.props[Event](1, if (autoConnect) Some(ctx.eventStream) else None).success

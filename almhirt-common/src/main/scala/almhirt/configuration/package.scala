@@ -25,22 +25,22 @@ package object configuration {
      */
     def magicOption[T: ConfigExtractor](path: String): AlmValidation[Option[T]] =
       ConfigStringExtractorInst.getValue(self, path).fold(
-        problem => {
+        problem ⇒ {
           self.value[T](path).map(Some(_))
         },
-        mayBeMagicValue => {
+        mayBeMagicValue ⇒ {
           mayBeMagicValue.toLowerCase() match {
-            case "none" => scalaz.Success(None)
-            case _ => self.value[T](path).map(Some(_))
+            case "none" ⇒ scalaz.Success(None)
+            case _ ⇒ self.value[T](path).map(Some(_))
           }
         })
 
     def magicDefault[T: ConfigExtractor](defaultMarker: String, default: T)(path: String): AlmValidation[T] =
       ConfigStringExtractorInst.getValue(self, path).fold(
-        problem => {
+        problem ⇒ {
           self.value[T](path)
         },
-        mayBeMagicDefault => {
+        mayBeMagicDefault ⇒ {
           if (mayBeMagicDefault.toLowerCase() == defaultMarker)
             scalaz.Success(default)
           else
@@ -85,8 +85,8 @@ package object configuration {
   implicit object ImportanceConfigExtractor extends ConfigExtractor[Importance] {
     def getValue(config: Config, path: String): AlmValidation[Importance] =
       for {
-        str <- config.v[String](path)
-        importance <- Importance.fromString(str)
+        str ← config.v[String](path)
+        importance ← Importance.fromString(str)
       } yield importance
 
     def tryGetValue(config: Config, path: String): AlmValidation[Option[Importance]] =
@@ -99,8 +99,8 @@ package object configuration {
   implicit object SeverityConfigExtractor extends ConfigExtractor[almhirt.problem.Severity] {
     def getValue(config: Config, path: String): AlmValidation[almhirt.problem.Severity] =
       for {
-        str <- config.v[String](path)
-        severity <- almhirt.problem.Severity.fromString(str)
+        str ← config.v[String](path)
+        severity ← almhirt.problem.Severity.fromString(str)
       } yield severity
 
     def tryGetValue(config: Config, path: String): AlmValidation[Option[almhirt.problem.Severity]] =
@@ -113,8 +113,8 @@ package object configuration {
   implicit object ExecutionContextConfigExtractor extends ConfigExtractor[ExecutionContextSelector] {
     def getValue(config: Config, path: String): AlmValidation[ExecutionContextSelector] =
       for {
-        str <- config.v[String](path)
-        selector <- ExecutionContextSelector.parseString(str)
+        str ← config.v[String](path)
+        selector ← ExecutionContextSelector.parseString(str)
       } yield selector
 
     def tryGetValue(config: Config, path: String): AlmValidation[Option[ExecutionContextSelector]] =
@@ -127,13 +127,13 @@ package object configuration {
   implicit object RetrySettingsConfigExtractor extends ConfigExtractor[RetrySettings] {
     def getValue(config: Config, path: String): AlmValidation[RetrySettings] = {
       for {
-        section <- config.v[Config](path)
-        mode <- section.opt[String]("retry-mode")
-        pause <- section.v[FiniteDuration]("retry-pause")
-        maxTime <- section.opt[FiniteDuration]("retry-max-time")
-        maxAttempts <- section.opt[Int]("retry-max-attempts")
-        infiniteLoopPause <- section.magicOption[FiniteDuration]("retry-infinite-loop-pause")
-        res <- build(pause, mode, maxTime, maxAttempts, infiniteLoopPause)
+        section ← config.v[Config](path)
+        mode ← section.opt[String]("retry-mode")
+        pause ← section.v[FiniteDuration]("retry-pause")
+        maxTime ← section.opt[FiniteDuration]("retry-max-time")
+        maxAttempts ← section.opt[Int]("retry-max-attempts")
+        infiniteLoopPause ← section.magicOption[FiniteDuration]("retry-infinite-loop-pause")
+        res ← build(pause, mode, maxTime, maxAttempts, infiniteLoopPause)
       } yield res
     }
 
@@ -145,17 +145,17 @@ package object configuration {
 
     private def build(pause: FiniteDuration, mode: Option[String], maxTime: Option[FiniteDuration], maxAttempts: Option[Int], infiniteLoopPause: Option[FiniteDuration]): AlmValidation[RetrySettings] = {
       (mode, maxTime, maxAttempts) match {
-        case (None, None, Some(ma)) =>
+        case (None, None, Some(ma)) ⇒
           AttemptLimitedRetrySettings(pause = pause, maxAttempts = ma, infiniteLoopPause = infiniteLoopPause).success
-        case (None, Some(mt), None) =>
+        case (None, Some(mt), None) ⇒
           TimeLimitedRetrySettings(pause = pause, maxTime = mt, infiniteLoopPause = infiniteLoopPause).success
-        case (Some("retry-limit-attempts"), _, Some(ma)) =>
+        case (Some("retry-limit-attempts"), _, Some(ma)) ⇒
           AttemptLimitedRetrySettings(pause = pause, maxAttempts = ma, infiniteLoopPause = infiniteLoopPause).success
-        case (Some("retry-limit-time"), Some(mt), _) =>
+        case (Some("retry-limit-time"), Some(mt), _) ⇒
           TimeLimitedRetrySettings(pause = pause, maxTime = mt, infiniteLoopPause = infiniteLoopPause).success
-        case (None, Some(mt), Some(ma)) =>
+        case (None, Some(mt), Some(ma)) ⇒
           UnspecifiedProblem("""When "retry-max-time" and "retry-max-attempts" are both set, you must specify the mode via "retry-mode"("retry-limit-time" | "retry-limit-attempts").""").failure
-        case x =>
+        case x ⇒
           UnspecifiedProblem("""Invalid retry settings: $x.""").failure
       }
     }

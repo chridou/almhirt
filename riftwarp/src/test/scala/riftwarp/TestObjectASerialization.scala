@@ -33,15 +33,15 @@ object TestObjectAUnpacker extends RegisterableWarpUnpacker[TestObjectA] {
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers) = {
     withFastLookUp(from) { lookup ⇒
       for {
-        bytes <- lookup.getBytes("bytes")
-        blob <- lookup.getBytes("blob")
-        primitiveTypes <- lookup.getTyped[PrimitiveTypes]("primitiveTypes")
-        primitiveListMAs <- lookup.getTyped[PrimitiveListMAs]("primitiveListMAs")
-        complexMAs <- lookup.getTyped[ComplexMAs]("complexMAs")
-        primitiveMaps <- lookup.getTyped[PrimitiveMaps]("primitiveMaps")
-        complexMaps <- lookup.getTyped[ComplexMaps]("complexMaps")
-        addressOpt <- lookup.tryGetTyped[TestAddress]("addressOpt")
-        trees <- lookup.getTyped[Trees]("trees")
+        bytes ← lookup.getBytes("bytes")
+        blob ← lookup.getBytes("blob")
+        primitiveTypes ← lookup.getTyped[PrimitiveTypes]("primitiveTypes")
+        primitiveListMAs ← lookup.getTyped[PrimitiveListMAs]("primitiveListMAs")
+        complexMAs ← lookup.getTyped[ComplexMAs]("complexMAs")
+        primitiveMaps ← lookup.getTyped[PrimitiveMaps]("primitiveMaps")
+        complexMaps ← lookup.getTyped[ComplexMaps]("complexMaps")
+        addressOpt ← lookup.tryGetTyped[TestAddress]("addressOpt")
+        trees ← lookup.getTyped[Trees]("trees")
       } yield TestObjectA(bytes.toVector, blob.toVector, primitiveTypes, primitiveListMAs, complexMAs, primitiveMaps, complexMaps, addressOpt, trees)
     }
   }
@@ -72,18 +72,18 @@ object PrimitiveTypesUnpacker extends RegisterableWarpUnpacker[PrimitiveTypes] {
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers) =
     withFastLookUp(from) { lookup ⇒
       for {
-        str <- lookup.getAs[String]("str")
-        bool <- lookup.getAs[Boolean]("bool")
-        byte <- lookup.getAs[Byte]("byte")
-        int <- lookup.getAs[Int]("int")
-        long <- lookup.getAs[Long]("long")
-        bigInt <- lookup.getAs[BigInt]("bigInt")
-        float <- lookup.getAs[Float]("float")
-        double <- lookup.getAs[Double]("double")
-        bigDec <- lookup.getAs[BigDecimal]("bigDec")
-        dateTime <- lookup.getAs[DateTime]("dateTime")
-        localDateTime <- lookup.getAs[LocalDateTime]("localDateTime")
-        uuid <- lookup.getAs[UUID]("uuid")
+        str ← lookup.getAs[String]("str")
+        bool ← lookup.getAs[Boolean]("bool")
+        byte ← lookup.getAs[Byte]("byte")
+        int ← lookup.getAs[Int]("int")
+        long ← lookup.getAs[Long]("long")
+        bigInt ← lookup.getAs[BigInt]("bigInt")
+        float ← lookup.getAs[Float]("float")
+        double ← lookup.getAs[Double]("double")
+        bigDec ← lookup.getAs[BigDecimal]("bigDec")
+        dateTime ← lookup.getAs[DateTime]("dateTime")
+        localDateTime ← lookup.getAs[LocalDateTime]("localDateTime")
+        uuid ← lookup.getAs[UUID]("uuid")
       } yield PrimitiveTypes(str, bool, byte, int, long, bigInt, float, double, bigDec, dateTime, localDateTime, uuid)
     }
 }
@@ -107,11 +107,11 @@ object PrimitiveListMAsUnpacker extends RegisterableWarpUnpacker[PrimitiveListMA
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers) = {
     withFastLookUp(from) { lookup ⇒
       for {
-        listString <- lookup.getPrimitives[String]("listString").map(_.toList)
-        listInt <- lookup.getPrimitives[Int]("listInt").map(_.toList)
-        listDouble <- lookup.getPrimitives[Double]("listDouble").map(_.toList)
-        listBigDecimal <- lookup.getPrimitives[BigDecimal]("listBigDecimal").map(_.toList)
-        listDateTime <- lookup.getPrimitives[DateTime]("listDateTime").map(_.toList)
+        listString ← lookup.getPrimitives[String]("listString").map(_.toList)
+        listInt ← lookup.getPrimitives[Int]("listInt").map(_.toList)
+        listDouble ← lookup.getPrimitives[Double]("listDouble").map(_.toList)
+        listBigDecimal ← lookup.getPrimitives[BigDecimal]("listBigDecimal").map(_.toList)
+        listDateTime ← lookup.getPrimitives[DateTime]("listDateTime").map(_.toList)
       } yield PrimitiveListMAs(listString, listInt, listDouble, listBigDecimal, listDateTime)
     }
   }
@@ -135,10 +135,10 @@ object ComplexMAsUnpacker extends RegisterableWarpUnpacker[ComplexMAs] {
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers) = {
     withFastLookUp(from) { lookup ⇒
       for {
-        addresses1 <- lookup.getManyWith("addresses1", TestAddressUnpacker).map(_.toList)
-        addresses2 <- lookup.getManyTyped[TestAddress]("addresses2")
-        addresses3 <- lookup.getManyTyped[TestAddress]("addresses3").map(_.toSet)
-        anything <- lookup.getMany("anything").map(_.toList)
+        addresses1 ← lookup.getManyWith("addresses1", TestAddressUnpacker).map(_.toList)
+        addresses2 ← lookup.getManyTyped[TestAddress]("addresses2")
+        addresses3 ← lookup.getManyTyped[TestAddress]("addresses3").map(_.toSet)
+        anything ← lookup.getMany("anything").map(_.toList)
       } yield ComplexMAs(addresses1, addresses2, addresses3, anything)
     }
   }
@@ -161,9 +161,9 @@ object PrimitiveMapsUnpacker extends RegisterableWarpUnpacker[PrimitiveMaps] {
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers) = {
     withFastLookUp(from) { lookup ⇒
       for {
-        mapIntInt <- lookup.getPrimitiveAssocs[Int, Int]("mapIntInt").map(_.toMap)
-        mapStringInt <- lookup.getPrimitiveAssocs[String, Int]("mapStringInt").map(_.toMap)
-        mapUuidDateTime <- lookup.getPrimitiveAssocs[UUID, DateTime]("mapUuidDateTime").map(_.toMap)
+        mapIntInt ← lookup.getPrimitiveAssocs[Int, Int]("mapIntInt").map(_.toMap)
+        mapStringInt ← lookup.getPrimitiveAssocs[String, Int]("mapStringInt").map(_.toMap)
+        mapUuidDateTime ← lookup.getPrimitiveAssocs[UUID, DateTime]("mapUuidDateTime").map(_.toMap)
       } yield PrimitiveMaps(mapIntInt, mapStringInt, mapUuidDateTime)
     }
   }
@@ -185,8 +185,8 @@ object ComplexMapsUnpacker extends RegisterableWarpUnpacker[ComplexMaps] {
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers) = {
     withFastLookUp(from) { lookup ⇒
       for {
-        mapIntTestAddress1 <- lookup.getAssocsWith[Int, TestAddress]("mapIntTestAddress1", TestAddressUnpacker).map(_.toMap)
-        mapIntAny <- lookup.getAssocsTyped[Int, AnyRef]("mapIntAny").map(_.toMap)
+        mapIntTestAddress1 ← lookup.getAssocsWith[Int, TestAddress]("mapIntTestAddress1", TestAddressUnpacker).map(_.toMap)
+        mapIntAny ← lookup.getAssocsTyped[Int, AnyRef]("mapIntAny").map(_.toMap)
       } yield ComplexMaps(mapIntTestAddress1, mapIntAny)
     }
   }
@@ -208,8 +208,8 @@ object TestAddressUnpacker extends RegisterableWarpUnpacker[TestAddress] {
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[TestAddress] = {
     withFastLookUp(from) { lookup ⇒
       for {
-        city <- lookup.getAs[String]("city")
-        street <- lookup.getAs[String]("street")
+        city ← lookup.getAs[String]("city")
+        street ← lookup.getAs[String]("street")
       } yield TestAddress(city, street)
     }
   }
@@ -231,8 +231,8 @@ object TreesUnpacker extends RegisterableWarpUnpacker[Trees] {
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[Trees] = {
     withFastLookUp(from) { lookup ⇒
       for {
-        intTree <- lookup.getPrimitivesTree[Int]("intTree")
-        addressTree <- lookup.getTreeTyped[TestAddress]("addressTree")
+        intTree ← lookup.getPrimitivesTree[Int]("intTree")
+        addressTree ← lookup.getTreeTyped[TestAddress]("addressTree")
       } yield Trees(intTree, addressTree)
     }
   }

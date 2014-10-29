@@ -16,10 +16,10 @@ object RejectedCommandsHerdingDog {
     import almhirt.configuration._
     val configPath = "almhirt.herder.herding-dogs.rejected-commands"
     for {
-      section <- ctx.config.v[Config](configPath)
-      historySize <- section.v[Int]("history-size")
-      unwrapFailures <- section.v[Boolean]("unwrap-failures")
-      downgradeCommandRepresentation <- section.v[Boolean]("downgrade-command-representations")
+      section ← ctx.config.v[Config](configPath)
+      historySize ← section.v[Int]("history-size")
+      unwrapFailures ← section.v[Boolean]("unwrap-failures")
+      downgradeCommandRepresentation ← section.v[Boolean]("downgrade-command-representations")
     } yield Props(new RejectedCommandsHerdingDog(historySize, unwrapFailures, downgradeCommandRepresentation))
   }
 
@@ -38,14 +38,14 @@ private[almhirt] class RejectedCommandsHerdingDog(historySize: Int, unwrapFailur
   val history = new MutableBadThingsHistories[ComponentId, RejectedCommandsEntry](historySize)
 
   def receiveRunning: Receive = {
-    case RejectedCommand(componentId, commandRepr, severity, cause, timestamp) =>
+    case RejectedCommand(componentId, commandRepr, severity, cause, timestamp) ⇒
       history.add(componentId, (if(downgradeCommandRepresentation) commandRepr.downgradeToIdAndType else commandRepr, if (unwrapFailures) cause.unwrap() else cause, severity, timestamp))
 
-    case ReportRejectedCommands =>
+    case ReportRejectedCommands ⇒
       val missed = history.allReversed.sorted
       sender() ! RejectedCommands(missed)
       
-    case ReportRejectedCommandsFor(componentId) =>
+    case ReportRejectedCommandsFor(componentId) ⇒
       sender() ! ReportedRejectedCommandsFor(componentId, history getImmutableReversed componentId)
       
   }

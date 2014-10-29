@@ -3,29 +3,29 @@ package almhirt.akkax
 import akka.actor.ActorLogging
 import almhirt.common._
 
-trait AlmActorLogging { self: AlmActor with ActorLogging =>
-  def logDebug(message: => String): Unit = {
+trait AlmActorLogging { self: AlmActor with ActorLogging ⇒
+  def logDebug(message: ⇒ String): Unit = {
     if (log.isDebugEnabled) {
       log.debug(message)
     }
     informNotWorthMentioning(message)
   }
 
-  def logInfo(message: => String): Unit = {
+  def logInfo(message: ⇒ String): Unit = {
     if (log.isInfoEnabled) {
       log.info(message)
     }
     informMentionable(message)
   }
 
-  def logWarning(message: => String): Unit = {
+  def logWarning(message: ⇒ String): Unit = {
     if (log.isWarningEnabled) {
       log.warning(message)
     }
     informImportant(message)
   }
 
-  def logError(message: => String): Unit = {
+  def logError(message: ⇒ String): Unit = {
     log.error(message)
     informVeryImportant(message)
   }
@@ -35,7 +35,7 @@ trait AlmActorLogging { self: AlmActor with ActorLogging =>
     informVeryImportant(s"$message\n${throwable.getMessage()}")
   }
   
-  def logProblem(problem: => Problem): Unit = {
+  def logProblem(problem: ⇒ Problem): Unit = {
     log.warning(problem.toString())
     informImportant(problem.message)
   }

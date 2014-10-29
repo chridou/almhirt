@@ -4,12 +4,12 @@ import almhirt.common._
 import almhirt.problem.Severity
 import almhirt.akkax.ComponentFactory
 
-final case class ComponentFactoryBuilderEntry(buildFactory: AlmhirtContext => AlmFuture[ComponentFactory], failureSeverity: Severity) {
+final case class ComponentFactoryBuilderEntry(buildFactory: AlmhirtContext ⇒ AlmFuture[ComponentFactory], failureSeverity: Severity) {
   def toSeq = Seq(this)
 }
 
 object ComponentFactoryBuilderEntry {
-  def apply(buildFactory: AlmhirtContext => AlmFuture[ComponentFactory]): ComponentFactoryBuilderEntry = 
+  def apply(buildFactory: AlmhirtContext ⇒ AlmFuture[ComponentFactory]): ComponentFactoryBuilderEntry = 
     ComponentFactoryBuilderEntry(buildFactory, CriticalSeverity)
 }
 

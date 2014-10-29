@@ -13,9 +13,9 @@ import scala.reflect.ClassTag
 //
 //  private def serializeWithRiftWarp(what: TIn, channel: String, options: Map[String, Any]): AlmValidation[(Array[Byte], WarpDescriptor)] =
 //    for {
-//      theChannel <- WarpChannels.getBinaryChannel(channel)
-//      serialized <- riftWarp.departure(theChannel.channelDescriptor, what, options)
-//      typedSerialized <- serialized._1.castTo[Array[Byte]]
+//      theChannel ← WarpChannels.getBinaryChannel(channel)
+//      serialized ← riftWarp.departure(theChannel.channelDescriptor, what, options)
+//      typedSerialized ← serialized._1.castTo[Array[Byte]]
 //    } yield (typedSerialized, serialized._2)
 //    
 //

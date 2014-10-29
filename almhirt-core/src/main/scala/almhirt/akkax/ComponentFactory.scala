@@ -30,7 +30,7 @@ final case class ComponentFactory(props: Props, name: Option[String], postAction
   def create(creatorContext: ActorContext): AlmValidation[ActorRef] = {
     import almhirt.almvalidation.kit._
     for {
-      actorRef <- inTryCatch {
+      actorRef ← inTryCatch {
         name match {
           case Some(n) ⇒
             creatorContext.actorOf(props, n)
@@ -38,7 +38,7 @@ final case class ComponentFactory(props: Props, name: Option[String], postAction
             creatorContext.actorOf(props)
         }
       }
-      _ <- postAction(actorRef, creatorContext.self, creatorContext).fold(
+      _ ← postAction(actorRef, creatorContext.self, creatorContext).fold(
         problem ⇒ {
           creatorContext.stop(actorRef)
           UnspecifiedProblem(s"The post action failed. Killing created actor ${actorRef}. Cause:\n$problem").failure

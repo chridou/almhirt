@@ -190,8 +190,8 @@ trait ConfigConfigListExtractor extends ConfigExtractor[List[Config]] {
   import scala.collection.JavaConversions._
   def getValue(config: Config, path: String): AlmValidation[List[Config]] =
     for {
-      items <- ConfigHelper.getFromConfigSafely(path, config.getConfigList)
-      typed <- items.map(c ⇒ inTryCatch { c.asInstanceOf[Config] }.toAgg).toList.sequence
+      items ← ConfigHelper.getFromConfigSafely(path, config.getConfigList)
+      typed ← items.map(c ⇒ inTryCatch { c.asInstanceOf[Config] }.toAgg).toList.sequence
     } yield typed
 
   def tryGetValue(config: Config, path: String): AlmValidation[Option[List[Config]]] =

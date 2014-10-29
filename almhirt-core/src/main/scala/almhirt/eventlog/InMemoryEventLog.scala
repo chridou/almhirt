@@ -23,31 +23,31 @@ class InMemoryEventLog extends Actor with ActorLogging {
     case FindEvent(eventId) ⇒
       sender() ! FoundEvent(eventId, eventLog.find(_.eventId == eventId))
       
-    case FetchEventsParts(BeginningOfTime, EndOfTime, skip, length) =>
+    case FetchEventsParts(BeginningOfTime, EndOfTime, skip, length) ⇒
       sender() ! FetchedEvents(Enumerator(eventLog: _*))
       
-    case FetchEventsParts(From(from), EndOfTime, skip, length) =>
+    case FetchEventsParts(From(from), EndOfTime, skip, length) ⇒
       sender() ! FetchedEvents(Enumerator(eventLog.filter(event ⇒ event.timestamp.compareTo(from) >= 0): _*))
       
-    case FetchEventsParts(After(after), EndOfTime, skip, length) =>
+    case FetchEventsParts(After(after), EndOfTime, skip, length) ⇒
       sender() ! FetchedEvents(Enumerator(eventLog.filter(event ⇒ event.timestamp.compareTo(after) > 0): _*))
       
-    case FetchEventsParts(BeginningOfTime, To(to), skip, length) =>
+    case FetchEventsParts(BeginningOfTime, To(to), skip, length) ⇒
       sender() ! FetchedEvents(Enumerator(eventLog.filter(event ⇒ event.timestamp.compareTo(to) <= 0): _*))
       
-    case FetchEventsParts(BeginningOfTime, Until(until), skip, length) =>
+    case FetchEventsParts(BeginningOfTime, Until(until), skip, length) ⇒
       sender() ! FetchedEvents(Enumerator(eventLog.filter(event ⇒ event.timestamp.compareTo(until) < 0): _*))
       
-    case FetchEventsParts(From(from), To(to), skip, length) =>
+    case FetchEventsParts(From(from), To(to), skip, length) ⇒
       sender() ! FetchedEvents(Enumerator(eventLog.filter(event ⇒ event.timestamp.compareTo(from) >= 0 && event.timestamp.compareTo(to) <= 0): _*))
       
-    case FetchEventsParts(From(from), Until(until), skip, length) =>
+    case FetchEventsParts(From(from), Until(until), skip, length) ⇒
       sender() ! FetchedEvents(Enumerator(eventLog.filter(event ⇒ event.timestamp.compareTo(from) >= 0 && event.timestamp.compareTo(until) < 0): _*))
       
-    case FetchEventsParts(After(after), To(to), skip, length) =>
+    case FetchEventsParts(After(after), To(to), skip, length) ⇒
       sender() ! FetchedEvents(Enumerator(eventLog.filter(event ⇒ event.timestamp.compareTo(after) > 0 && event.timestamp.compareTo(to) <= 0): _*))
       
-    case FetchEventsParts(After(after), Until(until), skip, length) =>
+    case FetchEventsParts(After(after), Until(until), skip, length) ⇒
       sender() ! FetchedEvents(Enumerator(eventLog.filter(event ⇒ event.timestamp.compareTo(after) > 0 && event.timestamp.compareTo(until) < 0): _*))
       
   }

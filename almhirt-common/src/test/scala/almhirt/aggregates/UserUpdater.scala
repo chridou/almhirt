@@ -20,8 +20,8 @@ trait UserUpdater extends AggregateRootUpdater[User, UserEvent] { self: UserEven
   def create(aggId: AggregateRootId, surname: String, lastname: String): UpdateRecorder[User, UserEvent] = {
     val res =
       for {
-        sname <- surname.notEmptyOrWhitespace
-        lname <- lastname.notEmptyOrWhitespace
+        sname ← surname.notEmptyOrWhitespace
+        lname ← lastname.notEmptyOrWhitespace
       } yield (
         User(aggId, AggregateRootVersion(1), sname, lname, None),
         UserCreated(EventHeader(), aggId, AggregateRootVersion(0), sname, lname))
@@ -32,8 +32,8 @@ trait UserUpdater extends AggregateRootUpdater[User, UserEvent] { self: UserEven
   def doNotAccept(aggId: AggregateRootId, surname: String, lastname: String): UpdateRecorder[User, UserEvent] = {
     recordCreate {
       for {
-        sname <- surname.notEmptyOrWhitespace
-        lname <- lastname.notEmptyOrWhitespace
+        sname ← surname.notEmptyOrWhitespace
+        lname ← lastname.notEmptyOrWhitespace
       } yield UserNotAccepted(EventHeader(), aggId, AggregateRootVersion(0), sname, lname)
     }
   }
@@ -42,7 +42,7 @@ trait UserUpdater extends AggregateRootUpdater[User, UserEvent] { self: UserEven
   def changeLastname(user: User, lastname: String): UpdateRecorder[User, UserEvent] = {
     user recordUpdate {
       for {
-        lname <- lastname.notEmptyOrWhitespace
+        lname ← lastname.notEmptyOrWhitespace
       } yield UserLastnameChanged(EventHeader(), user.id, user.version, lname)
     }
   }
@@ -72,16 +72,16 @@ trait UserUpdater extends AggregateRootUpdater[User, UserEvent] { self: UserEven
   // Composition using ifVivus from UpdateRecorder to meet the signature of UpdateRecorder.flatMap
   def changeFullName(user: User, surname: String, lastname: String): UpdateRecorder[User, UserEvent] = {
     for {
-      a <- changeSurname(user, surname)
-      b <- UpdateRecorder.ifVivus(changeLastname(_: User, lastname))(a)
+      a ← changeSurname(user, surname)
+      b ← UpdateRecorder.ifVivus(changeLastname(_: User, lastname))(a)
     } yield b
   }
 
   // Composition with liftWith(like UpdateRecorder.isVivus) from trait AggregateRootUpdater
   def changeFullNameAndAge(user: User, surname: String, lastname: String, age: Int): UpdateRecorder[User, UserEvent] = {
     for {
-      a <- changeFullName(user, surname, lastname)
-      b <- (changeAge(_: User, age)).liftWith(a)
+      a ← changeFullName(user, surname, lastname)
+      b ← (changeAge(_: User, age)).liftWith(a)
     } yield b
   }
 

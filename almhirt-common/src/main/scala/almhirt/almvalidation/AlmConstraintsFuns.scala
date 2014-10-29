@@ -30,12 +30,12 @@ trait AlmConstraintsFuns {
   
  def stringConstrained(toTest: String, minLength: Option[Int], maxLength: Option[Int], emptyOrWhiteSpace: Boolean = false): AlmValidation[String] =
     for {
-      _ <- if (emptyOrWhiteSpace) toTest.success else notEmptyOrWhitespace(toTest)
-      _ <- minLength match {
+      _ ← if (emptyOrWhiteSpace) toTest.success else notEmptyOrWhitespace(toTest)
+      _ ← minLength match {
         case Some(min) ⇒ if (min > toTest.length()) ConstraintViolatedProblem(s"min length is $min").failure else toTest.success
         case None ⇒ toTest.success
       }
-      _ <- maxLength match {
+      _ ← maxLength match {
         case Some(max) ⇒ if (max < toTest.length()) ConstraintViolatedProblem(s"max length is $max").failure else toTest.success
         case None ⇒ toTest.success
       }
@@ -55,8 +55,8 @@ trait AlmConstraintsFuns {
     import scalaz.std._
     import ops._
     for {
-      _ <- option.cata(minimum)(x ⇒ if (x > toTest) ConstraintViolatedProblem(s"minimum is ${minimum.get}").failure else ().success, ().success)
-      _ <- option.cata(maximum)(x ⇒ if (x < toTest) ConstraintViolatedProblem(s"maximum is ${maximum.get}").failure else ().success, ().success)
+      _ ← option.cata(minimum)(x ⇒ if (x > toTest) ConstraintViolatedProblem(s"minimum is ${minimum.get}").failure else ().success, ().success)
+      _ ← option.cata(maximum)(x ⇒ if (x < toTest) ConstraintViolatedProblem(s"maximum is ${maximum.get}").failure else ().success, ().success)
     } yield toTest
   }
 
@@ -73,8 +73,8 @@ trait AlmConstraintsFuns {
   def numericConstrainedToMinMax[T](toTest: T, minimum: T, maximum: T)(implicit ops: Numeric[T]): AlmValidation[T] = {
     import ops._
     for {
-      _ <- if (maximum < toTest) ConstraintViolatedProblem(s"maximum is $maximum").failure else ().success
-      _ <- if (minimum > toTest) ConstraintViolatedProblem(s"minimum is $minimum").failure else ().success
+      _ ← if (maximum < toTest) ConstraintViolatedProblem(s"maximum is $maximum").failure else ().success
+      _ ← if (minimum > toTest) ConstraintViolatedProblem(s"minimum is $minimum").failure else ().success
     } yield toTest
   }
   

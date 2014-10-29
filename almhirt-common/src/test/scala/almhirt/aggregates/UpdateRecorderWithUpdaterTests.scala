@@ -42,8 +42,8 @@ class UpdateRecorderWithUpdaterTests extends FlatSpec with Matchers with Inside
   it should "create an aggregate root and modify it" in {
     val (ar, events) =
       (for {
-        a <- create("a", "hans", "meier")
-        b <- (changeAge(_: User, 18)).liftWith(a)
+        a ← create("a", "hans", "meier")
+        b ← (changeAge(_: User, 18)).liftWith(a)
       } yield b).recordings.forceResult
 
     inside(ar) {
@@ -62,9 +62,9 @@ class UpdateRecorderWithUpdaterTests extends FlatSpec with Matchers with Inside
   it should "create an aggregate root, modify and then kill it" in {
     val (ar, events) =
       (for {
-        a <- create("a", "hans", "meier")
-        b <- (changeAge(_: User, 18)).liftWith(a)
-        c <- (die(_: User)).liftWith(b)
+        a ← create("a", "hans", "meier")
+        b ← (changeAge(_: User, 18)).liftWith(a)
+        c ← (die(_: User)).liftWith(b)
       } yield c).recordings.forceResult
 
     inside(ar) {
@@ -83,10 +83,10 @@ class UpdateRecorderWithUpdaterTests extends FlatSpec with Matchers with Inside
   it should "create an aggregate root, modify it many times and then kill it" in {
     val (ar, events) =
       (for {
-        a <- create("a", "hans", "meier")
-        b <- (changeAge(_: User, 18)).liftWith(a)
-        c <- (changeFullName(_: User, "Hans", "Meier")).liftWith(b)
-        d <- (leave(_: User)).liftWith(c)
+        a ← create("a", "hans", "meier")
+        b ← (changeAge(_: User, 18)).liftWith(a)
+        c ← (changeFullName(_: User, "Hans", "Meier")).liftWith(b)
+        d ← (leave(_: User)).liftWith(c)
       } yield d).recordings.forceResult
 
     inside(ar) {
@@ -119,9 +119,9 @@ class UpdateRecorderWithUpdaterTests extends FlatSpec with Matchers with Inside
   it should "create a timeline that leads to the same result" in {
     val (ar, timeline) =
       (for {
-        a <- create("a", "hans", "meier")
-        b <- (changeAge(_: User, 18)).liftWith(a)
-        c <- (changeFullName(_: User, "Hans", "Meier")).liftWith(b)
+        a ← create("a", "hans", "meier")
+        b ← (changeAge(_: User, 18)).liftWith(a)
+        c ← (changeFullName(_: User, "Hans", "Meier")).liftWith(b)
       } yield c).recordings.forceResult
 
     ar should equal(rebuildFromTimeline(timeline))
@@ -130,9 +130,9 @@ class UpdateRecorderWithUpdaterTests extends FlatSpec with Matchers with Inside
   it should "not allow modification after death(Mortuus)" in {
     val ur =
       (for {
-        a <- create("a", "hans", "meier")
-        b <- (die(_: User)).liftWith(a)
-        c <- (changeAge(_: User, 18)).liftWith(b)
+        a ← create("a", "hans", "meier")
+        b ← (die(_: User)).liftWith(a)
+        c ← (changeAge(_: User, 18)).liftWith(b)
       } yield c)
 
     ur.isRejected should equal(true)
@@ -141,9 +141,9 @@ class UpdateRecorderWithUpdaterTests extends FlatSpec with Matchers with Inside
   it should "return the events until the invalid operation happened(excluding the invalid ones)" in {
     val ur =
       (for {
-        a <- create("a", "hans", "meier")
-        b <- (die(_: User)).liftWith(a)
-        c <- (changeAge(_: User, 18)).liftWith(b)
+        a ← create("a", "hans", "meier")
+        b ← (die(_: User)).liftWith(a)
+        c ← (changeAge(_: User, 18)).liftWith(b)
       } yield c)
 
     val expectedEvents = List(
@@ -155,10 +155,10 @@ class UpdateRecorderWithUpdaterTests extends FlatSpec with Matchers with Inside
   it should "return events up to an invalid operation that form a valid timeline up to the last state before the invalid operation" in {
     val timeline =
       (for {
-        a <- create("a", "hans", "meier")
-        a <- (changeAge(_: User, 18)).liftWith(a)
-        a <- (changeSurname(_: User, "      ")).liftWith(a)
-        a <- (changeFullName(_: User, "Hans", "Meier")).liftWith(a)
+        a ← create("a", "hans", "meier")
+        a ← (changeAge(_: User, 18)).liftWith(a)
+        a ← (changeSurname(_: User, "      ")).liftWith(a)
+        a ← (changeFullName(_: User, "Hans", "Meier")).liftWith(a)
       } yield a).events
 
     inside(rebuildFromTimeline(timeline)) {
@@ -174,9 +174,9 @@ class UpdateRecorderWithUpdaterTests extends FlatSpec with Matchers with Inside
   it should "ALLOW recreation(Vacat->Vivus->Mortuus->Vivus) even though the timeline becomes invalid" in {
     val (ar, events) =
       (for {
-        a <- create("a", "hans", "meier")
-        b <- (die(_: User)).liftWith(a)
-        c <- create("a", "hans", "meier") // See, that there is no b here?
+        a ← create("a", "hans", "meier")
+        b ← (die(_: User)).liftWith(a)
+        c ← create("a", "hans", "meier") // See, that there is no b here?
       } yield c).recordings.forceResult
 
     inside(ar) {
@@ -198,9 +198,9 @@ class UpdateRecorderWithUpdaterTests extends FlatSpec with Matchers with Inside
   it should "create an invalid timeline when the aggregate root is recreated(Vacat->Vivus->Mortuus->Vivus)" in {
     val (ar, timeline) =
       (for {
-        a <- create("a", "hans", "meier")
-        b <- (die(_: User)).liftWith(a)
-        c <- create("a", "hans", "meier")
+        a ← create("a", "hans", "meier")
+        b ← (die(_: User)).liftWith(a)
+        c ← create("a", "hans", "meier")
       } yield c).recordings.forceResult
 
     intercept[Exception] {

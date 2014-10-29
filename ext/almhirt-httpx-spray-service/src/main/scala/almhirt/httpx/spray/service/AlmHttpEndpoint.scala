@@ -159,8 +159,8 @@ trait AlmHttpEndpoint {
   implicit protected class AlmFutureCommandResponseOps(self: AlmFuture[CommandResponse]) {
     def completeWithFlattenedCommandResponse(implicit entityMarshaller: Marshaller[String], ctx: RequestContext, problemTerminator: AlmHttpProblemTerminator, executionContext: ExecutionContext, problemMarshaller: Marshaller[Problem]) = {
       self.onComplete(
-        fail => problemTerminator.terminateProblem(ctx, fail),
-        commandResponse => {
+        fail ⇒ problemTerminator.terminateProblem(ctx, fail),
+        commandResponse ⇒ {
           commandResponse match {
             case CommandAccepted(id) ⇒
               ctx.complete(StatusCodes.Accepted, id.value)
@@ -178,8 +178,8 @@ trait AlmHttpEndpoint {
 
     def completeWithCommandResponse(implicit entityMarshaller: Marshaller[CommandResponse], ctx: RequestContext, problemTerminator: AlmHttpProblemTerminator, executionContext: ExecutionContext, problemMarshaller: Marshaller[Problem]) {
       self.onComplete(
-        fail => problemTerminator.terminateProblem(ctx, fail),
-        commandResponse => {
+        fail ⇒ problemTerminator.terminateProblem(ctx, fail),
+        commandResponse ⇒ {
           commandResponse match {
             case r: CommandAccepted ⇒
               ctx.complete(StatusCodes.Accepted, r)

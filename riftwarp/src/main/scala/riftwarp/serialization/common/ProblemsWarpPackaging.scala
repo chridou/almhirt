@@ -25,10 +25,10 @@ object SingleProblemPackaging extends WarpPacker[SingleProblem] with Registerabl
   override def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[SingleProblem] =
     withFastLookUp(from) { lu ⇒
       for {
-        message <- lu.getAs[String]("message")
-        args <- lu.getAssocs[String]("args").map(_.toMap)
-        problemType <- lu.getTyped[ProblemType]("problemType", None).recover(almhirt.problem.problemtypes.UnknownProblem)
-        cause <- lu.tryGetWith("cause", ProblemCauseUnpacker)
+        message ← lu.getAs[String]("message")
+        args ← lu.getAssocs[String]("args").map(_.toMap)
+        problemType ← lu.getTyped[ProblemType]("problemType", None).recover(almhirt.problem.problemtypes.UnknownProblem)
+        cause ← lu.tryGetWith("cause", ProblemCauseUnpacker)
       } yield SingleProblem(message, problemType, args, cause)
     }
 
@@ -45,8 +45,8 @@ object AggregatedProblemPackaging extends WarpPacker[AggregatedProblem] with Reg
   override def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[AggregatedProblem] =
     withFastLookUp(from) { lu ⇒
       for {
-        args <- lu.getAssocs[String]("args").map(_.toMap)
-        problems <- lu.getManyWith("problems", ProblemPackaging)
+        args ← lu.getAssocs[String]("args").map(_.toMap)
+        problems ← lu.getManyWith("problems", ProblemPackaging)
       } yield AggregatedProblem(problems, args)
     }
 }

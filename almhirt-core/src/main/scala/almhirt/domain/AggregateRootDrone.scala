@@ -34,17 +34,17 @@ trait ConfirmationContext[E <: AggregateRootEvent] {
 }
 
 object AggregateRootDrone {
-  def propsRawMaker(returnToUnitializedAfter: Option[FiniteDuration], maker: Option[FiniteDuration] => Props): Props = {
+  def propsRawMaker(returnToUnitializedAfter: Option[FiniteDuration], maker: Option[FiniteDuration] ⇒ Props): Props = {
     maker(returnToUnitializedAfter)
   }
 
-  def propsMaker(maker: Option[FiniteDuration] => Props,
+  def propsMaker(maker: Option[FiniteDuration] ⇒ Props,
     droneConfigName: Option[String] = None)(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
     import almhirt.configuration._
     val path = "almhirt.components.aggregates.aggregate-root-drone" + droneConfigName.map("." + _).getOrElse("")
     for {
-      section <- ctx.config.v[com.typesafe.config.Config](path)
-      returnToUnitializedAfter <- section.magicOption[FiniteDuration]("return-to-unitialized-after")
+      section ← ctx.config.v[com.typesafe.config.Config](path)
+      returnToUnitializedAfter ← section.magicOption[FiniteDuration]("return-to-unitialized-after")
     } yield propsRawMaker(returnToUnitializedAfter, maker)
   }
 }
@@ -141,7 +141,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
   private def receiveUninitialized: Receive = {
     case firstCommand: AggregateRootCommand ⇒
       capturedId match {
-        case Some(id) =>
+        case Some(id) ⇒
           if (firstCommand.aggId == id) {
             snapshotStorage match {
               case None ⇒
@@ -155,7 +155,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
               firstCommand,
               ConstraintViolatedProblem(s"""This drone only accepts commands for aggregate root id "${id.value}". The command targets ${firstCommand.aggId.value}.""")))
           }
-        case None =>
+        case None ⇒
           capturedId = Some(firstCommand.aggId)
           context.become(receiveUserInitialization(firstCommand))
           self ! StartUserInitialization
@@ -191,7 +191,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
       handleAggregateCommand(DefaultConfirmationContext)(nextCommand, persistedState)
       context.become(receiveWaitingForCommandResult(nextCommand, persistedState))
 
-    case AggregateRootDroneInternal.ReturnToUninitialized =>
+    case AggregateRootDroneInternal.ReturnToUninitialized ⇒
       if (log.isDebugEnabled)
         log.debug("Returning to uninitialized.")
       context.become(receiveUninitialized)
@@ -325,7 +325,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
   }
 
   private def becomeReceiveWaitingForCommand(persistedState: AggregateRootLifecycle[T]) {
-    returnToUnitializedAfter.foreach(dur =>
+    returnToUnitializedAfter.foreach(dur ⇒
       context.system.scheduler.scheduleOnce(dur, self, AggregateRootDroneInternal.ReturnToUninitialized)(context.dispatcher))
     context.become(receiveAcceptingCommand(persistedState))
   }

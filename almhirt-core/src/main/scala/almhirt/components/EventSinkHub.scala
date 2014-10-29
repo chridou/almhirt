@@ -31,10 +31,10 @@ object EventSinkHub {
     import almhirt.configuration._
     import almhirt.almvalidation.kit._
     for {
-      section <- ctx.config.v[com.typesafe.config.Config]("almhirt.components.misc.event-sink-hub")
-      enabled <- section.v[Boolean]("enabled")
-      buffersize <- section.v[Int]("buffer-size").constrained(_ >= 0, n ⇒ s""""buffer-size" must be greater or equal than 0, not $n.""")
-      withBlackHoleIfEmpty <- section.v[Boolean]("with-black-hole-if-empty")
+      section ← ctx.config.v[com.typesafe.config.Config]("almhirt.components.misc.event-sink-hub")
+      enabled ← section.v[Boolean]("enabled")
+      buffersize ← section.v[Int]("buffer-size").constrained(_ >= 0, n ⇒ s""""buffer-size" must be greater or equal than 0, not $n.""")
+      withBlackHoleIfEmpty ← section.v[Boolean]("with-black-hole-if-empty")
     } yield propsRaw(if (enabled) factories else Map.empty, Some(buffersize), withBlackHoleIfEmpty)
   }
 
@@ -85,7 +85,7 @@ private[almhirt] class EventSinksSupervisorImpl(factories: EventSinkHub.EventSin
       }
     } else if (factories.isEmpty && withBlackHoleIfEmpty) {
       log.warning("No members, but I created a black hole!")
-      Source(ctx.eventStream).foreach(_ => ())
+      Source(ctx.eventStream).foreach(_ ⇒ ())
     } else {
       log.warning("No members. Nothing will be subscribed")
     }

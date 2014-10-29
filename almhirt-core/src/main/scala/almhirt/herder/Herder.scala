@@ -20,11 +20,11 @@ object Herder {
     import almhirt.configuration._
     val configPath = "almhirt.herder"
     for {
-      section <- ctx.config.v[Config](configPath)
-      failuresHerdingDogProps <- FailuresHerdingDog.props
-      rejectedCommandsHerdingDogProps <- RejectedCommandsHerdingDog.props
-      missedEventsHerdingDogProps <- MissedEventsHerdingDog.props
-      informationHerdingDogProps <- InformationHerdingDog.props
+      section ← ctx.config.v[Config](configPath)
+      failuresHerdingDogProps ← FailuresHerdingDog.props
+      rejectedCommandsHerdingDogProps ← RejectedCommandsHerdingDog.props
+      missedEventsHerdingDogProps ← MissedEventsHerdingDog.props
+      informationHerdingDogProps ← InformationHerdingDog.props
     } yield propsRaw(failuresHerdingDogProps, rejectedCommandsHerdingDogProps, missedEventsHerdingDogProps, informationHerdingDogProps)
   }
 
@@ -49,15 +49,15 @@ private[almhirt] class Pastor(
   val informationHerdingDog: ActorRef = context.actorOf(informationHerdingDogProps, InformationHerdingDog.actorname)
 
   def receiveRunning: Receive = {
-    case m: HerderMessages.CircuitMessages.CircuitMessage => circuitsHerdingDog forward m
+    case m: HerderMessages.CircuitMessages.CircuitMessage ⇒ circuitsHerdingDog forward m
 
-    case m: HerderMessages.FailureMessages.FailuresMessage => failuresHerdingDog forward m
+    case m: HerderMessages.FailureMessages.FailuresMessage ⇒ failuresHerdingDog forward m
 
-    case m: HerderMessages.CommandMessages.CommandsMessage => rejectedCommandsHerdingDog forward m
+    case m: HerderMessages.CommandMessages.CommandsMessage ⇒ rejectedCommandsHerdingDog forward m
 
-    case m: HerderMessages.EventMessages.EventsMessage => missedEventsHerdingDog forward m
+    case m: HerderMessages.EventMessages.EventsMessage ⇒ missedEventsHerdingDog forward m
 
-    case m: HerderMessages.InformationMessages.InformationMessage => informationHerdingDog forward m
+    case m: HerderMessages.InformationMessages.InformationMessage ⇒ informationHerdingDog forward m
   }
 
   def receive = receiveRunning

@@ -11,14 +11,14 @@ object TraverseWindow {
 
   def fromIntOptions(skip: Option[Int], take: Option[Int]): TraverseWindow = {
     val s = skip match {
-      case None => SkipNone
-      case Some(x) if x <= 0 => SkipNone
-      case Some(x) => Skip(x)
+      case None ⇒ SkipNone
+      case Some(x) if x <= 0 ⇒ SkipNone
+      case Some(x) ⇒ Skip(x)
     }
     val t = take match {
-      case None => TakeAll
-      case Some(x) if x <= 0 => Take(0)
-      case Some(x) => Take(x)
+      case None ⇒ TakeAll
+      case Some(x) if x <= 0 ⇒ Take(0)
+      case Some(x) ⇒ Take(x)
     }
 
     TraverseWindow(s, t)
@@ -26,11 +26,11 @@ object TraverseWindow {
 
   def parseFromStringOptions(skip: Option[String], take: Option[String]): AlmValidation[TraverseWindow] = {
     import almhirt.almvalidation.kit._
-    val trimmedSkip = skip.flatMap(str => if (str.trim().isEmpty()) None else Some(str))
-    val trimmedTake = take.flatMap(str => if (str.trim().isEmpty()) None else Some(str))
+    val trimmedSkip = skip.flatMap(str ⇒ if (str.trim().isEmpty()) None else Some(str))
+    val trimmedTake = take.flatMap(str ⇒ if (str.trim().isEmpty()) None else Some(str))
     for {
-      sOpt <- trimmedSkip.map(_.toIntAlm).validationOut
-      tOpt <- trimmedTake.map(_.toIntAlm).validationOut
+      sOpt ← trimmedSkip.map(_.toIntAlm).validationOut
+      tOpt ← trimmedTake.map(_.toIntAlm).validationOut
     } yield fromIntOptions(sOpt, tOpt)
   }
 

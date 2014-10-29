@@ -81,10 +81,10 @@ object AlmhirtContext {
 
     val propsV =
       for {
-        configSection <- system.settings.config.v[com.typesafe.config.Config]("almhirt.context")
-        useFuturesCtx <- configSection.v[Boolean]("use-dedicated-futures-dispatcher")
-        useBlockersCtx <- configSection.v[Boolean]("use-dedicated-blockers-dispatcher")
-        useCrunchersCtx <- configSection.v[Boolean]("use-dedicated-cruncher-dispatcher")
+        configSection ← system.settings.config.v[com.typesafe.config.Config]("almhirt.context")
+        useFuturesCtx ← configSection.v[Boolean]("use-dedicated-futures-dispatcher")
+        useBlockersCtx ← configSection.v[Boolean]("use-dedicated-blockers-dispatcher")
+        useCrunchersCtx ← configSection.v[Boolean]("use-dedicated-cruncher-dispatcher")
       } yield {
         val futuresExecutor =
           if (useFuturesCtx)
@@ -112,7 +112,7 @@ object AlmhirtContext {
         Props(new AlmActor with AlmActorLogging with ActorLogging {
           implicit val execCtx = futuresExecutor
           var theReceiver: ActorRef = null
-          var tellTheHerder: almhirt.herder.HerderMessages.HerderNotificicationMessage => Unit = x => ()
+          var tellTheHerder: almhirt.herder.HerderMessages.HerderNotificicationMessage ⇒ Unit = x ⇒ ()
           
           var _ctx: AlmhirtContext = null
           override def almhirtContext = _ctx
@@ -156,12 +156,12 @@ object AlmhirtContext {
             case AlmhirtContextMessages.ContextCreated(ctx) ⇒
               log.info("Context created. Next: Configure herder")
               (for {
-                herderProps <- almhirt.herder.Herder.props()(ctx)
+                herderProps ← almhirt.herder.Herder.props()(ctx)
               } yield herderProps).fold(
-                prob => theReceiver ! AlmhirtContextMessages.FailedInitialization(prob),
-                herderProps => {
+                prob ⇒ theReceiver ! AlmhirtContextMessages.FailedInitialization(prob),
+                herderProps ⇒ {
                   val herder = context.actorOf(herderProps, almhirt.herder.Herder.actorname)
-                  this.tellTheHerder = x => herder ! x
+                  this.tellTheHerder = x ⇒ herder ! x
                   self ! AlmhirtContextMessages.HerderCreated(ctx)
                 })
                theReceiver ! AlmhirtContextMessages.FinishedInitialization(ctx)

@@ -19,15 +19,15 @@ trait RiftWarp {
 
   def departure(channel: String, what: Any, options: Map[String, Any] = Map.empty): AlmValidation[(Any, WarpDescriptor)] =
     for {
-      packer <- packers.getFor(what, None, None)
-      packed <- packer.packBlind(what)(packers)
-      dematerialize <- dematerializers.get(channel)
+      packer ← packers.getFor(what, None, None)
+      packed ← packer.packBlind(what)(packers)
+      dematerialize ← dematerializers.get(channel)
     } yield (dematerialize(packed, options), packer.warpDescriptor)
 
   def arrival(channel: String, from: Any, options: Map[String, Any] = Map.empty): AlmValidation[Any] =
     for {
-      rematerializer <- rematerializers.getTyped[Any](channel)
-      arrived <- myFuns.handleFreeArrivalWith(from, rematerializer, None, None, options)(unpackers)
+      rematerializer ← rematerializers.getTyped[Any](channel)
+      arrived ← myFuns.handleFreeArrivalWith(from, rematerializer, None, None, options)(unpackers)
     } yield arrived
 }
 

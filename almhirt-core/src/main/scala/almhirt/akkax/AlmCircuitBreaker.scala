@@ -32,12 +32,12 @@ private[almhirt] class AlmCircuitBreakerImpl(settings: CircuitControlSettings, e
   @volatile
   private[this] var _currentStateDoNotCallMeDirectly: InternalState =
     startState match {
-      case CircuitStartState.Closed => InternalClosed
-      case CircuitStartState.HalfOpen => InternalHalfOpen
-      case CircuitStartState.Open => InternalOpen
-      case CircuitStartState.FuseRemoved => InternalFuseRemoved
-      case CircuitStartState.Destroyed => InternalDestroyed
-      case CircuitStartState.Circumvented => InternalCircumvented
+      case CircuitStartState.Closed ⇒ InternalClosed
+      case CircuitStartState.HalfOpen ⇒ InternalHalfOpen
+      case CircuitStartState.Open ⇒ InternalOpen
+      case CircuitStartState.FuseRemoved ⇒ InternalFuseRemoved
+      case CircuitStartState.Destroyed ⇒ InternalDestroyed
+      case CircuitStartState.Circumvented ⇒ InternalCircumvented
     }
   
   currentState.enter()
@@ -86,38 +86,38 @@ private[almhirt] class AlmCircuitBreakerImpl(settings: CircuitControlSettings, e
 
   override def state: AlmFuture[CircuitState] = AlmFuture.successful(currentState.publicState)
 
-  override def onOpened(listener: () => Unit): AlmCircuitBreaker = {
+  override def onOpened(listener: () ⇒ Unit): AlmCircuitBreaker = {
     InternalOpen addListener new Runnable { def run() { listener() } }
     this
   }
 
-  override def onHalfOpened(listener: () => Unit): AlmCircuitBreaker = {
+  override def onHalfOpened(listener: () ⇒ Unit): AlmCircuitBreaker = {
     InternalHalfOpen addListener new Runnable { def run() { listener() } }
     this
   }
 
-  override def onClosed(listener: () => Unit): AlmCircuitBreaker = {
+  override def onClosed(listener: () ⇒ Unit): AlmCircuitBreaker = {
     InternalClosed addListener new Runnable { def run() { listener() } }
     this
   }
 
-  override def onFuseRemoved(listener: () => Unit): AlmCircuitBreaker = {
+  override def onFuseRemoved(listener: () ⇒ Unit): AlmCircuitBreaker = {
     InternalFuseRemoved addListener new Runnable { def run() { listener() } }
     this
   }
 
-  override def onDestroyed(listener: () => Unit): AlmCircuitBreaker = {
+  override def onDestroyed(listener: () ⇒ Unit): AlmCircuitBreaker = {
     InternalDestroyed addListener new Runnable { def run() { listener() } }
     this
   }
 
-  override def onCircumvented(listener: () => Unit): AlmCircuitBreaker = {
+  override def onCircumvented(listener: () ⇒ Unit): AlmCircuitBreaker = {
     InternalCircumvented addListener new Runnable { def run() { listener() } }
     this
   }
 
-  override def onWarning(listener: (Int, Int) => Unit): AlmCircuitBreaker = {
-    InternalClosed addWarningListener (currentFailures => new Runnable { def run() { listener(currentFailures, maxFailures) } })
+  override def onWarning(listener: (Int, Int) ⇒ Unit): AlmCircuitBreaker = {
+    InternalClosed addWarningListener (currentFailures ⇒ new Runnable { def run() { listener(currentFailures, maxFailures) } })
     this
   }
 
@@ -193,8 +193,8 @@ private[almhirt] class AlmCircuitBreakerImpl(settings: CircuitControlSettings, e
       val deadline = callTimeout.fromNow
       val bodyFuture = try body catch { case scala.util.control.NonFatal(exn) ⇒ AlmFuture.failed(ExceptionCaughtProblem(exn)) }
       bodyFuture.onComplete(
-        fail => callFails(),
-        succ =>
+        fail ⇒ callFails(),
+        succ ⇒
           if (!deadline.isOverdue)
             callSucceeds()
           else callFails())(SameThreadExecutionContext)
@@ -235,9 +235,9 @@ private[almhirt] class AlmCircuitBreakerImpl(settings: CircuitControlSettings, e
    * -> Destroyed
    */
   private case object InternalClosed extends AtomicInteger with InternalState {
-    private val warningListeners = new CopyOnWriteArrayList[Int => Runnable]
+    private val warningListeners = new CopyOnWriteArrayList[Int ⇒ Runnable]
 
-    def addWarningListener(listener: Int => Runnable): Unit = warningListeners add listener
+    def addWarningListener(listener: Int ⇒ Runnable): Unit = warningListeners add listener
 
     override def publicState = CircuitState.Closed(get, maxFailures, failuresWarnThreshold)
 
@@ -251,7 +251,7 @@ private[almhirt] class AlmCircuitBreakerImpl(settings: CircuitControlSettings, e
       val currentFailures = incrementAndGet()
       if (currentFailures == maxFailures)
         tripBreaker(InternalClosed)
-      failuresWarnThreshold.foreach(wt =>
+      failuresWarnThreshold.foreach(wt ⇒
         if (currentFailures == wt)
           notifyWarningListeners(currentFailures))
     }
@@ -334,7 +334,7 @@ private[almhirt] class AlmCircuitBreakerImpl(settings: CircuitControlSettings, e
 
     override def _enter() {
       set(System.nanoTime())
-      resetTimeout.foreach { rt =>
+      resetTimeout.foreach { rt ⇒
         scheduler.scheduleOnce(rt) {
           attemptReset(InternalOpen)
         }(executionContext)

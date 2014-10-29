@@ -20,7 +20,7 @@ object CommandStatusChangedWarpPackaging extends EventWarpPackagingTemplate[Comm
 
   override def extractEventParams(from: WarpObjectLookUp, header: EventHeader)(implicit unpackers: WarpUnpackers): AlmValidation[CommandStatusChanged] =
       for {
-        commandHeader <- from.getWith("commandHeader", CommandHeaderWarpPackaging)
-        status <- from.getWith("status", CommandStatusWarpPackaging)
+        commandHeader ← from.getWith("commandHeader", CommandHeaderWarpPackaging)
+        status ← from.getWith("status", CommandStatusWarpPackaging)
       } yield CommandStatusChanged(header, commandHeader, status)
 }

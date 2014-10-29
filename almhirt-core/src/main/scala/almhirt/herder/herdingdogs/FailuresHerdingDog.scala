@@ -18,10 +18,10 @@ object FailuresHerdingDog {
     import almhirt.configuration._
     val configPath = "almhirt.herder.herding-dogs.failures"
     for {
-      section <- ctx.config.v[Config](configPath)
-      ignoreConsecutiveCircuitProblems <- section.v[Boolean]("ignore-consecutive-circuit-problems")
-      historySize <- section.v[Int]("history-size")
-      unwrapFailures <- section.v[Boolean]("unwrap-failures")
+      section ← ctx.config.v[Config](configPath)
+      ignoreConsecutiveCircuitProblems ← section.v[Boolean]("ignore-consecutive-circuit-problems")
+      historySize ← section.v[Int]("history-size")
+      unwrapFailures ← section.v[Boolean]("unwrap-failures")
     } yield Props(new FailuresHerdingDog(ignoreConsecutiveCircuitProblems, historySize, unwrapFailures))
   }
 
@@ -40,32 +40,32 @@ private[almhirt] class FailuresHerdingDog(ignoreConsecutiveCircuitProblems: Bool
   val history = new MutableBadThingsHistories[ComponentId, FailuresEntry](historySize)
 
   def receiveRunning: Receive = {
-    case FailureOccured(componentId, failure, severity, timestamp) =>
+    case FailureOccured(componentId, failure, severity, timestamp) ⇒
       val ignore =
         (for {
-          badThing <- history.get(componentId)
-          first <- badThing.latestOccurence
-          ignore <- first._1 match {
-            case CauseIsProblem(CircuitOpenProblem(_)) => Some(ignoreConsecutiveCircuitProblems)
-            case _ => Some(false)
+          badThing ← history.get(componentId)
+          first ← badThing.latestOccurence
+          ignore ← first._1 match {
+            case CauseIsProblem(CircuitOpenProblem(_)) ⇒ Some(ignoreConsecutiveCircuitProblems)
+            case _ ⇒ Some(false)
           }
         } yield ignore).getOrElse(false)
         
-      prepareCause(failure, ignore).foreach(p => history.add(componentId, (p, severity, timestamp)))
+      prepareCause(failure, ignore).foreach(p ⇒ history.add(componentId, (p, severity, timestamp)))
 
-    case ReportFailures =>
+    case ReportFailures ⇒
       val entries = history.allReversed.sorted
       sender() ! ReportedFailures(entries)
 
-    case ReportFailuresFor(componentId) =>
+    case ReportFailuresFor(componentId) ⇒
       sender() ! ReportedFailuresFor(componentId, history getImmutableReversed componentId)
   }
 
   def prepareCause(cause: ProblemCause, ignoreCircuitProblems: Boolean): Option[ProblemCause] = {
     val unwrapped = if (unwrapFailures) cause.unwrap() else cause
     unwrapped match {
-      case CauseIsProblem(CircuitOpenProblem(_)) if ignoreCircuitProblems => None
-      case _ => Some(cause)
+      case CauseIsProblem(CircuitOpenProblem(_)) if ignoreCircuitProblems ⇒ None
+      case _ ⇒ Some(cause)
     }
   }
 

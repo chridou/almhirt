@@ -37,17 +37,17 @@ object EventLogWriter {
   def props(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
     import almhirt.configuration._
     for {
-      section <- ctx.config.v[com.typesafe.config.Config]("almhirt.components.misc.event-sink-hub.event-publishers.event-log-writer")
-      enabled <- section.v[Boolean]("enabled")
-      autoConnect <- section.v[Boolean]("auto-connect")
-      res <- if (enabled) {
+      section ← ctx.config.v[com.typesafe.config.Config]("almhirt.components.misc.event-sink-hub.event-publishers.event-log-writer")
+      enabled ← section.v[Boolean]("enabled")
+      autoConnect ← section.v[Boolean]("auto-connect")
+      res ← if (enabled) {
         for {
-          eventLogPathStr <- section.v[String]("event-log-path")
-          eventLogToResolve <- inTryCatch { ResolvePath(ActorPath.fromString(eventLogPathStr)) }
-          warningThreshold <- section.v[FiniteDuration]("warning-threshold")
-          resolveSettings <- section.v[ResolveSettings]("resolve-settings")
-          circuitControlSettings <- section.v[CircuitControlSettings]("circuit-control")
-          circuitStateReportingInterval <- section.magicOption[FiniteDuration]("circuit-state-reporting-interval")
+          eventLogPathStr ← section.v[String]("event-log-path")
+          eventLogToResolve ← inTryCatch { ResolvePath(ActorPath.fromString(eventLogPathStr)) }
+          warningThreshold ← section.v[FiniteDuration]("warning-threshold")
+          resolveSettings ← section.v[ResolveSettings]("resolve-settings")
+          circuitControlSettings ← section.v[CircuitControlSettings]("circuit-control")
+          circuitStateReportingInterval ← section.magicOption[FiniteDuration]("circuit-state-reporting-interval")
         } yield propsRaw(eventLogToResolve, resolveSettings, warningThreshold, circuitControlSettings, circuitStateReportingInterval, autoConnect)
       } else {
         ActorDevNullSubscriberWithAutoSubscribe.props[Event](1, if (autoConnect) Some(ctx.eventStream) else None).success
@@ -113,14 +113,14 @@ private[almhirt] class EventLogWriterImpl(
         val start = Deadline.now
         val f = (eventLog ? EventLog.LogEvent(event, true))(circuitControlSettings.callTimeout).mapCastTo[EventLog.LogEventResponse]
         circuitBreaker.fused(f).onComplete({
-          case scalaz.Failure(problem) =>
+          case scalaz.Failure(problem) ⇒
             self ! EventLog.EventNotLogged(event.eventId, problem)
             reportMissedEvent(event, MajorSeverity, problem)
             reportMajorFailure(problem)
-          case scalaz.Success(rsp) => self ! rsp
+          case scalaz.Success(rsp) ⇒ self ! rsp
         })
 
-        f.onSuccess(rsp =>
+        f.onSuccess(rsp ⇒
           if (start.lapExceeds(warningThreshold))
             logWarning(s"Wrinting event '${event.eventId.value}' took longer than ${warningThreshold.defaultUnitString}: ${start.lap.defaultUnitString}"))
       } else {
@@ -139,13 +139,13 @@ private[almhirt] class EventLogWriterImpl(
       reportMajorFailure(problem)
       request(1)
 
-    case m: ActorMessages.CircuitAllWillFail =>
+    case m: ActorMessages.CircuitAllWillFail ⇒
       context.become(receiveCircuitOpen(eventLog))
       self ! DisplayCircuitState
 
-    case DisplayCircuitState =>
+    case DisplayCircuitState ⇒
       if (log.isInfoEnabled)
-        circuitBreaker.state.onSuccess(s => log.info(s"Circuit state: $s"))
+        circuitBreaker.state.onSuccess(s ⇒ log.info(s"Circuit state: $s"))
 
   }
 
@@ -162,14 +162,14 @@ private[almhirt] class EventLogWriterImpl(
       reportMajorFailure(problem)
       request(1)
 
-    case m: ActorMessages.CircuitNotAllWillFail =>
+    case m: ActorMessages.CircuitNotAllWillFail ⇒
       context.become(receiveCircuitClosed(eventLog))
       self ! DisplayCircuitState
 
-    case DisplayCircuitState =>
+    case DisplayCircuitState ⇒
       if (log.isInfoEnabled) {
-        circuitBreaker.state.onSuccess(s => logInfo(s"Circuit state: $s"))
-        circuitStateReportingInterval.foreach(interval =>
+        circuitBreaker.state.onSuccess(s ⇒ logInfo(s"Circuit state: $s"))
+        circuitStateReportingInterval.foreach(interval ⇒
           context.system.scheduler.scheduleOnce(interval, self, DisplayCircuitState))
       }
   }
@@ -178,7 +178,7 @@ private[almhirt] class EventLogWriterImpl(
 
   override def preStart() {
     circuitBreaker.defaultActorListeners(self)
-      .onWarning((n, max) => logWarning(s"$n failures in a row. $max will cause the circuit to open."))
+      .onWarning((n, max) ⇒ logWarning(s"$n failures in a row. $max will cause the circuit to open."))
 
     self ! Resolve
   }

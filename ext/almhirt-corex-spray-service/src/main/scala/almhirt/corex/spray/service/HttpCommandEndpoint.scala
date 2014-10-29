@@ -28,16 +28,16 @@ object HttpCommandEndpoint {
     commandResponseMarshaller: Marshaller[CommandResponse],
     problemMarshaller: Marshaller[Problem])
 
-  def paramsFactory(implicit ctx: AlmhirtContext): AlmValidation[(ActorRef, Unmarshaller[Command], Marshaller[CommandResponse], Marshaller[Problem]) => HttpCommandEndpointParams] = {
+  def paramsFactory(implicit ctx: AlmhirtContext): AlmValidation[(ActorRef, Unmarshaller[Command], Marshaller[CommandResponse], Marshaller[Problem]) ⇒ HttpCommandEndpointParams] = {
     import com.typesafe.config.Config
     import almhirt.configuration._
     import scala.concurrent.duration.FiniteDuration
     for {
-      section <- ctx.config.v[Config]("almhirt.http.endpoints.command-endpoint")
-      maxSyncDuration <- section.v[FiniteDuration]("max-sync-duration")
-      selector <- section.v[ExtendedExecutionContextSelector]("execution-context-selector")
+      section ← ctx.config.v[Config]("almhirt.http.endpoints.command-endpoint")
+      maxSyncDuration ← section.v[FiniteDuration]("max-sync-duration")
+      selector ← section.v[ExtendedExecutionContextSelector]("execution-context-selector")
     } yield {
-      (commandEndpoint: ActorRef, commandUnmarshaller: Unmarshaller[Command], commandResponseMarshaller: Marshaller[CommandResponse], problemMarshaller: Marshaller[Problem]) =>
+      (commandEndpoint: ActorRef, commandUnmarshaller: Unmarshaller[Command], commandResponseMarshaller: Marshaller[CommandResponse], problemMarshaller: Marshaller[Problem]) ⇒
         HttpCommandEndpointParams(commandEndpoint, maxSyncDuration, selector, commandUnmarshaller, commandResponseMarshaller, problemMarshaller)
     }
   }
@@ -58,7 +58,7 @@ trait HttpCommandEndpoint extends Directives {
 
   val executeCommandTerminator = pathPrefix("execute") {
     pathEnd {
-      parameter('flat ?) { flatParam =>
+      parameter('flat ?) { flatParam ⇒
 
         executeCommand { cmd ⇒
           implicit ctx ⇒ {

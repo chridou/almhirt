@@ -12,7 +12,7 @@ trait SillyHerderService
   extends AlmHttpEndpoint
   with HttpHerderService
   with HttpService
-  with Directives { self: Actor with ActorLogging with HasAlmhirtContext =>
+  with Directives { self: Actor with ActorLogging with HasAlmhirtContext ⇒
 
   def route = herderTerminator
 }

@@ -100,7 +100,7 @@ object ToJsonCordDematerializer extends DematerializerTemplate[Cord @@ WarpTags.
 */
   private def launderString(str: String): Cord = {
     val buf = new StringBuilder
-    for (i <- 0 until str.length) {
+    for (i ← 0 until str.length) {
       val c = str.charAt(i)
       buf.append(c match {
         case '"' ⇒ "\\\""

@@ -12,24 +12,24 @@ trait CircuitControl {
   def circumvent(): Unit
   def state: AlmFuture[CircuitState]
 
-  def onOpened(listener: () => Unit): CircuitControl
-  def onHalfOpened(listener: () => Unit): CircuitControl
-  def onClosed(listener: () => Unit): CircuitControl
-  def onFuseRemoved(listener: () => Unit): CircuitControl
-  def onDestroyed(listener: () => Unit): CircuitControl
-  def onCircumvented(listener: () => Unit): CircuitControl
-  def onWarning(listener: (Int, Int) => Unit): CircuitControl
+  def onOpened(listener: () ⇒ Unit): CircuitControl
+  def onHalfOpened(listener: () ⇒ Unit): CircuitControl
+  def onClosed(listener: () ⇒ Unit): CircuitControl
+  def onFuseRemoved(listener: () ⇒ Unit): CircuitControl
+  def onDestroyed(listener: () ⇒ Unit): CircuitControl
+  def onCircumvented(listener: () ⇒ Unit): CircuitControl
+  def onWarning(listener: (Int, Int) ⇒ Unit): CircuitControl
 }
 
 object CircuitControl {
   implicit class CircuitControlOps(self: CircuitControl) {
     def defaultActorListeners(actor: akka.actor.ActorRef): CircuitControl =
-      self.onOpened(() => actor ! ActorMessages.CircuitOpened)
-        .onHalfOpened(() => actor ! ActorMessages.CircuitHalfOpened)
-        .onClosed(() => actor ! ActorMessages.CircuitClosed)
-        .onFuseRemoved(() => actor ! ActorMessages.CircuitFuseRemoved)
-        .onDestroyed(() => actor ! ActorMessages.CircuitDestroyed)
-        .onCircumvented(() => actor ! ActorMessages.CircuitCircumvented)
+      self.onOpened(() ⇒ actor ! ActorMessages.CircuitOpened)
+        .onHalfOpened(() ⇒ actor ! ActorMessages.CircuitHalfOpened)
+        .onClosed(() ⇒ actor ! ActorMessages.CircuitClosed)
+        .onFuseRemoved(() ⇒ actor ! ActorMessages.CircuitFuseRemoved)
+        .onDestroyed(() ⇒ actor ! ActorMessages.CircuitDestroyed)
+        .onCircumvented(() ⇒ actor ! ActorMessages.CircuitCircumvented)
   }
 }
 
@@ -60,13 +60,13 @@ object CircuitStartState {
 
   def parseString(str: String): AlmValidation[CircuitStartState] =
     str.toLowerCase() match {
-      case "closed" => Closed.success
-      case "half-open" => HalfOpen.success
-      case "open" => Open.success
-      case "fuse-removed" => FuseRemoved.success
-      case "destroyed" => Destroyed.success
-      case "circumvented" => Circumvented.success
-      case x => ParsingProblem(s""""$x is not a circuit start state.""").failure
+      case "closed" ⇒ Closed.success
+      case "half-open" ⇒ HalfOpen.success
+      case "open" ⇒ Open.success
+      case "fuse-removed" ⇒ FuseRemoved.success
+      case "destroyed" ⇒ Destroyed.success
+      case "circumvented" ⇒ Circumvented.success
+      case x ⇒ ParsingProblem(s""""$x is not a circuit start state.""").failure
     }
 }
 
@@ -94,8 +94,8 @@ object CircuitState {
         "Closed"
       else
         warningLevel match {
-          case None => s"Closed(failures: $failureCount, maxFailures: $maxFailures)"
-          case Some(wl) => s"Closed(failures: $failureCount, maxFailures: $maxFailures, warn at $wl)"
+          case None ⇒ s"Closed(failures: $failureCount, maxFailures: $maxFailures)"
+          case Some(wl) ⇒ s"Closed(failures: $failureCount, maxFailures: $maxFailures, warn at $wl)"
         }
   }
   final case class HalfOpen(ongoingRecoverAttempt: Boolean) extends NotAllWillFailState {

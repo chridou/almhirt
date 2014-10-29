@@ -34,19 +34,19 @@ object HttpEventPublisher {
     implicit val extr = almhirt.httpx.spray.HttpMethodConfigExtractor
     val path = s"almhirt.components.misc.event-sink-hub.event-publishers.http-event-publishers.$httpEventPublisherName"
     for {
-      section <- ctx.config.v[com.typesafe.config.Config](path)
-      enabled <- section.v[Boolean]("enabled")
-      autoConnect <- section.v[Boolean]("auto-connect")
-      res <- if (enabled) {
+      section ← ctx.config.v[com.typesafe.config.Config](path)
+      enabled ← section.v[Boolean]("enabled")
+      autoConnect ← section.v[Boolean]("auto-connect")
+      res ← if (enabled) {
         for {
-          endpointUri <- section.v[String]("endpoint-uri")
-          method <- section.v[HttpMethod]("method")
-          contentMediaTypeStr <- section.v[String]("content-media-type")
-          mediaType <- inTryCatch { MediaType.custom(contentMediaTypeStr) }
-          addEventId <- section.v[Boolean]("add-event-id")
-          missedEventSeverity <- section.v[almhirt.problem.Severity]("missed-event-severity")
-          circuitControlSettings <- section.v[CircuitControlSettings]("circuit-control")
-          circuitStateReportingInterval <- section.magicOption[FiniteDuration]("circuit-state-reporting-interval")
+          endpointUri ← section.v[String]("endpoint-uri")
+          method ← section.v[HttpMethod]("method")
+          contentMediaTypeStr ← section.v[String]("content-media-type")
+          mediaType ← inTryCatch { MediaType.custom(contentMediaTypeStr) }
+          addEventId ← section.v[Boolean]("add-event-id")
+          missedEventSeverity ← section.v[almhirt.problem.Severity]("missed-event-severity")
+          circuitControlSettings ← section.v[CircuitControlSettings]("circuit-control")
+          circuitStateReportingInterval ← section.magicOption[FiniteDuration]("circuit-state-reporting-interval")
         } yield propsRaw(endpointUri, method, mediaType, addEventId, if (autoConnect) Some(ctx.eventStream) else None, circuitControlSettings, circuitStateReportingInterval, missedEventSeverity)
       } else {
         ActorDevNullSubscriberWithAutoSubscribe.props[Event](1, if (autoConnect) Some(ctx.eventStream) else None).success

@@ -49,9 +49,9 @@ object ProblemCause {
   implicit class ProblemCauseOps(self: ProblemCause) {
     def toProblem: Problem =
       self match {
-        case CauseIsProblem(p) => p
-        case CauseIsThrowable(HasAThrowable(exn)) => almhirt.common.ExceptionCaughtProblem(exn)
-        case CauseIsThrowable(d: HasAThrowableDescribed) => almhirt.common.UnspecifiedProblem(s"There was a description of an exception:\n$d")
+        case CauseIsProblem(p) ⇒ p
+        case CauseIsThrowable(HasAThrowable(exn)) ⇒ almhirt.common.ExceptionCaughtProblem(exn)
+        case CauseIsThrowable(d: HasAThrowableDescribed) ⇒ almhirt.common.UnspecifiedProblem(s"There was a description of an exception:\n$d")
       }
 
     def unwrap(recursively: Boolean = false): ProblemCause =
@@ -68,7 +68,7 @@ object ProblemCause {
             r.unwrap(recursively)
           else
             r
-        case x => x
+        case x ⇒ x
       }
   }
 }

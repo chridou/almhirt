@@ -45,7 +45,7 @@ class FreakySpike(implicit override val almhirtContext: AlmhirtContext) extends 
   var badSent = 0
 
   def receive: Receive = {
-    case DoSomething =>
+    case DoSomething ⇒
       val res = if (mayBeGoodLeft > 0) {
         mayBeGoodLeft -= 1
         badSent = 0
@@ -60,12 +60,12 @@ class FreakySpike(implicit override val almhirtContext: AlmhirtContext) extends 
           mayBeGoodLeft = 100
         AlmFuture.failed(UnspecifiedProblem(s"Woof!"))
       }
-      circuitBreaker.fused(res).onFailure({ problem =>
+      circuitBreaker.fused(res).onFailure({ problem ⇒
         reportFailure(problem, getSeverity)
       })
       context.system.scheduler.scheduleOnce((rnd.nextInt(300) + 100).millis, self, DoSomething)
 
-    case ChangeCircuitBreakerState =>
+    case ChangeCircuitBreakerState ⇒
       val r = rnd.nextInt(100) 
       if(r <= 10) {
         circuitBreaker.removeFuse()

@@ -28,22 +28,22 @@ object HttpEventLogEndpoint {
     eventsMarshaller: Marshaller[Seq[Event]],
     problemMarshaller: Marshaller[Problem])
 
-  def paramsFactory(implicit ctx: AlmhirtContext): AlmValidation[(ActorRef, Marshaller[Event], Marshaller[Seq[Event]], Marshaller[Problem]) => HttpEventLogEndpointParams] = {
+  def paramsFactory(implicit ctx: AlmhirtContext): AlmValidation[(ActorRef, Marshaller[Event], Marshaller[Seq[Event]], Marshaller[Problem]) ⇒ HttpEventLogEndpointParams] = {
     import com.typesafe.config.Config
     import almhirt.configuration._
     import scala.concurrent.duration.FiniteDuration
     for {
-      section <- ctx.config.v[Config]("almhirt.http.endpoints.event-log-endpoint")
-      maxQueryDuration <- section.v[FiniteDuration]("max-query-duration")
-      selector <- section.v[ExtendedExecutionContextSelector]("execution-context-selector")
+      section ← ctx.config.v[Config]("almhirt.http.endpoints.event-log-endpoint")
+      maxQueryDuration ← section.v[FiniteDuration]("max-query-duration")
+      selector ← section.v[ExtendedExecutionContextSelector]("execution-context-selector")
     } yield {
-      (eventLog: ActorRef, eventMarshaller: Marshaller[Event], eventsMarshaller: Marshaller[Seq[Event]], problemMarshaller: Marshaller[Problem]) =>
+      (eventLog: ActorRef, eventMarshaller: Marshaller[Event], eventsMarshaller: Marshaller[Seq[Event]], problemMarshaller: Marshaller[Problem]) ⇒
         HttpEventLogEndpointParams(eventLog, maxQueryDuration, selector, eventMarshaller, eventsMarshaller, problemMarshaller)
     }
   }
 }
 
-trait HttpEventLogEndpoint extends Directives { me: Actor with AlmHttpEndpoint with HasAlmhirtContext =>
+trait HttpEventLogEndpoint extends Directives { me: Actor with AlmHttpEndpoint with HasAlmhirtContext ⇒
   import almhirt.eventlog.EventLog
 
   def httpEventLogEndpointParams: HttpEventLogEndpoint.HttpEventLogEndpointParams
@@ -54,32 +54,32 @@ trait HttpEventLogEndpoint extends Directives { me: Actor with AlmHttpEndpoint w
   implicit private val problemMarshaller = httpEventLogEndpointParams.problemMarshaller
 
   val eventlogQueryTerminator = pathPrefix("event-log") {
-    pathPrefix(Segment) { eventId =>
+    pathPrefix(Segment) { eventId ⇒
       pathEnd {
-        parameter('uuid ?) { uuid =>
+        parameter('uuid ?) { uuid ⇒
           get {
-            implicit ctx =>
+            implicit ctx ⇒
               val fut =
                 for {
-                  validatedEventId <- AlmFuture.completed {
+                  validatedEventId ← AlmFuture.completed {
                     (uuid.map(_.toLowerCase()) match {
-                      case Some("true") =>
+                      case Some("true") ⇒
                         almhirt.converters.MiscConverters.uuidStringToBase64(eventId)
-                      case Some("false") =>
+                      case Some("false") ⇒
                         eventId.success
-                      case Some(x) =>
+                      case Some(x) ⇒
                         BadDataProblem(s""""?uuid=$x" is not allowed for ?uuid. Only "true" or "false".""").failure
-                      case None =>
+                      case None ⇒
                         eventId.success
                     }).flatMap(ValidatedEventId(_))
                   }
-                  res <- (httpEventLogEndpointParams.eventLog ? EventLog.FindEvent(validatedEventId))(httpEventLogEndpointParams.maxQueryDuration)
+                  res ← (httpEventLogEndpointParams.eventLog ? EventLog.FindEvent(validatedEventId))(httpEventLogEndpointParams.maxQueryDuration)
                     .mapCastTo[EventLog.FindEventResponse].collectV {
-                      case EventLog.FoundEvent(id, Some(event)) =>
+                      case EventLog.FoundEvent(id, Some(event)) ⇒
                         event.success
-                      case EventLog.FoundEvent(id, None) =>
+                      case EventLog.FoundEvent(id, None) ⇒
                         NotFoundProblem(s"""No event found with id "${id.value}. It might appear later.""").failure
-                      case EventLog.FindEventFailed(id, problem) =>
+                      case EventLog.FindEventFailed(id, problem) ⇒
                         problem.failure
                     }
                 } yield res
@@ -89,24 +89,24 @@ trait HttpEventLogEndpoint extends Directives { me: Actor with AlmHttpEndpoint w
       }
     } ~
       get {
-        parameters('from ?, 'to?, 'skip ?, 'take ?) { (from, to, skip, take) =>
-          implicit ctx =>
+        parameters('from ?, 'to?, 'skip ?, 'take ?) { (from, to, skip, take) ⇒
+          implicit ctx ⇒
             val fut =
               for {
-                (eventLogMessage) <- AlmFuture.completed {
+                (eventLogMessage) ← AlmFuture.completed {
                   for {
-                    from <- from.map(_.toLocalDateTimeAlm.map(x => LocalDateTimeRange.From(x))) getOrElse LocalDateTimeRange.BeginningOfTime.success
-                    to <- to.map(_.toLocalDateTimeAlm.map(x => LocalDateTimeRange.To(x))) getOrElse LocalDateTimeRange.EndOfTime.success
-                    traverseWindow <- TraverseWindow.parseFromStringOptions(skip, take)
+                    from ← from.map(_.toLocalDateTimeAlm.map(x ⇒ LocalDateTimeRange.From(x))) getOrElse LocalDateTimeRange.BeginningOfTime.success
+                    to ← to.map(_.toLocalDateTimeAlm.map(x ⇒ LocalDateTimeRange.To(x))) getOrElse LocalDateTimeRange.EndOfTime.success
+                    traverseWindow ← TraverseWindow.parseFromStringOptions(skip, take)
                   } yield {
                     EventLog.FetchEvents(LocalDateTimeRange(from, to), traverseWindow)
                   }
                 }
-                rsp <- (httpEventLogEndpointParams.eventLog ? eventLogMessage)(httpEventLogEndpointParams.maxQueryDuration).mapCastTo[EventLog.FetchEventsResponse]
-                events <- rsp match {
-                  case EventLog.FetchedEvents(enumerator) =>
-                    enumerator.run(Iteratee.fold[Event, Vector[Event]](Vector.empty) { case (acc, elem) => acc :+ elem }).toAlmFuture
-                  case EventLog.FetchEventsFailed(problem) =>
+                rsp ← (httpEventLogEndpointParams.eventLog ? eventLogMessage)(httpEventLogEndpointParams.maxQueryDuration).mapCastTo[EventLog.FetchEventsResponse]
+                events ← rsp match {
+                  case EventLog.FetchedEvents(enumerator) ⇒
+                    enumerator.run(Iteratee.fold[Event, Vector[Event]](Vector.empty) { case (acc, elem) ⇒ acc :+ elem }).toAlmFuture
+                  case EventLog.FetchEventsFailed(problem) ⇒
                     AlmFuture.failed(problem)
                 }
               } yield events

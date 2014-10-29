@@ -43,14 +43,14 @@ object AggregateRootHive {
     import almhirt.almvalidation.kit._
     val path = "almhirt.components.aggregates.aggregate-root-hive" + hiveConfigName.map("." + _).getOrElse("")
     for {
-      section <- ctx.config.v[com.typesafe.config.Config](path)
-      aggregateEventLogPath <- section.v[String]("aggregate-event-log-path")
-      aggregateEventLogToResolve <- inTryCatch { ResolvePath(ActorPath.fromString(aggregateEventLogPath)) }
-      snapShotStoragePath <- section.magicOption[String]("snapshot-storage-path")
-      snapShotStorageToResolve <- inTryCatch { snapShotStoragePath.map(path => ResolvePath(ActorPath.fromString(path))) }
-      resolveSettings <- section.v[ResolveSettings]("resolve-settings")
-      commandBuffersize <- section.v[Int]("command-buffer-size")
-      enqueudEventsThrottlingThresholdFactor <- section.v[Int]("enqueud-events-throttling-threshold-factor")
+      section ← ctx.config.v[com.typesafe.config.Config](path)
+      aggregateEventLogPath ← section.v[String]("aggregate-event-log-path")
+      aggregateEventLogToResolve ← inTryCatch { ResolvePath(ActorPath.fromString(aggregateEventLogPath)) }
+      snapShotStoragePath ← section.magicOption[String]("snapshot-storage-path")
+      snapShotStorageToResolve ← inTryCatch { snapShotStoragePath.map(path ⇒ ResolvePath(ActorPath.fromString(path))) }
+      resolveSettings ← section.v[ResolveSettings]("resolve-settings")
+      commandBuffersize ← section.v[Int]("command-buffer-size")
+      enqueudEventsThrottlingThresholdFactor ← section.v[Int]("enqueud-events-throttling-threshold-factor")
     } yield propsRaw(
       hiveDescriptor,
       aggregateEventLogToResolve,

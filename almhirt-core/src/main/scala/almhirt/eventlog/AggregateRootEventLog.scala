@@ -19,18 +19,18 @@ object AggregateRootEventLog {
   object VersionRangeStartMarker {
     def fromLongOption(v: Option[Long]): VersionRangeStartMarker =
       v match {
-        case Some(v) if v >= 0 => FromVersion(AggregateRootVersion(v))
-        case _ => FromStart
+        case Some(v) if v >= 0 ⇒ FromVersion(AggregateRootVersion(v))
+        case _ ⇒ FromStart
       }
 
     def parseStringOption(v: Option[String]): AlmValidation[VersionRangeStartMarker] = {
       v match {
-        case None => FromStart.success
-        case Some(v) =>
+        case None ⇒ FromStart.success
+        case Some(v) ⇒
           if (v.trim().isEmpty())
             FromStart.success
           else
-            v.toLongAlm.map(v => fromLongOption(Some(v)))
+            v.toLongAlm.map(v ⇒ fromLongOption(Some(v)))
       }
     }
   }
@@ -42,20 +42,20 @@ object AggregateRootEventLog {
   object VersionRangeEndMarker {
     def fromLongOption(v: Option[Long]): VersionRangeEndMarker =
       v match {
-        case Some(v) if v >= 0 && v < Int.MaxValue => ToVersion(AggregateRootVersion(v))
-        case Some(v) if v == Int.MaxValue => ToEnd
-        case Some(v) if v < 0 => ToVersion(AggregateRootVersion(0L))
-        case None => ToEnd
+        case Some(v) if v >= 0 && v < Int.MaxValue ⇒ ToVersion(AggregateRootVersion(v))
+        case Some(v) if v == Int.MaxValue ⇒ ToEnd
+        case Some(v) if v < 0 ⇒ ToVersion(AggregateRootVersion(0L))
+        case None ⇒ ToEnd
       }
 
     def parseStringOption(v: Option[String]): AlmValidation[VersionRangeEndMarker] = {
       v match {
-        case None => ToEnd.success
-        case Some(v) =>
+        case None ⇒ ToEnd.success
+        case Some(v) ⇒
           if (v.trim().isEmpty())
             ToEnd.success
           else
-            v.toLongAlm.map(v => fromLongOption(Some(v)))
+            v.toLongAlm.map(v ⇒ fromLongOption(Some(v)))
       }
     }
   }

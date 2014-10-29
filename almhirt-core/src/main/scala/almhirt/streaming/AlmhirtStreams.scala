@@ -75,21 +75,21 @@ object AlmhirtStreams {
     import almhirt.almvalidation.kit._
     AlmFuture.completed {
       for {
-        configSection <- config.v[com.typesafe.config.Config]("almhirt.streams")
-        useDedicatedDispatcher <- configSection.v[Boolean]("use-dedicated-dispatcher")
-        soakCommands <- configSection.v[Boolean]("soak-commands")
-        soakEvents <- configSection.v[Boolean]("soak-events")
-        commandBufferSize <- configSection.v[Int]("command-buffer-size")
+        configSection ← config.v[com.typesafe.config.Config]("almhirt.streams")
+        useDedicatedDispatcher ← configSection.v[Boolean]("use-dedicated-dispatcher")
+        soakCommands ← configSection.v[Boolean]("soak-commands")
+        soakEvents ← configSection.v[Boolean]("soak-events")
+        commandBufferSize ← configSection.v[Int]("command-buffer-size")
           .constrained(_ >= 0, x ⇒ s"command-buffer-size must be grater or equal 0, not $x.")
-        eventBufferSize <- configSection.v[Int]("event-buffer-size")
+        eventBufferSize ← configSection.v[Int]("event-buffer-size")
           .constrained(_ >= 0, x ⇒ s"event-buffer-size must be grater or equal 0, not $x.")
-        initialFanoutCommands <- configSection.v[Int]("initial-commands-fanout-buffer-size")
+        initialFanoutCommands ← configSection.v[Int]("initial-commands-fanout-buffer-size")
           .constrained(x ⇒ AlmMath.nextPowerOf2(x) == x, x ⇒ s"initial-commands-fanout-buffer-size must be a power of 2 and not $x.")
-        maxFanoutCommands <- configSection.v[Int]("max-commands-fanout-buffer-size")
+        maxFanoutCommands ← configSection.v[Int]("max-commands-fanout-buffer-size")
           .constrained(x ⇒ AlmMath.nextPowerOf2(x) == x, x ⇒ s"max-commands-fanout-buffer-size must be a power of 2 and not $x.")
-        initialFanoutEvents <- configSection.v[Int]("initial-events-fanout-buffer-size")
+        initialFanoutEvents ← configSection.v[Int]("initial-events-fanout-buffer-size")
           .constrained(x ⇒ AlmMath.nextPowerOf2(x) == x, x ⇒ s"initial-events-fanout-buffer-size must be a power of 2 and not $x.")
-        maxFanoutEvents <- configSection.v[Int]("max-events-fanout-buffer-size")
+        maxFanoutEvents ← configSection.v[Int]("max-events-fanout-buffer-size")
           .constrained(x ⇒ AlmMath.nextPowerOf2(x) == x, x ⇒ s"imax-events-fanout-buffer-size must be a power of 2 and not $x.")
       } yield (
         useDedicatedDispatcher,
@@ -141,7 +141,7 @@ object AlmhirtStreams {
             val eventsPub = eventFlow.runWith(PublisherTap(eventShipperOut), eventsDrain)
 
             if (soakEvents)
-              PublisherTap(eventsPub).foreach(_ => ())
+              PublisherTap(eventsPub).foreach(_ ⇒ ())
 
             // commands
 
@@ -156,7 +156,7 @@ object AlmhirtStreams {
             val commandsPub = commandFlow.runWith(PublisherTap(commandShipperOut), commandsDrain)
 
             if (soakCommands)
-              PublisherTap(commandsPub).foreach(_ => ())
+              PublisherTap(commandsPub).foreach(_ ⇒ ())
 
             new AlmhirtStreams with Stoppable {
               override val eventBroker = eventShipperIn

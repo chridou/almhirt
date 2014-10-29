@@ -19,13 +19,13 @@ trait CustomHttpSerializerByLookUp[T] extends CustomHttpSerializerTemplate[T] wi
   
   protected def packInner(what: TT): AlmValidation[WarpPackage] =
     for {
-      packer <- myRiftWarp.packers.getFor(what, None, None)
-      packed <- packer.packBlind(what)(myRiftWarp.packers)
+      packer ← myRiftWarp.packers.getFor(what, None, None)
+      packed ← packer.packBlind(what)(myRiftWarp.packers)
     } yield packed
 
   protected def unpackInner(what: WarpPackage): AlmValidation[TT] =
     for {
-      unpacked <- unpack(what, None, None)(myRiftWarp.unpackers)
-      casted <- unpacked.castTo[TT](tag)
+      unpacked ← unpack(what, None, None)(myRiftWarp.unpackers)
+      casted ← unpacked.castTo[TT](tag)
     } yield casted
 }

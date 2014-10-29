@@ -18,7 +18,7 @@ object CommandAcceptedWarpPackaging extends WarpPacker[CommandAccepted] with Reg
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[CommandAccepted] =
     withFastLookUp(from) { lookup ⇒
       for {
-        id <- lookup.getAs[String]("id")
+        id ← lookup.getAs[String]("id")
       } yield CommandAccepted(CommandId(id))
     }
 }
@@ -33,8 +33,8 @@ object CommandNotAcceptedWarpPackaging extends WarpPacker[CommandNotAccepted] wi
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[CommandNotAccepted] =
     withFastLookUp(from) { lookup ⇒
       for {
-        id <- lookup.getAs[String]("id")
-        problem <- lookup.getWith("problem", ProblemPackaging)
+        id ← lookup.getAs[String]("id")
+        problem ← lookup.getWith("problem", ProblemPackaging)
       } yield CommandNotAccepted(CommandId(id), problem)
     }
 }
@@ -49,8 +49,8 @@ object TrackedCommandResultWarpPackaging extends WarpPacker[TrackedCommandResult
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[TrackedCommandResult] =
     withFastLookUp(from) { lookup ⇒
       for {
-        id <- lookup.getAs[String]("id")
-        status <- lookup.getWith("status", CommandStatusCommandResultWarpPackaging)
+        id ← lookup.getAs[String]("id")
+        status ← lookup.getWith("status", CommandStatusCommandResultWarpPackaging)
       } yield TrackedCommandResult(CommandId(id), status)
     }
 }
@@ -65,8 +65,8 @@ object TrackingFailedWarpPackaging extends WarpPacker[TrackingFailed] with Regis
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[TrackingFailed] =
     withFastLookUp(from) { lookup ⇒
       for {
-        id <- lookup.getAs[String]("id")
-        problem <- lookup.getWith("problem", ProblemPackaging)
+        id ← lookup.getAs[String]("id")
+        problem ← lookup.getWith("problem", ProblemPackaging)
       } yield TrackingFailed(CommandId(id), problem)
     }
 }

@@ -13,9 +13,9 @@ import scala.reflect.ClassTag
 //
 //  private def serializeWithRiftWarp(what: TIn, channel: String, options: Map[String, Any]): AlmValidation[(String, WarpDescriptor)] =
 //    for {
-//      theChannel <- WarpChannels.getTextChannel(channel)
-//      serialized <- riftWarp.departure(theChannel.channelDescriptor, what, options)
-//      typedSerialized <- serialized._1.castTo[String]
+//      theChannel ← WarpChannels.getTextChannel(channel)
+//      serialized ← riftWarp.departure(theChannel.channelDescriptor, what, options)
+//      typedSerialized ← serialized._1.castTo[String]
 //    } yield (typedSerialized, serialized._2)
 //
 //  override def serialize(channel: String)(what: TIn, options: Map[String, Any] = Map.empty): AlmValidation[(String, Option[String])] =

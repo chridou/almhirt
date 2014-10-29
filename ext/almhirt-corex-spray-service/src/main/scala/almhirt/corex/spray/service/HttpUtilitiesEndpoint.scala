@@ -21,26 +21,26 @@ object HttpUtilitiesEndpoint {
     uuidMarshaller: Marshaller[java.util.UUID],
     problemMarshaller: Marshaller[Problem])
 
-  def paramsFactory(implicit ctx: AlmhirtContext): AlmValidation[(Marshaller[LocalDateTime], Marshaller[DateTime], Marshaller[String], Marshaller[java.util.UUID], Marshaller[Problem]) => HttpUtilitiesEndpointParams] = {
+  def paramsFactory(implicit ctx: AlmhirtContext): AlmValidation[(Marshaller[LocalDateTime], Marshaller[DateTime], Marshaller[String], Marshaller[java.util.UUID], Marshaller[Problem]) ⇒ HttpUtilitiesEndpointParams] = {
     import com.typesafe.config.Config
     import almhirt.configuration._
     import scala.concurrent.duration.FiniteDuration
     for {
-      section <- ctx.config.v[Config]("almhirt.http.endpoints.utilities-endpoint")
-      returnConfigEnabled <- section.v[Boolean]("return-config-enabled")
+      section ← ctx.config.v[Config]("almhirt.http.endpoints.utilities-endpoint")
+      returnConfigEnabled ← section.v[Boolean]("return-config-enabled")
     } yield {
       (localDateTimeMarshaller: Marshaller[LocalDateTime],
       dateTimeMarshaller: Marshaller[DateTime],
       stringMarshaller: Marshaller[String],
       uuidMarshaller: Marshaller[java.util.UUID],
-      problemMarshaller: Marshaller[Problem]) =>
+      problemMarshaller: Marshaller[Problem]) ⇒
         HttpUtilitiesEndpointParams(returnConfigEnabled, localDateTimeMarshaller, dateTimeMarshaller, stringMarshaller, uuidMarshaller, problemMarshaller)
     }
   }
 
 }
 
-trait HttpUtilitiesEndpoint extends Directives { me: Actor with AlmHttpEndpoint with HasAlmhirtContext =>
+trait HttpUtilitiesEndpoint extends Directives { me: Actor with AlmHttpEndpoint with HasAlmhirtContext ⇒
   import HttpUtilitiesEndpoint._
 
   protected def httpUtilitiesEndpointParams: HttpUtilitiesEndpointParams
@@ -54,7 +54,7 @@ trait HttpUtilitiesEndpoint extends Directives { me: Actor with AlmHttpEndpoint 
   val utilitiesTerminator =
     pathPrefix("config") {
       pathEnd {
-        get { ctx =>
+        get { ctx ⇒
           if (httpUtilitiesEndpointParams.returnConfigEnabled)
             ctx.complete(almhirtContext.config.root().render())
           else
@@ -62,7 +62,7 @@ trait HttpUtilitiesEndpoint extends Directives { me: Actor with AlmHttpEndpoint 
         }
       }
     } ~ pathPrefix("date") {
-      parameter('local ?) { local =>
+      parameter('local ?) { local ⇒
         pathEnd {
           get {
             if (local.isDefined) {
@@ -81,7 +81,7 @@ trait HttpUtilitiesEndpoint extends Directives { me: Actor with AlmHttpEndpoint 
       }
     } ~ pathPrefix("uuid") {
       pathEnd {
-        parameter('base64 ?) { base64param =>
+        parameter('base64 ?) { base64param ⇒
           get {
             if (base64param.isDefined)
               complete(almhirtContext.getUuid)
@@ -91,26 +91,26 @@ trait HttpUtilitiesEndpoint extends Directives { me: Actor with AlmHttpEndpoint 
         }
       }
     } ~ pathPrefix("convert") {
-      pathPrefix("uuid-string-to-base64" / Segment) { uuidStr =>
+      pathPrefix("uuid-string-to-base64" / Segment) { uuidStr ⇒
         pathEnd {
           get {
-            implicit ctx =>
+            implicit ctx ⇒
               almhirt.converters.MiscConverters.uuidStringToBase64(uuidStr).completeRequestOk
           }
         }
       } ~
-        pathPrefix("base64-to-uuid" / Segment) { b64 =>
+        pathPrefix("base64-to-uuid" / Segment) { b64 ⇒
           pathEnd {
             get {
-              implicit ctx =>
+              implicit ctx ⇒
                 almhirt.converters.MiscConverters.base64ToUuid(b64).completeRequestOk
             }
           }
         } ~
-        pathPrefix("base64-to-uuid-string" / Segment) { b64 =>
+        pathPrefix("base64-to-uuid-string" / Segment) { b64 ⇒
           pathEnd {
             get {
-              implicit ctx =>
+              implicit ctx ⇒
                 almhirt.converters.MiscConverters.base64ToUuidString(b64).completeRequestOk
             }
           }

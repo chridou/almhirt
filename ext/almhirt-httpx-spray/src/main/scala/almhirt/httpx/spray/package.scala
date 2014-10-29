@@ -73,7 +73,7 @@ package object spray {
                   }
                 case Array(pre, format) ⇒
                   pre.split("\\.") match {
-                    case Array() =>
+                    case Array() ⇒
                       AlmMediaSubTypeParts(NoVendor, StructuredContent(pre, format))
                     case Array(content) ⇒
                       AlmMediaSubTypeParts(NoVendor, StructuredContent(content, format))
@@ -89,7 +89,7 @@ package object spray {
               false)
         }
       } catch {
-        case scala.util.control.NonFatal(exn) =>
+        case scala.util.control.NonFatal(exn) ⇒
           throw new Exception(s"""Could not transform "${self.value}" to an AlmMediaType: ${exn.getMessage()}""", exn)
       }
   }
@@ -97,14 +97,14 @@ package object spray {
   implicit object HttpMethodConfigExtractor extends ConfigExtractor[HttpMethod] {
     def getValue(config: Config, path: String): AlmValidation[HttpMethod] =
       for {
-        methodStr <- config.v[String](path)
-        method <- methodStr.toUpperCase() match {
-          case "GET" => HttpMethods.GET.success
-          case "PUT" => HttpMethods.PUT.success
-          case "POST" => HttpMethods.POST.success
-          case "PATCH" => HttpMethods.PATCH.success
-          case "DELETE" => HttpMethods.DELETE.success
-          case x => ParsingProblem(s""""$x" is not a HTTP-Method.""").failure
+        methodStr ← config.v[String](path)
+        method ← methodStr.toUpperCase() match {
+          case "GET" ⇒ HttpMethods.GET.success
+          case "PUT" ⇒ HttpMethods.PUT.success
+          case "POST" ⇒ HttpMethods.POST.success
+          case "PATCH" ⇒ HttpMethods.PATCH.success
+          case "DELETE" ⇒ HttpMethods.DELETE.success
+          case x ⇒ ParsingProblem(s""""$x" is not a HTTP-Method.""").failure
         }
       } yield method
 

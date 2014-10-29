@@ -26,8 +26,8 @@ object Rematerializers {
 
     def rematerializeTyped[T](channel: String, from: T, options: Map[String, Any])(implicit tag: ClassTag[T]): AlmValidation[WarpPackage] = {
       for {
-        rematerializer <- self.getTyped[T](channel)
-        rematerialized <- rematerializer.rematerialize(from, options)
+        rematerializer ← self.getTyped[T](channel)
+        rematerialized ← rematerializer.rematerialize(from, options)
       } yield rematerialized
     }
   }

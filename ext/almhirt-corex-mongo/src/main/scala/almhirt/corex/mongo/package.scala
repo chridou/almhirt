@@ -10,8 +10,8 @@ package object mongo {
   implicit object ResolveConfigExtractor extends ConfigExtractor[MongoConnectionSettings] {
     def getValue(config: Config, path: String): AlmValidation[MongoConnectionSettings] =
       for {
-        section <- config.v[Config](path)
-        hosts <- section.v[List[String]]("hosts")
+        section ← config.v[Config](path)
+        hosts ← section.v[List[String]]("hosts")
       } yield MongoConnectionSettings(hosts)
 
     def tryGetValue(config: Config, path: String): AlmValidation[Option[MongoConnectionSettings]] =

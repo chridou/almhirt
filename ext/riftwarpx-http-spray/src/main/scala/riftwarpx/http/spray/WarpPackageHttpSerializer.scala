@@ -13,9 +13,9 @@ class WarpPackageHttpSerializer(dematerializers: Dematerializers) extends HttpSe
 
   def serialize(what: WarpPackage, mediaType: AlmMediaType)(implicit params: SerializationParams = SerializationParams.empty): AlmValidation[AlmHttpBody] =
     for {
-      theChannel <- WarpChannels.getChannel(mediaType.contentFormat)
-      serialized <- dematerializers.dematerialize(theChannel.channelDescriptor, what, Map.empty)
-      typedSerialized <- theChannel.httpTransmission match {
+      theChannel ← WarpChannels.getChannel(mediaType.contentFormat)
+      serialized ← dematerializers.dematerialize(theChannel.channelDescriptor, what, Map.empty)
+      typedSerialized ← theChannel.httpTransmission match {
         case HttpTransmissionAsBinary ⇒ serialized.castTo[Array[Byte]].map(BinaryBody)
         case HttpTransmissionAsText ⇒ serialized.castTo[String].map(TextBody)
         case NoHttpTransmission ⇒ UnspecifiedProblem(s""""$theChannel" is neither a binary nor a text channel.""").failure
@@ -28,8 +28,8 @@ class WarpPackageHttpDeserializer(rematerializers: Rematerializers) extends Http
 
   def deserialize(mediaType: AlmMediaType, what: AlmHttpBody)(implicit params: SerializationParams = SerializationParams.empty): AlmValidation[WarpPackage] =
     for {
-      theChannel <- WarpChannels.getChannel(mediaType.contentFormat)
-      result <- what match {
+      theChannel ← WarpChannels.getChannel(mediaType.contentFormat)
+      result ← what match {
         case BinaryBody(bytes) if theChannel.httpTransmission == HttpTransmissionAsBinary ⇒
           rematerializers.rematerializeTyped[Array[Byte]](theChannel.channelDescriptor, bytes, Map.empty)
         case TextBody(text) if theChannel.httpTransmission == HttpTransmissionAsText ⇒

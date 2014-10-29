@@ -11,7 +11,7 @@ class UuidTests extends FunSuite with Matchers {
   import MiscConverters._
 
   test("A base64 encoded uuid should be convertable to a UUID") {
-    for (i <- 1 to 10000) {
+    for (i ← 1 to 10000) {
       val uuid = JUUID.randomUUID()
       val b64 = uuidToBase64String(uuid)
       base64ToUuid(b64) should equal(scalaz.Success(uuid))
@@ -19,7 +19,7 @@ class UuidTests extends FunSuite with Matchers {
   }
 
   test("A base64 encoded uuid should not contain a slash!") {
-    for (i <- 1 to 100000) {
+    for (i ← 1 to 100000) {
       val uuid = JUUID.randomUUID()
       val b64 = uuidToBase64String(uuid)
       b64.contains('/') should equal(false)
@@ -27,7 +27,7 @@ class UuidTests extends FunSuite with Matchers {
   }
   
   test("A base64 encoded uuid has length 20 or 22!") {
-    for (i <- 1 to 100000) {
+    for (i ← 1 to 100000) {
       val uuid = JUUID.randomUUID()
       val b64 = uuidToBase64String(uuid)
       (b64.length == 20 || b64.length == 22) should equal(true)
@@ -35,7 +35,7 @@ class UuidTests extends FunSuite with Matchers {
   }
 
   test("A uuid string should be convertable to a base 64 string") {
-    for (i <- 1 to 10000) {
+    for (i ← 1 to 10000) {
       val uuid = JUUID.randomUUID()
       val uuidStr = uuid.toString
       val b64 = uuidStringToBase64(uuidStr).forceResult
@@ -44,7 +44,7 @@ class UuidTests extends FunSuite with Matchers {
   }
 
   test("uuid from/to string") {
-    for (i <- 1 to 1000) {
+    for (i ← 1 to 1000) {
       val uuid = JUUID.randomUUID()
       val uuidParsed = JUUID.fromString(uuid.toString())
       val uuidStr = uuid.toString

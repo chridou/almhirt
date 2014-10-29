@@ -23,37 +23,37 @@ object FusedActor {
       def state: AlmFuture[CircuitState] =
         (fusedActor ? InternalFusedActorMessage.ReportState)(timeout).mapCastTo[CircuitState]
 
-      def onOpened(listener: () => Unit): CircuitControl = {
+      def onOpened(listener: () ⇒ Unit): CircuitControl = {
         fusedActor ! InternalFusedActorMessage.OnOpened(listener)
         this
       }
 
-      def onHalfOpened(listener: () => Unit): CircuitControl = {
+      def onHalfOpened(listener: () ⇒ Unit): CircuitControl = {
         fusedActor ! InternalFusedActorMessage.OnHalfOpened(listener)
         this
       }
 
-      def onClosed(listener: () => Unit): CircuitControl = {
+      def onClosed(listener: () ⇒ Unit): CircuitControl = {
         fusedActor ! InternalFusedActorMessage.OnClosed(listener)
         this
       }
 
-      def onFuseRemoved(listener: () => Unit): CircuitControl = {
+      def onFuseRemoved(listener: () ⇒ Unit): CircuitControl = {
         fusedActor ! InternalFusedActorMessage.OnFuseRemoved(listener)
         this
       }
 
-      def onDestroyed(listener: () => Unit): CircuitControl = {
+      def onDestroyed(listener: () ⇒ Unit): CircuitControl = {
         fusedActor ! InternalFusedActorMessage.OnDestroyed(listener)
         this
       }
 
-      def onCircumvented(listener: () => Unit): CircuitControl = {
+      def onCircumvented(listener: () ⇒ Unit): CircuitControl = {
         fusedActor ! InternalFusedActorMessage.OnCircumvented(listener)
         this
       }
 
-      def onWarning(listener: (Int, Int) => Unit): CircuitControl = {
+      def onWarning(listener: (Int, Int) ⇒ Unit): CircuitControl = {
         fusedActor ! InternalFusedActorMessage.OnWarning(listener)
         this
       }
@@ -66,16 +66,16 @@ private[almhirt] object InternalFusedActorMessage {
   case object RemoveFuse
   case object Destroy
   case object Circumvent
-  final case class OnOpened(listener: () => Unit)
-  final case class OnHalfOpened(listener: () => Unit)
-  final case class OnClosed(listener: () => Unit)
-  final case class OnFuseRemoved(listener: () => Unit)
-  final case class OnDestroyed(listener: () => Unit)
-  final case class OnCircumvented(listener: () => Unit)
-  final case class OnWarning(listener: (Int, Int) => Unit)
+  final case class OnOpened(listener: () ⇒ Unit)
+  final case class OnHalfOpened(listener: () ⇒ Unit)
+  final case class OnClosed(listener: () ⇒ Unit)
+  final case class OnFuseRemoved(listener: () ⇒ Unit)
+  final case class OnDestroyed(listener: () ⇒ Unit)
+  final case class OnCircumvented(listener: () ⇒ Unit)
+  final case class OnWarning(listener: (Int, Int) ⇒ Unit)
 }
 
-trait SyncFusedActor { me: AlmActor =>
+trait SyncFusedActor { me: AlmActor ⇒
   import java.util.concurrent.CopyOnWriteArrayList
   import AlmCircuitBreaker._
 
@@ -90,18 +90,18 @@ trait SyncFusedActor { me: AlmActor =>
   private[this] var currentState: InternalState = {
     val state =
       startState match {
-        case CircuitStartState.Closed => InternalClosed
-        case CircuitStartState.HalfOpen => InternalHalfOpen
-        case CircuitStartState.Open => InternalOpen
-        case CircuitStartState.FuseRemoved => InternalFuseRemoved
-        case CircuitStartState.Destroyed => InternalDestroyed
-        case CircuitStartState.Circumvented => InternalCircumvented
+        case CircuitStartState.Closed ⇒ InternalClosed
+        case CircuitStartState.HalfOpen ⇒ InternalHalfOpen
+        case CircuitStartState.Open ⇒ InternalOpen
+        case CircuitStartState.FuseRemoved ⇒ InternalFuseRemoved
+        case CircuitStartState.Destroyed ⇒ InternalDestroyed
+        case CircuitStartState.Circumvented ⇒ InternalCircumvented
       }
     state.enter()
     state
   }
 
-  def fused[T](body: => AlmValidation[T]): AlmValidation[T] =
+  def fused[T](body: ⇒ AlmValidation[T]): AlmValidation[T] =
     fusedWithSurrogate(scalaz.Failure(CircuitOpenProblem("The circuit is open.")))(body)
 
   def fusedWithSurrogate[T](surrogate: ⇒ AlmValidation[T])(body: ⇒ AlmValidation[T]): AlmValidation[T] =
@@ -124,7 +124,7 @@ trait SyncFusedActor { me: AlmActor =>
       moveTo(newState)
       true
     } else {
-      circuitControlLoggingAdapter.foreach(log =>
+      circuitControlLoggingAdapter.foreach(log ⇒
         log.warning(s"""Attempted transition from $oldState to $newState failed. Current state was $currentState."""))
       false
     }
@@ -133,67 +133,67 @@ trait SyncFusedActor { me: AlmActor =>
   private case class AttemptTransition(origin: InternalState, target: InternalState)
 
   private val internalReceive: Receive = {
-    case AttemptTransition(origin, target) =>
+    case AttemptTransition(origin, target) ⇒
       attemptTransition(origin, origin)
 
-    case InternalFusedActorMessage.ReportState =>
+    case InternalFusedActorMessage.ReportState ⇒
       sender() ! currentState.publicState
 
-    case InternalFusedActorMessage.AttemptClose =>
+    case InternalFusedActorMessage.AttemptClose ⇒
       val res = currentState.attemptManualClose
-      circuitControlLoggingAdapter.foreach(log =>
+      circuitControlLoggingAdapter.foreach(log ⇒
         if (res) log.info("Manual reset attempt succeeded")
         else log.warning(s"""Manual reset attempt failed. Current state is ${currentState.publicState}"""))
 
-    case InternalFusedActorMessage.RemoveFuse =>
+    case InternalFusedActorMessage.RemoveFuse ⇒
       val res = currentState.attemptManualRemoveFuse
-      circuitControlLoggingAdapter.foreach(log =>
+      circuitControlLoggingAdapter.foreach(log ⇒
         if (res) log.warning("Manual remove fuse attempt succeeded")
         else log.warning(s"""Manual remove fuse attempt failed. Current state is ${currentState.publicState}"""))
 
-    case InternalFusedActorMessage.Destroy =>
+    case InternalFusedActorMessage.Destroy ⇒
       val res = currentState.attemptManualDestroyFuse
-      circuitControlLoggingAdapter.foreach(log =>
+      circuitControlLoggingAdapter.foreach(log ⇒
         if (res) log.warning("Manual destroy attempt succeeded")
         else log.warning(s"""Manual  destroy failed. Current state is ${currentState.publicState}"""))
 
-    case InternalFusedActorMessage.Circumvent =>
+    case InternalFusedActorMessage.Circumvent ⇒
       val res = currentState.manualCircumvent
-      circuitControlLoggingAdapter.foreach(log =>
+      circuitControlLoggingAdapter.foreach(log ⇒
         if (res) log.warning("Manual circumverate attempt succeeded")
         else log.warning(s"""Manual  circumverate failed. Current state is ${currentState.publicState}"""))
 
-    case InternalFusedActorMessage.OnOpened(listener) =>
+    case InternalFusedActorMessage.OnOpened(listener) ⇒
       InternalOpen addListener new Runnable { def run() { listener() } }
 
-    case InternalFusedActorMessage.OnHalfOpened(listener) =>
+    case InternalFusedActorMessage.OnHalfOpened(listener) ⇒
       InternalHalfOpen addListener new Runnable { def run() { listener() } }
 
-    case InternalFusedActorMessage.OnClosed(listener) =>
+    case InternalFusedActorMessage.OnClosed(listener) ⇒
       InternalClosed addListener new Runnable { def run() { listener() } }
 
-    case InternalFusedActorMessage.OnFuseRemoved(listener) =>
+    case InternalFusedActorMessage.OnFuseRemoved(listener) ⇒
       InternalFuseRemoved addListener new Runnable { def run() { listener() } }
 
-    case InternalFusedActorMessage.OnDestroyed(listener) =>
+    case InternalFusedActorMessage.OnDestroyed(listener) ⇒
       InternalDestroyed addListener new Runnable { def run() { listener() } }
 
-    case InternalFusedActorMessage.OnCircumvented(listener) =>
+    case InternalFusedActorMessage.OnCircumvented(listener) ⇒
       InternalCircumvented addListener new Runnable { def run() { listener() } }
 
-    case InternalFusedActorMessage.OnWarning(listener) =>
-      InternalClosed addWarningListener (currentFailures => new Runnable { def run() { listener(currentFailures, maxFailures) } })
+    case InternalFusedActorMessage.OnWarning(listener) ⇒
+      InternalClosed addWarningListener (currentFailures ⇒ new Runnable { def run() { listener(currentFailures, maxFailures) } })
 
-    case ReportState =>
-      circuitControlLoggingAdapter.flatMap(log => circuitStateReportingInterval.map((log, _))).foreach {
-        case (log, interval) =>
+    case ReportState ⇒
+      circuitControlLoggingAdapter.flatMap(log ⇒ circuitStateReportingInterval.map((log, _))).foreach {
+        case (log, interval) ⇒
           log.info(s"Current circuit state: ${currentState.publicState}")
           currentState match {
-            case InternalOpen =>
+            case InternalOpen ⇒
               context.system.scheduler.scheduleOnce(interval, self, ReportState)(callbackExecutor)
-            case InternalHalfOpen =>
+            case InternalHalfOpen ⇒
               context.system.scheduler.scheduleOnce(interval, self, ReportState)(callbackExecutor)
-            case _ =>
+            case _ ⇒
               ()
           }
       }
@@ -221,8 +221,8 @@ trait SyncFusedActor { me: AlmActor =>
       val deadline = callTimeout.fromNow
       val bodyValidation = try body catch { case scala.util.control.NonFatal(exn) ⇒ scalaz.Failure(ExceptionCaughtProblem(exn)) }
       bodyValidation.fold(
-        fail => callFails(),
-        succ =>
+        fail ⇒ callFails(),
+        succ ⇒
           if (!deadline.isOverdue)
             callSucceeds()
           else callFails())
@@ -243,12 +243,12 @@ trait SyncFusedActor { me: AlmActor =>
     private def sendStateChanged() {
       if (sendStateChangedEvents)
         this match {
-          case InternalClosed => self ! ActorMessages.CircuitClosed
-          case InternalHalfOpen => self ! ActorMessages.CircuitHalfOpened
-          case InternalOpen => self ! ActorMessages.CircuitOpened
-          case InternalFuseRemoved => self ! ActorMessages.CircuitFuseRemoved
-          case InternalDestroyed => self ! ActorMessages.CircuitDestroyed
-          case InternalCircumvented => self ! ActorMessages.CircuitCircumvented
+          case InternalClosed ⇒ self ! ActorMessages.CircuitClosed
+          case InternalHalfOpen ⇒ self ! ActorMessages.CircuitHalfOpened
+          case InternalOpen ⇒ self ! ActorMessages.CircuitOpened
+          case InternalFuseRemoved ⇒ self ! ActorMessages.CircuitFuseRemoved
+          case InternalDestroyed ⇒ self ! ActorMessages.CircuitDestroyed
+          case InternalCircumvented ⇒ self ! ActorMessages.CircuitCircumvented
         }
     }
 
@@ -271,11 +271,11 @@ trait SyncFusedActor { me: AlmActor =>
   }
 
   private object InternalClosed extends InternalState {
-    private val warningListeners = new CopyOnWriteArrayList[Int => Runnable]
+    private val warningListeners = new CopyOnWriteArrayList[Int ⇒ Runnable]
 
     private var failureCount = 0
 
-    def addWarningListener(listener: Int => Runnable): Unit = warningListeners add listener
+    def addWarningListener(listener: Int ⇒ Runnable): Unit = warningListeners add listener
 
     override def publicState = CircuitState.Closed(failureCount, maxFailures, failuresWarnThreshold)
 
@@ -290,7 +290,7 @@ trait SyncFusedActor { me: AlmActor =>
       failureCount += 1
       if (failureCount == maxFailures)
         moveTo(InternalOpen)
-      failuresWarnThreshold.foreach(wt =>
+      failuresWarnThreshold.foreach(wt ⇒
         if (failureCount == wt)
           notifyWarningListeners(failureCount))
     }
@@ -368,7 +368,7 @@ trait SyncFusedActor { me: AlmActor =>
 
     override def _enter() {
       entered = System.nanoTime()
-      resetTimeout.foreach { rt =>
+      resetTimeout.foreach { rt ⇒
         context.system.scheduler.scheduleOnce(rt) {
           self ! AttemptTransition(InternalOpen, InternalHalfOpen)
         }(callbackExecutor)

@@ -29,8 +29,8 @@ object EventLog {
   object FetchEventsParts {
     def unapply(what: EventLogMessage): Option[(LocalDateTimeRange.RangeStart, LocalDateTimeRange.RangeEnd, TraverseWindow.LowerBound, TraverseWindow.Length)] =
       what match {
-        case FetchEvents(LocalDateTimeRange(a, b), TraverseWindow(c, d)) => Some((a, b, c, d))
-        case _ => None
+        case FetchEvents(LocalDateTimeRange(a, b), TraverseWindow(c, d)) ⇒ Some((a, b, c, d))
+        case _ ⇒ None
       }
   }
 

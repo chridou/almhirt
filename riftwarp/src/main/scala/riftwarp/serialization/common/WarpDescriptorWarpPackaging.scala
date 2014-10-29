@@ -23,8 +23,8 @@ object WarpDescriptorUnpacker extends RegisterableWarpUnpacker[WarpDescriptor] {
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[WarpDescriptor] = {
     withFastLookUp(from) { lookup ⇒
       for {
-        theTypeStr <- lookup.getAs[String]("type")
-        wd <- WarpDescriptor.parse(theTypeStr)
+        theTypeStr ← lookup.getAs[String]("type")
+        wd ← WarpDescriptor.parse(theTypeStr)
       } yield wd
     }
   }
