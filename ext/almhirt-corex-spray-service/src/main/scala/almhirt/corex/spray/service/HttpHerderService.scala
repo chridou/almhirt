@@ -245,17 +245,17 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
     def createStateItem(state: CircuitState) = {
       state match {
         case x: CircuitState.Closed =>
-          <td style="background-color:#19E448">{ x.toString }</td>
+          <td style="background-color:#0EE915">{ x.toString }</td>
         case x: CircuitState.HalfOpen =>
-          <td style="background-color:#EE8C14">{ x.toString }</td>
+          <td style="background-color:#F7B809">{ x.toString }</td>
         case x: CircuitState.Open =>
-          <td style="background-color:#E41B1B">{ x.toString }</td>
+          <td style="background-color:#F74109">{ x.toString }</td>
         case x: CircuitState.FuseRemoved =>
-          <td style="background-color:#E41B1B">{ x.toString }</td>
+          <td style="background-color:#F70909">{ x.toString }</td>
         case x: CircuitState.Circumvented =>
-          <td style="background-color:#EE8C14">{ x.toString }</td>
+          <td style="background-color:#BCB2B2">{ x.toString }</td>
         case x: CircuitState.Destroyed =>
-          <td style="background-color:#E41B1B">{ x.toString }</td>
+          <td style="background-color:#B92121">{ x.toString }</td>
       }
     }
 
@@ -1274,18 +1274,18 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
 
   def createSeverityItem(severity: almhirt.problem.Severity) = {
     severity match {
-      case almhirt.problem.Minor => <span style="background-color:#F6EE09">Minor</span>
-      case almhirt.problem.Major => <span style="background-color:#F6A309">Major</span>
-      case almhirt.problem.Critical => <span style="background-color:#F61D09">Critical</span>
+      case almhirt.problem.Minor => <span style="background-color:#F2D30C">Minor</span>
+      case almhirt.problem.Major => <span style="background-color:#F2960C">Major</span>
+      case almhirt.problem.Critical => <span style="background-color:#F22B0C">Critical</span>
     }
   }
 
   def createImportanceItem(importance: Importance) = {
     importance match {
-      case Importance.NotWorthMentioning => <span style="background-color:#F6EE09">NotWorthMentioning</span>
-      case Importance.Mentionable => <span style="background-color:#F6EE09">Mentionable</span>
-      case Importance.Important => <span style="background-color:#F6A309">Important</span>
-      case Importance.VeryImportant => <span style="background-color:#F61D09">VeryImportant</span>
+      case Importance.NotWorthMentioning => <span style="background-color:#D2E3A1">NotWorthMentioning</span>
+      case Importance.Mentionable => <span style="background-color:#F2D30C">Mentionable</span>
+      case Importance.Important => <span style="background-color:#F2960C">Important</span>
+      case Importance.VeryImportant => <span style="background-color:#F22B0C">VeryImportant</span>
     }
   }
 
