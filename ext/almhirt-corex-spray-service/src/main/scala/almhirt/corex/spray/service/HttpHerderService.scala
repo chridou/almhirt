@@ -251,7 +251,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
         case x: CircuitState.Open =>
           <td style="background-color:#F74109">{ x.toString }</td>
         case x: CircuitState.FuseRemoved =>
-          <td style="background-color:#F70909">{ x.toString }</td>
+          <td style="background-color:#DD2626">{ x.toString }</td>
         case x: CircuitState.Circumvented =>
           <td style="background-color:#BCB2B2">{ x.toString }</td>
         case x: CircuitState.Destroyed =>
@@ -469,7 +469,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
         <td>{ entry.maxSeverity.map(createSeverityItem).getOrElse(<span>-</span>) }</td>
         <td>
           <table border="0">
-            { entry.lastOccurences.take(if (abridged) 1 else 3).map(line => createSummaryLine(line._1, line._2, line._3)) }
+            { entry.lastOccurences.drop(Math.max(0, if (abridged) (entry.lastOccurences.size-1) else (entry.lastOccurences.size-3))).map(line => createSummaryLine(line._1, line._2, line._3)) }
           </table>
         </td>
         <td>
@@ -683,7 +683,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
               {
                 <td>
                   <table border="0">
-                    { history.lastOccurences.take(if (abridged) 1 else 3).map(createHistoryLine) }
+                    { history.lastOccurences.drop(Math.max(0, if (abridged) (history.lastOccurences.size-1) else (history.lastOccurences.size-3))).map(createHistoryLine) }
                   </table>
                 </td>
               }
@@ -896,7 +896,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
               {
                 <td>
                   <table border="0">
-                    { history.lastOccurences.take(if (abridged) 1 else 3).map(createHistoryLine) }
+                    { history.lastOccurences.drop(Math.max(0, if (abridged) (history.lastOccurences.size-1) else (history.lastOccurences.size-3))).map(createHistoryLine) }
                   </table>
                 </td>
               }
@@ -1115,7 +1115,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
               {
                 <td>
                   <table border="0">
-                    { history.lastOccurences.take(if (abridged) 1 else 3).map(createHistoryLine) }
+                    { history.lastOccurences.drop(Math.max(0, if (abridged) (history.lastOccurences.size-1) else (history.lastOccurences.size-3))).map(createHistoryLine) }
                   </table>
                 </td>
               }
