@@ -128,7 +128,7 @@ package object akkax {
       } yield startState
 
     def tryGetValue(config: Config, path: String): AlmValidation[Option[CircuitStartState]] =
-      config.opt[Config](path).flatMap {
+      config.opt[String](path).flatMap {
         case Some(_) ⇒ getValue(config, path).map(Some(_))
         case None ⇒ scalaz.Success(None)
       }

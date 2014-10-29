@@ -23,7 +23,7 @@ package object configuration {
      * The value is a None, if and only if it is the case insensitive String "None".
      *  Otherwise it is parsed with the given Extractor.
      */
-    def magicOption[T](path: String)(implicit configExtractor: ConfigExtractor[T]): AlmValidation[Option[T]] =
+    def magicOption[T: ConfigExtractor](path: String): AlmValidation[Option[T]] =
       ConfigStringExtractorInst.getValue(self, path).fold(
         problem => {
           self.value[T](path).map(Some(_))
@@ -35,7 +35,7 @@ package object configuration {
           }
         })
 
-    def magicDefault[T](defaultMarker: String, default: T)(path: String)(implicit configExtractor: ConfigExtractor[T]): AlmValidation[T] =
+    def magicDefault[T: ConfigExtractor](defaultMarker: String, default: T)(path: String): AlmValidation[T] =
       ConfigStringExtractorInst.getValue(self, path).fold(
         problem => {
           self.value[T](path)
@@ -47,14 +47,14 @@ package object configuration {
             self.value[T](path)
         })
 
-    final def v[T](path: String)(implicit configExtractor: ConfigExtractor[T]): AlmValidation[T] =
-      value[T](path)(configExtractor)
+    final def v[T: ConfigExtractor](path: String): AlmValidation[T] =
+      value[T](path)
 
-    final def opt[T](path: String)(implicit configExtractor: ConfigExtractor[T]): AlmValidation[Option[T]] =
-      optValue[T](path)(configExtractor)
+    final def opt[T: ConfigExtractor](path: String): AlmValidation[Option[T]] =
+      optValue[T](path)
 
-    final def unsafeOpt[T](path: String)(implicit configExtractor: ConfigExtractor[T]): Option[T] =
-      unsafeValue[T](path)(configExtractor)
+    final def unsafeOpt[T: ConfigExtractor](path: String): Option[T] =
+      unsafeValue[T](path)
 
   }
 

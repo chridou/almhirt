@@ -18,9 +18,9 @@ object ConfigHelper {
       f(path).success
     } catch {
       case exn: ConfigException.Missing ⇒
-        NoSuchElementProblem(s"""No value found at "$path".""", args = Map("key" -> path)).failure
+        ConfigurationProblem(s"""No value found at "$path".""", args = Map("key" -> path), cause = Some(exn)).failure
       case exn: ConfigException.WrongType ⇒
-        BadDataProblem(s"""Value at "$path" can not be converted to a "${tag.runtimeClass.getName()}".""", args = Map("key" -> path)).failure
+        ConfigurationProblem(s"""Value at "$path" can not be converted to a "${tag.runtimeClass.getName()}".""", args = Map("key" -> path), cause = Some(exn)).failure
     }
   def tryGetFromConfigSafely[T](path: String, f: String ⇒ T)(implicit tag: ClassTag[T]): AlmValidation[Option[T]] =
     try {
@@ -29,7 +29,7 @@ object ConfigHelper {
       case exn: ConfigException.Missing ⇒
         None.success
       case exn: ConfigException.WrongType ⇒
-        BadDataProblem(s"""Value at "$path" can not be converted to a "${tag.runtimeClass.getName()}".""", args = Map("key" -> path)).failure
+        ConfigurationProblem(s"""Value at "$path" can not be converted to a "${tag.runtimeClass.getName()}".""", args = Map("key" -> path), cause = Some(exn)).failure
     }
 }
 
