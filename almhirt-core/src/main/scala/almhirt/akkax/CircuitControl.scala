@@ -40,21 +40,47 @@ trait FusedCircuit {
    *  In case of a fail fast, return the surrogate instead of the standard result defined by the implementation
    */
   def fusedWithSurrogate[T](surrogate: ⇒ AlmFuture[T])(body: ⇒ AlmFuture[T]): AlmFuture[T]
-  
-  def ask[T: ClassTag](actor:ActorRef, message: Any): AlmFuture[T]
-  
-  def askWithSurrogate[T: ClassTag](surrogate: ⇒ AlmFuture[T])(actor:ActorRef, message: Any): AlmFuture[T]
-  
+
+  def ask[T: ClassTag](actor: ActorRef, message: Any): AlmFuture[T]
+
+  def askWithSurrogate[T: ClassTag](surrogate: ⇒ AlmFuture[T])(actor: ActorRef, message: Any): AlmFuture[T]
+
 }
 
+sealed trait CircuitStartState
+
+object CircuitStartState {
+  import scalaz.syntax.validation._
+  object Closed extends CircuitStartState
+  object HalfOpen extends CircuitStartState
+  object Open extends CircuitStartState
+  object FuseRemoved extends CircuitStartState
+  object Destroyed extends CircuitStartState
+  object Circumvented extends CircuitStartState
+
+  def parseString(str: String): AlmValidation[CircuitStartState] =
+    str.toLowerCase() match {
+      case "closed" => Closed.success
+      case "half-open" => HalfOpen.success
+      case "open" => Open.success
+      case "fuse-removed" => FuseRemoved.success
+      case "destroyed" => Destroyed.success
+      case "circumvented" => Circumvented.success
+      case x => ParsingProblem(s""""$x is not a circuit start state.""").failure
+    }
+}
 
 final case class CircuitControlSettings(
   maxFailures: Int,
   failuresWarnThreshold: Option[Int],
   callTimeout: FiniteDuration,
-  resetTimeout: Option[FiniteDuration])
+  resetTimeout: Option[FiniteDuration],
+  startState: CircuitStartState)
 
 object CircuitControlSettings {
+  def apply(maxFailures: Int, failuresWarnThreshold: Option[Int], callTimeout: FiniteDuration, resetTimeout: Option[FiniteDuration]): CircuitControlSettings =
+    CircuitControlSettings(maxFailures, failuresWarnThreshold, callTimeout, resetTimeout, CircuitStartState.Closed)
+    
   val defaultSettings = CircuitControlSettings(5, Some(3), 10.seconds, Some(5.minutes))
 }
 

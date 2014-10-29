@@ -84,9 +84,18 @@ trait SyncFusedActor { me: AlmActor =>
   def circuitControlLoggingAdapter: Option[LoggingAdapter] = None
   def circuitStateReportingInterval: Option[FiniteDuration]
   def sendStateChangedEvents: Boolean
-  private val CircuitControlSettings(maxFailures, failuresWarnThreshold, callTimeout, resetTimeout) = circuitControlSettings
+  private val CircuitControlSettings(maxFailures, failuresWarnThreshold, callTimeout, resetTimeout, startState) = circuitControlSettings
   private val callbackExecutor = circuitControlCallbackExecutorSelector.select(this.almhirtContext, this.context)
-  private[this] var currentState: InternalState = InternalClosed
+
+  private[this] var currentState: InternalState =
+    startState match {
+      case CircuitStartState.Closed => InternalClosed
+      case CircuitStartState.HalfOpen => InternalHalfOpen
+      case CircuitStartState.Open => InternalOpen
+      case CircuitStartState.FuseRemoved => InternalFuseRemoved
+      case CircuitStartState.Destroyed => InternalDestroyed
+      case CircuitStartState.Circumvented => InternalCircumvented
+    }
 
   def fused[T](body: => AlmValidation[T]): AlmValidation[T] =
     fusedWithSurrogate(scalaz.Failure(CircuitOpenProblem("The circuit is open.")))(body)
@@ -118,6 +127,7 @@ trait SyncFusedActor { me: AlmActor =>
   }
 
   private case class AttemptTransition(origin: InternalState, target: InternalState)
+
   private val internalReceive: Receive = {
     case AttemptTransition(origin, target) =>
       attemptTransition(origin, origin)

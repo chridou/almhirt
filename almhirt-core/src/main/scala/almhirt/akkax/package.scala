@@ -10,6 +10,7 @@ import almhirt.common._
 import almhirt.almvalidation.kit._
 import almhirt.tracking.CorrelationId
 import almhirt.akkax.SingleResolver
+import almhirt.akkax.CircuitStartState
 
 package object akkax {
 
@@ -119,6 +120,21 @@ package object akkax {
       }
   }
 
+  implicit object CircuitStartStateConfigExtractor extends ConfigExtractor[CircuitStartState] {
+    def getValue(config: Config, path: String): AlmValidation[CircuitStartState] =
+      for {
+        str <- config.v[String](path)
+        startState <- CircuitStartState.parseString(str)
+      } yield startState
+
+    def tryGetValue(config: Config, path: String): AlmValidation[Option[CircuitStartState]] =
+      config.opt[Config](path).flatMap {
+        case Some(_) ⇒ getValue(config, path).map(Some(_))
+        case None ⇒ scalaz.Success(None)
+      }
+
+  }
+
   implicit object ExtendedExecutionContextSelectorConfigExtractor extends ConfigExtractor[ExtendedExecutionContextSelector] {
     def getValue(config: Config, path: String): AlmValidation[ExtendedExecutionContextSelector] =
       for {
@@ -142,7 +158,8 @@ package object akkax {
         failuresWarnThreshold <- section.magicOption[Int]("failures-warn-threshold")
         callTimeout <- section.v[FiniteDuration]("call-timeout")
         resetTimeout <- section.magicOption[FiniteDuration]("reset-timeout")
-      } yield CircuitControlSettings(maxFailures, failuresWarnThreshold, callTimeout, resetTimeout)
+        startState <- section.opt[CircuitStartState]("start-state")
+      } yield CircuitControlSettings(maxFailures, failuresWarnThreshold, callTimeout, resetTimeout, startState getOrElse CircuitStartState.Closed)
 
     def tryGetValue(config: Config, path: String): AlmValidation[Option[CircuitControlSettings]] =
       config.opt[Config](path).flatMap {

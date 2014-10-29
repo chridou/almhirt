@@ -27,11 +27,19 @@ private[almhirt] class AlmCircuitBreakerImpl(settings: CircuitControlSettings, e
   import akka.util.Unsafe
   import AlmCircuitBreaker._
 
-  val CircuitControlSettings(maxFailures, failuresWarnThreshold, callTimeout, resetTimeout) = settings
+  val CircuitControlSettings(maxFailures, failuresWarnThreshold, callTimeout, resetTimeout, startState) = settings
   private val defaultSurrogate = AlmFuture.failed(CircuitOpenProblem())
 
   @volatile
-  private[this] var _currentStateDoNotCallMeDirectly: InternalState = InternalClosed
+  private[this] var _currentStateDoNotCallMeDirectly: InternalState =
+    startState match {
+      case CircuitStartState.Closed => InternalClosed
+      case CircuitStartState.HalfOpen => InternalHalfOpen
+      case CircuitStartState.Open => InternalOpen
+      case CircuitStartState.FuseRemoved => InternalFuseRemoved
+      case CircuitStartState.Destroyed => InternalDestroyed
+      case CircuitStartState.Circumvented => InternalCircumvented
+    }
 
   /**
    * Helper method for access to underlying state via Unsafe
@@ -106,7 +114,7 @@ private[almhirt] class AlmCircuitBreakerImpl(settings: CircuitControlSettings, e
     InternalCircumvented addListener new Runnable { def run() { listener() } }
     this
   }
-  
+
   override def onWarning(listener: (Int, Int) => Unit): AlmCircuitBreaker = {
     InternalClosed addWarningListener (currentFailures => new Runnable { def run() { listener(currentFailures, maxFailures) } })
     this
@@ -157,7 +165,7 @@ private[almhirt] class AlmCircuitBreakerImpl(settings: CircuitControlSettings, e
 
   private def attemptCircumvent(from: InternalState): Boolean =
     attemptTransition(from, InternalCircumvented)
-    
+
   /**
    * No escape from here.
    */
