@@ -19,7 +19,6 @@ trait AlmCircuitBreaker extends FusedCircuit with CircuitControl
 /**
  * Circuit breaker implementation. This is in great parts copied from the akka one but adjusted to almhirt's needs.
  * This is also done to learn more about java concurrency.
- * Consider this stolen from akka.
  */
 private[almhirt] class AlmCircuitBreakerImpl(settings: CircuitControlSettings, executionContext: ExecutionContext, scheduler: Scheduler) extends AbstractAlmCircuitBreaker with AlmCircuitBreaker {
   import java.util.concurrent.atomic.{ AtomicInteger, AtomicBoolean, AtomicLong }
