@@ -339,13 +339,13 @@ object AlmFuture {
   }
 
   /** Start a computation that is not expected to fail */
-  def compute[T](computation: ⇒ T)(implicit executionContext: ExecutionContext) = new AlmFuture[T](Future { almhirt.almvalidation.funs.inTryCatch(computation) })
+  def compute[T](computation: ⇒ T)(implicit executionContext: ExecutionContext) = new AlmFuture[T](Future { inTryCatch(computation) })
 
   /** Return a future where the result is already known */
-  def completed[T](what: ⇒ AlmValidation[T]) = new AlmFuture[T](Future.successful { almhirt.almvalidation.funs.unsafe(what) })
+  def completed[T](what: ⇒ AlmValidation[T]) = new AlmFuture[T](Future.successful { unsafe(what) })
 
-  /** Return a future where the succesful result is already known */
-  def successful[T](result: ⇒ T) = new AlmFuture[T](Future.successful { almhirt.almvalidation.funs.inTryCatch(result) })
+  /** Return a future where the successful result is already known */
+  def successful[T](result: ⇒ T) = new AlmFuture[T](Future.successful { inTryCatch(result) })
 
   /** Return a future where a failure is already known */
   def failed[T](prob: ⇒ Problem) = new AlmFuture[T](Future.successful {
