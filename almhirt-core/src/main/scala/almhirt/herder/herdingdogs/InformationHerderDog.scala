@@ -40,7 +40,7 @@ private[almhirt] class InformationHerdingDog(historySize: Int)(implicit override
       history.add(componentId, (message, importance, timestamp))
 
     case ReportInformation =>
-      val ifos = history.all.sorted
+      val ifos = history.allReversed.sorted
       sender() ! ReportedInformation(ifos)
       
     case ReportInformationFor(componentId) =>

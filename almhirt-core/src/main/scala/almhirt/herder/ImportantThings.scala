@@ -59,6 +59,7 @@ class MutableImportantThingsHistories[K, T: GetsImportance: ClassTag](val maxQue
   def getImmutable(key: K) = (entries get key).map(_.immutable)
   def getImmutableReversed(key: K) = (entries get key).map(_.immutableReversed)
   def all: Vector[(K, ImportantThingsHistory[T])] = entries.map(x => (x._1, x._2.immutable)).toVector
+  def allReversed: Vector[(K, ImportantThingsHistory[T])] = entries.map(x => (x._1, x._2.immutableReversed)).toVector
 
   def clear(key: K) { get(key).foreach(_.clear()) }
   def resize(key: K, newSize: Int) { get(key).foreach(_.resize(newSize)) }

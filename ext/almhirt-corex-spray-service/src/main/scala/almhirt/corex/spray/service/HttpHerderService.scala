@@ -451,7 +451,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
       def createSummaryLine(item: (ProblemCause, Severity, LocalDateTime)) = {
         <tr>
           <td>{ item._3.toString }</td>
-          <td>{ createSeverityItem(item._2) }</td>
+          <td style="height:100%">{ createSeverityItem(item._2) }</td>
           <td>{
             item._1 match {
               case CauseIsProblem(p) => p.problemType.toString()
@@ -469,7 +469,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
         <td>{ entry.maxSeverity.map(createSeverityItem).getOrElse(<span>-</span>) }</td>
         <td>
           <table border="0">
-            { entry.lastOccurences.drop(Math.max(0, if (abridged) (entry.lastOccurences.size-1) else (entry.lastOccurences.size-3))).map(line => createSummaryLine(line._1, line._2, line._3)) }
+            { entry.lastOccurences.take(if(abridged) 1 else 3).map(line => createSummaryLine(line._1, line._2, line._3)) }
           </table>
         </td>
         <td>
@@ -562,7 +562,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
           </tr>
           {
             val items = entry.lastOccurences
-            items.drop(Math.max(items.size - maxItems, 0)).map {
+            items.take(maxItems).map {
               case (cause, severity, timestamp) =>
                 <tr>
                   <td>{ timestamp.toString }</td>
@@ -647,7 +647,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
       <tr>
         <td>{ item._4.toString() }</td>
         <td>{ (if (abridged) item._1.toVeryShortString else item._1.toShortString).split("\\r?\\n").map(line => <span>{ line }<br/></span>) }</td>
-        <td>{ createSeverityItem(item._3) }</td>
+        <td style="height:100%">{ createSeverityItem(item._3) }</td>
         <td>{
           item._2 match {
             case CauseIsProblem(p) => p.problemType.toString()
@@ -683,7 +683,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
               {
                 <td>
                   <table border="0">
-                    { history.lastOccurences.drop(Math.max(0, if (abridged) (history.lastOccurences.size-1) else (history.lastOccurences.size-3))).map(createHistoryLine) }
+                    { history.lastOccurences.take(if(abridged) 1 else 3).map(createHistoryLine) }
                   </table>
                 </td>
               }
@@ -762,7 +762,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
           </tr>
           {
             val items = rejectedCommands.lastOccurences
-            items.drop(Math.max(items.size - maxItems, 0)).map {
+            items.take(maxItems).map {
               case (commandRepr, cause, severity, timestamp) =>
                 <tr>
                   <td>{ timestamp.toString }</td>
@@ -860,7 +860,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
       <tr>
         <td>{ item._4.toString() }</td>
         <td>{ s"${item._1.getClass().getSimpleName().toString}(${item._1.eventId.value})" }</td>
-        <td>{ createSeverityItem(item._3) }</td>
+        <td style="height:100%">{ createSeverityItem(item._3) }</td>
         <td>{
           item._2 match {
             case CauseIsProblem(p) => p.problemType.toString()
@@ -896,7 +896,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
               {
                 <td>
                   <table border="0">
-                    { history.lastOccurences.drop(Math.max(0, if (abridged) (history.lastOccurences.size-1) else (history.lastOccurences.size-3))).map(createHistoryLine) }
+                    { history.lastOccurences.take(if(abridged) 1 else 3).map(createHistoryLine) }
                   </table>
                 </td>
               }
@@ -975,7 +975,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
           </tr>
           {
             val items = entry.lastOccurences
-            items.drop(Math.max(items.size - maxItems, 0)).map {
+            items.take(maxItems).map {
               case (event, cause, severity, timestamp) =>
                 <tr>
                   <td>{ timestamp.toString }</td>
@@ -1115,7 +1115,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
               {
                 <td>
                   <table border="0">
-                    { history.lastOccurences.drop(Math.max(0, if (abridged) (history.lastOccurences.size-1) else (history.lastOccurences.size-3))).map(createHistoryLine) }
+                    { history.lastOccurences.take(if(abridged) 1 else 3).map(createHistoryLine) }
                   </table>
                 </td>
               }
@@ -1193,7 +1193,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
           </tr>
           {
             val items = entry.lastOccurences
-            items.drop(Math.max(items.size - maxItems, 0)).map {
+            items.take(maxItems).map {
               case (message, importance, timestamp) =>
                 <tr>
                   <td>{ timestamp.toString }</td>
@@ -1274,18 +1274,18 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
 
   def createSeverityItem(severity: almhirt.problem.Severity) = {
     severity match {
-      case almhirt.problem.Minor => <span style="background-color:#F2D30C">Minor</span>
-      case almhirt.problem.Major => <span style="background-color:#F2960C">Major</span>
-      case almhirt.problem.Critical => <span style="background-color:#F22B0C">Critical</span>
+      case almhirt.problem.Minor => <div style="background-color:#F2D30C;height:100%">Minor</div>
+      case almhirt.problem.Major => <div style="background-color:#F2960C;height:100%">Major</div>
+      case almhirt.problem.Critical => <div style="background-color:#F22B0C;height:100%">Critical</div>
     }
   }
 
   def createImportanceItem(importance: Importance) = {
     importance match {
-      case Importance.NotWorthMentioning => <span style="background-color:#D2E3A1">NotWorthMentioning</span>
-      case Importance.Mentionable => <span style="background-color:#F2D30C">Mentionable</span>
-      case Importance.Important => <span style="background-color:#F2960C">Important</span>
-      case Importance.VeryImportant => <span style="background-color:#F22B0C">VeryImportant</span>
+      case Importance.NotWorthMentioning => <div style="background-color:#D2E3A1;height:100%">NotWorthMentioning</div>
+      case Importance.Mentionable => <div style="background-color:#F2D30C;height:100%">Mentionable</div>
+      case Importance.Important => <div style="background-color:#F2960C;height:100%">Important</div>
+      case Importance.VeryImportant => <div style="background-color:#F22B0C;height:100%">VeryImportant</div>
     }
   }
 

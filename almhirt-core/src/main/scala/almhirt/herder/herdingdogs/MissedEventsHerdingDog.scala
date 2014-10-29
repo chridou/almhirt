@@ -41,7 +41,7 @@ private[almhirt] class MissedEventsHerdingDog(historySize: Int, unwrapFailures: 
       history.add(componentId, (event, if (unwrapFailures) cause.unwrap() else cause, severity, timestamp))
 
     case ReportMissedEvents =>
-      val missed = history.all.sorted
+      val missed = history.allReversed.sorted
       sender() ! MissedEvents(missed)
       
     case ReportMissedEventsFor(componentId) =>

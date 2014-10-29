@@ -54,7 +54,7 @@ private[almhirt] class FailuresHerdingDog(ignoreConsecutiveCircuitProblems: Bool
       prepareCause(failure, ignore).foreach(p => history.add(componentId, (p, severity, timestamp)))
 
     case ReportFailures =>
-      val entries = history.all
+      val entries = history.allReversed.sorted
       sender() ! ReportedFailures(entries)
 
     case ReportFailuresFor(componentId) =>

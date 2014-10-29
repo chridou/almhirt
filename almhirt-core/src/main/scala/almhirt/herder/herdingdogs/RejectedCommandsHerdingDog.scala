@@ -42,7 +42,7 @@ private[almhirt] class RejectedCommandsHerdingDog(historySize: Int, unwrapFailur
       history.add(componentId, (if(downgradeCommandRepresentation) commandRepr.downgradeToIdAndType else commandRepr, if (unwrapFailures) cause.unwrap() else cause, severity, timestamp))
 
     case ReportRejectedCommands =>
-      val missed = history.all.sorted
+      val missed = history.allReversed.sorted
       sender() ! RejectedCommands(missed)
       
     case ReportRejectedCommandsFor(componentId) =>
