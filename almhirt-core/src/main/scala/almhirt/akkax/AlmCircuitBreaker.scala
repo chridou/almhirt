@@ -40,6 +40,8 @@ private[almhirt] class AlmCircuitBreakerImpl(settings: CircuitControlSettings, e
       case CircuitStartState.Destroyed => InternalDestroyed
       case CircuitStartState.Circumvented => InternalCircumvented
     }
+  
+  currentState.enter()
 
   /**
    * Helper method for access to underlying state via Unsafe
