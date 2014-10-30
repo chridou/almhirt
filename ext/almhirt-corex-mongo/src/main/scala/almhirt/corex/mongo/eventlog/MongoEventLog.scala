@@ -95,7 +95,7 @@ private[almhirt] class MongoEventLogImpl(
   writeWarnThreshold: FiniteDuration,
   circuitControlSettings: CircuitControlSettings,
   retrySettings: RetrySettings,
-  readOnly: Boolean)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with ActorLogging {
+  readOnly: Boolean)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging {
   import EventLog._
   import almhirt.corex.mongo.BsonConverter._
 

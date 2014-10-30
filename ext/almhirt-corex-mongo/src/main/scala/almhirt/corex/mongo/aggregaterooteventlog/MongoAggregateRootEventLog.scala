@@ -103,7 +103,7 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
   readWarnThreshold: FiniteDuration,
   circuitControlSettings: CircuitControlSettings,
   retrySettings: RetrySettings,
-  readOnly: Boolean)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with ActorLogging with almhirt.akkax.AlmActorSupport {
+  readOnly: Boolean)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging {
 
   import almhirt.eventlog.AggregateRootEventLog._
 
@@ -144,7 +144,7 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
         NoSuchElementProblem("BSONDocument for payload not found").failure
     }).leftMap { p ⇒
       val prob = MappingProblem("Could not deserialize BSONDocument to domain event.", cause = Some(p))
-      log.error(prob.toString)
+      logError(prob.toString)
       prob
     }
   }
@@ -172,7 +172,7 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
   def commitEvent(event: AggregateRootEvent, respondTo: ActorRef) {
     circuitBreaker.fused(storeEvent(event)) onComplete (
       fail ⇒ {
-        log.error(s"Could not commit aggregate root event:\n$fail")
+        logError(s"Could not commit aggregate root event:\n$fail")
         reportMissedEvent(event, CriticalSeverity, fail)
         reportMajorFailure(fail)
         respondTo ! AggregateRootEventNotCommitted(event.eventId, fail)
@@ -241,14 +241,14 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
 
   def uninitializedReadWrite: Receive = {
     case Initialize ⇒
-      log.info("Initializing(read/write)")
+      logInfo("Initializing(read/write)")
       val toTry = () ⇒ (for {
         collectinNames ← db.collectionNames
         createonRes ← if (collectinNames.contains(collectionName)) {
           log.info(s"""Collection "$collectionName" already exists.""")
           Future.successful(false)
         } else {
-          log.info(s"""Collection "$collectionName" does not yet exist.""")
+          logInfo(s"""Collection "$collectionName" does not yet exist.""")
           val collection = db(collectionName)
           collection.indexesManager.ensure(MIndex(List("aggid" -> IndexType.Ascending, "version" -> IndexType.Ascending), name = Some("idx_aggid_version"), unique = false))
         }
@@ -258,7 +258,7 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
         retryContext = s"Initialize collection $collectionName",
         toTry = toTry,
         onSuccess = createRes ⇒ {
-          log.info(s"""Index on "aggid, version" created: $createRes""")
+          logInfo(s"""Index on "aggid, version" created: $createRes""")
           self ! Initialized
         },
         onFinalFailure = (t, n, p) ⇒ {
@@ -270,18 +270,18 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
         actorName = Some("initializes-collection"))
 
     case Initialized ⇒
-      log.info("Initialized")
+      logInfo("Initialized")
       registerCircuitControl(circuitBreaker)
       context.become(receiveAggregateRootEventLogMsg)
 
     case InitializeFailed(prob) ⇒
-      log.error(s"Initialize failed:\n$prob")
+      logError(s"Initialize failed:\n$prob")
       reportCriticalFailure(prob)
       sys.error(prob.message)
 
     case m: AggregateRootEventLogMessage ⇒
       val msg = s"""Received domain event log message ${m.getClass().getSimpleName()} while uninitialized."""
-      log.warning(msg)
+      logWarning(msg)
       val problem = ServiceNotAvailableProblem(msg)
       m match {
         case CommitAggregateRootEvent(event) ⇒
@@ -298,7 +298,7 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
 
   def uninitializedReadOnly: Receive = {
     case Initialize ⇒
-      log.info("Initializing(read-only)")
+      logInfo("Initializing(read-only)")
       context.retryWithLogging[Unit](
         retryContext = s"Find collection $collectionName",
         toTry = () ⇒ db.collectionNames.toAlmFuture.foldV(
@@ -319,18 +319,18 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
         actorName = Some("looks-for-collection"))
 
     case Initialized ⇒
-      log.info("Initialized")
+      logInfo("Initialized")
       registerCircuitControl(circuitBreaker)
       context.become(receiveAggregateRootEventLogMsg)
 
     case InitializeFailed(prob) ⇒
-      log.error(s"Initialize failed:\n$prob")
+      logError(s"Initialize failed:\n$prob")
       reportCriticalFailure(prob)
       sys.error(prob.message)
 
     case m: AggregateRootEventLogMessage ⇒
       val msg = s"""Received domain event log message ${m.getClass().getSimpleName()} while uninitialized in read only mode."""
-      log.warning(msg)
+      logWarning(msg)
       val problem = ServiceNotAvailableProblem(msg)
       m match {
         case CommitAggregateRootEvent(event) ⇒
@@ -371,7 +371,7 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
       } yield aggregateRootEvent).mapRecoverPipeTo(
         eventOpt ⇒ FetchedAggregateRootEvent(eventId, eventOpt),
         problem ⇒ {
-          log.error(problem.toString())
+          logError(problem.toString())
           reportMajorFailure(problem)
           GetAggregateRootEventFailed(eventId, problem)
         })(sender())
