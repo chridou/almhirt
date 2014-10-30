@@ -241,14 +241,14 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
   }
 
   /** In case of a failure, rejoin with the happy path */
-  def mapRecover[U >: R](map: R => U, recover: Problem ⇒ U)(implicit executionContext: ExecutionContext): AlmFuture[U] = {
+  def mapRecover[U](map: R => U, recover: Problem ⇒ U)(implicit executionContext: ExecutionContext): AlmFuture[U] = {
     this.fold[U](
       recover,
       succ ⇒ map(succ))
   }
 
   /** extract an U from the success. In case of a failure, rejoin with the happy path */
-  def collectRecover[U >: R](collect: PartialFunction[R, U], recover: Problem ⇒ U)(implicit executionContext: ExecutionContext): AlmFuture[U] = {
+  def collectRecover[U](collect: PartialFunction[R, U], recover: Problem ⇒ U)(implicit executionContext: ExecutionContext): AlmFuture[U] = {
     this.fold[U](
       recover,
       succ ⇒ collect(succ))
