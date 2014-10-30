@@ -42,7 +42,7 @@ trait CustomHttpSerializerTemplate[T] extends HttpSerializer[T] with HttpDeseria
         case TextBody(text) if theChannel.httpTransmission == HttpTransmissionAsText ⇒
           getStringRematerializer(theChannel.channelDescriptor).flatMap(_(text))
         case _ ⇒
-          UnspecifiedProblem(s""""$channel" is neither a binary nor a text channel or the serialized representation do not match("${what.getClass().getSimpleName()}" -> "${theChannel.httpTransmission}").""").failure
+          UnspecifiedProblem(s""""$channel" is neither a binary nor a text channel or the serialized representation do not match("${what.getClass().getSimpleName()}" → "${theChannel.httpTransmission}").""").failure
       }
       unpacked ← unpack(rematerialized)
     } yield unpacked

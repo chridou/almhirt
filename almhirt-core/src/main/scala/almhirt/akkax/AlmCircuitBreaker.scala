@@ -230,9 +230,9 @@ private[almhirt] class AlmCircuitBreakerImpl(settings: CircuitControlSettings, e
 
   /**
    * Valid transitions:
-   * -> Open
-   * -> FuseRemoved
-   * -> Destroyed
+   * → Open
+   * → FuseRemoved
+   * → Destroyed
    */
   private case object InternalClosed extends AtomicInteger with InternalState {
     private val warningListeners = new CopyOnWriteArrayList[Int ⇒ Runnable]
@@ -277,10 +277,10 @@ private[almhirt] class AlmCircuitBreakerImpl(settings: CircuitControlSettings, e
 
   /**
    * Valid transitions:
-   * HalfOpen -> Closed
-   * HalfOpen -> Opened
-   * HalfOpen -> FuseRemoved
-   * HalfOpen -> Destroyed
+   * HalfOpen → Closed
+   * HalfOpen → Opened
+   * HalfOpen → FuseRemoved
+   * HalfOpen → Destroyed
    */
   private case object InternalHalfOpen extends AtomicBoolean with InternalState {
     override def publicState = CircuitState.HalfOpen(!get)
@@ -308,9 +308,9 @@ private[almhirt] class AlmCircuitBreakerImpl(settings: CircuitControlSettings, e
 
   /**
    * Valid transitions:
-   * Open -> HalfOpen
-   * Open -> FuseRemoved
-   * Open -> Destroyed
+   * Open → HalfOpen
+   * Open → FuseRemoved
+   * Open → Destroyed
    */
   private case object InternalOpen extends AtomicLong with InternalState {
     private val myResetTimeout: FiniteDuration = resetTimeout getOrElse (Duration.Zero)
@@ -350,8 +350,8 @@ private[almhirt] class AlmCircuitBreakerImpl(settings: CircuitControlSettings, e
 
   /**
    * Valid transitions:
-   * FuseRemoved -> HalfOpen
-   * FuseRemoved -> Destroyed
+   * FuseRemoved → HalfOpen
+   * FuseRemoved → Destroyed
    */
   private case object InternalFuseRemoved extends AtomicLong with InternalState {
     override def publicState = CircuitState.FuseRemoved(forDuration)

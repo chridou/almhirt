@@ -118,8 +118,8 @@ private[almhirt] trait AggregateRootViewsSkeleton[E <: AggregateRootEvent] exten
   def receiveResolve: Receive = {
     case Resolve ⇒
       val actorsToResolve =
-        Map("aggregateeventlog" -> aggregateEventLogToResolve) ++
-          snapShotStorageToResolve.map(r ⇒ Map("snapshotstorage" -> r)).getOrElse(Map.empty)
+        Map("aggregateeventlog" → aggregateEventLogToResolve) ++
+          snapShotStorageToResolve.map(r ⇒ Map("snapshotstorage" → r)).getOrElse(Map.empty)
       context.resolveMany(actorsToResolve, resolveSettings, None, Some("resolver"))
 
     case ActorMessages.ManyResolved(dependencies, _) ⇒

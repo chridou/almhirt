@@ -234,7 +234,7 @@ object problemtypes {
    */
   case object ParsingProblem extends ProblemType {
     def apply(msg: String, badInput: Option[String] = None, args: Map[String, Any] = Map.empty, cause: Option[ProblemCause] = None): SingleProblem = {
-      val completeArgs = badInput.map(bi ⇒ args + ("bad_input" -> badInput)).getOrElse(args)
+      val completeArgs = badInput.map(bi ⇒ args + ("bad_input" → badInput)).getOrElse(args)
       SingleProblem(msg, ParsingProblem, completeArgs, cause)
     }
     def unapply(problem: SingleProblem): Option[SingleProblem] = SingleProblem.unapplyAgainst(problem, ParsingProblem)

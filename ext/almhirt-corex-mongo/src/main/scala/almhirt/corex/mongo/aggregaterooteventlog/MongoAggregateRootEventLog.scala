@@ -112,10 +112,10 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
 
   val circuitBreaker = AlmCircuitBreaker(circuitControlSettings, almhirtContext.futuresContext, context.system.scheduler)
 
-  val projectionFilter = BSONDocument("event" -> 1)
+  val projectionFilter = BSONDocument("event" → 1)
 
   val noSorting = BSONDocument()
-  val sortByVersion = BSONDocument("aggid" -> 1, "version" -> 1)
+  val sortByVersion = BSONDocument("aggid" → 1, "version" → 1)
 
   private val fromBsonDocToAggregateRootEvent: Enumeratee[BSONDocument, AggregateRootEvent] =
     Enumeratee.mapM[BSONDocument] { doc ⇒ Future { documentToAggregateRootEvent(doc).resultOrEscalate }(serializationExecutor) }
@@ -125,11 +125,11 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
       serialized ← serializeAggregateRootEvent(aggregateRootEvent)
     } yield {
       BSONDocument(
-        ("_id" -> BSONString(aggregateRootEvent.eventId.value)),
-        ("aggid" -> BSONString(aggregateRootEvent.aggId.value)),
-        ("version" -> BSONLong(aggregateRootEvent.aggVersion.value)),
-        ("type" -> BSONString(aggregateRootEvent.getClass().getSimpleName())),
-        ("event" -> serialized))
+        ("_id" → BSONString(aggregateRootEvent.eventId.value)),
+        ("aggid" → BSONString(aggregateRootEvent.aggId.value)),
+        ("version" → BSONLong(aggregateRootEvent.aggVersion.value)),
+        ("type" → BSONString(aggregateRootEvent.getClass().getSimpleName())),
+        ("event" → serialized))
     }).leftMap(p ⇒ SerializationProblem(s"""Could not serialize a "${aggregateRootEvent.getClass().getName()}".""", cause = Some(p)))
   }
 
@@ -204,21 +204,21 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
       case GetAggregateRootEventsFor(aggId, start, end, _) ⇒
         (start, end) match {
           case (FromStart, ToEnd) ⇒
-            (BSONDocument("aggid" -> BSONString(aggId.value)), sortByVersion)
+            (BSONDocument("aggid" → BSONString(aggId.value)), sortByVersion)
           case (FromVersion(fromVersion), ToEnd) ⇒
             (BSONDocument(
-              "aggid" -> BSONString(aggId.value),
-              "version" -> BSONDocument("$gte" -> BSONLong(fromVersion.value))), sortByVersion)
+              "aggid" → BSONString(aggId.value),
+              "version" → BSONDocument("$gte" → BSONLong(fromVersion.value))), sortByVersion)
           case (FromStart, ToVersion(toVersion)) ⇒
             (BSONDocument(
-              "aggid" -> BSONString(aggId.value),
-              "version" -> BSONDocument("$lte" -> BSONLong(toVersion.value))), sortByVersion)
+              "aggid" → BSONString(aggId.value),
+              "version" → BSONDocument("$lte" → BSONLong(toVersion.value))), sortByVersion)
           case (FromVersion(fromVersion), ToVersion(toVersion)) ⇒
             (BSONDocument(
-              "aggid" -> BSONString(aggId.value),
-              "$and" -> BSONArray(
-                BSONDocument("version" -> BSONDocument("$gte" -> BSONLong(fromVersion.value))),
-                BSONDocument("version" -> BSONDocument("$lte" -> BSONLong(toVersion.value))))), sortByVersion)
+              "aggid" → BSONString(aggId.value),
+              "$and" → BSONArray(
+                BSONDocument("version" → BSONDocument("$gte" → BSONLong(fromVersion.value))),
+                BSONDocument("version" → BSONDocument("$lte" → BSONLong(toVersion.value))))), sortByVersion)
         }
     }
   }
@@ -250,7 +250,7 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
         } else {
           logInfo(s"""Collection "$collectionName" does not yet exist.""")
           val collection = db(collectionName)
-          collection.indexesManager.ensure(MIndex(List("aggid" -> IndexType.Ascending, "version" -> IndexType.Ascending), name = Some("idx_aggid_version"), unique = false))
+          collection.indexesManager.ensure(MIndex(List("aggid" → IndexType.Ascending, "version" → IndexType.Ascending), name = Some("idx_aggid_version"), unique = false))
         }
       } yield createonRes).toAlmFuture
 
@@ -358,7 +358,7 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
 
     case GetAggregateRootEvent(eventId) ⇒
       val collection = db(collectionName)
-      val query = BSONDocument("_id" -> BSONString(eventId.value))
+      val query = BSONDocument("_id" → BSONString(eventId.value))
       (for {
         docs ← collection.find(query).cursor.collect[List](2, true).toAlmFuture
         aggregateRootEvent ← AlmFuture {

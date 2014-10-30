@@ -61,7 +61,7 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
     def isAnyBuffered: Boolean = !bufferedElements.isEmpty
     def nothingBuffered: Boolean = bufferedElements.isEmpty
     def addSubscription(subscriberId: String, subscription: Subscription): SubscriptionsState = {
-      this.copy(subscriptions = this.subscriptions + (subscriberId -> subscription))
+      this.copy(subscriptions = this.subscriptions + (subscriberId → subscription))
     }
 
     def removeSubscription(subscriberId: String): SubscriptionsState = {
@@ -69,7 +69,7 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
     }
 
     def addToBuffer(subscriberId: String, element: TElement): SubscriptionsState = {
-      this.copy(bufferedElements = this.bufferedElements :+ (subscriberId -> element))
+      this.copy(bufferedElements = this.bufferedElements :+ (subscriberId → element))
     }
 
     def takeElements(demand: Int): (Vector[(String, TElement)], SubscriptionsState) = {

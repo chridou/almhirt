@@ -119,7 +119,7 @@ private[almhirt] class MultiResolverImpl(toResolve: Map[String, ToResolve], sett
       }
 
     case ActorMessages.ResolvedSingle(resolved, correlationIdOpt) ⇒
-      resolvedActors = resolvedActors + (correlationIdOpt.get.value -> resolved)
+      resolvedActors = resolvedActors + (correlationIdOpt.get.value → resolved)
       if (resolvedActors.size == toResolve.size) {
         context.parent ! ActorMessages.ManyResolved(resolvedActors, correlationId)
         context.stop(self)

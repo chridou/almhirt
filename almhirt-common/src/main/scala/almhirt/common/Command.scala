@@ -18,7 +18,7 @@ object CommandHeader {
     def withMetadata(metadata: Map[String, String]): CommandHeader =
       self.copy(metadata = metadata)
     def makeTrackable: CommandHeader =
-      self.copy(metadata = self.metadata + ("trackable" -> "true"))
+      self.copy(metadata = self.metadata + ("trackable" → "true"))
       
     def isTrackable: Boolean = 
       self.metadata.get("trackable").map(_.toLowerCase() == "true") | false

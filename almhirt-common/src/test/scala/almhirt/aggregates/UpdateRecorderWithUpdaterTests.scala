@@ -171,7 +171,7 @@ class UpdateRecorderWithUpdaterTests extends FlatSpec with Matchers with Inside
     }
   }
 
-  it should "ALLOW recreation(Vacat->Vivus->Mortuus->Vivus) even though the timeline becomes invalid" in {
+  it should "ALLOW recreation(Vacat→Vivus→Mortuus→Vivus) even though the timeline becomes invalid" in {
     val (ar, events) =
       (for {
         a ← create("a", "hans", "meier")
@@ -195,7 +195,7 @@ class UpdateRecorderWithUpdaterTests extends FlatSpec with Matchers with Inside
     events should equal(expectedEvents)
   }
 
-  it should "create an invalid timeline when the aggregate root is recreated(Vacat->Vivus->Mortuus->Vivus)" in {
+  it should "create an invalid timeline when the aggregate root is recreated(Vacat→Vivus→Mortuus→Vivus)" in {
     val (ar, timeline) =
       (for {
         a ← create("a", "hans", "meier")

@@ -93,7 +93,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
                 states ⇒ if (isUiEnabled) {
                   ctx.complete(StatusCodes.OK, createCircuitsUi(states))
                 } else {
-                  ctx.complete(StatusCodes.OK, states.map { case (name, state) ⇒ s"$name -> $state" }.mkString("\n"))
+                  ctx.complete(StatusCodes.OK, states.map { case (name, state) ⇒ s"$name → $state" }.mkString("\n"))
                 })
             }
           }

@@ -15,13 +15,13 @@ trait DeadlineExt {
 
 trait FiniteDurationExt {
   private val timeUnitToString =
-    Map(DAYS -> "d",
-      HOURS -> "h",
-      MINUTES -> "min",
-      SECONDS -> "s",
-      MILLISECONDS -> "ms",
-      MICROSECONDS -> "µs",
-      NANOSECONDS -> "ns")
+    Map(DAYS → "d",
+      HOURS → "h",
+      MINUTES → "min",
+      SECONDS → "s",
+      MILLISECONDS → "ms",
+      MICROSECONDS → "µs",
+      NANOSECONDS → "ns")
 
   implicit class FiniteDurationOps(self: FiniteDuration) {
     def defaultUnitString(implicit timeUnitToStringInst: almhirt.converters.FiniteDurationToStringConverter = almhirt.converters.FiniteDurationToStringConverter.default): String = {

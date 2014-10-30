@@ -106,7 +106,7 @@ object SingleProblem {
 
   def causedBy(prob: SingleProblem, aCause: ProblemCause): SingleProblem = prob.asInstanceOf[SingleProblemImpl].copy(cause = Some(aCause))
   def withMessage(prob: SingleProblem, msg: String): SingleProblem = prob.asInstanceOf[SingleProblemImpl].copy(message = msg)
-  def withArg(prob: SingleProblem, name: String, value: Any): SingleProblem = prob.asInstanceOf[SingleProblemImpl].copy(args = prob.args + (name -> value))
+  def withArg(prob: SingleProblem, name: String, value: Any): SingleProblem = prob.asInstanceOf[SingleProblemImpl].copy(args = prob.args + (name → value))
 
   implicit def MsgType2SingleProblem(what: (String, ProblemType)): SingleProblem = SingleProblem(what._1, what._2)
 
@@ -141,7 +141,7 @@ object AggregatedProblem {
     override val message = "One or more problems occured"
   }
 
-  def withArg(prob: AggregatedProblem, name: String, value: Any): AggregatedProblem = prob.asInstanceOf[AggregateProblemImpl].copy(args = prob.args + (name -> value))
+  def withArg(prob: AggregatedProblem, name: String, value: Any): AggregatedProblem = prob.asInstanceOf[AggregateProblemImpl].copy(args = prob.args + (name → value))
   def add(prob: AggregatedProblem, problem: Problem): AggregatedProblem = prob.asInstanceOf[AggregateProblemImpl].copy(problems = prob.problems :+ problem)
 
   implicit class AggregateProblemOps(self: AggregatedProblem) {

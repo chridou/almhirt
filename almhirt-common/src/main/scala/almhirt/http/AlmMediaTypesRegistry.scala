@@ -14,7 +14,7 @@ trait AlmMediaTypesRegistry extends Iterable[AlmMediaType] {
       val current = byMainAndSubTypes.get()
       val updated = current.get(mediaType.mainType) match {
         case Some(bySubType) ⇒ current.updated(mediaType.mainType, bySubType.updated(mediaType.subTypeValue, mediaType))
-        case None ⇒ current.updated(mediaType.mainType, Map(mediaType.subTypeValue -> mediaType))
+        case None ⇒ current.updated(mediaType.mainType, Map(mediaType.subTypeValue → mediaType))
       }
       if (!byMainAndSubTypes.compareAndSet(current, updated)) registerByMainAndSubTypeType()
     }
@@ -30,7 +30,7 @@ trait AlmMediaTypesRegistry extends Iterable[AlmMediaType] {
               current.updated(mediaType.mainType, byContentValue.updated(mediaType.contentValue, List(mediaType)))
           }
         case None ⇒
-          current.updated(mediaType.mainType, Map(mediaType.contentValue -> List(mediaType)))
+          current.updated(mediaType.mainType, Map(mediaType.contentValue → List(mediaType)))
       }
       if (!byMainTypeAndContent.compareAndSet(current, updated)) registerByMainTypeAndContent()
     }

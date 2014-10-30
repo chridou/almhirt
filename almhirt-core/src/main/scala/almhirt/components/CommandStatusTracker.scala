@@ -111,7 +111,7 @@ private[almhirt] class MyCommandStatusTracker(
       cachedStatusLookUp = cachedStatusLookUp -- remove
     }
     cachedStatusSeq = cachedStatusSeq :+ id
-    cachedStatusLookUp = cachedStatusLookUp + (id -> status)
+    cachedStatusLookUp = cachedStatusLookUp + (id → status)
   }
 
   private case object AutoConnect
@@ -129,9 +129,9 @@ private[almhirt] class MyCommandStatusTracker(
         case None ⇒
           trackingSubscriptions.get(commandId) match {
             case Some(entries) ⇒
-              trackingSubscriptions = trackingSubscriptions + ((commandId, entries + (nextId -> Entry(callback, deadline))))
+              trackingSubscriptions = trackingSubscriptions + ((commandId, entries + (nextId → Entry(callback, deadline))))
             case None ⇒
-              trackingSubscriptions = trackingSubscriptions + (commandId -> Map(nextId -> Entry(callback, deadline)))
+              trackingSubscriptions = trackingSubscriptions + (commandId → Map(nextId → Entry(callback, deadline)))
           }
       }
 

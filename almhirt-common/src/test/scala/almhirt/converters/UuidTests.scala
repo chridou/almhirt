@@ -58,13 +58,13 @@ class UuidTests extends FunSuite with Matchers {
     uuidFromString should equal(testUuid)
   }
 
-  test(s"""uuid -> base -> uuid: ${testUuid.toString}""") {
+  test(s"""uuid → base → uuid: ${testUuid.toString}""") {
     val b64 = uuidToBase64String(testUuid)
     val uuid = base64ToUuid(b64).forceResult
     uuid should equal(testUuid)
   }
 
-  test(s"""uuid -> base -> uuidStr: ${testUuid.toString}""") {
+  test(s"""uuid → base → uuidStr: ${testUuid.toString}""") {
     val b64 = uuidToBase64String(testUuid)
     val uuidStr = base64ToUuidString(b64).forceResult
     uuidStr should equal(testUuid.toString())

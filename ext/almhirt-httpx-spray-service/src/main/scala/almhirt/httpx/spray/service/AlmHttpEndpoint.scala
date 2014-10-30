@@ -169,7 +169,7 @@ trait AlmHttpEndpoint {
             case TrackedCommandResult(id, CommandStatus.Executed) ⇒
               ctx.complete(StatusCodes.OK, id.value)
             case TrackedCommandResult(id, CommandStatus.NotExecuted(cause)) ⇒
-              problemTerminator.terminateProblem(ctx, CommandExecutionFailedProblem("A was not completed", args = Map("command-id" -> id.value), cause = Some(cause)))
+              problemTerminator.terminateProblem(ctx, CommandExecutionFailedProblem("A was not completed", args = Map("command-id" → id.value), cause = Some(cause)))
             case TrackingFailed(id, problem) ⇒
               problemTerminator.terminateProblem(ctx, problem)
           }

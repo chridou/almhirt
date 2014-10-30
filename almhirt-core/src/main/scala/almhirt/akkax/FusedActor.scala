@@ -383,8 +383,8 @@ trait SyncFusedActor { me: AlmActor ⇒
   }
   /**
    * Valid transitions:
-   * FuseRemoved -> HalfOpen
-   * FuseRemoved -> Destroyed
+   * FuseRemoved → HalfOpen
+   * FuseRemoved → Destroyed
    */
   private object InternalFuseRemoved extends InternalState {
     private var enteredNanos = 0L

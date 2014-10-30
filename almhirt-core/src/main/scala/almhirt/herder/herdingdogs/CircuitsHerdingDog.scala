@@ -22,7 +22,7 @@ private[almhirt] class CircuitsHerdingDog()(implicit override val almhirtContext
   def receiveRunning: Receive = {
     case RegisterCircuitControl(ownerId, cb) ⇒
       log.info(s"""Circuit control registered for "${ownerId}".""")
-      circuitControls = circuitControls + (ownerId -> cb)
+      circuitControls = circuitControls + (ownerId → cb)
 
     case DeregisterCircuitControl(ownerId) ⇒
       log.info(s"""Circuit control deregistered for "${ownerId}".""")

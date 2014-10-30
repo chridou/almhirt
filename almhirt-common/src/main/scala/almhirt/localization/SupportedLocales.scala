@@ -32,7 +32,7 @@ object SupportedLocales {
         if (isSupported(locale))
           toValid(locale).success
         else {
-          val args = Map("unsupported-locale" -> locale, "supported-locales" -> supportedLocales.toList)
+          val args = Map("unsupported-locale" → locale, "supported-locales" → supportedLocales.toList)
           LocaleNotSupportedProblem(s""""$locale" is not supported. The supported locales are [${supportedLocales.mkString(" ,")}].""").failure
         }
       }

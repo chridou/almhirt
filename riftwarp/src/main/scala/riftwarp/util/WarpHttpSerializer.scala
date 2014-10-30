@@ -38,7 +38,7 @@ class WarpHttpSerializer[T](riftWarp: RiftWarp)(implicit tag: ClassTag[T]) exten
         case TextBody(text) if theChannel.httpTransmission == HttpTransmissionAsText ⇒
           riftWarp.arrival(channel, text, options).flatMap(_.castTo[T])
         case _ ⇒
-          UnspecifiedProblem(s""""$channel" is neither a binary nor a text channel or the serialized representations do not match("${what.getClass().getSimpleName()}" -> "${theChannel.httpTransmission}").""").failure
+          UnspecifiedProblem(s""""$channel" is neither a binary nor a text channel or the serialized representations do not match("${what.getClass().getSimpleName()}" → "${theChannel.httpTransmission}").""").failure
       }
     } yield result
 }

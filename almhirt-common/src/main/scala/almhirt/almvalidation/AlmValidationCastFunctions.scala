@@ -9,15 +9,15 @@ object CastHelper {
    * 
    */
   private[almvalidation] val toBoxed = Map[Class[_], Class[_]](
-    classOf[Boolean] -> classOf[java.lang.Boolean],
-    classOf[Byte] -> classOf[java.lang.Byte],
-    classOf[Char] -> classOf[java.lang.Character],
-    classOf[Short] -> classOf[java.lang.Short],
-    classOf[Int] -> classOf[java.lang.Integer],
-    classOf[Long] -> classOf[java.lang.Long],
-    classOf[Float] -> classOf[java.lang.Float],
-    classOf[Double] -> classOf[java.lang.Double],
-    classOf[Unit] -> classOf[scala.runtime.BoxedUnit])
+    classOf[Boolean] → classOf[java.lang.Boolean],
+    classOf[Byte] → classOf[java.lang.Byte],
+    classOf[Char] → classOf[java.lang.Character],
+    classOf[Short] → classOf[java.lang.Short],
+    classOf[Int] → classOf[java.lang.Integer],
+    classOf[Long] → classOf[java.lang.Long],
+    classOf[Float] → classOf[java.lang.Float],
+    classOf[Double] → classOf[java.lang.Double],
+    classOf[Unit] → classOf[scala.runtime.BoxedUnit])
 
 }
 

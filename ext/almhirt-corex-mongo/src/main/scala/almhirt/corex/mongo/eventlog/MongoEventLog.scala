@@ -104,10 +104,10 @@ private[almhirt] class MongoEventLogImpl(
 
   val circuitBreaker = AlmCircuitBreaker(circuitControlSettings, almhirtContext.futuresContext, context.system.scheduler)
 
-  val projectionFilter = BSONDocument("event" -> 1)
+  val projectionFilter = BSONDocument("event" → 1)
 
   val noSorting = BSONDocument()
-  val sortByTimestamp = BSONDocument("timestamp" -> 1)
+  val sortByTimestamp = BSONDocument("timestamp" → 1)
 
   private val fromBsonDocToEvent: Enumeratee[BSONDocument, Event] =
     Enumeratee.mapM[BSONDocument] { doc ⇒ scala.concurrent.Future { documentToEvent(doc).resultOrEscalate }(serializationExecutor) }
@@ -117,10 +117,10 @@ private[almhirt] class MongoEventLogImpl(
       serialized ← serializeEvent(event)
     } yield {
       BSONDocument(
-        ("_id" -> BSONString(event.eventId.value)),
-        ("timestamp" -> localDateTimeToBsonDateTime(event.timestamp)),
-        ("type" -> BSONString(event.getClass().getSimpleName())),
-        ("event" -> serialized))
+        ("_id" → BSONString(event.eventId.value)),
+        ("timestamp" → localDateTimeToBsonDateTime(event.timestamp)),
+        ("type" → BSONString(event.getClass().getSimpleName())),
+        ("event" → serialized))
     }).leftMap(p ⇒ SerializationProblem(s"""Could not serialize a "${event.getClass().getName()}".""", cause = Some(p)))
   }
 
@@ -183,51 +183,51 @@ private[almhirt] class MongoEventLogImpl(
 
       case LocalDateTimeRange(From(from), EndOfTime) ⇒
         BSONDocument(
-          "timestamp" -> BSONDocument("$gte" -> localDateTimeToBsonDateTime(from)))
+          "timestamp" → BSONDocument("$gte" → localDateTimeToBsonDateTime(from)))
 
       case LocalDateTimeRange(After(after), EndOfTime) ⇒
         BSONDocument(
-          "timestamp" -> BSONDocument("$gt" -> localDateTimeToBsonDateTime(after)))
+          "timestamp" → BSONDocument("$gt" → localDateTimeToBsonDateTime(after)))
 
       case LocalDateTimeRange(BeginningOfTime, To(to)) ⇒
         BSONDocument(
-          "timestamp" -> BSONDocument("$lte" -> localDateTimeToBsonDateTime(to)))
+          "timestamp" → BSONDocument("$lte" → localDateTimeToBsonDateTime(to)))
 
       case LocalDateTimeRange(BeginningOfTime, Until(until)) ⇒
         BSONDocument(
-          "timestamp" -> BSONDocument("$lt" -> localDateTimeToBsonDateTime(until)))
+          "timestamp" → BSONDocument("$lt" → localDateTimeToBsonDateTime(until)))
 
       case LocalDateTimeRange(From(from), To(to)) ⇒
         BSONDocument(
-          "$and" -> BSONDocument(
-            "timestamp" -> BSONDocument(
-              "$gte" -> localDateTimeToBsonDateTime(from)),
-            "timestamp" -> BSONDocument(
-              "$lte" -> localDateTimeToBsonDateTime(to))))
+          "$and" → BSONDocument(
+            "timestamp" → BSONDocument(
+              "$gte" → localDateTimeToBsonDateTime(from)),
+            "timestamp" → BSONDocument(
+              "$lte" → localDateTimeToBsonDateTime(to))))
 
       case LocalDateTimeRange(From(from), Until(until)) ⇒
         BSONDocument(
-          "$and" -> BSONDocument(
-            "timestamp" -> BSONDocument(
-              "$gte" -> localDateTimeToBsonDateTime(from)),
-            "timestamp" -> BSONDocument(
-              "$lt" -> localDateTimeToBsonDateTime(until))))
+          "$and" → BSONDocument(
+            "timestamp" → BSONDocument(
+              "$gte" → localDateTimeToBsonDateTime(from)),
+            "timestamp" → BSONDocument(
+              "$lt" → localDateTimeToBsonDateTime(until))))
 
       case LocalDateTimeRange(After(after), To(to)) ⇒
         BSONDocument(
-          "$and" -> BSONDocument(
-            "timestamp" -> BSONDocument(
-              "$gt" -> localDateTimeToBsonDateTime(after)),
-            "timestamp" -> BSONDocument(
-              "$lte" -> localDateTimeToBsonDateTime(to))))
+          "$and" → BSONDocument(
+            "timestamp" → BSONDocument(
+              "$gt" → localDateTimeToBsonDateTime(after)),
+            "timestamp" → BSONDocument(
+              "$lte" → localDateTimeToBsonDateTime(to))))
 
       case LocalDateTimeRange(After(after), Until(until)) ⇒
         BSONDocument(
-          "$and" -> BSONDocument(
-            "timestamp" -> BSONDocument(
-              "$gt" -> localDateTimeToBsonDateTime(after)),
-            "timestamp" -> BSONDocument(
-              "$lt" -> localDateTimeToBsonDateTime(until))))
+          "$and" → BSONDocument(
+            "timestamp" → BSONDocument(
+              "$gt" → localDateTimeToBsonDateTime(after)),
+            "timestamp" → BSONDocument(
+              "$lt" → localDateTimeToBsonDateTime(until))))
     }
   }
 
@@ -254,7 +254,7 @@ private[almhirt] class MongoEventLogImpl(
       val toTry = () ⇒ {
         val collection = db(collectionName)
         (for {
-          idxRes ← collection.indexesManager.ensure(MIndex(List("timestamp" -> IndexType.Ascending), name = Some("idx_timestamp"), unique = false))
+          idxRes ← collection.indexesManager.ensure(MIndex(List("timestamp" → IndexType.Ascending), name = Some("idx_timestamp"), unique = false))
         } yield (idxRes)).toAlmFuture
       }
 
@@ -345,7 +345,7 @@ private[almhirt] class MongoEventLogImpl(
     case FindEvent(eventId) ⇒
       val pinnedSender = sender
       val collection = db(collectionName)
-      val query = BSONDocument("_id" -> BSONString(eventId.value))
+      val query = BSONDocument("_id" → BSONString(eventId.value))
       val res =
         for {
           docs ← collection.find(query).cursor.collect[List](2, true).toAlmFuture

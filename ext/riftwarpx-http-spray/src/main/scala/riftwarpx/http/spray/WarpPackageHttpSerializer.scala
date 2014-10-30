@@ -35,7 +35,7 @@ class WarpPackageHttpDeserializer(rematerializers: Rematerializers) extends Http
         case TextBody(text) if theChannel.httpTransmission == HttpTransmissionAsText ⇒
           rematerializers.rematerializeTyped[String](theChannel.channelDescriptor, text, Map.empty)
         case _ ⇒
-          SerializationProblem(s""""$theChannel" is neither a binary nor a text channel or the serialized representations do not match("${what.getClass().getSimpleName()}" -> "${theChannel.httpTransmission}").""").failure
+          SerializationProblem(s""""$theChannel" is neither a binary nor a text channel or the serialized representations do not match("${what.getClass().getSimpleName()}" → "${theChannel.httpTransmission}").""").failure
       }
     } yield result
 }
