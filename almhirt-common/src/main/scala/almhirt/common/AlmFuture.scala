@@ -192,9 +192,13 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
   def successEffect(effect: R ⇒ Unit)(implicit executionContext: ExecutionContext): AlmFuture[R] =
     andThen { _.fold(_ ⇒ (), succ ⇒ effect(succ)) }
 
-  /** Use when only interested in a success and a failure can be converted to a success to rejoin with the happy path */
+  @deprecated(message = "Use onSuccessWithRecoveredFailure", since = "0.7.1")
   def onSuccessWithRejoinedFailure[U >: R](rejoin: Problem ⇒ U, onRes: U ⇒ Unit)(implicit executionContext: ExecutionContext): Unit =
-    this.rejoinFailure(rejoin).onSuccess(onRes)
+    this.recover(rejoin).onSuccess(onRes)
+
+  /** Use when only interested in a success and a failure can be converted to a success to rejoin with the happy path */
+  def onSuccessWithRecoveredFailure[U >: R](rejoin: Problem ⇒ U, onRes: U ⇒ Unit)(implicit executionContext: ExecutionContext): Unit =
+    this.recover(rejoin).onSuccess(onRes)
 
   /** Use when only interested in a failure and a successful result doesn't matter */
   def onFailure(onProb: Problem ⇒ Unit)(implicit executionContext: ExecutionContext): Unit =
@@ -222,14 +226,35 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
   def failureEffect(effect: Problem ⇒ Unit)(implicit executionContext: ExecutionContext): AlmFuture[R] =
     andThen { _.fold(effect, succ ⇒ ()) }
 
-  /** In case of a failure, rejoin with the happy path */
+  @deprecated(message = "Use recover", since = "0.7.1")
   def rejoinFailure[U >: R](rejoin: Problem ⇒ U)(implicit executionContext: ExecutionContext): AlmFuture[U] = {
     this.fold[U](
       rejoin,
       succ ⇒ succ)
   }
 
-  /** A some successes can become a failure */
+  /** In case of a failure, rejoin with the happy path */
+  def recover[U >: R](recover: Problem ⇒ U)(implicit executionContext: ExecutionContext): AlmFuture[U] = {
+    this.fold[U](
+      recover,
+      succ ⇒ succ)
+  }
+
+  /** In case of a failure, rejoin with the happy path */
+  def mapRecover[U >: R](map: R => U, recover: Problem ⇒ U)(implicit executionContext: ExecutionContext): AlmFuture[U] = {
+    this.fold[U](
+      recover,
+      succ ⇒ map(succ))
+  }
+
+  /** extract an U from the success. In case of a failure, rejoin with the happy path */
+  def collectRecover[U >: R](collect: PartialFunction[R, U], recover: Problem ⇒ U)(implicit executionContext: ExecutionContext): AlmFuture[U] = {
+    this.fold[U](
+      recover,
+      succ ⇒ collect(succ))
+  }
+
+  /** A success becaomes a failure */
   def divertToFailure(divert: PartialFunction[R, Problem])(implicit executionContext: ExecutionContext): AlmFuture[R] = {
     this.foldV(
       fail ⇒ fail.failure,
