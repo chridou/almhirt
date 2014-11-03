@@ -8,7 +8,7 @@ import sbtunidoc.Plugin.UnidocKeys._
 
 object BuildSettings {
   val buildOrganization = "org.almhirt"
-  val buildScalaVersion = "2.11.3"
+  val buildScalaVersion = "2.11.4"
 
   val akkaVersion = "2.3.+"
   val akkaStreamsVersion = "0.9"
