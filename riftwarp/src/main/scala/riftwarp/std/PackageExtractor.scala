@@ -149,6 +149,12 @@ trait WarpObjectLookUp {
   def getWith[T](label: String, unpacker: WarpUnpacker[T])(implicit unpackers: WarpUnpackers): AlmValidation[T] =
     getWarpPackage(label).flatMap(unpacker(_))
 
+  def tryGetWith2[T](label: String)(implicit unpacker: WarpUnpacker[T], unpackers: WarpUnpackers): AlmValidation[Option[T]] =
+    tryGetWarpPackage(label).map(unpacker(_)).validationOut
+
+  def getWith2[T](label: String)(implicit unpacker: WarpUnpacker[T], unpackers: WarpUnpackers): AlmValidation[T] =
+    getWarpPackage(label).flatMap(unpacker(_))
+    
   def tryGet(label: String, overrideDescriptor: Option[WarpDescriptor] = None, backUpDescriptor: Option[WarpDescriptor] = None)(implicit unpackers: WarpUnpackers): AlmValidation[Option[Any]] =
     tryGetWarpPackage(label).map(wp ⇒ getMapping(label, wp, overrideDescriptor, backUpDescriptor)).validationOut
 
