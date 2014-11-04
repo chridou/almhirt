@@ -99,6 +99,15 @@ trait PackageBuilderFuns {
       case None ⇒ WarpElement(label).success
     }
 
+  def CWith2[A](label: String, what: Traversable[A])(implicit  packer: WarpPacker[A], packers: WarpPackers): AlmValidation[WarpElement] =
+    toWarpCollectionWith(what, packer).map(x ⇒ WarpElement(label, Some(x)))
+
+  def CWithOpt2[A](label: String, what: Option[Traversable[A]])(implicit  packer: WarpPacker[A], packers: WarpPackers): AlmValidation[WarpElement] =
+    what match {
+      case Some(v) ⇒ toWarpCollectionWith(v, packer).map(x ⇒ WarpElement(label, Some(x)))
+      case None ⇒ WarpElement(label).success
+    }
+  
   def CLookUp[A](label: String, what: Traversable[A])(implicit packers: WarpPackers): AlmValidation[WarpElement] =
     toWarpCollectionLookUp(what).map(x ⇒ WarpElement(label, Some(x)))
 

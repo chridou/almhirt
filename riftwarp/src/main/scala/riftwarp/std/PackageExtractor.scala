@@ -194,6 +194,12 @@ trait WarpObjectLookUp {
   def getManyWith[T](label: String, unpacker: WarpUnpacker[T])(implicit unpackers: WarpUnpackers): AlmValidation[Vector[T]] =
     getWarpPackage(label).flatMap(wp ⇒ getManyWithMapping[T](label, wp, unpacker))
 
+  def tryGetManyWith2[T](label: String)(implicit unpacker: WarpUnpacker[T], unpackers: WarpUnpackers): AlmValidation[Option[Vector[T]]] =
+    tryGetWarpPackage(label).map(wp ⇒ getManyWithMapping[T](label, wp, unpacker)).validationOut
+
+  def getManyWith2[T](label: String)(implicit unpacker: WarpUnpacker[T], unpackers: WarpUnpackers): AlmValidation[Vector[T]] =
+    getWarpPackage(label).flatMap(wp ⇒ getManyWithMapping[T](label, wp, unpacker))
+    
   @inline
   private def getManyWithMapping[T](label: String, warpPackage: WarpPackage, unpacker: WarpUnpacker[T])(implicit unpackers: WarpUnpackers): AlmValidation[Vector[T]] =
     warpPackage match {
