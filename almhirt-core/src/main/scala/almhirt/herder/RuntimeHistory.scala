@@ -38,7 +38,7 @@ object RuntimeHistoryEntry {
     RuntimeHistoryEntry(
       timestamp = ccuad.getUtcTimestamp,
       freeMemory = free,
-      usedMemory = runtime.totalMemory(),
+      usedMemory = used,
       totalMemory = total,
       maxMemory = runtime.maxMemory())
   }
