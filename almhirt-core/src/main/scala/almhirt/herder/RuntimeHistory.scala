@@ -20,11 +20,11 @@ final case class RuntimeHistoryEntry(
     freeMemory.toDouble / maxMemory
 
   def niceString(): String =
-    s"""|Free memory: ${freeMemory.toDouble / 1000000.0} MB
-       |Total memory: ${totalMemory.toDouble / 1000000.0} MB
-       |Max memory: ${maxMemory.toDouble / 1000000.0} MB
-       |Used(relative): ${usedMemoryRelative * 100.0}
-       |Used(absolute): ${usedMemoryAbsolute * 100.0}""".stripMargin
+    s"""|Free memory: ${Math.round(freeMemory.toDouble / 1000000.0)}MB (${Math.round(freeMemory.toDouble / 1048576.0)}MiB)
+       |Total memory: ${Math.round(totalMemory.toDouble / 1000000.0)}MB (${Math.round(totalMemory.toDouble / 1048576.0)}MiB)
+       |Max memory: ${Math.round(maxMemory.toDouble / 1000000.0)}MB (${Math.round(maxMemory.toDouble / 1048576.0)}MiB)
+       |Used(relative): ${(usedMemoryRelative * 100.0)}
+       |Used(absolute): ${(usedMemoryAbsolute * 100.0)}""".stripMargin
 }
 
 object RuntimeHistoryEntry {
