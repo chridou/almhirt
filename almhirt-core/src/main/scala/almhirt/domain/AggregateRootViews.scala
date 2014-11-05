@@ -31,12 +31,11 @@ object AggregateRootViews {
     viewsConfigName: Option[String] = None)(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
     import almhirt.configuration._
     import almhirt.almvalidation.kit._
+    val aggregateEventLogToResolve = ResolvePath(ctx.localActorPaths.eventLogs / almhirt.eventlog.AggregateRootEventLog.actorname)
     val path = "almhirt.components.views.aggregate-root-views" + viewsConfigName.map("." + _).getOrElse("")
     for {
       section ← ctx.config.v[com.typesafe.config.Config](path)
-      aggregateEventLogPath ← section.v[String]("aggregate-event-log-path")
-      aggregateEventLogToResolve ← inTryCatch { ResolvePath(ActorPath.fromString(aggregateEventLogPath)) }
-      snapShotStoragePath ← section.magicOption[String]("snapshot-storage-path")
+     snapShotStoragePath ← section.magicOption[String]("snapshot-storage-path")
       snapShotStorageToResolve ← inTryCatch { snapShotStoragePath.map(path ⇒ ResolvePath(ActorPath.fromString(path))) }
       resolveSettings ← section.v[ResolveSettings]("resolve-settings")
       eventBufferSize ← section.v[Int]("event-buffer-size")

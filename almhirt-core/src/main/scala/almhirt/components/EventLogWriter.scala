@@ -36,19 +36,18 @@ object EventLogWriter {
 
   def props(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
     import almhirt.configuration._
+    val eventlogPath = ctx.localActorPaths.eventLogs / almhirt.eventlog.EventLog.actorname
     for {
       section ← ctx.config.v[com.typesafe.config.Config]("almhirt.components.misc.event-sink-hub.event-publishers.event-log-writer")
       enabled ← section.v[Boolean]("enabled")
       autoConnect ← section.v[Boolean]("auto-connect")
       res ← if (enabled) {
         for {
-          eventLogPathStr ← section.v[String]("event-log-path")
-          eventLogToResolve ← inTryCatch { ResolvePath(ActorPath.fromString(eventLogPathStr)) }
           warningThreshold ← section.v[FiniteDuration]("warning-threshold")
           resolveSettings ← section.v[ResolveSettings]("resolve-settings")
           circuitControlSettings ← section.v[CircuitControlSettings]("circuit-control")
           circuitStateReportingInterval ← section.magicOption[FiniteDuration]("circuit-state-reporting-interval")
-        } yield propsRaw(eventLogToResolve, resolveSettings, warningThreshold, circuitControlSettings, circuitStateReportingInterval, autoConnect)
+        } yield propsRaw( ResolvePath(eventlogPath), resolveSettings, warningThreshold, circuitControlSettings, circuitStateReportingInterval, autoConnect)
       } else {
         ActorDevNullSubscriberWithAutoSubscribe.props[Event](1, if (autoConnect) Some(ctx.eventStream) else None).success
       }

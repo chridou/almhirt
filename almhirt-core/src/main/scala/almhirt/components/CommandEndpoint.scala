@@ -33,10 +33,9 @@ object CommandEndpoint {
   def props(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
     import almhirt.configuration._
     import almhirt.almvalidation.kit._
+    val commandStatusTrackerToResolve = ResolvePath(ctx.localActorPaths.misc / CommandStatusTracker.actorname)
     for {
       section ← ctx.config.v[com.typesafe.config.Config]("almhirt.components.misc.command-endpoint")
-      commandStatusTrackerPathStr ← section.v[String]("command-status-tracker-path")
-      commandStatusTrackerToResolve ← inTryCatch { ResolvePath(ActorPath.fromString(commandStatusTrackerPathStr)) }
       maxTrackingDuration ← section.v[FiniteDuration]("max-tracking-duration")
       resolveSettings ← section.v[ResolveSettings]("resolve-settings")
       circuitControlSettings ← section.v[CircuitControlSettings]("circuit-control")
@@ -156,7 +155,7 @@ private[almhirt] class CommandEndpointImpl(
               fail ⇒ {
                 fail match {
                   case OperationTimedOutProblem(p) ⇒ receiver ! TrackingFailed(dispatchableCmd.commandId, p)
-                  case _ ⇒ receiver ! TrackingFailed(dispatchableCmd.commandId, fail)
+                  case _                           ⇒ receiver ! TrackingFailed(dispatchableCmd.commandId, fail)
                 }
                 reportMinorFailure(fail)
                 reportRejectedCommand(cmd, MinorSeverity, fail)
