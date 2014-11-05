@@ -17,15 +17,21 @@ object RuntimeHerdingDog {
     for {
       section ← ctx.config.v[Config](configPath)
       runtimePollingInterval ← section.v[FiniteDuration]("polling-interval")
+      warningPercentage ← section.v[Double]("warning-percentage")
+      criticalPrcentage ← section.v[Double]("critical-percentage")
       historySize ← section.v[Int]("history-size")
-    } yield Props(new RuntimeHerdingDog(historySize, runtimePollingInterval))
+    } yield Props(new RuntimeHerdingDog(historySize, runtimePollingInterval, warningPercentage, criticalPrcentage))
   }
 
   val actorname = "runtime-herdingdog"
   private val componentId = ComponentId(AppName("almhirt"), ComponentName("runtime-watchdog"))
 }
 
-private[almhirt] class RuntimeHerdingDog(historySize: Int, runtimePollingInterval: FiniteDuration)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor {
+private[almhirt] class RuntimeHerdingDog(
+  historySize: Int,
+  runtimePollingInterval: FiniteDuration,
+  warningPercentage: Double,
+  criticalPercentage: Double)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor {
   import HerderMessages.InformationMessages._
 
   val runtime = Runtime.getRuntime()
@@ -48,7 +54,13 @@ private[almhirt] class RuntimeHerdingDog(historySize: Int, runtimePollingInterva
     case PollRuntime =>
       val newEntry = RuntimeHistoryEntry(runtime)
       history.add(newEntry)
-      this.informNotWorthMentioning(newEntry.niceString)
+      val memPercentage = newEntry.usedMemoryAbsolute * 100.0
+      if (memPercentage >= criticalPercentage)
+        this.informVeryImportant(newEntry.niceString)
+      else if (memPercentage >= warningPercentage)
+        this.informImportant(newEntry.niceString)
+      else
+        this.informNotWorthMentioning(newEntry.niceString)
       context.system.scheduler.scheduleOnce(runtimePollingInterval, self, PollRuntime)
   }
 
