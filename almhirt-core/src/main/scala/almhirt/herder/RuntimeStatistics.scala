@@ -17,7 +17,7 @@ final case class RuntimeHistoryEntry(
     freeMemory.toDouble / totalMemory
 
   def usedMemoryAbsolute: Double =
-    maxMemory.toDouble / totalMemory
+    freeMemory.toDouble / maxMemory
 
   def niceString(): String =
     s"""|Free memory: ${freeMemory.toDouble / 1000000.0} MB
