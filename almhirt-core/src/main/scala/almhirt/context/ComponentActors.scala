@@ -50,17 +50,21 @@ private[almhirt] object componentactors {
     }
 
     val eventLogs = context.actorOf(eventLogsProps(almhirtContext), "event-logs")
+    logInfo(s"Created ${eventLogs.path.name}.")
     val views = context.actorOf(viewsProps(almhirtContext), "views")
+    logInfo(s"Created ${views.path.name}.")
     val misc = context.actorOf(miscProps(almhirtContext), "misc")
+    logInfo(s"Created ${misc.path.name}.")
     val apps =
       dedicatedAppsDispatcher match {
-        case Some(name) => 
+        case Some(name) =>
           logInfo("Using dedicated apps dispatcher")
           context.actorOf(appsProps(almhirtContext).withDispatcher(name), "apps")
-        case None       => 
+        case None =>
           logWarning("Using default dispatcher as apps dispatcher.")
           context.actorOf(appsProps(almhirtContext), "apps")
       }
+    logInfo(s"Created ${apps.path.name}.")
 
     override def receive: Receive = {
       case UnfoldFromFactories(factories) ⇒ {
