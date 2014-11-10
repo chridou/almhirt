@@ -12,7 +12,8 @@ package object mongo {
       for {
         section ← config.v[Config](path)
         hosts ← section.v[List[String]]("hosts")
-      } yield MongoConnectionSettings(hosts)
+        numChannelsPerNode ← section.magicDefault[Int]("default", 10)("num-channels-per-node")
+      } yield MongoConnectionSettings(hosts, numChannelsPerNode = numChannelsPerNode)
 
     def tryGetValue(config: Config, path: String): AlmValidation[Option[MongoConnectionSettings]] =
       config.opt[Config](path).flatMap {
