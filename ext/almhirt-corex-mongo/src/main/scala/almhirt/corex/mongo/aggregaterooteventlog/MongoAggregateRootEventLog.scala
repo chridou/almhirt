@@ -181,7 +181,7 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
         respondTo ! AggregateRootEventCommitted(event.eventId)
         val lap = start.lap
         if (lap > writeWarnThreshold)
-          log.warning(s"""Storing aggregate root event "${event.getClass().getSimpleName()}(${event.eventId})" took longer than ${writeWarnThreshold.defaultUnitString}(${lap.defaultUnitString}).""")
+          logWarning(s"""Storing aggregate root event "${event.getClass().getSimpleName()}(${event.eventId})" took longer than ${writeWarnThreshold.defaultUnitString}(${lap.defaultUnitString}).""")
       })
   }
 
@@ -230,7 +230,7 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
     val enumeratorWithCallBack = eventsEnumerator.onDoneEnumerating(() ⇒ {
       val lap = start.lap
       if (lap > readWarnThreshold)
-        log.warning(s"""Fetching aggregate root events took longer than ${readWarnThreshold.defaultUnitString}(${lap.defaultUnitString}).""")
+        logWarning(s"""Fetching aggregate root events took longer than ${readWarnThreshold.defaultUnitString}(${lap.defaultUnitString}).""")
     })
     respondTo ! FetchedAggregateRootEvents(enumeratorWithCallBack)
   }
@@ -245,7 +245,7 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
       val toTry = () ⇒ (for {
         collectinNames ← db.collectionNames
         createonRes ← if (collectinNames.contains(collectionName)) {
-          log.info(s"""Collection "$collectionName" already exists.""")
+          logInfo(s"""Collection "$collectionName" already exists.""")
           Future.successful(false)
         } else {
           logInfo(s"""Collection "$collectionName" does not yet exist.""")

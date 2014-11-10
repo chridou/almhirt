@@ -128,7 +128,7 @@ private[almhirt] trait AggregateRootViewsSkeleton[E <: AggregateRootEvent] exten
       logInfo("Found dependencies.")
       connectTo match {
         case Some(publisher) ⇒
-          log.info("Subscribing myself.")
+          logInfo("Subscribing myself.")
           AggregateRootViews.subscribeTo[E](publisher, self)
         case None ⇒
           ()

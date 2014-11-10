@@ -162,16 +162,16 @@ private[almhirt] class MongoEventLogImpl(
 
         respondTo match {
           case Some(r) ⇒
-            log.warning(msg)
+            logWarning(msg)
             r ! EventNotLogged(event.eventId, PersistenceProblem(msg, cause = Some(fail)))
           case None ⇒
-            log.error(msg)
+            logError(msg)
         }
       },
       start ⇒ {
         val lap = start.lap
         if (lap > writeWarnThreshold)
-          log.warning(s"""Storing event "${event.getClass().getSimpleName()}(${event.eventId})" took longer than ${writeWarnThreshold.defaultUnitString}(${lap.defaultUnitString}).""")
+          logWarning(s"""Storing event "${event.getClass().getSimpleName()}(${event.eventId})" took longer than ${writeWarnThreshold.defaultUnitString}(${lap.defaultUnitString}).""")
         respondTo.foreach(_ ! EventLogged(event.eventId))
       })
   }
@@ -249,7 +249,7 @@ private[almhirt] class MongoEventLogImpl(
 
   def uninitializedReadWrite: Receive = {
     case Initialize ⇒
-      log.info("Initializing(read/write)")
+      logInfo("Initializing(read/write)")
 
       val toTry = () ⇒ {
         val collection = db(collectionName)
@@ -274,12 +274,12 @@ private[almhirt] class MongoEventLogImpl(
         actorName = Some("initializes-collection"))
 
     case Initialized ⇒
-      log.info("Initialized")
+      logInfo("Initialized")
       registerCircuitControl(circuitBreaker)
       context.become(receiveEventLogMsg(false))
 
     case InitializeFailed(prob) ⇒
-      log.error(s"Initialize failed:\n$prob")
+      logError(s"Initialize failed:\n$prob")
       reportCriticalFailure(prob)
       sys.error(prob.message)
 
@@ -292,7 +292,7 @@ private[almhirt] class MongoEventLogImpl(
 
   def uninitializedReadOnly: Receive = {
     case Initialize ⇒
-      log.info("Initializing(read-only)")
+      logInfo("Initializing(read-only)")
       context.retryWithLogging[Unit](
         retryContext = s"Find collection $collectionName",
         toTry = () ⇒ db.collectionNames.toAlmFuture.foldV(
@@ -318,13 +318,13 @@ private[almhirt] class MongoEventLogImpl(
       context.become(receiveEventLogMsg(true))
 
     case InitializeFailed(prob) ⇒
-      log.error(s"Initialize failed:\n$prob")
+      logError(s"Initialize failed:\n$prob")
       reportCriticalFailure(prob)
       sys.error(prob.message)
 
     case LogEvent(event, acknowledge) ⇒
       if (!acknowledge)
-        log.warning(s"""Received event ${event.getClass().getSimpleName()} while uninitialized.""")
+        logWarning(s"""Received event ${event.getClass().getSimpleName()} while uninitialized.""")
       else
         sender() ! EventNotLogged(event.eventId, IllegalOperationProblem("The event log is in read only mode."))
 
@@ -336,7 +336,7 @@ private[almhirt] class MongoEventLogImpl(
     case LogEvent(event, acknowledge) ⇒
       if (readOnly)
         if (!acknowledge)
-          log.warning("Received log")
+          logWarning("Received log message even though I am in read only mode")
         else
           sender() ! EventNotLogged(event.eventId, IllegalOperationProblem("The event log is in read only mode."))
       else
@@ -360,7 +360,7 @@ private[almhirt] class MongoEventLogImpl(
       res.onComplete(
         problem ⇒ {
           pinnedSender ! FindEventFailed(eventId, problem)
-          log.error(problem.toString())
+          logError(problem.toString())
           reportMajorFailure(problem)
         },
         eventOpt ⇒ pinnedSender ! FoundEvent(eventId, eventOpt))
