@@ -63,6 +63,9 @@ object AggregateRootHive {
 }
 
 private[almhirt] object AggregateRootHiveInternals {
+  import almhirt.problem.ProblemCause
+  final case class ReportDroneError(msg: String, cause: ProblemCause)
+  final case class ReportDroneWarning(msg: String, cause: ProblemCause)
 }
 
 private[almhirt] class AggregateRootHive(
@@ -90,10 +93,24 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
 
   override val supervisorStrategy =
     OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
-      case _: AggregateRootEventStoreFailedReadingException ⇒ Restart
-      case _: RebuildAggregateRootFailedException ⇒ Restart
-      case _: CouldNotDispatchAllAggregateRootEventsException ⇒ Restart
-      case _: Exception ⇒ Escalate
+      case exn: AggregateRootEventStoreFailedReadingException ⇒
+        logError(s"Handling escalated error for ${sender.path.name} with a action Restart.", exn)
+        Restart
+      case exn: RebuildAggregateRootFailedException ⇒
+        logError(s"Handling escalated error for ${sender.path.name} with a action Escalate.", exn)
+        Escalate
+      case exn: CouldNotDispatchAllAggregateRootEventsException ⇒
+        logError(s"Handling escalated error for ${sender.path.name} with a action Resume.", exn)
+        Resume
+      case exn: WrongAggregateRootEventTypeException ⇒
+        logError(s"Handling escalated error for ${sender.path.name} with a action Escalate.", exn)
+        Escalate
+      case exn: UserInitializationFailedException ⇒
+        logError(s"Handling escalated error for ${sender.path.name} with a action Restart.", exn)
+        Restart
+      case exn: Exception ⇒
+        logError(s"Handling escalated error for ${sender.path.name} with a action Stop.", exn)
+        Stop
     }
 
   def aggregateEventLogToResolve: ToResolve
@@ -233,6 +250,14 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
 
     case OnContractExpired ⇒
       logInfo(s"Contract with broker expired. There are ${bufferedEvents.size} events still to deliver.")
+
+    case ReportDroneError(msg, cause) =>
+      logError(s"Drone ${sender().path.name} reported an error: $msg")
+      reportMajorFailure(cause)
+
+    case ReportDroneWarning(msg, cause) =>
+      logWarning(s"Drone ${sender().path.name} reported a warning: $msg")
+      reportMinorFailure(cause)
   }
 
   override def receive: Receive = receiveResolve

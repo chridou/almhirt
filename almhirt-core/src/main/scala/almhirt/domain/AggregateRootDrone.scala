@@ -13,6 +13,7 @@ import almhirt.context.AlmhirtContext
 import almhirt.streaming._
 import play.api.libs.iteratee.{ Enumerator, Iteratee }
 import scala.util.Success
+import almhirt.domain.AggregateRootHiveInternals.ReportDroneWarning
 
 /** Used to commit or reject the events resulting from a command */
 trait ConfirmationContext[E <: AggregateRootEvent] {
@@ -39,7 +40,7 @@ object AggregateRootDrone {
   }
 
   def propsMaker(maker: Option[FiniteDuration] ⇒ Props,
-    droneConfigName: Option[String] = None)(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
+                 droneConfigName: Option[String] = None)(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
     import almhirt.configuration._
     val path = "almhirt.components.aggregates.aggregate-root-drone" + droneConfigName.map("." + _).getOrElse("")
     for {
@@ -61,7 +62,7 @@ private[almhirt] object AggregateRootDroneInternal {
  *  The drone can only execute on command at a time.
  */
 trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends StateChangingActorContractor[Event] {
-  me: ActorLogging with AggregateRootEventHandler[T, E] ⇒
+  me: AggregateRootEventHandler[T, E] ⇒
   import AggregateRootDroneInternalMessages._
   import almhirt.eventlog.AggregateRootEventLog._
 
@@ -82,8 +83,10 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
 
   /**
    * Override to perform your own initialization(like resolving dependencies).
-   *  Do not forget to handle any incoming command and to call #signContract" after initializing.
-   *  Use the default implementation as a template.
+   * In case of an error you must call  sendNotExecutedAndEscalate
+   *
+   * Do not forget to handle any incoming command and to call #signContract" after initializing.
+   * Use the default implementation as a template.
    */
   protected case object StartUserInitialization
   def receiveUserInitialization(currentCommand: AggregateRootCommand): Receive = {
@@ -103,10 +106,10 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
     sendMessage(Busy(unexpectedCommand))
   }
 
-  protected final def sendNotExecutedAndEscalate(currentCommand: AggregateRootCommand, throwable: Throwable) {
-    log.error(s"Escalating! Something terrible happened:\n$throwable")
-    sendMessage(CommandNotExecuted(currentCommand, UnspecifiedProblem(s"""Something really bad happened: "${throwable.getMessage}". Escalating.""", cause = Some(throwable))))
-    throw throwable
+  protected final def sendNotExecutedAndEscalate(currentCommand: AggregateRootCommand, cause: almhirt.problem.ProblemCause) {
+    context.parent ! AggregateRootHiveInternals.ReportDroneError("Escalating! Something terrible happened while performing user initialization.", cause)
+    sendMessage(CommandNotExecuted(currentCommand, UnspecifiedProblem(s"""Something really bad happened. Escalating.""", cause = Some(cause))))
+    throw UserInitializationFailedException("User initialization failed.", cause)
   }
 
   //*************
@@ -153,7 +156,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
           } else {
             sendMessage(CommandNotExecuted(
               firstCommand,
-              ConstraintViolatedProblem(s"""This drone only accepts commands for aggregate root id "${id.value}". The command targets ${firstCommand.aggId.value}.""")))
+              IllegalOperationProblem(s"""This drone only accepts commands for aggregate root id "${id.value}". The command targets ${firstCommand.aggId.value}.""")))
           }
         case None ⇒
           capturedId = Some(firstCommand.aggId)
@@ -192,8 +195,6 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
       context.become(receiveWaitingForCommandResult(nextCommand, persistedState))
 
     case AggregateRootDroneInternal.ReturnToUninitialized ⇒
-      if (log.isDebugEnabled)
-        log.debug("Returning to uninitialized.")
       context.become(receiveUninitialized)
   }
 
@@ -301,10 +302,10 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
   def receive: Receive = receiveUninitialized
 
   /** Ends with termination */
-  private def onError(ex: AggregateRootDomainException, currentCommand: AggregateRootCommand, commitedEvents: Seq[E]) {
-    log.error(s"Escalating! Something terrible happened:\n$ex")
-    sendMessage(CommandNotExecuted(currentCommand, UnspecifiedProblem(s"""Something really bad happened: "${ex.getMessage}". Escalating.""", cause = Some(ex))))
-    throw ex
+  private def onError(exn: AggregateRootDomainException, currentCommand: AggregateRootCommand, commitedEvents: Seq[E]) {
+    context.parent ! AggregateRootHiveInternals.ReportDroneError("Escalating! Something terrible happened.", exn)
+    sendMessage(CommandNotExecuted(currentCommand, UnspecifiedProblem(s"""Something really bad happened: "${exn.getMessage}". Escalating.""", cause = Some(exn))))
+    throw exn
   }
 
   private def toExecutionFailedByRejectionEvent(commandNotToExecute: AggregateRootCommand, currentCommand: AggregateRootCommand): CommandStatusChanged = {
@@ -313,8 +314,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
   }
 
   private def handleCommandFailed(persistedState: AggregateRootLifecycle[T], command: AggregateRootCommand, prob: Problem) {
-    if (log.isDebugEnabled)
-      log.debug(s"Command ${command.getClass().getName()}(${command.header}) failed:\n$prob")
+    context.parent ! AggregateRootHiveInternals.ReportDroneWarning("Excuting a command failed", prob)
     sendMessage(CommandNotExecuted(command, prob))
     becomeReceiveWaitingForCommand(persistedState)
   }
@@ -331,6 +331,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
   }
 
   override def preRestart(reason: Throwable, message: Option[Any]) {
+    context.parent ! AggregateRootHiveInternals.ReportDroneWarning("Restarting.", reason)
     super.preRestart(reason, message)
     cancelContract()
   }

@@ -1,8 +1,10 @@
 package almhirt.domain
 
+import scala.concurrent.duration._
 import akka.actor._
 import org.reactivestreams.Publisher
 import almhirt.common._
+import almhirt.akkax._
 import almhirt.almvalidation.kit._
 import almhirt.context.AlmhirtContext
 import org.reactivestreams.Subscriber
@@ -14,7 +16,7 @@ object AggregateRootNexus {
   def apply(nexusActor: ActorRef): Subscriber[AggregateRootCommand] =
     ActorSubscriber[AggregateRootCommand](nexusActor)
 
-  def propsRaw(hiveSelector: HiveSelector, hiveFactory: AggregateRootHiveFactory, commandsPublisher: Option[Publisher[Command]]): Props =
+  def propsRaw(hiveSelector: HiveSelector, hiveFactory: AggregateRootHiveFactory, commandsPublisher: Option[Publisher[Command]])(implicit ctx: AlmhirtContext): Props =
     Props(new AggregateRootNexus(commandsPublisher, hiveSelector, hiveFactory))
 
   def propsRaw(hiveSelector: HiveSelector, hiveFactory: AggregateRootHiveFactory)(implicit ctx: AlmhirtContext): Props =
@@ -33,7 +35,16 @@ object AggregateRootNexus {
 private[almhirt] class AggregateRootNexus(
   commandsPublisher: Option[Publisher[Command]],
   hiveSelector: HiveSelector,
-  hiveFactory: AggregateRootHiveFactory) extends Actor with ActorSubscriber with ActorPublisher[AggregateRootCommand] with ActorLogging with ImplicitFlowMaterializer {
+  hiveFactory: AggregateRootHiveFactory)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging with ActorSubscriber with ActorPublisher[AggregateRootCommand] with ActorLogging with ImplicitFlowMaterializer {
+
+  import akka.actor.SupervisorStrategy._
+
+  override val supervisorStrategy =
+    OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1.minute) {
+      case exn: Exception ⇒
+        logError(s"Handling escalated error for ${sender.path.name} with a action Escalate.", exn)
+        Escalate
+    }
 
   override val requestStrategy = ZeroRequestStrategy
 
@@ -74,20 +85,20 @@ private[almhirt] class AggregateRootNexus(
       }
 
     case ActorSubscriberMessage.OnError(exn) ⇒
-      log.error(exn, "Received an error via the stream.")
+      logError("Received an error via the stream.", exn)
+      throw exn
 
     case ActorPublisherMessage.Cancel ⇒
-      log.info("The fanout publisher cancelled it's subscription. Propagating cancellation.")
+      logInfo("The fanout publisher cancelled it's subscription. Propagating cancellation.")
       cancel()
 
     case Terminated(actor) ⇒
-      log.info(s"Hive ${actor.path.name} terminated.")
+      logInfo(s"Hive ${actor.path.name} terminated.")
   }
 
   def receive: Receive = receiveInitialize
 
   private def createInitialHives() {
-    //val fanout = FlowFrom[AggregateRootCommand](ActorPublisher[AggregateRootCommand](self)).toFanoutPublisher(1, AlmMath.nextPowerOf2(hiveSelector.size))
     val fanout = Source(ActorPublisher[AggregateRootCommand](self)).runWith(PublisherDrain.withFanout[AggregateRootCommand](1, AlmMath.nextPowerOf2(hiveSelector.size)))
     hiveSelector.foreach {
       case (descriptor, f) ⇒
