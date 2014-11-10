@@ -31,7 +31,7 @@ final case class RuntimeHistoryEntry(
 }
 
 object RuntimeHistoryEntry {
-  def apply(runtime: Runtime)(implicit ccuad: CanCreateDateTime): RuntimeHistoryEntry =  {   
+  def apply(runtime: Runtime)(implicit ccuad: CanCreateDateTime): RuntimeHistoryEntry = {
     val free = runtime.freeMemory()
     val total = runtime.totalMemory()
     val used = total - free
@@ -47,13 +47,17 @@ object RuntimeHistoryEntry {
 /**
  * maxMemory:
  */
-class MutableRuntimeHistory(val maxQueueSize: Int) {
+class MutableRuntimeHistory(val maxQueueSize: Int)(implicit ccuad: CanCreateDateTime) {
   private var occurencesCount: Int = 0
   private var lastOccurencesQueue = new CircularBuffer[RuntimeHistoryEntry](maxQueueSize)
+
+  private var maxUsed: (Long, Double, LocalDateTime) = (0L, 0.0, ccuad.getUtcTimestamp)
 
   def add(what: RuntimeHistoryEntry) {
     occurencesCount += 1
     lastOccurencesQueue.push(what)
+    if (what.usedMemory > maxUsed._2)
+      maxUsed = (what.usedMemory, what.usedMemoryRelative, ccuad.getUtcTimestamp)
   }
 
   def clear() {
