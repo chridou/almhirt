@@ -17,8 +17,8 @@ object SupervisorPaths {
 private[almhirt] object componentactors {
   import almhirt.akkax.{ ActorMessages, ComponentFactory }
 
-  def componentsProps(implicit ctx: AlmhirtContext): Props =
-    Props(new ComponentsSupervisor)
+  def componentsProps(dedicatedAppsDispatcher: Option[String])(implicit ctx: AlmhirtContext): Props =
+    Props(new ComponentsSupervisor(dedicatedAppsDispatcher))
 
   def viewsProps(implicit ctx: AlmhirtContext): Props =
     Props(new ViewsSupervisor)
@@ -39,7 +39,8 @@ private[almhirt] object componentactors {
 
   final case class UnfoldFromFactories(factories: ComponentFactories)
 
-  class ComponentsSupervisor(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging with ActorLogging {
+  class ComponentsSupervisor(
+    dedicatedAppsDispatcher: Option[String])(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging with ActorLogging {
     import akka.actor.SupervisorStrategy._
     override val supervisorStrategy = OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1.minute) {
       case exn ⇒
@@ -51,11 +52,19 @@ private[almhirt] object componentactors {
     val eventLogs = context.actorOf(eventLogsProps(almhirtContext), "event-logs")
     val views = context.actorOf(viewsProps(almhirtContext), "views")
     val misc = context.actorOf(miscProps(almhirtContext), "misc")
-    val apps = context.actorOf(appsProps(almhirtContext), "apps")
+    val apps =
+      dedicatedAppsDispatcher match {
+        case Some(name) => 
+          logInfo("Using dedicated apps dispatcher")
+          context.actorOf(appsProps(almhirtContext).withDispatcher(name), "apps")
+        case None       => 
+          logWarning("Using default dispatcher as apps dispatcher.")
+          context.actorOf(appsProps(almhirtContext), "apps")
+      }
 
     override def receive: Receive = {
       case UnfoldFromFactories(factories) ⇒ {
-        log.info("Unfolding components.")
+        logInfo("Unfolding components.")
 
         factories.buildEventLogs.foreach({
           case ComponentFactoryBuilderEntry(factoryBuilder, severity) ⇒
@@ -109,12 +118,12 @@ private[almhirt] object componentactors {
       case ActorMessages.CreateChildActor(componentFactory, returnActorRef, correlationId) ⇒
         context.childFrom(componentFactory).fold(
           problem ⇒ {
-            log.error(s"""	|Failed to create "${componentFactory.name.getOrElse("<<<no name>>>")}":
+            logError(s"""	|Failed to create "${componentFactory.name.getOrElse("<<<no name>>>")}":
             				|$problem""".stripMargin)
             sender() ! ActorMessages.CreateChildActorFailed(problem, correlationId)
           },
           actorRef ⇒ {
-            log.info(s"Created ${actorRef.path} @ ${actorRef.path} ")
+            logInfo(s"Created ${actorRef.path} @ ${actorRef.path} ")
             if (returnActorRef)
               sender() ! ActorMessages.ChildActorCreated(actorRef, correlationId)
           })

@@ -52,7 +52,7 @@ object ContextActorPaths {
 
   def views(root: RootActorPath): ActorPath =
     components(root) / "views"
-    
+
   def misc(root: RootActorPath): ActorPath =
     components(root) / "misc"
 
@@ -85,6 +85,11 @@ object AlmhirtContext {
         useFuturesCtx ← configSection.v[Boolean]("use-dedicated-futures-dispatcher")
         useBlockersCtx ← configSection.v[Boolean]("use-dedicated-blockers-dispatcher")
         useCrunchersCtx ← configSection.v[Boolean]("use-dedicated-cruncher-dispatcher")
+        dedicatedAppsDispatcher ← configSection.v[Boolean]("use-dedicated-apps-dispatcher").map(useDad =>
+          if (useDad)
+            Some("almhirt.context.dispatchers.apps-dispatcher")
+          else
+            None)
       } yield {
         val futuresExecutor =
           if (useFuturesCtx)
@@ -113,10 +118,10 @@ object AlmhirtContext {
           implicit val execCtx = futuresExecutor
           var theReceiver: ActorRef = null
           var tellTheHerder: almhirt.herder.HerderMessages.HerderNotificicationMessage ⇒ Unit = x ⇒ ()
-          
+
           var _ctx: AlmhirtContext = null
           override def almhirtContext = _ctx
-          
+
           def receive: Receive = {
             case AlmhirtContextMessages.Start ⇒
               theReceiver = sender()
@@ -164,12 +169,12 @@ object AlmhirtContext {
                   this.tellTheHerder = x ⇒ herder ! x
                   self ! AlmhirtContextMessages.HerderCreated(ctx)
                 })
-               theReceiver ! AlmhirtContextMessages.FinishedInitialization(ctx)
+              theReceiver ! AlmhirtContextMessages.FinishedInitialization(ctx)
 
             case AlmhirtContextMessages.HerderCreated(ctx) ⇒
               logInfo("Herder created. Core system configured. Will now go on with the components...")
               theReceiver ! AlmhirtContextMessages.FinishedInitialization(ctx)
-              val components = context.actorOf(componentactors.componentsProps(ctx), "components")
+              val components = context.actorOf(componentactors.componentsProps(dedicatedAppsDispatcher)(ctx), "components")
               components ! componentactors.UnfoldFromFactories(componentFactories)
 
             case AlmhirtContextMessages.StreamsNotCreated(prob) ⇒
@@ -193,7 +198,7 @@ object AlmhirtContext {
         implicit val execCtx = system.dispatchers.defaultGlobalDispatcher
         (theAlmhirt ? AlmhirtContextMessages.Start)(maxInitDur).mapCastTo[AlmhirtContextMessages.FinishedResponse].mapV {
           case AlmhirtContextMessages.FinishedInitialization(ctx) ⇒ scalaz.Success(ctx)
-          case AlmhirtContextMessages.FailedInitialization(prob) ⇒ scalaz.Failure(prob)
+          case AlmhirtContextMessages.FailedInitialization(prob)  ⇒ scalaz.Failure(prob)
         }
       }))
   }
@@ -257,7 +262,7 @@ object AlmhirtContext {
       implicit val execCtx = system.dispatchers.defaultGlobalDispatcher
       (theAlmhirt ? AlmhirtContextMessages.Start)(maxDur).mapCastTo[AlmhirtContextMessages.FinishedResponse].mapV {
         case AlmhirtContextMessages.FinishedInitialization(ctx) ⇒ scalaz.Success(ctx)
-        case AlmhirtContextMessages.FailedInitialization(prob) ⇒ scalaz.Failure(prob)
+        case AlmhirtContextMessages.FailedInitialization(prob)  ⇒ scalaz.Failure(prob)
       }
     }
   }

@@ -99,7 +99,7 @@ private[almhirt] trait AggregateRootViewsSkeleton[E <: AggregateRootEvent] exten
   override val supervisorStrategy =
     OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
       case exn: Exception ⇒
-        informVeryImportant(s"""Handling escalated error of type ${exn.getClass.getName}("${exn.getMessage}") for ${sender.path.name} with a action Restart.""")
+        informVeryImportant(s"""Handling escalated error of type ${exn.getClass.getName}("${exn.getMessage}") for ${sender.path.name} with action Restart.""")
         Restart
     }
 

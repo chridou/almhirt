@@ -215,7 +215,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
       context.become(receiveEvaluateRebuildResult(currentCommand))
 
     case GetAggregateRootEventsFailed(problem) ⇒
-      onError(AggregateRootEventStoreFailedReadingException(currentCommand.aggId, "An error has occured fetching the aggregate root events:\n$problem"), currentCommand, Seq.empty)
+      onError(AggregateRootEventStoreFailedReadingException(currentCommand.aggId, s"An error has occured fetching the aggregate root events:\n$problem"), currentCommand, Seq.empty)
 
     case unexpectedCommand: AggregateRootCommand ⇒
       sendMessage(Busy(unexpectedCommand))
@@ -303,7 +303,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
 
   /** Ends with termination */
   private def onError(exn: AggregateRootDomainException, currentCommand: AggregateRootCommand, commitedEvents: Seq[E]) {
-    context.parent ! AggregateRootHiveInternals.ReportDroneError("Escalating! Something terrible happened.", exn)
+    context.parent ! AggregateRootHiveInternals.ReportDroneError(s"Escalating! Something terrible happened executing a command(${currentCommand.getClass.getSimpleName} with agg id ${currentCommand.aggId.value})", exn)
     sendMessage(CommandNotExecuted(currentCommand, UnspecifiedProblem(s"""Something really bad happened: "${exn.getMessage}". Escalating.""", cause = Some(exn))))
     throw exn
   }
@@ -314,7 +314,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
   }
 
   private def handleCommandFailed(persistedState: AggregateRootLifecycle[T], command: AggregateRootCommand, prob: Problem) {
-    context.parent ! AggregateRootHiveInternals.ReportDroneWarning("Excuting a command failed", prob)
+    context.parent ! AggregateRootHiveInternals.ReportDroneWarning(s"Executing a command(${command.getClass.getSimpleName} with agg id ${command.aggId.value}) failed: ${prob.message}", prob)
     sendMessage(CommandNotExecuted(command, prob))
     becomeReceiveWaitingForCommand(persistedState)
   }
