@@ -137,7 +137,7 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
       context.become(receiveRebuildFromEventlog(currentState, enqueuedRequests :+ sender(), enqueuedEvents))
 
     case RebuildTimesOutNow(after) =>
-      throw new Exception("Rebuilding the aggregate root timed out after ${after.defaultUnitString}.")
+      onError(enqueuedRequests, enqueuedEvents.size)(AggregateRootEventStoreFailedReadingException(aggregateRootId, "Rebuilding the aggregate root timed out after ${after.defaultUnitString}."))
 
   }
 
