@@ -43,6 +43,7 @@ private[almhirt] class AggregateRootNexus(
     OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1.minute) {
       case exn: Exception ⇒
         logError(s"Handling escalated error for ${sender.path.name} with a action Escalate.", exn)
+        reportCriticalFailure(exn)
         Escalate
     }
 

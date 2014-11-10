@@ -94,22 +94,22 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
   override val supervisorStrategy =
     OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
       case exn: AggregateRootEventStoreFailedReadingException ⇒
-        logError(s"Handling escalated error for ${sender.path.name} with a action Restart.", exn)
+        informVeryImportant(s"Handling escalated error from ${sender.path.name} with a action Restart.")
         Restart
       case exn: RebuildAggregateRootFailedException ⇒
         logError(s"Handling escalated error for ${sender.path.name} with a action Escalate.", exn)
         Escalate
       case exn: CouldNotDispatchAllAggregateRootEventsException ⇒
-        logError(s"Handling escalated error for ${sender.path.name} with a action Resume.", exn)
+        informVeryImportant(s"Handling escalated error from ${sender.path.name} with a action Resume.")
         Resume
       case exn: WrongAggregateRootEventTypeException ⇒
         logError(s"Handling escalated error for ${sender.path.name} with a action Escalate.", exn)
         Escalate
       case exn: UserInitializationFailedException ⇒
-        logError(s"Handling escalated error for ${sender.path.name} with a action Restart.", exn)
+        informVeryImportant(s"Handling escalated error from ${sender.path.name} with a action Restart.")
         Restart
       case exn: Exception ⇒
-        logError(s"Handling escalated error for ${sender.path.name} with a action Stop.", exn)
+        informVeryImportant(s"Handling escalated error from ${sender.path.name} with a action Stop.")
         Stop
     }
 

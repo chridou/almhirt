@@ -23,7 +23,7 @@ object AggregateRootViews {
     snapShotStorageToResolve: Option[ToResolve],
     resolveSettings: ResolveSettings,
     eventBufferSize: Int,
-    connectTo: Option[Publisher[Event]]): Props =
+    connectTo: Option[Publisher[Event]])(implicit ctx: AlmhirtContext): Props =
     Props(new AggregateRootViews[E](getViewProps, aggregateEventLogToResolve, snapShotStorageToResolve, resolveSettings, eventBufferSize, connectTo))
 
   def props[E <: AggregateRootEvent: ClassTag](
@@ -35,7 +35,7 @@ object AggregateRootViews {
     val path = "almhirt.components.views.aggregate-root-views" + viewsConfigName.map("." + _).getOrElse("")
     for {
       section ← ctx.config.v[com.typesafe.config.Config](path)
-     snapShotStoragePath ← section.magicOption[String]("snapshot-storage-path")
+      snapShotStoragePath ← section.magicOption[String]("snapshot-storage-path")
       snapShotStorageToResolve ← inTryCatch { snapShotStoragePath.map(path ⇒ ResolvePath(ActorPath.fromString(path))) }
       resolveSettings ← section.v[ResolveSettings]("resolve-settings")
       eventBufferSize ← section.v[Int]("event-buffer-size")
@@ -62,7 +62,8 @@ object AggregateRootViews {
     resolveSettings: ResolveSettings,
     eventBufferSize: Int,
     name: String)(
-      implicit actorRefFactory: ActorRefFactory,
+      implicit ctx: AlmhirtContext,
+      actorRefFactory: ActorRefFactory,
       mat: FlowMaterializer,
       tag: scala.reflect.ClassTag[E]): ActorRef = {
     val props = AggregateRootViews.propsRaw(getViewProps, aggregateEventLogToResolve, snapShotStorageToResolve, resolveSettings, eventBufferSize, None)
@@ -88,16 +89,18 @@ class AggregateRootViews[E <: AggregateRootEvent](
   override val snapShotStorageToResolve: Option[ToResolve],
   override val resolveSettings: ResolveSettings,
   override val eventBufferSize: Int,
-  override val connectTo: Option[Publisher[Event]] = None)(implicit override val eventTag: scala.reflect.ClassTag[E]) extends AggregateRootViewsSkeleton[E]
+  override val connectTo: Option[Publisher[Event]] = None)(implicit override val almhirtContext: AlmhirtContext, override val eventTag: scala.reflect.ClassTag[E]) extends AggregateRootViewsSkeleton[E]
 
-private[almhirt] trait AggregateRootViewsSkeleton[E <: AggregateRootEvent] extends ActorSubscriber with ActorLogging with ImplicitFlowMaterializer {
+private[almhirt] trait AggregateRootViewsSkeleton[E <: AggregateRootEvent] extends AlmActor with AlmActorLogging with ActorSubscriber with ActorLogging with ImplicitFlowMaterializer {
   import AggregateRootViewMessages._
 
   import akka.actor.OneForOneStrategy
   import akka.actor.SupervisorStrategy._
   override val supervisorStrategy =
     OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
-      case _: Exception ⇒ Restart
+      case exn: Exception ⇒
+        informVeryImportant(s"""Handling escalated error of type ${exn.getClass.getName}("${exn.getMessage}") for ${sender.path.name} with a action Restart.""")
+        Restart
     }
 
   def getViewProps: (AggregateRootId, ActorRef, Option[ActorRef]) ⇒ Props
@@ -122,7 +125,7 @@ private[almhirt] trait AggregateRootViewsSkeleton[E <: AggregateRootEvent] exten
       context.resolveMany(actorsToResolve, resolveSettings, None, Some("resolver"))
 
     case ActorMessages.ManyResolved(dependencies, _) ⇒
-      log.info("Found dependencies.")
+      logInfo("Found dependencies.")
       connectTo match {
         case Some(publisher) ⇒
           log.info("Subscribing myself.")
@@ -134,7 +137,7 @@ private[almhirt] trait AggregateRootViewsSkeleton[E <: AggregateRootEvent] exten
       context.become(receiveRunning(dependencies("aggregateeventlog"), dependencies.get("snapshotstorage")))
 
     case ActorMessages.ManyNotResolved(problem, _) ⇒
-      log.error(s"Failed to resolve dependencies:\n$problem")
+      logError(s"Failed to resolve dependencies:\n$problem")
       sys.error(s"Failed to resolve dependencies.")
   }
 
@@ -155,8 +158,7 @@ private[almhirt] trait AggregateRootViewsSkeleton[E <: AggregateRootEvent] exten
       event.castTo[E].fold(
         fail ⇒ {
           // This can happen quite often depending on the producer ...
-          if (log.isWarningEnabled)
-            log.warning(s"Received unproccessable aggregate event:\n$fail")
+          logWarning(s"Received unproccessable aggregate event:\n$fail")
           request(1)
         },
         aggregateEvent ⇒ {
@@ -172,7 +174,7 @@ private[almhirt] trait AggregateRootViewsSkeleton[E <: AggregateRootEvent] exten
       request(1)
 
     case ActorSubscriberMessage.OnNext(x) ⇒
-      log.warning(s"""Received unproccessable message from publisher: ${x.getClass.getName()}".""")
+      logWarning(s"""Received unproccessable message from publisher: ${x.getClass.getName()}".""")
       request(1)
 
     case ActorSubscriberMessage.OnError(ex) ⇒

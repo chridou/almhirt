@@ -1,6 +1,6 @@
 package almhirt.domain
 
-import scala.language.postfixOps 
+import scala.language.postfixOps
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.ExecutionContext
 import scala.reflect.ClassTag
@@ -21,19 +21,20 @@ object AggregateRootViewMessages {
 }
 
 object AggregateRootUnprojectedView {
-  def propsRawMaker(returnToUnitializedAfter: Option[FiniteDuration], maker: Option[FiniteDuration] ⇒ Props): Props = {
-    maker(returnToUnitializedAfter)
+  def propsRawMaker(returnToUnitializedAfter: Option[FiniteDuration], rebuildTimeout: Option[FiniteDuration], maker: (Option[FiniteDuration], Option[FiniteDuration]) ⇒ Props): Props = {
+    maker(returnToUnitializedAfter, rebuildTimeout)
   }
 
   def propsMaker(
-    maker: Option[FiniteDuration] ⇒ Props,
+    maker: (Option[FiniteDuration], Option[FiniteDuration]) ⇒ Props,
     viewConfigName: Option[String] = None)(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
     import almhirt.configuration._
     val path = "almhirt.components.views.unprojected-view" + viewConfigName.map("." + _).getOrElse("")
     for {
       section ← ctx.config.v[com.typesafe.config.Config](path)
       returnToUnitializedAfter ← section.magicOption[FiniteDuration]("return-to-unitialized-after")
-    } yield propsRawMaker(returnToUnitializedAfter, maker)
+      rebuildTimeout ← section.magicOption[FiniteDuration]("rebuild-timeout")
+    } yield propsRawMaker(returnToUnitializedAfter, rebuildTimeout, maker)
   }
 }
 
@@ -48,7 +49,8 @@ abstract class AggregateRootUnprojectedView[T <: AggregateRoot, E <: AggregateRo
   override val snapshotStorage: Option[ActorRef],
   override val onDispatchSuccess: (AggregateRootLifecycle[T], ActorRef) ⇒ Unit,
   override val onDispatchFailure: (Problem, ActorRef) ⇒ Unit,
-  override val returnToUnitializedAfter: Option[FiniteDuration])(implicit override val futuresContext: ExecutionContext, override val eventTag: ClassTag[E]) extends Actor with ActorLogging with AggregateRootUnprojectedViewSkeleton[T, E] { me: AggregateRootEventHandler[T, E] ⇒
+  override val returnToUnitializedAfter: Option[FiniteDuration],
+  override val rebuildTimeout: Option[FiniteDuration])(implicit override val futuresContext: ExecutionContext, override val eventTag: ClassTag[E]) extends Actor with ActorLogging with AggregateRootUnprojectedViewSkeleton[T, E] { me: AggregateRootEventHandler[T, E] ⇒
 
   override def receive: Receive = me.receiveUninitialized
 
@@ -66,6 +68,7 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
   def snapshotStorage: Option[ActorRef]
   def aggregateRootId: AggregateRootId
   def returnToUnitializedAfter: Option[FiniteDuration]
+  def rebuildTimeout: Option[FiniteDuration]
   implicit def eventTag: ClassTag[E]
 
   def confirmAggregateRootEventHandled()
@@ -85,6 +88,8 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
 
   private case class InternalEventlogArBuildResult(ar: AggregateRootLifecycle[T])
   private case class InternalEventlogBuildArFailed(error: Throwable)
+
+  private case class RebuildTimesOutNow(after: FiniteDuration)
 
   protected def receiveUninitialized: Receive = {
     case GetAggregateRootProjection ⇒
@@ -130,6 +135,10 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
 
     case GetAggregateRootProjection ⇒
       context.become(receiveRebuildFromEventlog(currentState, enqueuedRequests :+ sender(), enqueuedEvents))
+
+    case RebuildTimesOutNow(after) =>
+      throw new Exception("Rebuilding the aggregate root timed out after ${after.defaultUnitString}.")
+
   }
 
   private def receiveRebuildFromSnapshot(enqueuedRequests: Vector[ActorRef]): Receive = {
@@ -221,6 +230,7 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
       case Mortuus(id, v) ⇒
         onError(enqueuedRequests, 0)(RebuildAggregateRootFailedException(aggregateRootId, "An error has occured building the aggregate root. Nothing can be built from a dead aggregate root."))
     }
+    rebuildTimeout.foreach(to => context.system.scheduler.scheduleOnce(to, self, RebuildTimesOutNow(to))(futuresContext))
     context.become(receiveRebuildFromEventlog(state, enqueuedRequests, Vector.empty))
   }
 
