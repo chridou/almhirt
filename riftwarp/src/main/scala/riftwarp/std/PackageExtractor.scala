@@ -273,6 +273,12 @@ trait WarpObjectLookUp {
   def getAssocsWith[A: WarpPrimitiveConverter, B](label: String, unpackerB: WarpUnpacker[B])(implicit unpackers: WarpUnpackers): AlmValidation[Vector[(A, B)]] =
     getWarpPackage(label).flatMap(wp ⇒ getAssocsWithMapping[A, B](label, wp, unpackerB))
 
+ def tryGetAssocsWith2[A, B](label: String)(implicit convA: WarpPrimitiveConverter[A], unpackerB: WarpUnpacker[B], unpackers: WarpUnpackers): AlmValidation[Option[Vector[(A, B)]]] =
+    tryGetWarpPackage(label).map(wp ⇒ getAssocsWithMapping[A, B](label, wp, unpackerB)).validationOut
+
+  def getAssocsWith2[A: WarpPrimitiveConverter, B](label: String)(implicit unpackers: WarpUnpackers, unpackerB: WarpUnpacker[B]): AlmValidation[Vector[(A, B)]] =
+    getWarpPackage(label).flatMap(wp ⇒ getAssocsWithMapping[A, B](label, wp, unpackerB))
+    
   @inline
   private def getAssocsWithMapping[A, B](label: String, warpPackage: WarpPackage, unpackerB: WarpUnpacker[B])(implicit convA: WarpPrimitiveConverter[A], unpackers: WarpUnpackers): AlmValidation[Vector[(A, B)]] = {
     @inline

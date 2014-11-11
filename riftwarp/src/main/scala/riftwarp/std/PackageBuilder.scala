@@ -136,6 +136,16 @@ trait PackageBuilderFuns {
       case None ⇒ WarpElement(label).success
     }
 
+  def MWith2[A, B](label: String, what: Map[A, B])(implicit convA: WarpPrimitiveConverter[A], packerB: WarpPacker[B], packers: WarpPackers): AlmValidation[WarpElement] =
+    what.map { case (a, b) ⇒ packerB(b).map(wb ⇒ (convA.convertBack(a), wb)).toAgg }.toVector.sequence.map(items ⇒
+      WarpElement(label, Some(WarpAssociativeCollection(items))))
+
+  def MWithOpt2[A: WarpPrimitiveConverter, B](label: String, what: Option[Map[A, B]])(implicit packerB: WarpPacker[B], packers: WarpPackers): AlmValidation[WarpElement] =
+    what match {
+      case Some(v) ⇒ MWith[A, B](label, v, packerB)
+      case None ⇒ WarpElement(label).success
+    }
+    
   def MLookUp[A, B](label: String, what: Map[A, B])(implicit convA: WarpPrimitiveConverter[A], packers: WarpPackers): AlmValidation[WarpElement] =
     what.map {
       case (a, b) ⇒
