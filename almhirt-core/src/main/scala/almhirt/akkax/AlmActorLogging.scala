@@ -3,7 +3,7 @@ package almhirt.akkax
 import akka.actor.ActorLogging
 import almhirt.common._
 
-trait AlmActorLogging extends ActorLogging { self: AlmActor ⇒
+trait AlmActorLogging extends ActorLogging { me: AlmActor ⇒
   def logDebug(message: ⇒ String): Unit = {
     if (log.isDebugEnabled) {
       log.debug(message)
@@ -39,4 +39,5 @@ trait AlmActorLogging extends ActorLogging { self: AlmActor ⇒
     log.warning(problem.toString())
     informImportant(problem.message)
   }
+   
 }

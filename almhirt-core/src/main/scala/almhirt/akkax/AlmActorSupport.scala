@@ -1,6 +1,10 @@
 package almhirt.akkax
 
+import scala.concurrent._
+import scala.concurrent.duration.FiniteDuration
+import scalaz.syntax.validation._
 import almhirt.common._
+import almhirt.almfuture.all._
 import akka.actor._
 import scala.concurrent.ExecutionContext
 import almhirt.problem.CauseIsThrowable
@@ -16,6 +20,32 @@ trait AlmActorSupport { me: Actor ⇒
 
   def mapRecoverPipeTo[T](what: ⇒ AlmFuture[T], map: T ⇒ Any, recover: Problem ⇒ Any)(receiver: ActorRef)(implicit executionContext: ExecutionContext) {
     what.mapRecoverPipeTo(map, recover)(receiver)
+  }
+
+  private def innerRetry[T](f: => AlmFuture[T], lastFailure: Problem, promise: Promise[AlmValidation[T]], retriesLeft: Int, retryDelay: FiniteDuration, executor: ExecutionContext) {
+    if (retriesLeft == 0) {
+      promise.success(lastFailure.failure)
+    } else {
+      me.context.system.scheduler.scheduleOnce(retryDelay) {
+        f.onComplete(
+          fail => innerRetry(f, fail, promise, retriesLeft - 1, retryDelay, executor),
+          succ => promise.success(succ.success))(executor)
+      }(executor)
+    }
+  }
+
+  def retry[T](f: => AlmFuture[T])(numRetries: Int, retryDelay: FiniteDuration, executor: ExecutionContext = me.context.dispatcher): AlmFuture[T] = {
+    if(numRetries >= 0) {
+    val p = Promise[AlmValidation[T]]
+
+    f.onComplete(
+      fail => innerRetry(f, fail, p, numRetries, retryDelay, executor),
+      succ => p.success(succ.success))(executor)
+
+    new AlmFuture(p.future)
+    } else {
+      AlmFuture.failed(ArgumentProblem("numRetries must not be lower than zero!"))
+    }
   }
 
   implicit class AlmFuturePipeTo[T](self: AlmFuture[T]) {
