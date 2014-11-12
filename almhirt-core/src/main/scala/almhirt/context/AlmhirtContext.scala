@@ -1,5 +1,6 @@
 package almhirt.context
 
+import scala.concurrent.ExecutionContext
 import akka.actor._
 import scalaz.Validation.FlatMap._
 import almhirt.common._
@@ -11,6 +12,64 @@ trait AlmhirtContext extends CanCreateUuidsAndDateTimes with AlmhirtStreams with
   def config: Config
   def localActorPaths: ContextActorPaths
   def tellHerder(what: almhirt.herder.HerderMessages.HerderNotificicationMessage): Unit
+
+  def withFuturesExecutor(executor: ExecutionContext): AlmhirtContext = {
+    new AlmhirtContext {
+      val config = AlmhirtContext.this.config
+      val futuresContext = executor
+      val crunchersContext = AlmhirtContext.this.crunchersContext
+      val blockersContext = AlmhirtContext.this.blockersContext
+      def getUuid() = AlmhirtContext.this.getUuid
+      def getUniqueString() = AlmhirtContext.this.getUniqueString
+      def getDateTime() = AlmhirtContext.this.getDateTime
+      def getUtcTimestamp() = AlmhirtContext.this.getUtcTimestamp
+      val eventBroker = AlmhirtContext.this.eventBroker
+      val eventStream = AlmhirtContext.this.eventStream
+      val commandBroker = AlmhirtContext.this.commandBroker
+      val commandStream = AlmhirtContext.this.commandStream
+      val localActorPaths = AlmhirtContext.this.localActorPaths
+      def tellHerder(what: almhirt.herder.HerderMessages.HerderNotificicationMessage) {}
+    }
+  }
+  
+  def withBlockingExecutor(executor: ExecutionContext): AlmhirtContext = {
+    new AlmhirtContext {
+      val config = AlmhirtContext.this.config
+      val futuresContext = AlmhirtContext.this.futuresContext
+      val crunchersContext = AlmhirtContext.this.crunchersContext
+      val blockersContext = executor
+      def getUuid() = AlmhirtContext.this.getUuid
+      def getUniqueString() = AlmhirtContext.this.getUniqueString
+      def getDateTime() = AlmhirtContext.this.getDateTime
+      def getUtcTimestamp() = AlmhirtContext.this.getUtcTimestamp
+      val eventBroker = AlmhirtContext.this.eventBroker
+      val eventStream = AlmhirtContext.this.eventStream
+      val commandBroker = AlmhirtContext.this.commandBroker
+      val commandStream = AlmhirtContext.this.commandStream
+      val localActorPaths = AlmhirtContext.this.localActorPaths
+      def tellHerder(what: almhirt.herder.HerderMessages.HerderNotificicationMessage) {}
+    }
+  }
+  
+  def withCrunchersExecutor(executor: ExecutionContext): AlmhirtContext = {
+    new AlmhirtContext {
+      val config = AlmhirtContext.this.config
+      val futuresContext = AlmhirtContext.this.futuresContext
+      val crunchersContext = executor
+      val blockersContext = AlmhirtContext.this.blockersContext
+      def getUuid() = AlmhirtContext.this.getUuid
+      def getUniqueString() = AlmhirtContext.this.getUniqueString
+      def getDateTime() = AlmhirtContext.this.getDateTime
+      def getUtcTimestamp() = AlmhirtContext.this.getUtcTimestamp
+      val eventBroker = AlmhirtContext.this.eventBroker
+      val eventStream = AlmhirtContext.this.eventStream
+      val commandBroker = AlmhirtContext.this.commandBroker
+      val commandStream = AlmhirtContext.this.commandStream
+      val localActorPaths = AlmhirtContext.this.localActorPaths
+      def tellHerder(what: almhirt.herder.HerderMessages.HerderNotificicationMessage) {}
+    }
+  }
+  
 }
 
 trait ContextActorPaths {
@@ -88,6 +147,11 @@ object AlmhirtContext {
         dedicatedAppsDispatcher ← configSection.v[Boolean]("use-dedicated-apps-dispatcher").map(useDad =>
           if (useDad)
             Some("almhirt.context.dispatchers.apps-dispatcher")
+          else
+            None)
+        dedicatedAppsFuturesExecutor ← configSection.v[Boolean]("use-dedicated-apps-futures-executor").map(useDedAppfFutExeceutor =>
+          if (useDedAppfFutExeceutor)
+            Some(system.dispatchers.lookup("almhirt.context.apps-futures-dispatcher"))
           else
             None)
       } yield {
@@ -174,7 +238,7 @@ object AlmhirtContext {
             case AlmhirtContextMessages.HerderCreated(ctx) ⇒
               logInfo("Herder created. Core system configured. Will now go on with the components...")
               theReceiver ! AlmhirtContextMessages.FinishedInitialization(ctx)
-              val components = context.actorOf(componentactors.componentsProps(dedicatedAppsDispatcher)(ctx), "components")
+              val components = context.actorOf(componentactors.componentsProps(dedicatedAppsDispatcher, dedicatedAppsFuturesExecutor)(ctx), "components")
               components ! componentactors.UnfoldFromFactories(componentFactories)
 
             case AlmhirtContextMessages.StreamsNotCreated(prob) ⇒

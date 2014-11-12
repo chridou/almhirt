@@ -1,6 +1,7 @@
 package almhirt.context
 
 import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext
 import akka.actor._
 import almhirt.common._
 import almhirt.akkax._
@@ -17,8 +18,10 @@ object SupervisorPaths {
 private[almhirt] object componentactors {
   import almhirt.akkax.{ ActorMessages, ComponentFactory }
 
-  def componentsProps(dedicatedAppsDispatcher: Option[String])(implicit ctx: AlmhirtContext): Props =
-    Props(new ComponentsSupervisor(dedicatedAppsDispatcher))
+  def componentsProps(
+    dedicatedAppsDispatcher: Option[String],
+    dedicatedAppsFuturesExecutor: Option[ExecutionContext])(implicit ctx: AlmhirtContext): Props =
+    Props(new ComponentsSupervisor(dedicatedAppsDispatcher, dedicatedAppsFuturesExecutor))
 
   def viewsProps(implicit ctx: AlmhirtContext): Props =
     Props(new ViewsSupervisor)
@@ -40,7 +43,8 @@ private[almhirt] object componentactors {
   final case class UnfoldFromFactories(factories: ComponentFactories)
 
   class ComponentsSupervisor(
-    dedicatedAppsDispatcher: Option[String])(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging with ActorLogging {
+    dedicatedAppsDispatcher: Option[String],
+    dedicatedAppsFuturesExecutor: Option[ExecutionContext])(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging with ActorLogging {
     import akka.actor.SupervisorStrategy._
     override val supervisorStrategy = OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1.minute) {
       case exn ⇒
@@ -55,14 +59,25 @@ private[almhirt] object componentactors {
     logInfo(s"Created ${views.path.name}.")
     val misc = context.actorOf(miscProps(almhirtContext), "misc")
     logInfo(s"Created ${misc.path.name}.")
+
+    val appsFuturesExecutor =
+      dedicatedAppsFuturesExecutor match {
+        case Some(dafe) =>
+          logInfo("Using dedicated futures executor for apps")
+          dafe
+        case None =>
+          logWarning("Using default futures executor for apps")
+          almhirtContext.futuresContext
+      }
+
     val apps =
       dedicatedAppsDispatcher match {
         case Some(name) =>
           logInfo("Using dedicated apps dispatcher")
-          context.actorOf(appsProps(almhirtContext).withDispatcher(name), "apps")
+          context.actorOf(appsProps(almhirtContext.withFuturesExecutor(appsFuturesExecutor)).withDispatcher(name), "apps")
         case None =>
           logWarning("Using default dispatcher as apps dispatcher.")
-          context.actorOf(appsProps(almhirtContext), "apps")
+          context.actorOf(appsProps(almhirtContext.withFuturesExecutor(appsFuturesExecutor)), "apps")
       }
     logInfo(s"Created ${apps.path.name}.")
 
@@ -136,6 +151,7 @@ private[almhirt] object componentactors {
 
   private[almhirt] abstract class SimpleUnfolder(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging with ActorLogging {
     import akka.actor.SupervisorStrategy._
+
     override val supervisorStrategy = OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1.minute) {
       case exn ⇒
         logError("Stopping a child", exn)
@@ -152,7 +168,7 @@ private[almhirt] object componentactors {
         context.childFrom(componentFactory).fold(
           problem ⇒ {
             logError(s"""	|Failed to create "${componentFactory.name.getOrElse("<<<no name>>>")}":
-            				|$problem""".stripMargin)
+            				      |$problem""".stripMargin)
             reportCriticalFailure(problem)
             sender() ! ActorMessages.CreateChildActorFailed(problem, correlationId)
           },
