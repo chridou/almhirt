@@ -151,7 +151,7 @@ object AlmhirtContext {
             None)
         dedicatedAppsFuturesExecutor ← configSection.v[Boolean]("use-dedicated-apps-futures-executor").map(useDedAppfFutExeceutor =>
           if (useDedAppfFutExeceutor)
-            Some(system.dispatchers.lookup("almhirt.context.apps-futures-dispatcher"))
+            Some(system.dispatchers.lookup("almhirt.context.dispatchers.apps-futures-dispatcher"))
           else
             None)
       } yield {
