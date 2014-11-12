@@ -2,7 +2,7 @@ package almhirt.akkax
 
 import scala.language.implicitConversions
 import scala.concurrent._
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration._
 import scalaz.syntax.validation._
 import akka.actor.Actor
 import almhirt.common._
@@ -68,11 +68,17 @@ trait AlmActor extends Actor with HasAlmhirtContext with AlmActorSupport {
       promise.success(lastFailure.failure)
     } else {
       inform(s"$retriesLeft of $originalRetries retries left.", importance)
-      this.context.system.scheduler.scheduleOnce(retryDelay) {
+      if (retryDelay == Duration.Zero) {
         f.onComplete(
           fail => innerRetryInforming(f, fail, promise, retriesLeft - 1, originalRetries, retryDelay, importance, executor),
           succ => promise.success(succ.success))(executor)
-      }(executor)
+      } else {
+        this.context.system.scheduler.scheduleOnce(retryDelay) {
+          f.onComplete(
+            fail => innerRetryInforming(f, fail, promise, retriesLeft - 1, originalRetries, retryDelay, importance, executor),
+            succ => promise.success(succ.success))(executor)
+        }(executor)
+      }
     }
   }
 

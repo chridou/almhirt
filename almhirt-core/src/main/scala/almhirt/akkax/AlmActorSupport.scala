@@ -1,7 +1,7 @@
 package almhirt.akkax
 
 import scala.concurrent._
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration._
 import scalaz.syntax.validation._
 import almhirt.common._
 import almhirt.almfuture.all._
@@ -26,23 +26,29 @@ trait AlmActorSupport { me: Actor ⇒
     if (retriesLeft == 0) {
       promise.success(lastFailure.failure)
     } else {
-      me.context.system.scheduler.scheduleOnce(retryDelay) {
+      if (retryDelay == Duration.Zero) {
         f.onComplete(
           fail => innerRetry(f, fail, promise, retriesLeft - 1, retryDelay, executor),
           succ => promise.success(succ.success))(executor)
-      }(executor)
+      } else {
+        me.context.system.scheduler.scheduleOnce(retryDelay) {
+          f.onComplete(
+            fail => innerRetry(f, fail, promise, retriesLeft - 1, retryDelay, executor),
+            succ => promise.success(succ.success))(executor)
+        }(executor)
+      }
     }
   }
 
   def retry[T](f: => AlmFuture[T])(numRetries: Int, retryDelay: FiniteDuration, executor: ExecutionContext = me.context.dispatcher): AlmFuture[T] = {
-    if(numRetries >= 0) {
-    val p = Promise[AlmValidation[T]]
+    if (numRetries >= 0) {
+      val p = Promise[AlmValidation[T]]
 
-    f.onComplete(
-      fail => innerRetry(f, fail, p, numRetries, retryDelay, executor),
-      succ => p.success(succ.success))(executor)
+      f.onComplete(
+        fail => innerRetry(f, fail, p, numRetries, retryDelay, executor),
+        succ => p.success(succ.success))(executor)
 
-    new AlmFuture(p.future)
+      new AlmFuture(p.future)
     } else {
       AlmFuture.failed(ArgumentProblem("numRetries must not be lower than zero!"))
     }
