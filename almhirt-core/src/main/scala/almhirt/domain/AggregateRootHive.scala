@@ -64,6 +64,7 @@ object AggregateRootHive {
 
 private[almhirt] object AggregateRootHiveInternals {
   import almhirt.problem.ProblemCause
+  final case class ReportDroneDebug(msg: String)
   final case class ReportDroneError(msg: String, cause: ProblemCause)
   final case class ReportDroneWarning(msg: String, cause: ProblemCause)
 }
@@ -251,6 +252,9 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
     case OnContractExpired ⇒
       logInfo(s"Contract with broker expired. There are ${bufferedEvents.size} events still to deliver.")
 
+    case ReportDroneDebug(msg) =>
+      logDebug(s"Drone ${sender().path.name} reported a debug message: $msg")
+      
     case ReportDroneError(msg, cause) =>
       logError(s"Drone ${sender().path.name} reported an error: $msg")
       reportMajorFailure(cause)

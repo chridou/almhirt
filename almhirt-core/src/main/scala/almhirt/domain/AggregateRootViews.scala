@@ -73,6 +73,13 @@ object AggregateRootViews {
   }
 }
 
+private[almhirt] object AggregateRootViewsInternals {
+  import almhirt.problem.ProblemCause
+  final case class ReportViewDebug(msg: String)
+  final case class ReportViewError(msg: String, cause: ProblemCause)
+  final case class ReportViewWarning(msg: String, cause: ProblemCause)
+}
+
 /**
  * Manages views on an aggregate root, where there is one actor view on a single aggregate root.
  *  The views receive an [[AggregateRootViewMessages.ApplyAggregateRootEvent]] message on an aggregate event for the aggregate root and must deliver their
@@ -183,6 +190,16 @@ private[almhirt] trait AggregateRootViewsSkeleton[E <: AggregateRootEvent] exten
     case ActorSubscriberMessage.OnComplete ⇒
       context.stop(self)
 
+    case AggregateRootViewsInternals.ReportViewDebug(msg) =>
+      logDebug(s"View ${sender().path.name} reported a debug message: $msg")
+
+    case AggregateRootViewsInternals.ReportViewError(msg, cause) =>
+      logError(s"View ${sender().path.name} reported an error: $msg")
+      reportMajorFailure(cause)
+
+    case AggregateRootViewsInternals.ReportViewWarning(msg, cause) =>
+      logWarning(s"View ${sender().path.name} reported a warning: $msg")
+      reportMinorFailure(cause)
   }
 
   def receive: Receive = receiveResolve

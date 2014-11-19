@@ -195,6 +195,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
       context.become(receiveWaitingForCommandResult(nextCommand, persistedState))
 
     case AggregateRootDroneInternal.ReturnToUninitialized ⇒
+      context.parent ! AggregateRootHiveInternals.ReportDroneDebug(s"Returning to idle state after ${returnToUnitializedAfter.map(_.defaultUnitString)}.")
       context.become(receiveUninitialized)
   }
 

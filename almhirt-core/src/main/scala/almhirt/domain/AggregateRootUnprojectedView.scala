@@ -50,7 +50,7 @@ abstract class AggregateRootUnprojectedView[T <: AggregateRoot, E <: AggregateRo
   override val onDispatchSuccess: (AggregateRootLifecycle[T], ActorRef) ⇒ Unit,
   override val onDispatchFailure: (Problem, ActorRef) ⇒ Unit,
   override val returnToUnitializedAfter: Option[FiniteDuration],
-  override val rebuildTimeout: Option[FiniteDuration])(implicit override val futuresContext: ExecutionContext, override val eventTag: ClassTag[E]) extends Actor with  AggregateRootUnprojectedViewSkeleton[T, E] { me: AggregateRootEventHandler[T, E] ⇒
+  override val rebuildTimeout: Option[FiniteDuration])(implicit override val futuresContext: ExecutionContext, override val eventTag: ClassTag[E]) extends Actor with AggregateRootUnprojectedViewSkeleton[T, E] { me: AggregateRootEventHandler[T, E] ⇒
 
   override def receive: Receive = me.receiveUninitialized
 
@@ -192,6 +192,7 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
       }
 
     case AggregateRootViewInternal.ReturnToUninitialized ⇒
+      context.parent ! AggregateRootViewsInternals.ReportViewDebug(s"Returning to idle state after ${returnToUnitializedAfter.map(_.defaultUnitString)}.")
       context.become(receiveUninitialized)
 
   }
@@ -207,6 +208,7 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
     (1 to eventsStillToConfirm).foreach(_ ⇒ confirmAggregateRootEventHandled())
     val problem = UnspecifiedProblem(s"""Escalating! Something terrible happened: "${ex.getMessage}"""", cause = Some(ex))
     enqueuedRequests.foreach(receiver ⇒ onDispatchFailure(problem, receiver))
+    context.parent ! AggregateRootViewsInternals.ReportViewError("An error occured", ex)
     throw ex
   }
 
