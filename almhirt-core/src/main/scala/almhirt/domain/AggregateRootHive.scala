@@ -164,7 +164,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
 
   private def requestCommands() {
     if (bufferedEvents.size > enqueudEventsThrottlingThreshold) {
-      logWarning(s"to many events: ${bufferedEvents.size}")
+      logWarning(s"Too many events: ${bufferedEvents.size}")
     }
     if (remainingRequestCapacity > 0 && bufferedEvents.size <= enqueudEventsThrottlingThreshold) {
       request(remainingRequestCapacity)
@@ -238,12 +238,11 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
 
     case ActorSubscriberMessage.OnNext(something) ⇒
       reportMinorFailure(ArgumentProblem(s"Received something I cannot handle: $something"))
-      log.warning(s"Received something I cannot handle: $something")
+      logWarning(s"Received something I cannot handle: $something")
       receivedInvalidCommand()
 
     case ActorSubscriberMessage.OnComplete ⇒
-      if (log.isDebugEnabled)
-        logDebug(s"Aggregate command stream completed after receiving $numReceived commands. $numSucceeded succeeded, $numFailed failed.")
+      logDebug(s"Aggregate command stream completed after receiving $numReceived commands. $numSucceeded succeeded, $numFailed failed.")
 
     case OnBrokerProblem(problem) ⇒
       reportCriticalFailure(problem)
@@ -254,7 +253,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
 
     case ReportDroneDebug(msg) =>
       logDebug(s"Drone ${sender().path.name} reported a debug message: $msg")
-      
+
     case ReportDroneError(msg, cause) =>
       logError(s"Drone ${sender().path.name} reported an error: $msg")
       reportMajorFailure(cause)
@@ -268,6 +267,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
 
   override def preStart() {
     super.preStart()
+    logInfo("Starting.")
     self ! Resolve
   }
 
@@ -275,7 +275,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
     super.preRestart(reason, message)
     cancelContract()
     reportCriticalFailure(reason)
-    logInfo(s"[Restart]: Received $numReceived commands. $numSucceeded succeeded, $numFailed failed.")
+    logWarning(s"[Restart]: Received $numReceived commands. $numSucceeded succeeded, $numFailed failed.")
   }
 
   override def postRestart(reason: Throwable) {
@@ -286,7 +286,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
   override def postStop() {
     super.postStop()
     cancelContract()
-    logInfo(s"Received $numReceived commands. $numSucceeded succeeded, $numFailed failed.")
+    logWarning(s"Stopped. Received $numReceived commands. $numSucceeded succeeded, $numFailed failed.")
   }
 
 }
