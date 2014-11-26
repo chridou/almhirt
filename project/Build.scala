@@ -61,6 +61,7 @@ object Dependencies {
 	lazy val akka_streams  = "com.typesafe.akka" %% "akka-stream-experimental" % BuildSettings.akkaStreamsVersion % "provided"
 
 	lazy val apache_codecs = "commons-codec" % "commons-codec" % "1.+" 
+	lazy val icu4j = "com.ibm.icu" % "icu4j" % "54.1.1" 
 
 	lazy val spray_routing = "io.spray" %% "spray-routing" % BuildSettings.sprayVersion % "provided"
 	lazy val spray_testkit =  "io.spray" %% "spray-testkit" % BuildSettings.sprayVersion % "test"
@@ -85,6 +86,19 @@ trait CommonBuild {
 	  libraryDependencies += jodaconvert,
 	  libraryDependencies += apache_codecs,
 	  libraryDependencies += typesafe_config,
+	  libraryDependencies += scalaz,
+	  libraryDependencies += scalatest
+  )
+}
+
+trait I18nBuild {
+  import Dependencies._
+  import Resolvers._
+  def i18nProject(name: String, baseFile: java.io.File) = 
+  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
+	  libraryDependencies += jodatime,
+	  libraryDependencies += jodaconvert,
+    libraryDependencies += icu4j,
 	  libraryDependencies += scalaz,
 	  libraryDependencies += scalatest
   )
@@ -301,6 +315,7 @@ trait SillyDemoAppBuild {
 }
 object AlmHirtBuild extends Build 
 	with CommonBuild 
+	with I18nBuild 
 	with HttpxSprayBuild
 	with CorexSprayClientBuild
 	with HttpxSprayServiceBuild
@@ -319,6 +334,7 @@ object AlmHirtBuild extends Build
 	  base = file("."))
       .settings(unidocSettings: _*)
       .aggregate(	common, 
+									i18n, 
 									httpxSpray, 
 									corexSprayClient, 
 									httpxSprayService, 
@@ -332,6 +348,9 @@ object AlmHirtBuild extends Build
 									sillyDemoApp)	
   lazy val common = commonProject(	name = "almhirt-common",
                        			baseFile = file("almhirt-common"))
+
+  lazy val i18n = i18nProject(	name = "almhirt-i18n",
+                       			baseFile = file("almhirt-i18n")) dependsOn(common)
 
   lazy val httpxSpray = httpxSprayProject(	name = "almhirt-httpx-spray",
                        			baseFile = file("./ext/almhirt-httpx-spray")) dependsOn(common)
