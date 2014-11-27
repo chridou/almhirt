@@ -2,17 +2,22 @@ package almhirt.i18n
 
 import com.ibm.icu.util._
 
+/**
+ * Something that has been measured.
+ * Represents a [[UnitOfMeasurement]] combined with a value.
+ * Calculation are only to be used for localization purposes.
+ */
 sealed trait Measured {
   def value: Double
   def uom: UnitOfMeasurement
   final def icu: Measure = new Measure(value, uom.icu)
-  
+
   def *(factor: Double): Measured
-  
+
   protected def calcValue(newUom: UnitOfMeasurement): Double = {
     newUom.fromBase(uom.toBase(value))
   }
-  
+
 }
 
 final case class MeasuredAcceleration(value: Double, uom: AccelerationMeasureUnit) extends Measured {

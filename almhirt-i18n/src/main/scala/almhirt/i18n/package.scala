@@ -3,6 +3,11 @@ package almhirt
 import scala.language.implicitConversions
 import com.ibm.icu.util._
 
+/**
+ * Stuff for internationalizations.
+ * 
+ * Calculation functins are only to be used for display purposes!
+ */
 package object i18n {
   implicit def uom2IcuMeasurement(self: UnitOfMeasurement): MeasureUnit = self.icu
   implicit def measured2IcuMeasure(self: Measured): Measure = self.icu
