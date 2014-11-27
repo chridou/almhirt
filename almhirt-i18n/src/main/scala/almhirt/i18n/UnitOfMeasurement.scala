@@ -32,6 +32,8 @@ sealed trait LengthMeasureUnit extends UnitOfMeasurement
 
 sealed trait LightMeasureUnit extends UnitOfMeasurement
 
+sealed trait LightFluxMeasureUnit extends UnitOfMeasurement
+
 sealed trait MassMeasureUnit extends UnitOfMeasurement
 
 sealed trait PowerMeasureUnit extends UnitOfMeasurement
@@ -249,7 +251,13 @@ object UnitsOfMeasurement {
     val icu = MeasureUnit.MILLIAMPERE
   }
 
-  case object Calorie extends VoltageMeasureUnit {
+  case object Volt extends VoltageMeasureUnit {
+    private[almhirt] override def toBase(value: Double): Double = value
+    private[almhirt] override def fromBase(value: Double): Double = value
+    val icu = MeasureUnit.VOLT
+  }
+
+  case object Calorie extends EnergyMeasureUnit {
     private[almhirt] override def toBase(value: Double): Double = value
     private[almhirt] override def fromBase(value: Double): Double = value
     val icu = MeasureUnit.CALORIE
@@ -391,6 +399,12 @@ object UnitsOfMeasurement {
     private[almhirt] override def toBase(value: Double): Double = value
     private[almhirt] override def fromBase(value: Double): Double = value
     val icu = MeasureUnit.LUX
+  }
+
+  case object Lumen extends LightFluxMeasureUnit {
+    private[almhirt] override def toBase(value: Double): Double = value
+    private[almhirt] override def fromBase(value: Double): Double = value
+    val icu = ???
   }
 
   case object Carat extends MassMeasureUnit {
@@ -654,5 +668,5 @@ object UnitsOfMeasurement {
     private[almhirt] override def fromBase(value: Double): Double = value
     val icu = MeasureUnit.TEASPOON
   }
-  
+
 }
