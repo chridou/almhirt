@@ -17,6 +17,10 @@ sealed trait Measured {
   protected def calcValue(newUom: UnitOfMeasurement): Double = {
     newUom.fromBase(uom.toBase(value))
   }
+  
+  final def render(implicit fmt: com.ibm.icu.text.MeasureFormat): String = {
+    fmt.format(icu)
+  }
 
 }
 

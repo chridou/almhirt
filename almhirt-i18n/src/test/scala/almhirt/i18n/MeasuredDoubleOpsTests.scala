@@ -1,7 +1,5 @@
 package almhirt.i18n
 
-import scala.language.postfixOps
-
 import MeasuredImplicits._
 import org.scalatest._
 

@@ -24,6 +24,12 @@ package object i18n {
       def gram = MeasuredMass(d, UnitsOfMeasurement.Gram)
       def kilogram = MeasuredMass(d, UnitsOfMeasurement.Kilogram)
       def ton = MeasuredMass(d, UnitsOfMeasurement.Ton)
+
+      def fahrenheit = MeasuredTemperature(d, UnitsOfMeasurement.Fahrenheit)
+      def celsius = MeasuredTemperature(d, UnitsOfMeasurement.Celsuis)
+
+      def pound = MeasuredMass(d, UnitsOfMeasurement.Pound)
+    
     }
 
     implicit final class MeasuredLengtsOps(private val measured: MeasuredLength) extends AnyVal {
