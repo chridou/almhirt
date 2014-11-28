@@ -13,6 +13,24 @@ package object i18n {
   implicit def uom2IcuMeasurement(self: UnitOfMeasurement): MeasureUnit = self.icu
   implicit def measured2IcuMeasure(self: Measured): Measure = self.icu
 
+  implicit class ULocaleOps(val self: ULocale) extends AnyVal {
+    def language =
+      self.getLanguage match {
+        case "" ⇒ None
+        case x  ⇒ Some(x)
+      }
+    def script =
+      self.getScript match {
+        case "" ⇒ None
+        case x  ⇒ Some(x)
+      }
+    def country =
+      self.getCountry match {
+        case "" ⇒ None
+        case x  ⇒ Some(x)
+      }
+  }
+
   object MeasuredImplicits {
     implicit final class MeasuredImplicitsOps(private val d: Double) extends AnyVal {
       def squareMeter = MeasuredArea(d, UnitsOfMeasurement.SquareMeter)

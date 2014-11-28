@@ -14,7 +14,36 @@ trait DirectResourceLookup {
 
 trait ResourceNode extends DirectResourceLookup {
   def parent: Option[ResourceNode]
+  def mappings: Map[ResourceKey, String]
+  final def withFallbackKeys(fallbackKeys: Map[ResourceKey, String]): ResourceNode = {
+    val newMappings = fallbackKeys.foldLeft(mappings)({
+      case (acc, (fallbackKey, fallbackValue)) ⇒
+        acc get fallbackKey match {
+          case None ⇒
+            acc + (fallbackKey -> fallbackValue)
+          case _ ⇒
+            acc
+        }
+    })
+    new ResourceNode {
+      val locale = ResourceNode.this.locale
+      val parent = ResourceNode.this.parent
+      def getLocally(key: ResourceKey): AlmValidation[String] =
+        newMappings get key match {
+          case Some(v) ⇒ v.success
+          case None    ⇒ ResourceNotFoundProblem(s"No resource for key $key.").failure
+        }
+      def mappings = newMappings
+    }
+  }
 
+  final def withFallback(fallback: ResourceNode): AlmValidation[ResourceNode] = 
+    if(this.locale.getBaseName == fallback.locale.getBaseName) {
+      withFallbackKeys(fallback.mappings).success
+    } else {
+      ArgumentProblem(s"""Locales do not match: "${this.locale.getBaseName}"(this) differs from "${fallback.locale.getBaseName}"(fallback).""").failure
+    }
+  
   override def get(key: ResourceKey): AlmValidation[String] =
     getLocally(key).fold(
       fail ⇒ {
@@ -54,13 +83,14 @@ private[almhirt] object ResourceNodeXml {
     } yield {
       val keysMap = keys.toMap
       new ResourceNode {
-        val locale = theLocale
+        def locale = theLocale
         val parent = theParent
         def getLocally(key: ResourceKey): AlmValidation[String] =
           keysMap get key match {
             case Some(v) ⇒ v.success
             case None    ⇒ ResourceNotFoundProblem(s"No resource for key $key.").failure
           }
+        def mappings = keysMap
       }
     }
   }
