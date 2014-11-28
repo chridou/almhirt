@@ -305,6 +305,12 @@ object problemtypes {
       SingleProblem(msg, LocaleNotSupportedProblem, args, cause)
     def unapply(problem: SingleProblem): Option[SingleProblem] = SingleProblem.unapplyAgainst(problem, LocaleNotSupportedProblem)
   }
+  
+  case object ResourceNotFoundProblem extends ProblemType {
+    def apply(msg: String, args: Map[String, Any] = Map.empty, cause: Option[ProblemCause] = None): SingleProblem =
+      SingleProblem(msg, ResourceNotFoundProblem, args, cause)
+    def unapply(problem: SingleProblem): Option[SingleProblem] = SingleProblem.unapplyAgainst(problem, ResourceNotFoundProblem)
+  }
 
   /**
    * An expected element was not present in some kind of collection

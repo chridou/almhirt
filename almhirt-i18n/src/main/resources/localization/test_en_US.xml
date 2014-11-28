@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<localized locale="en-US">
+	<section name="section">
+		<group name="group">
+			<key name="key1">
+				"Hello neighbor!"
+			</key>
+			<key name="key2">
+			</key>
+		</group>
+	</section>
+</localized>
