@@ -2,7 +2,8 @@
 <localized locale="de-DE">
 	<section name="section_1">
 		<group name="group_1">
-			<key name="key_1">de_DE</key>
+			<key name="key_1" type="icu">de_DE</key>
+			<key name="key_2" type="icu">de_DE: {1}</key>
 		</group>
 	</section>
 </localized>

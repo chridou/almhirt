@@ -7,20 +7,32 @@ import almhirt.almvalidation.kit._
 import com.ibm.icu.util.ULocale
 
 trait ResourceLookup {
-  def resourceWithLocale(key: ResourceKey, locale: ULocale): AlmValidation[(ULocale, String)]
+  def resourceWithLocale(key: ResourceKey, locale: ULocale): AlmValidation[(ULocale, ResourceValue)]
   def supportedLocales: Set[ULocale]
+  def resourceNode(locale: ULocale): AlmValidation[ResourceNode]
+  def localesTree: Tree[ULocale]
+  
+  def icuFormattable(key: ResourceKey, locale: ULocale): AlmValidation[IcuFormattable] =
+    for {
+      res <- resourceWithLocale(key, locale)
+      fmt <- res._2 match {
+        case fmt: IcuMessageFormat => 
+          new IcuFormattable(fmt.format).success
+        case RawStringValue(pattern) => 
+          IcuMessageFormat(pattern, res._1).map(ctr => new IcuFormattable(ctr.format))
+      }
+    } yield fmt
+    
 
-  def resource(key: ResourceKey, locale: ULocale): AlmValidation[String] = resourceWithLocale(key, locale).map(_._2)
-  final def findResource(key: ResourceKey, locale: ULocale): Option[String] = resource(key, locale).toOption
-  final def findResourceWithLocale(key: ResourceKey, locale: ULocale): Option[(ULocale, String)] = resourceWithLocale(key, locale).toOption
+  def resource(key: ResourceKey, locale: ULocale): AlmValidation[ResourceValue] = resourceWithLocale(key, locale).map(_._2)
+  final def findResource(key: ResourceKey, locale: ULocale): Option[ResourceValue] = resource(key, locale).toOption
+  final def findResourceWithLocale(key: ResourceKey, locale: ULocale): Option[(ULocale, ResourceValue)] = resourceWithLocale(key, locale).toOption
 }
 
 trait AlmResources extends ResourceLookup {
   def withFallback(fallback: AlmResources): AlmValidation[AlmResources]
-  def resourceNode(locale: ULocale): AlmValidation[ResourceNode]
-  def localesTree: Tree[ULocale]
 
-  override def resourceWithLocale(key: ResourceKey, locale: ULocale): AlmValidation[(ULocale, String)] =
+  override def resourceWithLocale(key: ResourceKey, locale: ULocale): AlmValidation[(ULocale, ResourceValue)] =
     resourceNode(locale).flatMap(node ⇒ node(key).map((node.locale, _)))
   final def findResourceNode(locale: ULocale): Option[ResourceNode] = resourceNode(locale).toOption
 }

@@ -12,6 +12,6 @@ final case class ResourceGroup(section: String, group: String) {
 }
 
 final case class ResourceKey(section: String, group: String, key: String) {
-  def lookup(locale: ULocale)(implicit resources: AlmResources): AlmValidation[String] = resources.resource(this, locale)
-  def find(locale: ULocale)(implicit resources: AlmResources): Option[String] = resources.findResource(this, locale)
+  def lookup(locale: ULocale)(implicit resources: AlmResources): AlmValidation[ResourceValue] = resources.resource(this, locale)
+  def find(locale: ULocale)(implicit resources: AlmResources): Option[ResourceValue] = resources.findResource(this, locale)
 }

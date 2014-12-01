@@ -2,6 +2,8 @@ package almhirt.i18n
 
 import com.ibm.icu.util._
 
+
+
 /**
  * Something that has been measured.
  * Represents a [[UnitOfMeasurement]] combined with a value.
@@ -18,7 +20,7 @@ sealed trait Measured {
     newUom.fromBase(uom.toBase(value))
   }
   
-  final def render(implicit fmt: com.ibm.icu.text.MeasureFormat): String = {
+  final def format(implicit fmt: com.ibm.icu.text.MeasureFormat): String = {
     fmt.format(icu)
   }
 
