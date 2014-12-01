@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<localized locale="en" root="true">
+<localized locale="de-DE">
 	<section name="section_1">
 		<group name="group_1">
-			<key name="key_1">en</key>
+			<key name="key_1">de_DE</key>
 		</group>
 	</section>
 </localized>

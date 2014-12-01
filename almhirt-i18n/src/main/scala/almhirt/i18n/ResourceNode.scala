@@ -13,6 +13,7 @@ trait DirectResourceLookup {
 }
 
 trait ResourceNode extends DirectResourceLookup {
+  final def apply(key: ResourceKey): AlmValidation[String] = get(key)
   def parent: Option[ResourceNode]
   def mappings: Map[ResourceKey, String]
   final def withFallbackKeys(fallbackKeys: Map[ResourceKey, String]): ResourceNode = {

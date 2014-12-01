@@ -1,63 +1,157 @@
 package almhirt.i18n
 
-import scalaz.syntax.validation._
+import scalaz._, Scalaz._
 import scalaz.Validation.FlatMap._
 import almhirt.common._
+import almhirt.almvalidation.kit._
 import com.ibm.icu.util.ULocale
 
 trait ResourceLookup {
-  def resource(key: ResourceKey, locale: ULocale): AlmValidation[String]
+  def resourceWithLocale(key: ResourceKey, locale: ULocale): AlmValidation[(ULocale, String)]
+  def supportedLocales: Set[ULocale]
+
+  def resource(key: ResourceKey, locale: ULocale): AlmValidation[String] = resourceWithLocale(key, locale).map(_._2)
   final def findResource(key: ResourceKey, locale: ULocale): Option[String] = resource(key, locale).toOption
-  def supportedLocales: Seq[ULocale]
+  final def findResourceWithLocale(key: ResourceKey, locale: ULocale): Option[(ULocale, String)] = resourceWithLocale(key, locale).toOption
 }
 
 trait AlmResources extends ResourceLookup {
-  def withFallback(fallback: AlmResources): AlmResources
+  def withFallback(fallback: AlmResources): AlmValidation[AlmResources]
 
   def resourceNode(locale: ULocale): AlmValidation[ResourceNode]
   final def findResourceNode(locale: ULocale): Option[ResourceNode] = resourceNode(locale).toOption
+
+  def localesTree: Tree[ULocale]
 }
 
 object AlmResources {
-  def xmlFromResources(resourcePath: String, namePrefix: String, classloader: ClassLoader): AlmValidation[AlmResources] =
+  def fromXmlInResources(resourcePath: String, namePrefix: String, classloader: ClassLoader, allowFallback: Boolean = true): AlmValidation[AlmResources] = {
     for {
       factories ← AlmResourcesXml.getFactories(resourcePath, namePrefix, classloader)
-      resources ← AlmResourcesBuilder.buildFromFactories(factories)
-    } yield resources
+      factoriesTree ← TreeBuilder.build(factories)
+      tree ← TreeBuilder.executeFactoriesTree(None, factoriesTree)
+    } yield fromNodeTree(tree, allowFallback)
+  }
 
+  private def getWithFallback(locale: ULocale, from: Map[ULocale, ResourceNode], useFallback: Boolean): AlmValidation[ResourceNode] =
+    from get locale match {
+      case Some(n) ⇒ n.success
+      case None ⇒
+        if (useFallback)
+          getWithFallback(locale.getFallback, from, false)
+        else
+          ResourceNotFoundProblem(s""""${locale.getBaseName}" is not a supported locale.""").failure
+    }
+
+  def fromNodeTree(tree: Tree[ResourceNode], allowFallback: Boolean): AlmResources = {
+    val theLocalesTree = tree.map { _.locale }
+    val nodesByLocale = tree.flatten.map(tr ⇒ (tr.locale, tr)).toMap
+
+    new AlmResources {
+      def resourceWithLocale(key: ResourceKey, locale: ULocale): AlmValidation[(ULocale, String)] =
+        resourceNode(locale).flatMap(node ⇒ node(key).map((node.locale, _)))
+
+      def resourceNode(locale: ULocale): AlmValidation[ResourceNode] =
+        getWithFallback(locale, nodesByLocale, allowFallback)
+
+      def supportedLocales: Set[ULocale] = nodesByLocale.keySet
+      def localesTree: Tree[ULocale] = theLocalesTree
+
+      def withFallback(fallback: AlmResources): AlmValidation[AlmResources] =
+        ???
+    }
+  }
 }
 
-private[almhirt] object AlmResourcesBuilder {
-  def buildFromFactories(factories: Seq[(ULocale, Boolean, Option[ResourceNode] ⇒ AlmValidation[ResourceNode])]): AlmValidation[AlmResources] = {
+private[almhirt] object TreeBuilder {
+  import scalaz.Tree
+  import scalaz.Tree._
+
+  def executeFactoriesTree(parent: Option[ResourceNode], tree: Tree[Option[ResourceNode] ⇒ AlmValidation[ResourceNode]]): AlmValidation[Tree[ResourceNode]] = {
+    for {
+      root ← tree.rootLabel(parent)
+      subForest ← tree.subForest.map(child ⇒ executeFactoriesTree(Some(root), child).toAgg).toVector.sequence
+    } yield root.node(subForest: _*)
+  }
+
+  def build[T](items: Seq[(ULocale, Boolean, T)]): AlmValidation[Tree[T]] = {
     for {
       _ ← {
-        val roots = factories.filter(_._2 == true)
+        val roots = items.filter(_._2 == true)
         roots.size match {
           case 0 ⇒ ArgumentProblem(s"There must be at least one root.").failure
           case 1 ⇒ ().success
           case x ⇒ ArgumentProblem(s"There must be exactly be 1 root. There are $x: ${roots.map(_._1.getBaseName).mkString(", ")}").failure
         }
       }
-      _ ← if (factories.map(_._1.getBaseName).toSet.size != factories.length) {
-        ArgumentProblem(s"There is at least duplicate locale.").failure
+      _ ← if (items.map(_._1.getBaseName).toSet.size != items.length) {
+        ArgumentProblem(s"There is at least one duplicate locale.").failure
       } else {
         ().success
       }
-      resources ← {
-        val root = factories.find(_._2).get
-        val rest = factories.filterNot(_._2).map(x ⇒ (x._1, x._3))
+      nodeTree ← {
+        val root = items.find(_._2).get
+        val rest = items.filterNot(_._2).map(x ⇒ (x._1, x._3))
         buildTree((root._1, root._3), rest)
       }
-    } yield resources
+    } yield nodeTree
   }
 
-  def buildTree(root: (ULocale, Option[ResourceNode] ⇒ AlmValidation[ResourceNode]), rest: Seq[(ULocale, Option[ResourceNode] ⇒ AlmValidation[ResourceNode])]): AlmValidation[AlmResources] = {
+  def buildTree[T](root: (ULocale, T), forest: Seq[(ULocale, T)]): AlmValidation[Tree[T]] = {
     if (root._1.getLanguage != root._1.getBaseName) {
       ArgumentProblem(s"The root must be a pure language. It is ${root._1.getBaseName}").failure
     } else {
-      ???
+      for {
+        aForest ← makeForests(forest)
+      } yield root._2.node(aForest: _*)
     }
   }
+
+  def makeForests[T](nodes: Seq[(ULocale, T)]): AlmValidation[Vector[Tree[T]]] = {
+    val explodedLocales = nodes.map({ case (loc, factory) ⇒ (loc.language, loc.script, loc.country, factory) })
+    val byLang = explodedLocales.collect({ case (Some(lang), script, terr, fac) ⇒ (lang, (script, terr, fac)) }).groupBy(_._1).values.map(_.map(_._2))
+    byLang.map(forLang ⇒ makeForestForLanguage(forLang).toAgg).toVector.sequence.map(_.flatten)
+  }
+
+  def makeForestForLanguage[T](forest: Seq[(Option[String], Option[String], T)]): AlmValidation[Vector[Tree[T]]] = {
+    val languageOnly = forest.collect({ case (None, None, item) ⇒ item }).toVector
+    val withTerrOnly = forest.collect({ case (None, Some(terr), fac) ⇒ fac.leaf })
+    val withScript = forest.collect({ case (Some(script), terr, fac) ⇒ (script, terr, fac) })
+    if (languageOnly.size > 1) {
+      ArgumentProblem(s"There my only be 1 item that only has a language.").failure
+    } else if (languageOnly.size == 1) {
+      makeScriptsAndTerritoriesTrees(withScript).map(children ⇒ Vector(languageOnly.head.node(children ++ withTerrOnly: _*)))
+    } else {
+      makeScriptsAndTerritoriesTrees(withScript).map(_ ++ withTerrOnly)
+    }
+  }
+
+  /**
+   * Build the subtrees for a all scripts
+   */
+  def makeScriptsAndTerritoriesTrees[T](items: Seq[(String, Option[String], T)]): AlmValidation[Vector[Tree[T]]] = {
+    val byScripts = items.groupBy(_._1).values.map(_.map(x ⇒ (x._2, x._3)))
+    byScripts.map { byScript ⇒ makeScriptsAndTerritoriesTree(byScript).toAgg.sequence }.flatten.toVector.sequence
+  }
+
+  /**
+   * Build the subtrees for a single script
+   */
+  def makeScriptsAndTerritoriesTree[T](items: Seq[(Option[String], T)]): AlmValidation[Vector[Tree[T]]] = {
+    val itemsWithTerritory = items.collect({ case (Some(terr), item) ⇒ item }).map { _.leaf }.toVector
+    val itemsWithoutTerritory = items.collect({ case (None, item) ⇒ item })
+    if (itemsWithoutTerritory.size > 1) {
+      ArgumentProblem(s"There my only be 1 item without a territory.").failure
+    } else {
+      itemsWithoutTerritory.headOption match {
+        case Some(scriptRoot) ⇒
+          Vector(scriptRoot.node(itemsWithTerritory: _*)).success
+        case None ⇒
+          itemsWithTerritory.success
+      }
+    }
+  }
+
 }
 
 private[almhirt] object AlmResourcesHelper {
