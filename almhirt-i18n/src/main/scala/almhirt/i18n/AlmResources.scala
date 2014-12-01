@@ -31,8 +31,14 @@ object AlmResources {
       factories ← AlmResourcesXml.getFactories(resourcePath, namePrefix, classloader)
       factoriesTree ← TreeBuilder.build(factories)
       tree ← TreeBuilder.executeFactoriesTree(None, factoriesTree)
-    } yield fromNodeTree(tree, allowFallback)
+    } yield TreeBuilder.fromNodeTree(tree, allowFallback)
   }
+
+}
+
+private[almhirt] object TreeBuilder {
+  import scalaz.Tree
+  import scalaz.Tree._
 
   private def getWithFallback(locale: ULocale, from: Map[ULocale, ResourceNode], useFallback: Boolean): AlmValidation[ResourceNode] =
     from get locale match {
@@ -60,11 +66,6 @@ object AlmResources {
         ???
     }
   }
-}
-
-private[almhirt] object TreeBuilder {
-  import scalaz.Tree
-  import scalaz.Tree._
 
   def executeFactoriesTree(parent: Option[ResourceNode], tree: Tree[Option[ResourceNode] ⇒ AlmValidation[ResourceNode]]): AlmValidation[Tree[ResourceNode]] = {
     for {
