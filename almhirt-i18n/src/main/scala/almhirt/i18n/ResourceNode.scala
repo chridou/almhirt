@@ -8,8 +8,10 @@ import com.ibm.icu.util.ULocale
 
 trait DirectResourceLookup {
   def locale: ULocale
-  def get(key: ResourceKey): AlmValidation[String]
-  final def find(key: ResourceKey): Option[String] = get(key).toOption
+  def get(key: ResourceKey): AlmValidation[String] = getWithLocale(key).map(_._2)
+  def getWithLocale(key: ResourceKey): AlmValidation[(ULocale, String)]
+  final def find(key: ResourceKey): Option[String] = findWithLocale(key).map(_._2)
+  final def findWithLocale(key: ResourceKey): Option[(ULocale, String)] = getWithLocale(key).toOption
 }
 
 trait ResourceNode extends DirectResourceLookup {
@@ -45,14 +47,14 @@ trait ResourceNode extends DirectResourceLookup {
       ArgumentProblem(s"""Locales do not match: "${this.locale.getBaseName}"(this) differs from "${fallback.locale.getBaseName}"(fallback).""").failure
     }
   
-  override def get(key: ResourceKey): AlmValidation[String] =
+  override def getWithLocale(key: ResourceKey): AlmValidation[(ULocale, String)] =
     getLocally(key).fold(
       fail ⇒ {
         fail match {
           case ResourceNotFoundProblem(_) ⇒
             parent match {
               case Some(p) ⇒
-                p.get(key)
+                p.getWithLocale(key)
               case None ⇒
                 fail.failure
             }
@@ -60,7 +62,7 @@ trait ResourceNode extends DirectResourceLookup {
             fail.failure
         }
       },
-      succ ⇒ succ.success)
+      succ ⇒ (this.locale, succ).success)
 
   def getLocally(key: ResourceKey): AlmValidation[String]
 }

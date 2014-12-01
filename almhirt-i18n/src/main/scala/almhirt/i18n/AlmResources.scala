@@ -17,11 +17,12 @@ trait ResourceLookup {
 
 trait AlmResources extends ResourceLookup {
   def withFallback(fallback: AlmResources): AlmValidation[AlmResources]
-
   def resourceNode(locale: ULocale): AlmValidation[ResourceNode]
-  final def findResourceNode(locale: ULocale): Option[ResourceNode] = resourceNode(locale).toOption
-
   def localesTree: Tree[ULocale]
+
+  override def resourceWithLocale(key: ResourceKey, locale: ULocale): AlmValidation[(ULocale, String)] =
+    resourceNode(locale).flatMap(node ⇒ node(key).map((node.locale, _)))
+  final def findResourceNode(locale: ULocale): Option[ResourceNode] = resourceNode(locale).toOption
 }
 
 object AlmResources {
@@ -48,8 +49,6 @@ object AlmResources {
     val nodesByLocale = tree.flatten.map(tr ⇒ (tr.locale, tr)).toMap
 
     new AlmResources {
-      def resourceWithLocale(key: ResourceKey, locale: ULocale): AlmValidation[(ULocale, String)] =
-        resourceNode(locale).flatMap(node ⇒ node(key).map((node.locale, _)))
 
       def resourceNode(locale: ULocale): AlmValidation[ResourceNode] =
         getWithFallback(locale, nodesByLocale, allowFallback)
