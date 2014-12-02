@@ -6,14 +6,40 @@ import scalaz.Validation.FlatMap._
 import almhirt.common._
 import com.ibm.icu.util.ULocale
 
+/**
+ * Looks up resources by locale and provides methods for locale transformation and supported locales.
+ * This one is thread safe.
+ */
 trait ResourceLookup {
+  /**
+   * @return when true, it will use fallback locales to find a resource.
+   */
   def allowsLocaleFallback: Boolean
+
+  /**
+   * @return the set of supported locales that are supported without using fallbacks
+   */
   def supportedLocales: Set[ULocale]
 
-  def resourceNodeStrict(locale: ULocale): AlmValidation[ResourceNode]
-
+  /**
+   * @return a tree of that represents the structure of the [[ResourceNode]]s
+   */
   def localesTree: Tree[ULocale]
 
+  /**
+   * Get a [[ResourceNode]] without using a fallback locale
+   *
+   * @param locale the exact locale for the queried [[ResourceNode]]
+   * @return the possibly found [[ResourceNode]]
+   */
+  def resourceNodeStrict(locale: ULocale): AlmValidation[ResourceNode]
+
+  /**
+   * Get a [[ResourceNode]] possibly using a fallback locale
+   *
+   * @param locale the locale for the queried [[ResourceNode]]
+   * @return the possibly found [[ResourceNode]]
+   */
   final def resourceNode(locale: ULocale): AlmValidation[ResourceNode] = {
     resourceNodeStrict(locale).fold(
       fail ⇒ {
@@ -25,9 +51,13 @@ trait ResourceLookup {
       succ ⇒ succ.success)
   }
 
-  final def resourceWithLocale(key: ResourceKey, locale: ULocale): AlmValidation[(ULocale, ResourceValue)] =
-    resourceNode(locale).flatMap(node ⇒ node(key).map((node.locale, _)))
-
+  /**
+   * Get a [[Formatable]] possibly using a fallback locale
+   *
+   * @param key the [[ResourceKey]] for the queried [[Formatable]]
+   * @param locale the locale for the queried [[Formatable]]
+   * @return the possibly found [[ResourceNode]]
+   */
   final def formatable(key: ResourceKey, locale: ULocale): AlmValidation[Formatable] =
     for {
       res ← textResourceWithLocale(key, locale)
@@ -39,6 +69,12 @@ trait ResourceLookup {
       }
     } yield fmt
 
+  /**
+   * If the given locale is not supported, try to make it a compatible locale that is supported.
+   * 
+   * @param locale the locale that should be supported
+   * @return A success if the locale is supported or if it could be transformed into a supported locale.
+   */
   final def asSupportedLocale(locale: ULocale): AlmValidation[ULocale] =
     if (supportedLocales.contains(locale)) {
       locale.success
@@ -54,17 +90,32 @@ trait ResourceLookup {
     }
 
   final def resource(key: ResourceKey, locale: ULocale): AlmValidation[ResourceValue] = resourceWithLocale(key, locale).map(_._2)
-  final def findResource(key: ResourceKey, locale: ULocale): Option[ResourceValue] = resource(key, locale).toOption
-  final def findResourceWithLocale(key: ResourceKey, locale: ULocale): Option[(ULocale, ResourceValue)] = resourceWithLocale(key, locale).toOption
-
+  final def resourceWithLocale(key: ResourceKey, locale: ULocale): AlmValidation[(ULocale, ResourceValue)] =
+    resourceNode(locale).flatMap(node ⇒ node(key).map((node.locale, _)))
+  final def textResource(key: ResourceKey, locale: ULocale): AlmValidation[TextResourceValue] = textResourceWithLocale(key, locale).map(_._2)
   final def textResourceWithLocale(key: ResourceKey, locale: ULocale): AlmValidation[(ULocale, TextResourceValue)] =
     resourceWithLocale(key, locale).flatMap {
       case (loc, res: TextResourceValue) ⇒ (loc, res).success
       case _                             ⇒ ArgumentProblem(s"Key $key does not map to a text resource.").failure
     }
-
-  final def textResource(key: ResourceKey, locale: ULocale): AlmValidation[TextResourceValue] = textResourceWithLocale(key, locale).map(_._2)
-  final def findTextResource(key: ResourceKey, locale: ULocale): Option[TextResourceValue] = textResource(key, locale).toOption
-  final def findTextResourceWithLocale(key: ResourceKey, locale: ULocale): Option[(ULocale, TextResourceValue)] = textResourceWithLocale(key, locale).toOption
-
 }
+
+object ResourceLookup {
+  implicit class ResourceLookUpOps(val self: ResourceLookup) extends AnyVal {
+    def findResource(key: ResourceKey, locale: ULocale): Option[ResourceValue] = self.resource(key, locale).toOption
+    def findResourceWithLocale(key: ResourceKey, locale: ULocale): Option[(ULocale, ResourceValue)] = self.resourceWithLocale(key, locale).toOption
+    def findTextResource(key: ResourceKey, locale: ULocale): Option[TextResourceValue] = self.textResource(key, locale).toOption
+    def findTextResourceWithLocale(key: ResourceKey, locale: ULocale): Option[(ULocale, TextResourceValue)] = self.textResourceWithLocale(key, locale).toOption
+
+    def renderItemInto[T](what: T, locale: ULocale, buffer: StringBuffer)(implicit itemFormatter: ItemFormatter[T]): AlmValidation[StringBuffer] =
+      for {
+        formatable ← self.formatable(itemFormatter.resourceKey, locale)
+        prepared ← itemFormatter.prepare(formatable, key => self.formatable(key, locale))
+        rendered ← prepared.renderIntoBuffer(buffer)
+      } yield rendered
+
+    def renderItem[T](what: T, locale: ULocale)(implicit itemFormatter: ItemFormatter[T]): AlmValidation[String] =
+      renderItemInto(what, locale, new StringBuffer).map(_.toString())
+  }
+}
+

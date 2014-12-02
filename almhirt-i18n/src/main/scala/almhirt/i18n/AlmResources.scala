@@ -18,6 +18,14 @@ object AlmResources {
       tree ← TreeBuilder.executeFactoriesTree(None, factoriesTree)
     } yield TreeBuilder.fromNodeTree(tree, allowFallback)
   }
+
+  val empty = new AlmResources {
+    val allowsLocaleFallback = false
+    val supportedLocales = Set.empty[ULocale]
+    val localesTree = Tree(ULocale.ROOT)
+    def resourceNodeStrict(locale: ULocale): AlmValidation[ResourceNode] = ArgumentProblem("The empty AlmResources does not contain any nodes").failure
+    def withFallback(fallback: AlmResources): AlmValidation[AlmResources] = ???
+  }
 }
 
 private[almhirt] object TreeBuilder {
