@@ -109,8 +109,7 @@ object ResourceLookup {
 
     def renderItemInto[T](what: T, locale: ULocale, buffer: StringBuffer)(implicit itemFormatter: ItemFormatter[T]): AlmValidation[StringBuffer] =
       for {
-        formatable ← self.formatable(itemFormatter.resourceKey, locale)
-        prepared ← itemFormatter.prepare(formatable, key => self.formatable(key, locale))
+        prepared ← itemFormatter.prepare(what, locale, self)
         rendered ← prepared.renderIntoBuffer(buffer)
       } yield rendered
 
