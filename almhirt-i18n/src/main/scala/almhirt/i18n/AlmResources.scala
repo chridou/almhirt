@@ -126,7 +126,6 @@ private[almhirt] object TreeBuilder {
       }
     }
   }
-
 }
 
 private[almhirt] object AlmResourcesHelper {
@@ -146,7 +145,6 @@ private[almhirt] object AlmResourcesHelper {
 
   def getFilesInResourcesWithPattern(resourcePath: String, pattern: Regex, classloader: ClassLoader): AlmValidation[Seq[File]] =
     getFilesInResources(resourcePath, classloader).map(_.filter(file ⇒ pattern.findFirstIn(file.getName).isDefined))
-
 }
 
 private[almhirt] object AlmResourcesXml {
