@@ -35,7 +35,7 @@ trait ResourceLookup {
         case fmt: IcuMessageFormat ⇒
           new IcuFormattable(fmt.formatInstance).success
         case RawStringValue(pattern) ⇒
-          IcuMessageFormat(pattern, res._1).map(ctr ⇒ new IcuFormattable(ctr.formatInstance))
+          IcuMessageFormat(pattern, res._1).map(messageformat ⇒ new IcuFormattable(messageformat.formatInstance))
       }
     } yield fmt
 
