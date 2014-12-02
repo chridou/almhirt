@@ -18,7 +18,6 @@ object AlmResources {
       tree ← TreeBuilder.executeFactoriesTree(None, factoriesTree)
     } yield TreeBuilder.fromNodeTree(tree, allowFallback)
   }
-
 }
 
 private[almhirt] object TreeBuilder {
