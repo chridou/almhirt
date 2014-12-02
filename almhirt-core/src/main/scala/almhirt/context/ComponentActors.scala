@@ -7,6 +7,7 @@ import almhirt.common._
 import almhirt.akkax._
 import almhirt.almvalidation.kit._
 import almhirt.tracking.CorrelationId
+import almhirt.components.ResourcesService
 
 object SupervisorPaths {
   val eventLogs = ""
@@ -42,6 +43,9 @@ private[almhirt] object componentactors {
 
   final case class UnfoldFromFactories(factories: ComponentFactories)
 
+  /**
+   * This is all a bit hacky since I don't know yet, how I want this to behave...
+   */
   class ComponentsSupervisor(
     dedicatedAppsDispatcher: Option[String],
     dedicatedAppsFuturesExecutor: Option[ExecutionContext])(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging with ActorLogging {
@@ -53,6 +57,8 @@ private[almhirt] object componentactors {
         Stop
     }
 
+    implicit val executor = almhirtContext.futuresContext
+
     val eventLogs = context.actorOf(eventLogsProps(almhirtContext), "event-logs")
     logInfo(s"Created ${eventLogs.path.name}.")
     val views = context.actorOf(viewsProps(almhirtContext), "views")
@@ -62,75 +68,109 @@ private[almhirt] object componentactors {
 
     val appsFuturesExecutor =
       dedicatedAppsFuturesExecutor match {
-        case Some(dafe) =>
+        case Some(dafe) ⇒
           logInfo("Using dedicated futures executor for apps")
           dafe
-        case None =>
+        case None ⇒
           logWarning("Using default futures executor for apps")
           almhirtContext.futuresContext
       }
 
     val apps =
       dedicatedAppsDispatcher match {
-        case Some(name) =>
+        case Some(name) ⇒
           logInfo("Using dedicated apps dispatcher")
           context.actorOf(appsProps(almhirtContext.withFuturesExecutor(appsFuturesExecutor)).withDispatcher(name), "apps")
-        case None =>
+        case None ⇒
           logWarning("Using default dispatcher as apps dispatcher.")
           context.actorOf(appsProps(almhirtContext.withFuturesExecutor(appsFuturesExecutor)), "apps")
       }
     logInfo(s"Created ${apps.path.name}.")
 
-    override def receive: Receive = {
-      case UnfoldFromFactories(factories) ⇒ {
-        logInfo("Unfolding components.")
+    var factories: ComponentFactories = null
 
-        factories.buildEventLogs.foreach({
-          case ComponentFactoryBuilderEntry(factoryBuilder, severity) ⇒
-            factoryBuilder(almhirtContext).onComplete(
-              problem ⇒ {
-                logError(s"Could not create component factory for event logs:\n$problem")
-                reportFailure(problem, severity)
-              },
-              factory ⇒ eventLogs ! ActorMessages.CreateChildActor(factory, false, None))(almhirtContext.futuresContext)
-        })
+    def receive: Receive = {
+      case UnfoldFromFactories(theFactories) ⇒
+        factories = theFactories
+        logInfo("Received unfold components.")
 
-        factories.buildNexus.foreach(_(almhirtContext).onComplete(
+        factories.createResourceServiceProps match {
+          case None ⇒
+            context.actorOf(ResourcesService.emptyProps, ResourcesService.actorname)
+          case Some(f) ⇒
+            f(almhirtContext).map(props ⇒ ComponentFactory(props, ResourcesService.actorname)).onComplete(
+              fail ⇒ self ! ResourcesService.InitializeResourcesFailed(fail),
+              factory ⇒ self ! ActorMessages.CreateChildActor(factory, true, None))
+        }
+
+      case ResourcesService.ResourcesInitialized ⇒
+        logInfo("Resources initialized.")
+        context.become(receiveBuildEarlyComponents(factories.buildEventLogs.size + factories.buildNexus.size + factories.buildViews.size))
+        self ! "early"
+
+      case ResourcesService.InitializeResourcesFailed(failure) ⇒
+        logError(s"Failed to initialize resources\n$failure.")
+        reportCriticalFailure(failure)
+        sys.error(s"Failed to initialize resources\n$failure.")
+
+      case ActorMessages.CreateChildActor(componentFactory, returnActorRef, correlationId) ⇒
+        context.childFrom(componentFactory).fold(
           problem ⇒ {
-            logError(s"Failed to create nexus props:\$problem")
-            reportCriticalFailure(problem)
+            logError(s""" |Failed to create "${componentFactory.name.getOrElse("<<<no name>>>")}":
+                    |$problem""".stripMargin)
+            sender() ! ActorMessages.CreateChildActorFailed(problem, correlationId)
           },
-          factory ⇒ self ! ActorMessages.CreateChildActor(factory, false, None))(context.dispatcher))
+          actorRef ⇒ {
+            logInfo(s"Created ${actorRef.path} @ ${actorRef.path} ")
+            if (returnActorRef)
+              sender() ! ActorMessages.ChildActorCreated(actorRef, correlationId)
+          })
 
-        factories.buildViews.foreach({
-          case ComponentFactoryBuilderEntry(factoryBuilder, severity) ⇒
-            factoryBuilder(almhirtContext).onComplete(
-              problem ⇒ {
-                logError(s"Could not create component factory for views:\n$problem")
-                reportFailure(problem, severity)
-              },
-              factory ⇒ views ! ActorMessages.CreateChildActor(factory, false, None))(almhirtContext.futuresContext)
-        })
+      case ActorMessages.CreateChildActorFailed(problem, _) ⇒
+        logError(s"A child actor was not created:\n$problem")
+        reportCriticalFailure(problem)
+        sys.error(s"A child actor was not created:\n$problem")
 
-        factories.buildMisc.foreach({
-          case ComponentFactoryBuilderEntry(factoryBuilder, severity) ⇒
-            factoryBuilder(almhirtContext).onComplete(
-              problem ⇒ {
-                logError(s"Could not create component factory for misc:\n$problem")
-                reportFailure(problem, severity)
-              },
-              factory ⇒ misc ! ActorMessages.CreateChildActor(factory, false, None))(almhirtContext.futuresContext)
-        })
+      case ActorMessages.ChildActorCreated(_, _) ⇒
+        ()
+    }
 
-        factories.buildApps.foreach({
-          case ComponentFactoryBuilderEntry(factoryBuilder, severity) ⇒
-            factoryBuilder(almhirtContext).onComplete(
-              problem ⇒ {
-                logError(s"Could not create component factory for apps:\n$problem")
-                reportFailure(problem, severity)
-              },
-              factory ⇒ apps ! ActorMessages.CreateChildActor(factory, false, None))(almhirtContext.futuresContext)
-        })
+    def receiveBuildEarlyComponents(stillToCreate: Int): Receive = {
+      case "early" ⇒ {
+        logInfo(s"Unfolding early components($stillToCreate).")
+
+        if (stillToCreate == 0) {
+          context.become(receiveBuildLateComponents(factories.buildMisc.size + factories.buildApps.size))
+          self ! "late"
+        } else {
+          factories.buildEventLogs.foreach({
+            case ComponentFactoryBuilderEntry(factoryBuilder, severity) ⇒
+              factoryBuilder(almhirtContext).onComplete(
+                problem ⇒ {
+                  logError(s"Could not create component factory for event logs:\n$problem")
+                  reportFailure(problem, severity)
+                },
+                factory ⇒ eventLogs ! ActorMessages.CreateChildActor(factory, true, None))(almhirtContext.futuresContext)
+          })
+
+          factories.buildNexus.foreach(_(almhirtContext).onComplete(
+            problem ⇒ {
+              logError(s"Failed to create nexus props:\$problem")
+              reportCriticalFailure(problem)
+            },
+            factory ⇒ self ! ActorMessages.CreateChildActor(factory, true, None))(context.dispatcher))
+
+          factories.buildViews.foreach({
+            case ComponentFactoryBuilderEntry(factoryBuilder, severity) ⇒
+              factoryBuilder(almhirtContext).onComplete(
+                problem ⇒ {
+                  logError(s"Could not create component factory for views:\n$problem")
+                  reportFailure(problem, severity)
+                },
+                factory ⇒ views ! ActorMessages.CreateChildActor(factory, true, None))(almhirtContext.futuresContext)
+          })
+
+        }
 
       }
 
@@ -146,6 +186,69 @@ private[almhirt] object componentactors {
             if (returnActorRef)
               sender() ! ActorMessages.ChildActorCreated(actorRef, correlationId)
           })
+
+      case ActorMessages.CreateChildActorFailed(problem, _) ⇒
+        val newNumToCreate = stillToCreate - 1
+        logError(s"A child actor was not created:\n$problem")
+        reportCriticalFailure(problem)
+        if (newNumToCreate == 0) {
+          context.become(receiveBuildLateComponents(factories.buildMisc.size + factories.buildApps.size))
+          self ! "late"
+        } else {
+          context.become(receiveBuildEarlyComponents(newNumToCreate))
+        }
+
+      case ActorMessages.ChildActorCreated(_, _) ⇒
+        val newNumToCreate = stillToCreate - 1
+        logInfo(s"Still to create $newNumToCreate.")
+        if (newNumToCreate == 0) {
+          context.become(receiveBuildLateComponents(factories.buildMisc.size + factories.buildApps.size))
+          self ! "late"
+        } else {
+          context.become(receiveBuildEarlyComponents(newNumToCreate))
+        }
+    }
+
+    def receiveBuildLateComponents(stillToCreate: Int): Receive = {
+      case "late" ⇒ {
+        logInfo(s"Unfolding late components($stillToCreate).")
+
+        factories.buildMisc.foreach({
+          case ComponentFactoryBuilderEntry(factoryBuilder, severity) ⇒
+            factoryBuilder(almhirtContext).onComplete(
+              problem ⇒ {
+                logError(s"Could not create component factory for misc:\n$problem")
+                reportFailure(problem, severity)
+              },
+              factory ⇒ misc ! ActorMessages.CreateChildActor(factory, true, None))(almhirtContext.futuresContext)
+        })
+
+        factories.buildApps.foreach({
+          case ComponentFactoryBuilderEntry(factoryBuilder, severity) ⇒
+            factoryBuilder(almhirtContext).onComplete(
+              problem ⇒ {
+                logError(s"Could not create component factory for apps:\n$problem")
+                reportFailure(problem, severity)
+              },
+              factory ⇒ apps ! ActorMessages.CreateChildActor(factory, true, None))(almhirtContext.futuresContext)
+        })
+
+      }
+
+      case ActorMessages.CreateChildActorFailed(problem, _) ⇒
+        val newNumToCreate = stillToCreate - 1
+        logError(s"A child actor was not created:\n$problem")
+        reportCriticalFailure(problem)
+        if (newNumToCreate != 0) {
+          context.become(receiveBuildLateComponents(newNumToCreate))
+        }
+
+      case ActorMessages.ChildActorCreated(_, _) ⇒
+        val newNumToCreate = stillToCreate - 1
+        logInfo(s"Still to create $newNumToCreate.")
+        if (newNumToCreate != 0) {
+          context.become(receiveBuildLateComponents(newNumToCreate))
+        }
     }
   }
 

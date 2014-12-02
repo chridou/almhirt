@@ -31,7 +31,7 @@ trait AlmhirtContext extends CanCreateUuidsAndDateTimes with AlmhirtStreams with
       def tellHerder(what: almhirt.herder.HerderMessages.HerderNotificicationMessage) {}
     }
   }
-  
+
   def withBlockingExecutor(executor: ExecutionContext): AlmhirtContext = {
     new AlmhirtContext {
       val config = AlmhirtContext.this.config
@@ -50,7 +50,7 @@ trait AlmhirtContext extends CanCreateUuidsAndDateTimes with AlmhirtStreams with
       def tellHerder(what: almhirt.herder.HerderMessages.HerderNotificicationMessage) {}
     }
   }
-  
+
   def withCrunchersExecutor(executor: ExecutionContext): AlmhirtContext = {
     new AlmhirtContext {
       val config = AlmhirtContext.this.config
@@ -69,7 +69,7 @@ trait AlmhirtContext extends CanCreateUuidsAndDateTimes with AlmhirtStreams with
       def tellHerder(what: almhirt.herder.HerderMessages.HerderNotificicationMessage) {}
     }
   }
-  
+
 }
 
 trait ContextActorPaths {
@@ -81,6 +81,7 @@ trait ContextActorPaths {
   def views: ActorPath
   def misc: ActorPath
   def apps: ActorPath
+  def resources: ActorPath
 }
 
 object ContextActorPaths {
@@ -94,6 +95,7 @@ object ContextActorPaths {
       val views = ContextActorPaths.views(root)
       val misc = ContextActorPaths.misc(root)
       val apps = ContextActorPaths.apps(root)
+      val resources = ContextActorPaths.resources(root)
     }
   }
 
@@ -117,6 +119,9 @@ object ContextActorPaths {
 
   def apps(root: RootActorPath): ActorPath =
     components(root) / "apps"
+
+  def resources(root: RootActorPath): ActorPath =
+    components(root) / _root_.almhirt.components.ResourcesService.actorname
 }
 
 object AlmhirtContextMessages {
@@ -144,12 +149,12 @@ object AlmhirtContext {
         useFuturesCtx ← configSection.v[Boolean]("use-dedicated-futures-dispatcher")
         useBlockersCtx ← configSection.v[Boolean]("use-dedicated-blockers-dispatcher")
         useCrunchersCtx ← configSection.v[Boolean]("use-dedicated-cruncher-dispatcher")
-        dedicatedAppsDispatcher ← configSection.v[Boolean]("use-dedicated-apps-dispatcher").map(useDad =>
+        dedicatedAppsDispatcher ← configSection.v[Boolean]("use-dedicated-apps-dispatcher").map(useDad ⇒
           if (useDad)
             Some("almhirt.context.dispatchers.apps-dispatcher")
           else
             None)
-        dedicatedAppsFuturesExecutor ← configSection.v[Boolean]("use-dedicated-apps-futures-executor").map(useDedAppfFutExeceutor =>
+        dedicatedAppsFuturesExecutor ← configSection.v[Boolean]("use-dedicated-apps-futures-executor").map(useDedAppfFutExeceutor ⇒
           if (useDedAppfFutExeceutor)
             Some(system.dispatchers.lookup("almhirt.context.dispatchers.apps-futures-dispatcher"))
           else

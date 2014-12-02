@@ -14,6 +14,7 @@ object ComponentFactoryBuilderEntry {
 }
 
 final case class ComponentFactories(
+  createResourceServiceProps: Option[AlmhirtContext => AlmFuture[akka.actor.Props]],
   /** These are the event logs. They will be placed under "/user/{almhirt}/components/event-logs". */
   buildEventLogs: Seq[ComponentFactoryBuilderEntry],
   /** These are the views. They will be placed under "/user/{almhirt}/components/views". */
@@ -27,6 +28,7 @@ final case class ComponentFactories(
 
 object ComponentFactories {
   val empty = ComponentFactories(
+    None,
     Seq.empty,
     Seq.empty,
     Seq.empty,
