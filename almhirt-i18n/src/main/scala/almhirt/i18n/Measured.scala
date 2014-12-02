@@ -2,7 +2,34 @@ package almhirt.i18n
 
 import com.ibm.icu.util._
 
+sealed trait MeasureRenderWidth
+object MeasureRenderWidth {
+  /**
+   * Spell out everything.
+   *
+   */
+  case object Wide extends MeasureRenderWidth
 
+  /**
+   * Abbreviate when possible.
+   *
+   */
+  case object Short extends MeasureRenderWidth
+
+  /**
+   * Brief. Use only a symbol for the unit when possible.
+   *
+   */
+  case object Narrow extends MeasureRenderWidth
+
+  /**
+   * Identical to NARROW except when formatMeasures is called with
+   * an hour and minute; minute and second; or hour, minute, and second Measures.
+   * In these cases formatMeasures formats as 5:37:23 instead of 5h, 37m, 23s.
+   */
+  case object Numeric extends MeasureRenderWidth
+
+}
 
 /**
  * Something that has been measured.
@@ -19,7 +46,7 @@ sealed trait Measured {
   protected def calcValue(newUom: UnitOfMeasurement): Double = {
     newUom.fromBase(uom.toBase(value))
   }
-  
+
   final def format(implicit fmt: com.ibm.icu.text.MeasureFormat): String = {
     fmt.format(icu)
   }

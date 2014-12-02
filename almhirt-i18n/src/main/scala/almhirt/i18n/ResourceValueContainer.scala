@@ -5,15 +5,17 @@ import almhirt.common._
 import com.ibm.icu.text.MessageFormat
 import com.ibm.icu.util.ULocale
 
-sealed trait ResourceValue {
+sealed trait ResourceValue
+
+sealed trait TextResourceValue extends ResourceValue {
   def raw: String
 }
 
-final case class RawStringValue(raw: String) extends ResourceValue
+final case class RawStringValue(raw: String) extends TextResourceValue
 
-final class IcuMessageFormat(private val _format: MessageFormat) extends ResourceValue with Equals {
-  def raw = format.toPattern()
-  def format: MessageFormat = _format.clone().asInstanceOf[MessageFormat]
+final class IcuMessageFormat(private val _format: MessageFormat) extends TextResourceValue with Equals {
+  def raw = formatInstance.toPattern()
+  def formatInstance: MessageFormat = _format.clone().asInstanceOf[MessageFormat]
 
   def canEqual(other: Any) = {
     other.isInstanceOf[almhirt.i18n.IcuMessageFormat]
