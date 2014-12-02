@@ -2,7 +2,9 @@
 <localized locale="en-GB">
 	<section name="section_1">
 		<group name="group_1">
-			<key name="key_1" type="icu">en_GB</key>
+			<key name="key_1" type="icu">
+				<value>en_GB</value>
+			</key>
 		</group>
 	</section>
 </localized>

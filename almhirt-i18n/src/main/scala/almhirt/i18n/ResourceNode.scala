@@ -136,7 +136,8 @@ private[almhirt] object ResourceNodeXml {
   def parseKey(elem: Elem): AlmValidation[(String, KeyItem)] = {
     for {
       name ← elem \@! "name"
-      valueStr ← elem.text.success
+      valueElem <- elem \! "value"
+      valueStr ← valueElem.text.notEmptyOrWhitespace()
       value ← elem \@? "type" match {
         case None        ⇒ RawStringContainerItem(valueStr).success
         case Some("icu") ⇒ IcuMessageFormatContainer(valueStr).success
