@@ -13,6 +13,9 @@ trait CanRenderToString {
   def forceRenderIntoBuffer(into: StringBuffer): StringBuffer = forceRenderIntoBuffer(into, null)
   def forceRenderIntoBuffer(into: StringBuffer, pos: FieldPosition): StringBuffer = renderIntoBuffer(into, pos).resultOrEscalate
 
+  def tryRender: Option[String] = render.toOption
+  def tryRenderIntoBuffer(into: StringBuffer): Option[StringBuffer] = renderIntoBuffer(into).toOption
+  def tryRenderIntoBuffer(into: StringBuffer, pos: FieldPosition): Option[StringBuffer] = renderIntoBuffer(into, pos).toOption
 }
 
 object CanRenderToString {

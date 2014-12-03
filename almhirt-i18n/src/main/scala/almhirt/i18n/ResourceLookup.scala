@@ -4,6 +4,7 @@ import scalaz.syntax.validation._
 import scalaz.Tree
 import scalaz.Validation.FlatMap._
 import almhirt.common._
+import almhirt.almvalidation.kit._
 import com.ibm.icu.util.ULocale
 
 /**
@@ -104,7 +105,7 @@ trait ResourceLookup {
           r.success
       }
     } yield fmt
-    
+
   /**
    * If the given locale is not supported, try to make it a compatible locale that is supported.
    *
@@ -154,6 +155,18 @@ object ResourceLookup {
         renderable ← renderer.prepare(what, locale, self)
         rendered ← renderable.render
       } yield rendered
+
+    def forceFormatItemInto[T](what: T, locale: ULocale, buffer: StringBuffer)(implicit renderer: ItemFormat[T]): StringBuffer =
+      formatItemInto(what, locale, buffer).resultOrEscalate
+
+    def forceFormatItem[T](what: T, locale: ULocale)(implicit renderer: ItemFormat[T]): String =
+      formatItem(what, locale).resultOrEscalate
+      
+    def tryFormatItemInto[T](what: T, locale: ULocale, buffer: StringBuffer)(implicit renderer: ItemFormat[T]): Option[StringBuffer] =
+      formatItemInto(what, locale, buffer).toOption
+
+    def tryFormatItem[T](what: T, locale: ULocale)(implicit renderer: ItemFormat[T]): Option[String] =
+      formatItem(what, locale).toOption
   }
 }
 
