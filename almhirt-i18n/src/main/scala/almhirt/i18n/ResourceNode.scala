@@ -137,7 +137,7 @@ private[almhirt] object ResourceNodeXml {
   def parseKeySection(elem: Elem, prefix: String): AlmValidation[Vector[(String, KeyItem)]] = {
     val newPrefix = (elem \@? "prefix") match {
       case Some(localPrefix) ⇒ s"$prefix$localPrefix"
-      case None ⇒ prefix
+      case None              ⇒ prefix
     }
     for {
       keys ← parseKeys(elem \\? "key", newPrefix)
@@ -155,9 +155,10 @@ private[almhirt] object ResourceNodeXml {
       valueElem ← elem \! "value"
       valueStr ← valueElem.text.notEmptyOrWhitespace()
       value ← elem \@? "type" match {
-        case None        ⇒ RawStringContainerItem(valueStr).success
-        case Some("icu") ⇒ IcuMessageFormatContainer(valueStr).success
-        case Some(x)     ⇒ ArgumentProblem(s""""$x" is not a valid type for a resource value.""").failure
+        case None          ⇒ RawStringContainerItem(valueStr).success
+        case Some("plain") ⇒ RawStringContainerItem(valueStr).success
+        case Some("icu")   ⇒ IcuMessageFormatContainer(valueStr).success
+        case Some(x)       ⇒ ArgumentProblem(s""""$x" is not a valid type for a resource value.""").failure
       }
     } yield (s"$prefix$name", value)
   }

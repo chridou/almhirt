@@ -4,6 +4,7 @@ import scalaz.syntax.validation._
 import almhirt.common._
 import com.ibm.icu.text.MessageFormat
 import com.ibm.icu.util.ULocale
+import java.text.FieldPosition
 
 sealed trait ResourceValue
 
@@ -11,7 +12,15 @@ sealed trait TextResourceValue extends ResourceValue {
   def raw: String
 }
 
-final case class RawStringValue(raw: String) extends TextResourceValue
+final case class RawStringValue(raw: String) extends TextResourceValue with CanRenderToString {
+    override def render: AlmValidation[String] = scalaz.Success(raw)
+    override def renderIntoBuffer(into: StringBuffer): AlmValidation[StringBuffer] = scalaz.Success(into.append(raw))
+    override def renderIntoBuffer(into: StringBuffer, pos: FieldPosition) = scalaz.Success(into.append(raw))
+
+    override def forceRender: String = raw
+    override def forceRenderIntoBuffer(into: StringBuffer): StringBuffer = into.append(raw)
+    override def forceRenderIntoBuffer(into: StringBuffer, pos: FieldPosition): StringBuffer = into.append(raw)
+}
 
 final class IcuMessageFormat(private val _format: MessageFormat) extends TextResourceValue with Equals {
   def raw = formatInstance.toPattern()

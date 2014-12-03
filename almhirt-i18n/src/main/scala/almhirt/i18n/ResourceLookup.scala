@@ -88,6 +88,24 @@ trait ResourceLookup {
     } yield fmt
 
   /**
+   * Get a [[CanRenderToString]] possibly using a fallback locale
+   *
+   * @param key the [[ResourceKey]] for the queried [[CanRenderToString]]
+   * @param locale the locale for the queried [[CanRenderToString]]
+   * @return the possibly found [[CanRenderToString]]
+   */
+  final def renderable(key: ResourceKey, locale: ULocale): AlmValidation[CanRenderToString] =
+    for {
+      res ← textResource(key, locale)
+      fmt ← res match {
+        case fmt: IcuMessageFormat ⇒
+          inTryCatch { CanRenderToString(fmt.raw) }
+        case r: RawStringValue ⇒
+          r.success
+      }
+    } yield fmt
+    
+  /**
    * If the given locale is not supported, try to make it a compatible locale that is supported.
    *
    * @param locale the locale that should be supported
