@@ -136,22 +136,19 @@ private[almhirt] object TreeBuilder {
   }
 }
 
-private[almhirt] object AlmResourcesHelper {
+private[almhirt] object AlmClassLoaderResourcesHelper {
   import org.apache.commons.io.{ IOUtils, Charsets }
   import scala.collection.JavaConversions._
   import scala.util.matching.Regex
-  def getFilesInResources(resourcePath: String, classloader: ClassLoader): AlmValidation[Seq[String]] =
+  def getFilesToLoad(resourcePath: String, namePrefix: String, classloader: ClassLoader): AlmValidation[Seq[String]] =
     inTryCatch {
-      val files = IOUtils.readLines(classloader.getResourceAsStream(resourcePath), Charsets.UTF_8)
-      if (files == null) {
-        throw new Exception(s"No resources at $resourcePath.")
+      val filesToLoad = IOUtils.readLines(classloader.getResourceAsStream(s"$resourcePath/$namePrefix.txt"), Charsets.UTF_8)
+      if (filesToLoad == null) {
+        throw new Exception(s""""$resourcePath/$namePrefix.txt" not found.""")
       } else {
-        files.toSeq
+        filesToLoad.toSeq.map { _.trim() }.filterNot(_.isEmpty()).map(loc ⇒ s"$resourcePath/${namePrefix}_$loc.xml")
       }
-    }
-
-  def getFilesInResourcesWithPattern(resourcePath: String, pattern: Regex, classloader: ClassLoader): AlmValidation[Seq[String]] =
-    getFilesInResources(resourcePath, classloader).map(_.filter(fn ⇒ pattern.findFirstIn(fn).isDefined))
+    }.leftMap(p ⇒ UnspecifiedProblem(s"""Could not determine the files to load.""", cause = Some(p)))
 }
 
 private[almhirt] object AlmResourcesXml {
@@ -162,10 +159,10 @@ private[almhirt] object AlmResourcesXml {
 
   def getFactories(resourcePath: String, namePrefix: String, classloader: ClassLoader): AlmValidation[Seq[(ULocale, Boolean, Option[ResourceNode] ⇒ AlmValidation[ResourceNode])]] = {
     for {
-      files ← AlmResourcesHelper.getFilesInResourcesWithPattern(resourcePath, s"$namePrefix.*\\.xml".r, classloader)
+      files ← AlmClassLoaderResourcesHelper.getFilesToLoad(resourcePath, namePrefix, classloader)
       xmls ← inTryCatch {
         files.map { fn ⇒
-          val stream = classloader.getResourceAsStream(s"$resourcePath/$fn")
+          val stream = classloader.getResourceAsStream(fn)
           try {
             val xml = IOUtils.toString(stream, Charsets.UTF_8)
             XML.loadString(xml)

@@ -1,0 +1,6 @@
+de
+de_AT
+de_DE
+en
+en_GB
+en_US
