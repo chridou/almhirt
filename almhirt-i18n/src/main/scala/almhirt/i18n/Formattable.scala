@@ -63,30 +63,30 @@ trait Formatable extends CanRenderToString {
 }
 
 import java.util.HashMap
-class IcuFormattable private (msgFormat: MessageFormat, private val _args: HashMap[String, Any]) extends Formatable {
+class IcuFormatable private (msgFormat: MessageFormat, private val _args: HashMap[String, Any]) extends Formatable {
   def this(msgFormat: MessageFormat) = this(msgFormat, new HashMap[String, Any]())
 
-  def withRawArg(arg: (String, Any)): IcuFormattable = {
+  def withRawArg(arg: (String, Any)): IcuFormatable = {
     _args.put(arg._1, arg._2)
     this
   }
 
-  def withRawArgs(args: (String, Any)*): IcuFormattable = {
+  def withRawArgs(args: (String, Any)*): IcuFormatable = {
     args.foreach(arg ⇒ _args.put(arg._1, arg._2))
     this
   }
 
-  def withRenderedMeasuredValue(arg: (String, Measured), formatwidth: MeasureRenderWidth): IcuFormattable = {
+  def withRenderedMeasuredValue(arg: (String, Measured), formatwidth: MeasureRenderWidth): IcuFormatable = {
     val fmt = MeasureFormat.getInstance(msgFormat.getULocale, mapRenderWidth(formatwidth))
     withRawArg(arg._1 -> fmt.format(arg._2.icu))
   }
 
-  def withRenderedMeasuredValue(arg: (String, Measured)): IcuFormattable = {
+  def withRenderedMeasuredValue(arg: (String, Measured)): IcuFormatable = {
     val fmt = MeasureFormat.getInstance(msgFormat.getULocale, mapRenderWidth(MeasureRenderWidth.Short))
     withRawArg(arg._1 -> fmt.format(arg._2.icu))
   }
 
-  def withRenderedArg(argname: String)(f: ULocale ⇒ String): IcuFormattable = {
+  def withRenderedArg(argname: String)(f: ULocale ⇒ String): IcuFormatable = {
     withRawArg(argname -> f(msgFormat.getULocale))
   }
 
@@ -95,15 +95,15 @@ class IcuFormattable private (msgFormat: MessageFormat, private val _args: HashM
       msgFormat.format(_args, into, pos)
     }
 
-  def modify(f: MessageFormat ⇒ Unit): IcuFormattable = {
+  def modify(f: MessageFormat ⇒ Unit): IcuFormatable = {
     f(msgFormat)
     this
   }
 
-  override def snapshot: IcuFormattable = {
+  override def snapshot: IcuFormatable = {
     val newArgs = new HashMap[String, Any]()
     newArgs.putAll(_args)
-    new IcuFormattable(msgFormat.clone.asInstanceOf[MessageFormat], newArgs)
+    new IcuFormatable(msgFormat.clone.asInstanceOf[MessageFormat], newArgs)
   }
 
   val underlying = msgFormat

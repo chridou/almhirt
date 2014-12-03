@@ -12,14 +12,39 @@ sealed trait TextResourceValue extends ResourceValue {
   def raw: String
 }
 
-final case class RawStringValue(raw: String) extends TextResourceValue with CanRenderToString {
-    override def render: AlmValidation[String] = scalaz.Success(raw)
-    override def renderIntoBuffer(into: StringBuffer): AlmValidation[StringBuffer] = scalaz.Success(into.append(raw))
-    override def renderIntoBuffer(into: StringBuffer, pos: FieldPosition) = scalaz.Success(into.append(raw))
+final case class RawStringValue(raw: String) extends TextResourceValue with Formatable {
+  def withRawArg(arg: (String, Any)): RawStringValue = {
+    this
+  }
 
-    override def forceRender: String = raw
-    override def forceRenderIntoBuffer(into: StringBuffer): StringBuffer = into.append(raw)
-    override def forceRenderIntoBuffer(into: StringBuffer, pos: FieldPosition): StringBuffer = into.append(raw)
+  def withRawArgs(args: (String, Any)*): RawStringValue = {
+    this
+  }
+
+  def withRenderedMeasuredValue(arg: (String, Measured), formatwidth: MeasureRenderWidth): RawStringValue = {
+    this
+  }
+
+  def withRenderedMeasuredValue(arg: (String, Measured)): RawStringValue = {
+    this
+  }
+
+  def withRenderedArg(argname: String)(f: ULocale ⇒ String): RawStringValue = {
+    this
+  }
+
+  override def render: AlmValidation[String] = scalaz.Success(raw)
+  override def renderIntoBuffer(into: StringBuffer): AlmValidation[StringBuffer] = scalaz.Success(into.append(raw))
+  override def renderIntoBuffer(into: StringBuffer, pos: FieldPosition) = scalaz.Success(into.append(raw))
+
+  override def forceRender: String = raw
+  override def forceRenderIntoBuffer(into: StringBuffer): StringBuffer = into.append(raw)
+  override def forceRenderIntoBuffer(into: StringBuffer, pos: FieldPosition): StringBuffer = into.append(raw)
+
+  override def snapshot: RawStringValue = {
+    this
+  }
+
 }
 
 final class IcuMessageFormat(private val _format: MessageFormat) extends TextResourceValue with Equals {

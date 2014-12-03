@@ -63,9 +63,9 @@ trait ResourceLookup {
       res ← textResourceWithLocale(key, locale)
       fmt ← res._2 match {
         case fmt: IcuMessageFormat ⇒
-          new IcuFormattable(fmt.formatInstance).success
-        case RawStringValue(pattern) ⇒
-          IcuMessageFormat(pattern, res._1).map(messageformat ⇒ new IcuFormattable(messageformat.formatInstance))
+          new IcuFormatable(fmt.formatInstance).success
+        case raw: RawStringValue ⇒
+          raw.success
       }
     } yield fmt
 
