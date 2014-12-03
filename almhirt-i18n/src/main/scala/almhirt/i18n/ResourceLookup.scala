@@ -56,7 +56,7 @@ trait ResourceLookup {
    *
    * @param key the [[ResourceKey]] for the queried [[Formatable]]
    * @param locale the locale for the queried [[Formatable]]
-   * @return the possibly found [[ResourceNode]]
+   * @return the possibly found [[Formatable]]
    */
   final def formatable(key: ResourceKey, locale: ULocale): AlmValidation[Formatable] =
     for {
@@ -70,8 +70,26 @@ trait ResourceLookup {
     } yield fmt
 
   /**
+   * Get a String possibly using a fallback locale
+   *
+   * @param key the [[ResourceKey]] for the queried String
+   * @param locale the locale for the queried String
+   * @return the possibly found String
+   */
+  final def rawText(key: ResourceKey, locale: ULocale): AlmValidation[String] =
+    for {
+      res ← textResource(key, locale)
+      fmt ← res match {
+        case fmt: IcuMessageFormat ⇒
+          inTryCatch { fmt.raw }
+        case RawStringValue(value) ⇒
+          value.success
+      }
+    } yield fmt
+
+  /**
    * If the given locale is not supported, try to make it a compatible locale that is supported.
-   * 
+   *
    * @param locale the locale that should be supported
    * @return A success if the locale is supported or if it could be transformed into a supported locale.
    */
@@ -107,14 +125,17 @@ object ResourceLookup {
     def findTextResource(key: ResourceKey, locale: ULocale): Option[TextResourceValue] = self.textResource(key, locale).toOption
     def findTextResourceWithLocale(key: ResourceKey, locale: ULocale): Option[(ULocale, TextResourceValue)] = self.textResourceWithLocale(key, locale).toOption
 
-    def renderItemInto[T](what: T, locale: ULocale, buffer: StringBuffer)(implicit itemFormatter: ItemFormatter[T]): AlmValidation[StringBuffer] =
+    def formatItemInto[T](what: T, locale: ULocale, buffer: StringBuffer)(implicit renderer: ItemFormat[T]): AlmValidation[StringBuffer] =
       for {
-        prepared ← itemFormatter.prepare(what, locale, self)
-        rendered ← prepared.renderIntoBuffer(buffer)
+        renderable ← renderer.prepare(what, locale, self)
+        rendered ← renderable.renderIntoBuffer(buffer)
       } yield rendered
 
-    def renderItem[T](what: T, locale: ULocale)(implicit itemFormatter: ItemFormatter[T]): AlmValidation[String] =
-      renderItemInto(what, locale, new StringBuffer).map(_.toString())
+    def formatItem[T](what: T, locale: ULocale)(implicit renderer: ItemFormat[T]): AlmValidation[String] =
+      for {
+        renderable ← renderer.prepare(what, locale, self)
+        rendered ← renderable.render
+      } yield rendered
   }
 }
 

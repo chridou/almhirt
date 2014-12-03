@@ -10,7 +10,7 @@ import com.ibm.icu.util.ULocale
  * Implementations of this trait must be considered mutable and non thread safe.
  * With* methods usually do not return a new instance.
  */
-trait Formatable {
+trait Formatable extends CanRenderToString {
   /**
    * Set a value of arbitrary type. If the value is not supported, this may throw an exception.
    *
@@ -59,14 +59,6 @@ trait Formatable {
    */
   def withRenderedArg(argname: String)(f: ULocale ⇒ String): Formatable
 
-  def render: AlmValidation[String] = renderIntoBuffer(new StringBuffer(), null).map(_.toString)
-  def renderIntoBuffer(into: StringBuffer): AlmValidation[StringBuffer] = renderIntoBuffer(into, null)
-  def renderIntoBuffer(into: StringBuffer, pos: FieldPosition): AlmValidation[StringBuffer]
-
-  final def forceRender: String = forceRenderIntoBuffer(new StringBuffer(), null).toString
-  final def forceRenderIntoBuffer(into: StringBuffer): StringBuffer = forceRenderIntoBuffer(into, null)
-  final def forceRenderIntoBuffer(into: StringBuffer, pos: FieldPosition): StringBuffer = renderIntoBuffer(into, pos).resultOrEscalate
-
   def snapshot: Formatable
 }
 
@@ -98,7 +90,7 @@ class IcuFormattable private (msgFormat: MessageFormat, private val _args: HashM
     withRawArg(argname -> f(msgFormat.getULocale))
   }
 
-  def renderIntoBuffer(into: StringBuffer, pos: FieldPosition): AlmValidation[StringBuffer] =
+  override def renderIntoBuffer(into: StringBuffer, pos: FieldPosition): AlmValidation[StringBuffer] =
     inTryCatch {
       msgFormat.format(_args, into, pos)
     }
