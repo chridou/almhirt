@@ -137,26 +137,25 @@ private[almhirt] object TreeBuilder {
 }
 
 private[almhirt] object AlmResourcesHelper {
-  import java.io._
+  import org.apache.commons.io.{ IOUtils, Charsets }
   import scala.collection.JavaConversions._
   import scala.util.matching.Regex
-  def getFilesInResources(resourcePath: String, classloader: ClassLoader): AlmValidation[Seq[File]] =
+  def getFilesInResources(resourcePath: String, classloader: ClassLoader): AlmValidation[Seq[String]] =
     inTryCatch {
-      val url = classloader.getResource(resourcePath)
-      if (url == null) {
+      val files = IOUtils.readLines(classloader.getResourceAsStream(resourcePath), Charsets.UTF_8)
+      if (files == null) {
         throw new Exception(s"No resources at $resourcePath.")
       } else {
-        val dir = new File(url.toURI());
-        dir.listFiles().toSeq
+        files.toSeq
       }
     }
 
-  def getFilesInResourcesWithPattern(resourcePath: String, pattern: Regex, classloader: ClassLoader): AlmValidation[Seq[File]] =
-    getFilesInResources(resourcePath, classloader).map(_.filter(file ⇒ pattern.findFirstIn(file.getName).isDefined))
+  def getFilesInResourcesWithPattern(resourcePath: String, pattern: Regex, classloader: ClassLoader): AlmValidation[Seq[String]] =
+    getFilesInResources(resourcePath, classloader).map(_.filter(fn ⇒ pattern.findFirstIn(fn).isDefined))
 }
 
 private[almhirt] object AlmResourcesXml {
-  import scalaz._, Scalaz._
+  import org.apache.commons.io.{ IOUtils, Charsets }
   import almhirt.almvalidation.kit._
   import almhirt.xml.all._
   import scala.xml._
@@ -164,7 +163,17 @@ private[almhirt] object AlmResourcesXml {
   def getFactories(resourcePath: String, namePrefix: String, classloader: ClassLoader): AlmValidation[Seq[(ULocale, Boolean, Option[ResourceNode] ⇒ AlmValidation[ResourceNode])]] = {
     for {
       files ← AlmResourcesHelper.getFilesInResourcesWithPattern(resourcePath, s"$namePrefix.*\\.xml".r, classloader)
-      xmls ← inTryCatch { files.map { XML.loadFile(_) } }
+      xmls ← inTryCatch {
+        files.map { fn ⇒
+          val stream = classloader.getResourceAsStream(s"$resourcePath/$fn")
+          try {
+            val xml = IOUtils.toString(stream, Charsets.UTF_8)
+            XML.loadString(xml)
+          } finally {
+            stream.close
+          }
+        }
+      }
       prepared ← getLocalesAndIsRoot(xmls)
     } yield prepared.map({ case (elem, locale, isRoot) ⇒ (locale, isRoot, (parent: Option[ResourceNode]) ⇒ ResourceNode.fromXml(elem, parent)) })
   }

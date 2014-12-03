@@ -61,6 +61,7 @@ object Dependencies {
 	lazy val akka_streams  = "com.typesafe.akka" %% "akka-stream-experimental" % BuildSettings.akkaStreamsVersion % "provided"
 
 	lazy val apache_codecs = "commons-codec" % "commons-codec" % "1.+" 
+	lazy val apache_commons_io = "commons-io" % "commons-io" % "2.+" 
 	lazy val icu4j = "com.ibm.icu" % "icu4j" % "54.1.1" 
 
 	lazy val spray_routing = "io.spray" %% "spray-routing" % BuildSettings.sprayVersion % "provided"
@@ -98,6 +99,7 @@ trait I18nBuild {
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
 	  libraryDependencies += jodatime,
 	  libraryDependencies += jodaconvert,
+	  libraryDependencies += apache_commons_io,
     libraryDependencies += icu4j,
 	  libraryDependencies += scalaz,
 	  libraryDependencies += scalatest
