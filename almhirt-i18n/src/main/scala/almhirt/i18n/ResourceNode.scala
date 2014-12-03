@@ -125,25 +125,41 @@ private[almhirt] object ResourceNodeXml {
   def parseGroup(elem: Elem): AlmValidation[(String, Vector[(String, KeyItem)])] = {
     for {
       name ← elem \@! "name"
-      keys ← parseKeys(elem \\? "key")
-    } yield (name, keys)
+      keys ← parseKeys(elem \\? "key", "")
+      keysFromSections ← parseKeySections(elem \\? "key_section", "")
+    } yield (name, keys ++ keysFromSections)
   }
 
-  def parseKeys(elems: Seq[Elem]): AlmValidation[Vector[(String, KeyItem)]] = {
-    elems.map { elem ⇒ parseKey(elem).toAgg }.toVector.sequence
+  def parseKeySections(elems: Seq[Elem], prefix: String): AlmValidation[Vector[(String, KeyItem)]] = {
+    elems.map { elem ⇒ parseKeySection(elem, prefix).toAgg }.toVector.sequence.map(_.flatten)
   }
 
-  def parseKey(elem: Elem): AlmValidation[(String, KeyItem)] = {
+  def parseKeySection(elem: Elem, prefix: String): AlmValidation[Vector[(String, KeyItem)]] = {
+    val newPrefix = (elem \@? "prefix") match {
+      case Some(localPrefix) ⇒ s"$prefix$localPrefix"
+      case None ⇒ prefix
+    }
+    for {
+      keys ← parseKeys(elem \\? "key", newPrefix)
+      keysFromSections ← parseKeySections(elem \\? "key_section", newPrefix)
+    } yield keys ++ keysFromSections
+  }
+
+  def parseKeys(elems: Seq[Elem], prefix: String): AlmValidation[Vector[(String, KeyItem)]] = {
+    elems.map { elem ⇒ parseKey(elem, prefix).toAgg }.toVector.sequence
+  }
+
+  def parseKey(elem: Elem, prefix: String): AlmValidation[(String, KeyItem)] = {
     for {
       name ← elem \@! "name"
-      valueElem <- elem \! "value"
+      valueElem ← elem \! "value"
       valueStr ← valueElem.text.notEmptyOrWhitespace()
       value ← elem \@? "type" match {
         case None        ⇒ RawStringContainerItem(valueStr).success
         case Some("icu") ⇒ IcuMessageFormatContainer(valueStr).success
         case Some(x)     ⇒ ArgumentProblem(s""""$x" is not a valid type for a resource value.""").failure
       }
-    } yield (name, value)
+    } yield (s"$prefix$name", value)
   }
 
 }
