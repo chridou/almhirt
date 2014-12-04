@@ -114,8 +114,9 @@ private[almhirt] object ResourceNodeXml {
   def parseSection(elem: Elem): AlmValidation[Vector[(ResourceKey, KeyItem)]] = {
     for {
       name ← elem \@! "name"
+      checkedName ← checkName(name)
       groups ← parseGroups(elem \\? "group")
-    } yield groups.flatMap({ case (groupName, keys) ⇒ keys.map({ case (keyName, value) ⇒ (ResourceKey(name, groupName, keyName), value) }) })
+    } yield groups.flatMap({ case (groupName, keys) ⇒ keys.map({ case (keyName, value) ⇒ (ResourceKey(checkedName, groupName, keyName), value) }) })
   }
 
   def parseGroups(elems: Seq[Elem]): AlmValidation[Vector[(String, Vector[(String, KeyItem)])]] = {
@@ -125,9 +126,10 @@ private[almhirt] object ResourceNodeXml {
   def parseGroup(elem: Elem): AlmValidation[(String, Vector[(String, KeyItem)])] = {
     for {
       name ← elem \@! "name"
+      checkedName ← checkName(name)
       keys ← parseKeys(elem \\? "key", "")
       keysFromSections ← parseKeySections(elem \\? "key_section", "")
-    } yield (name, keys ++ keysFromSections)
+    } yield (checkedName, keys ++ keysFromSections)
   }
 
   def parseKeySections(elems: Seq[Elem], prefix: String): AlmValidation[Vector[(String, KeyItem)]] = {
@@ -135,11 +137,11 @@ private[almhirt] object ResourceNodeXml {
   }
 
   def parseKeySection(elem: Elem, prefix: String): AlmValidation[Vector[(String, KeyItem)]] = {
-    val newPrefix = (elem \@? "prefix") match {
-      case Some(localPrefix) ⇒ s"$prefix$localPrefix"
-      case None              ⇒ prefix
-    }
     for {
+      newPrefix ← (elem \@? "prefix") match {
+        case Some(localPrefix) ⇒ checkName(s"$prefix$localPrefix")
+        case None              ⇒ prefix.success
+      }
       keys ← parseKeys(elem \\? "key", newPrefix)
       keysFromSections ← parseKeySections(elem \\? "key_section", newPrefix)
     } yield keys ++ keysFromSections
@@ -152,6 +154,7 @@ private[almhirt] object ResourceNodeXml {
   def parseKey(elem: Elem, prefix: String): AlmValidation[(String, KeyItem)] = {
     for {
       name ← elem \@! "name"
+      checkedName ← checkName(name)
       valueElem ← elem \! "value"
       valueStr ← valueElem.text.notEmptyOrWhitespace()
       value ← elem \@? "type" match {
@@ -160,7 +163,14 @@ private[almhirt] object ResourceNodeXml {
         case Some("icu")   ⇒ IcuMessageFormatContainer(valueStr).success
         case Some(x)       ⇒ ArgumentProblem(s""""$x" is not a valid type for a resource value.""").failure
       }
-    } yield (s"$prefix$name", value)
+    } yield (s"$prefix$checkedName", value)
   }
+
+  def checkName(name: String): AlmValidation[String] =
+    if (name.contains('.') || name.contains(' ')) {
+      ArgumentProblem(s""""$name" is not allowed. An identifier may not conatin a dot or whitespace.""").failure
+    } else {
+      name.notEmptyOrWhitespace()
+    }
 
 }
