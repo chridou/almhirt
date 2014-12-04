@@ -12,27 +12,32 @@ import almhirt.i18n.MeasuredLength
 package object i18n {
   implicit def uom2IcuMeasurement(self: UnitOfMeasurement): MeasureUnit = self.icu
   implicit def measured2IcuMeasure(self: Measured): Measure = self.icu
-  
+
   implicit object ULocaleMagnet extends LocaleMagnet[ULocale] {
+    @inline
     def toULocale(what: ULocale) = what
   }
 
   implicit object StringLocaleMagnet extends LocaleMagnet[String] {
+    @inline
     def toULocale(what: String) = new ULocale(what)
   }
- 
+
   implicit object StringStringLocaleMagnet extends LocaleMagnet[(String, String)] {
+    @inline
     def toULocale(what: (String, String)) = new ULocale(what._1, what._2)
   }
-  
+
   implicit object StringStringStringLocaleMagnet extends LocaleMagnet[(String, String, String)] {
+    @inline
     def toULocale(what: (String, String, String)) = new ULocale(what._1, what._2, what._3)
   }
- 
+
   implicit object JdkLocaleMagnet extends LocaleMagnet[java.util.Locale] {
+    @inline
     def toULocale(what: java.util.Locale) = ULocale.forLocale(what)
   }
-  
+
   implicit class ULocaleOps(val self: ULocale) extends AnyVal {
     def language =
       self.getLanguage match {
