@@ -41,13 +41,14 @@ trait ResourceLookup {
    * @param locale the locale for the queried [[ResourceNode]]
    * @return the possibly found [[ResourceNode]]
    */
-  final def resourceNode(locale: ULocale): AlmValidation[ResourceNode] = {
-    resourceNodeStrict(locale).fold(
+  final def resourceNode[L](locale: L)(implicit magnet: LocaleMagnet[L]): AlmValidation[ResourceNode] = {
+    val uLoc = magnet.toULocale(locale)
+    resourceNodeStrict(uLoc).fold(
       fail ⇒ {
         if (allowsLocaleFallback)
-          resourceNodeStrict(locale.getFallback)
+          resourceNodeStrict(uLoc.getFallback)
         else
-          ResourceNotFoundProblem(s""""${locale.getBaseName}" is not a supported locale.""").failure
+          ResourceNotFoundProblem(s""""${uLoc.getBaseName}" is not a supported locale.""").failure
       },
       succ ⇒ succ.success)
   }
@@ -59,7 +60,7 @@ trait ResourceLookup {
    * @param locale the locale for the queried [[Formatable]]
    * @return the possibly found [[Formatable]]
    */
-  final def formatable(key: ResourceKey, locale: ULocale): AlmValidation[Formatable] =
+  final def formatable[L: LocaleMagnet](key: ResourceKey, locale: L): AlmValidation[Formatable] =
     for {
       res ← textResourceWithLocale(key, locale)
       fmt ← res._2 match {
@@ -77,7 +78,7 @@ trait ResourceLookup {
    * @param locale the locale for the queried String
    * @return the possibly found String
    */
-  final def rawText(key: ResourceKey, locale: ULocale): AlmValidation[String] =
+  final def rawText[L: LocaleMagnet](key: ResourceKey, locale: L): AlmValidation[String] =
     for {
       res ← textResource(key, locale)
       fmt ← res match {
@@ -95,7 +96,7 @@ trait ResourceLookup {
    * @param locale the locale for the queried [[CanRenderToString]]
    * @return the possibly found [[CanRenderToString]]
    */
-  final def renderable(key: ResourceKey, locale: ULocale): AlmValidation[CanRenderToString] =
+  final def renderable[L: LocaleMagnet](key: ResourceKey, locale: L): AlmValidation[CanRenderToString] =
     for {
       res ← textResource(key, locale)
       fmt ← res match {
@@ -112,25 +113,30 @@ trait ResourceLookup {
    * @param locale the locale that should be supported
    * @return A success if the locale is supported or if it could be transformed into a supported locale.
    */
-  final def asSupportedLocale(locale: ULocale): AlmValidation[ULocale] =
-    if (supportedLocales.contains(locale)) {
-      locale.success
+  final def asSupportedLocale[L](locale: L)(implicit magnet: LocaleMagnet[L]): AlmValidation[ULocale] = {
+    val uLoc = magnet.toULocale(locale)
+    if (supportedLocales.contains(uLoc)) {
+      uLoc.success
     } else if (allowsLocaleFallback) {
-      val fb = locale.getFallback
+      val fb = uLoc.getFallback
       if (supportedLocales.contains(fb)) {
         fb.success
       } else {
-        ArgumentProblem(s"""The locale "${locale.getBaseName}" is not supported neither is its fallback "${fb.getBaseName}".""").failure
+        ArgumentProblem(s"""The locale "${uLoc.getBaseName}" is not supported neither is its fallback "${fb.getBaseName}".""").failure
       }
     } else {
-      ArgumentProblem(s"""The locale "${locale.getBaseName}" is not supported.""").failure
+      ArgumentProblem(s"""The locale "${uLoc.getBaseName}" is not supported.""").failure
     }
+  }
 
-  final def resource(key: ResourceKey, locale: ULocale): AlmValidation[ResourceValue] = resourceWithLocale(key, locale).map(_._2)
-  final def resourceWithLocale(key: ResourceKey, locale: ULocale): AlmValidation[(ULocale, ResourceValue)] =
+  final def resource[L: LocaleMagnet](key: ResourceKey, locale: L): AlmValidation[ResourceValue] = resourceWithLocale(key, locale).map(_._2)
+
+  final def resourceWithLocale[L: LocaleMagnet](key: ResourceKey, locale: L): AlmValidation[(ULocale, ResourceValue)] =
     resourceNode(locale).flatMap(node ⇒ node(key).map((node.locale, _)))
-  final def textResource(key: ResourceKey, locale: ULocale): AlmValidation[TextResourceValue] = textResourceWithLocale(key, locale).map(_._2)
-  final def textResourceWithLocale(key: ResourceKey, locale: ULocale): AlmValidation[(ULocale, TextResourceValue)] =
+
+  final def textResource[L: LocaleMagnet](key: ResourceKey, locale: L): AlmValidation[TextResourceValue] = textResourceWithLocale(key, locale).map(_._2)
+
+  final def textResourceWithLocale[L: LocaleMagnet](key: ResourceKey, locale: L): AlmValidation[(ULocale, TextResourceValue)] =
     resourceWithLocale(key, locale).flatMap {
       case (loc, res: TextResourceValue) ⇒ (loc, res).success
       case _                             ⇒ ArgumentProblem(s"Key $key does not map to a text resource.").failure
@@ -139,33 +145,37 @@ trait ResourceLookup {
 
 object ResourceLookup {
   implicit class ResourceLookUpOps(val self: ResourceLookup) extends AnyVal {
-    def findResource(key: ResourceKey, locale: ULocale): Option[ResourceValue] = self.resource(key, locale).toOption
-    def findResourceWithLocale(key: ResourceKey, locale: ULocale): Option[(ULocale, ResourceValue)] = self.resourceWithLocale(key, locale).toOption
-    def findTextResource(key: ResourceKey, locale: ULocale): Option[TextResourceValue] = self.textResource(key, locale).toOption
-    def findTextResourceWithLocale(key: ResourceKey, locale: ULocale): Option[(ULocale, TextResourceValue)] = self.textResourceWithLocale(key, locale).toOption
+    def findResource[L: LocaleMagnet](key: ResourceKey, locale: L): Option[ResourceValue] = self.resource(key, locale).toOption
+    def findResourceWithLocale[L: LocaleMagnet](key: ResourceKey, locale: L): Option[(ULocale, ResourceValue)] = self.resourceWithLocale(key, locale).toOption
+    def findTextResource[L: LocaleMagnet](key: ResourceKey, locale: L): Option[TextResourceValue] = self.textResource(key, locale).toOption
+    def findTextResourceWithLocale[L: LocaleMagnet](key: ResourceKey, locale: L): Option[(ULocale, TextResourceValue)] = self.textResourceWithLocale(key, locale).toOption
 
-    def formatItemInto[T](what: T, locale: ULocale, buffer: StringBuffer)(implicit renderer: ItemFormat[T]): AlmValidation[StringBuffer] =
+    def formatItemInto[T, L](what: T, locale: L, buffer: StringBuffer)(implicit renderer: ItemFormat[T], magnet: LocaleMagnet[L]): AlmValidation[StringBuffer] = {
+      val uLoc = magnet.toULocale(locale)
       for {
-        renderable ← renderer.prepare(what, locale, self)
+        renderable ← renderer.prepare(what, uLoc, self)
         rendered ← renderable.renderIntoBuffer(buffer)
       } yield rendered
+    }
 
-    def formatItem[T](what: T, locale: ULocale)(implicit renderer: ItemFormat[T]): AlmValidation[String] =
+    def formatItem[T, L](what: T, locale: L)(implicit renderer: ItemFormat[T], magnet: LocaleMagnet[L]): AlmValidation[String] = {
+      val uLoc = magnet.toULocale(locale)
       for {
-        renderable ← renderer.prepare(what, locale, self)
+        renderable ← renderer.prepare(what, uLoc, self)
         rendered ← renderable.render
       } yield rendered
+    }
 
-    def forceFormatItemInto[T](what: T, locale: ULocale, buffer: StringBuffer)(implicit renderer: ItemFormat[T]): StringBuffer =
+    def forceFormatItemInto[T, L: LocaleMagnet](what: T, locale: L, buffer: StringBuffer)(implicit renderer: ItemFormat[T]): StringBuffer =
       formatItemInto(what, locale, buffer).resultOrEscalate
 
-    def forceFormatItem[T](what: T, locale: ULocale)(implicit renderer: ItemFormat[T]): String =
+    def forceFormatItem[T, L: LocaleMagnet](what: T, locale: L)(implicit renderer: ItemFormat[T]): String =
       formatItem(what, locale).resultOrEscalate
-      
-    def tryFormatItemInto[T](what: T, locale: ULocale, buffer: StringBuffer)(implicit renderer: ItemFormat[T]): Option[StringBuffer] =
+
+    def tryFormatItemInto[T, L: LocaleMagnet](what: T, locale: L, buffer: StringBuffer)(implicit renderer: ItemFormat[T]): Option[StringBuffer] =
       formatItemInto(what, locale, buffer).toOption
 
-    def tryFormatItem[T](what: T, locale: ULocale)(implicit renderer: ItemFormat[T]): Option[String] =
+    def tryFormatItem[T, L: LocaleMagnet](what: T, locale: L)(implicit renderer: ItemFormat[T]): Option[String] =
       formatItem(what, locale).toOption
   }
 }
