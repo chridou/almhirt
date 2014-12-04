@@ -25,7 +25,7 @@ object ResourcesService {
 }
 
 private[almhirt] class FixedResourcesService(fixedResources: AlmResources)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging {
-  logInfo(s"""Supported locales:\n${fixedResources.supportedLocales.mkString(", ")}""")
+  logInfo(s"""Supported locales:\n${fixedResources.localesTree.flatten.mkString(", ")}""")
   
   def receive: Receive = {
     case ResourcesService.GetResources ⇒ sender ! ResourcesService.Resources(fixedResources)
