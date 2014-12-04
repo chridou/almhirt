@@ -9,15 +9,15 @@ import com.ibm.icu.text.MessageFormat
 
 trait DirectResourceLookup {
   def locale: ULocale
+  def parent: Option[ResourceNode]
   def get(key: ResourceKey): AlmValidation[ResourceValue] = getWithLocale(key).map(_._2)
   def getWithLocale(key: ResourceKey): AlmValidation[(ULocale, ResourceValue)]
-  final def find(key: ResourceKey): Option[ResourceValue] = findWithLocale(key).map(_._2)
-  final def findWithLocale(key: ResourceKey): Option[(ULocale, ResourceValue)] = getWithLocale(key).toOption
+  def find(key: ResourceKey): Option[ResourceValue] = findWithLocale(key).map(_._2)
+  def findWithLocale(key: ResourceKey): Option[(ULocale, ResourceValue)] = getWithLocale(key).toOption
 }
 
 trait ResourceNode extends DirectResourceLookup {
   final def apply(key: ResourceKey): AlmValidation[ResourceValue] = get(key)
-  def parent: Option[ResourceNode]
   def mappings: Map[ResourceKey, ResourceValue]
   final def withFallbackKeys(fallbackKeys: Map[ResourceKey, ResourceValue]): ResourceNode = {
     val newMappings = fallbackKeys.foldLeft(mappings)({
