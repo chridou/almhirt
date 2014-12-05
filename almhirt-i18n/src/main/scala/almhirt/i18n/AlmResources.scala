@@ -22,7 +22,7 @@ object AlmResources {
   val empty = new AlmResources {
     val allowsLocaleFallback = false
     val supportedLocales = Set.empty[ULocale]
-    val localesTree = Tree(ULocale.ROOT)
+    def localesTree = throw new NoSuchElementException("There is no locales tree in the empty resources!")
     def resourceNodeStrict(locale: ULocale): AlmValidation[ResourceNode] = ArgumentProblem("The empty AlmResources does not contain any nodes").failure
     def withFallback(fallback: AlmResources): AlmValidation[AlmResources] = ???
   }
@@ -159,7 +159,11 @@ private[almhirt] object AlmResourcesXml {
 
   def getFactories(resourcePath: String, namePrefix: String, classloader: ClassLoader): AlmValidation[Seq[(ULocale, Boolean, Option[ResourceNode] ⇒ AlmValidation[ResourceNode])]] = {
     for {
-      files ← AlmClassLoaderResourcesHelper.getFilesToLoad(resourcePath, namePrefix, classloader)
+      files ← AlmClassLoaderResourcesHelper.getFilesToLoad(resourcePath, namePrefix, classloader).flatMap(fs ⇒
+        if (fs.isEmpty)
+          MandatoryDataProblem("No files to load!").failure
+        else
+          fs.success)
       xmls ← inTryCatch {
         files.map { fn ⇒
           val stream = classloader.getResourceAsStream(fn)
