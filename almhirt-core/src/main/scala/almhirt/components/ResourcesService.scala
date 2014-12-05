@@ -1,6 +1,7 @@
 package almhirt.components
 
 import akka.actor._
+import almhirt.common._
 import almhirt.context.AlmhirtContext
 import almhirt.problem.ProblemCause
 import almhirt.i18n.AlmResources
@@ -25,14 +26,21 @@ object ResourcesService {
 }
 
 private[almhirt] class FixedResourcesService(fixedResources: AlmResources)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging {
-  logInfo(s"""Supported locales:\n${fixedResources.localesTree.flatten.mkString(", ")}""")
-  
+
   def receive: Receive = {
+    case "ShowLocales" ⇒
+      inTryCatch { fixedResources.localesTree.flatten.map(_.toLanguageTag()) }.fold(
+        fail ⇒ {
+          logWarning(s"There are no supported locales:\n$fail")
+        },
+        succ ⇒ logInfo(s"""Supported locales(first is root):\n${succ.mkString(", ")}"""))
     case ResourcesService.GetResources ⇒ sender ! ResourcesService.Resources(fixedResources)
   }
 
   override def preStart() {
     context.parent ! ResourcesService.ResourcesInitialized
+    self ! "ShowLocales"
   }
+
 }
 
