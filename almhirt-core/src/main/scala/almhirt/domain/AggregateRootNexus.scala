@@ -9,7 +9,7 @@ import almhirt.almvalidation.kit._
 import almhirt.context.AlmhirtContext
 import org.reactivestreams.Subscriber
 import akka.stream.actor._
-import akka.stream.scaladsl2._
+import akka.stream.scaladsl._
 import akka.stream.impl.ActorProcessor
 
 object AggregateRootNexus {
@@ -54,7 +54,7 @@ private[almhirt] class AggregateRootNexus(
   def receiveInitialize: Receive = {
     case Start ⇒
       commandsPublisher.foreach(cmdPub ⇒
-        Source[Command](cmdPub).collect { case e: AggregateRootCommand ⇒ e }.connect(Sink(ActorSubscriber[AggregateRootCommand](self))).run())
+        Source[Command](cmdPub).collect { case e: AggregateRootCommand ⇒ e }.to(Sink(ActorSubscriber[AggregateRootCommand](self))).run())
 
       createInitialHives()
       request(1)
@@ -100,14 +100,14 @@ private[almhirt] class AggregateRootNexus(
   def receive: Receive = receiveInitialize
 
   private def createInitialHives() {
-    val fanout = Source(ActorPublisher[AggregateRootCommand](self)).runWith(PublisherDrain.withFanout[AggregateRootCommand](1, AlmMath.nextPowerOf2(hiveSelector.size)))
+    val commandsSource = Source(ActorPublisher[AggregateRootCommand](self)).runWith(Sink.fanoutPublisher[AggregateRootCommand](1, AlmMath.nextPowerOf2(hiveSelector.size)))
     hiveSelector.foreach {
       case (descriptor, f) ⇒
         val props = hiveFactory.props(descriptor).resultOrEscalate
         val actor = context.actorOf(props, s"hive-${descriptor.value}")
         context watch actor
-        val consumer = ActorSubscriber[AggregateRootCommand](actor)
-        Source(fanout).filter(cmd ⇒ f(cmd)).connect(Sink(consumer)).run()
+        val hive = Sink(ActorSubscriber[AggregateRootCommand](actor))
+        Source(commandsSource).filter(cmd ⇒ f(cmd)).to(hive).run()
     }
   }
 

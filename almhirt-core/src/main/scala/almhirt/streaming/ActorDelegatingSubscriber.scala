@@ -3,7 +3,7 @@ package almhirt.streaming
 import akka.actor._
 import akka.stream.actor._
 import org.reactivestreams.Publisher
-import akka.stream.scaladsl2._
+import akka.stream.scaladsl._
 
 object ActorDelegatingSubscriber {
   def props[T](delegateTo: ActorRef, bufferSize: Int): Props =
@@ -47,7 +47,7 @@ private[almhirt] class ActorDelegatingSubscriberImpl[T](delegateTo: Option[Actor
   private object Start
   def receive: Receive = {
     case Start ⇒
-      autoConnectTo.foreach(pub ⇒ Source(pub).connect(SubscriberDrain(ActorSubscriber[T](self))).run())// .publishTo(ActorSubscriber[T](self)))
+      autoConnectTo.foreach(pub ⇒ Source(pub).runWith(Sink(ActorSubscriber[T](self))))
       this.request(bufferSize)
 
     case ActorSubscriberMessage.OnNext(element: Any) ⇒

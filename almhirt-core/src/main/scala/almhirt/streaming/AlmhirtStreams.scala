@@ -9,7 +9,6 @@ import org.reactivestreams.{ Subscriber, Subscription, Publisher }
 import akka.stream.actor.{ ActorPublisher, ActorSubscriber }
 import almhirt.common._
 import almhirt.almfuture.all._
-import akka.stream.scaladsl2.PublisherDrain
 
 trait CanDispatchEvents {
   def eventBroker: StreamBroker[Event]
@@ -27,7 +26,7 @@ trait CommandStream {
 trait AlmhirtStreams extends EventStream with CommandStream with CanDispatchEvents with CanDispatchCommands
 
 object AlmhirtStreams {
-  import akka.stream.scaladsl2._
+  import akka.stream.scaladsl._
   import akka.stream.OverflowStrategy
 
   def apply(supervisorName: String)(maxDur: FiniteDuration)(implicit actorRefFactory: ActorRefFactory): AlmFuture[AlmhirtStreams with Stoppable] =
@@ -132,31 +131,31 @@ object AlmhirtStreams {
             val eventShipperActor = context.actorOf(StreamShipper.props(), "event-broker")
             val (eventShipperIn, eventShipperOut, stopEventShipper) = StreamShipper[Event](eventShipperActor)
 
-            val eventsDrain = PublisherDrain.withFanout[Event](initialFanoutEvents, maxFanoutEvents)
+            val eventsSink = PublisherSink.withFanout[Event](initialFanoutEvents, maxFanoutEvents)
             val eventFlow =
               if (eventBufferSize > 0)
                 Flow[Event].buffer(eventBufferSize, OverflowStrategy.backpressure)
               else
                 Flow[Event]
-            val eventsPub = eventFlow.runWith(PublisherTap(eventShipperOut), eventsDrain)
+            val (_, eventsPub) = eventFlow.runWith(Source(eventShipperOut), eventsSink)
 
             if (soakEvents)
-              PublisherTap(eventsPub).foreach(_ ⇒ ())
+              Source(eventsPub).foreach { _ ⇒ () }
 
             // commands
 
             val commandShipperActor = actorRefFactory.actorOf(StreamShipper.props(), "command-broker")
             val (commandShipperIn, commandShipperOut, stopCommandShipper) = StreamShipper[Command](commandShipperActor)
-            val commandsDrain = PublisherDrain.withFanout[Command](initialFanoutCommands, maxFanoutCommands)
+            val commandsDrain = PublisherSink.withFanout[Command](initialFanoutCommands, maxFanoutCommands)
             val commandFlow =
               if (commandBufferSize > 0)
                 Flow[Command].buffer(commandBufferSize, OverflowStrategy.backpressure)
               else
                 Flow[Command]
-            val commandsPub = commandFlow.runWith(PublisherTap(commandShipperOut), commandsDrain)
+            val (_, commandsPub) = commandFlow.runWith(Source(commandShipperOut), commandsDrain)
 
             if (soakCommands)
-              PublisherTap(commandsPub).foreach(_ ⇒ ())
+              Source(commandsPub).foreach(_ ⇒ ())
 
             new AlmhirtStreams with Stoppable {
               override val eventBroker = eventShipperIn
@@ -173,7 +172,7 @@ object AlmhirtStreams {
     })
     val props =
       dispatcherName match {
-        case None ⇒ supervisorProps
+        case None         ⇒ supervisorProps
         case Some(dpname) ⇒ supervisorProps.withDispatcher(dpname)
       }
     val supervisor = actorRefFactory.actorOf(props, supervisorName)

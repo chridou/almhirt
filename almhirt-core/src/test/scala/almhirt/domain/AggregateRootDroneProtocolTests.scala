@@ -7,9 +7,10 @@ import scala.concurrent.duration._
 import akka.actor._
 import almhirt.common._
 import almhirt.streaming._
-import akka.stream.scaladsl2._
+import akka.stream.scaladsl._
 import akka.testkit._
 import org.scalatest._
+import akka.stream.FlowMaterializer
 
 class AggregateRootDroneProtocolTests(_system: ActorSystem)
   extends TestKit(_system) with fixture.WordSpecLike with Matchers with BeforeAndAfterAll {
@@ -39,7 +40,7 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
         "emit the aggregate events [Created]" in { fixture ⇒
           val FixtureParam(testId, droneActor, droneProbe, streams) = fixture
           val eventsProbe = TestProbe()
-          Source(streams.eventStream).collect { case e: AggregateRootEvent ⇒ e }.connect(Sink(DelegatingSubscriber[AggregateRootEvent](eventsProbe.ref))).run()
+          Source(streams.eventStream).collect { case e: AggregateRootEvent ⇒ e }.to(Sink(DelegatingSubscriber[AggregateRootEvent](eventsProbe.ref))).run()
           within(1 second) {
             droneProbe.send(droneActor, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
             eventsProbe.expectMsgType[UserCreated]
@@ -50,7 +51,7 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
         "emit the aggregate events [Created, Modified]" in { fixture ⇒
           val FixtureParam(testId, droneActor, droneProbe, streams) = fixture
           val eventsProbe = TestProbe()
-          Source(streams.eventStream).collect { case e: AggregateRootEvent ⇒ e }.connect(Sink(DelegatingSubscriber[AggregateRootEvent](eventsProbe.ref))).run()
+          Source(streams.eventStream).collect { case e: AggregateRootEvent ⇒ e }.to(Sink(DelegatingSubscriber[AggregateRootEvent](eventsProbe.ref))).run()
           within(1 second) {
             droneProbe.send(droneActor, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
             droneProbe.expectMsgType[CommandExecuted]
@@ -64,7 +65,7 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
         "emit the aggregate events [Created, Modified, Deleted]" in { fixture ⇒
           val FixtureParam(testId, droneActor, droneProbe, streams) = fixture
           val eventsProbe = TestProbe()
-          Source(streams.eventStream).collect { case e: AggregateRootEvent ⇒ e }.connect(Sink(DelegatingSubscriber[AggregateRootEvent](eventsProbe.ref))).run()
+          Source(streams.eventStream).collect { case e: AggregateRootEvent ⇒ e }.to(Sink(DelegatingSubscriber[AggregateRootEvent](eventsProbe.ref))).run()
           within(1 second) {
             droneProbe.send(droneActor, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
             droneProbe.expectMsgType[CommandExecuted]
@@ -81,7 +82,7 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
         "emit NO aggregate events" in { fixture ⇒
           val FixtureParam(testId, droneActor, droneProbe, streams) = fixture
           val eventsProbe = TestProbe()
-          Source(streams.eventStream).collect{case e: AggregateRootEvent ⇒ e}.connect(Sink(DelegatingSubscriber[AggregateRootEvent](eventsProbe.ref))).run()
+          Source(streams.eventStream).collect{case e: AggregateRootEvent ⇒ e}.to(Sink(DelegatingSubscriber[AggregateRootEvent](eventsProbe.ref))).run()
           within(1 second) {
             droneProbe.send(droneActor, UserUow(CommandHeader(), "a", 0L, Seq.empty))
             eventsProbe.expectNoMsg(500 millis)
@@ -92,7 +93,7 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
         "emit the aggregate events [Created, Modified, Deleted]" in { fixture ⇒
           val FixtureParam(testId, droneActor, droneProbe, streams) = fixture
           val eventsProbe = TestProbe()
-          Source(streams.eventStream).collect { case e: AggregateRootEvent ⇒ e }.connect(Sink(DelegatingSubscriber[AggregateRootEvent](eventsProbe.ref))).run()
+          Source(streams.eventStream).collect { case e: AggregateRootEvent ⇒ e }.to(Sink(DelegatingSubscriber[AggregateRootEvent](eventsProbe.ref))).run()
           within(1 second) {
             droneProbe.send(droneActor, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
             droneProbe.expectMsgType[CommandExecuted]
@@ -114,7 +115,7 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
         "emit NO events" in { fixture ⇒
           val FixtureParam(testId, droneActor, droneProbe, streams) = fixture
           val eventsProbe = TestProbe()
-          Source(streams.eventStream).collect { case e: AggregateRootEvent ⇒ e }.connect(Sink(DelegatingSubscriber[AggregateRootEvent](eventsProbe.ref))).run()
+          Source(streams.eventStream).collect { case e: AggregateRootEvent ⇒ e }.to(Sink(DelegatingSubscriber[AggregateRootEvent](eventsProbe.ref))).run()
           within(1 second) {
             droneProbe.send(droneActor, ChangeUserLastname(CommandHeader(), "a", 0L, "meier"))
             eventsProbe.expectNoMsg(500 millis)
@@ -125,7 +126,7 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
         "emit the aggregate events [Created, Modified(x2), Deleted]" in { fixture ⇒
           val FixtureParam(testId, droneActor, droneProbe, streams) = fixture
           val eventsProbe = TestProbe()
-          Source(streams.eventStream).collect { case e: AggregateRootEvent ⇒ e }.connect(Sink(DelegatingSubscriber[AggregateRootEvent](eventsProbe.ref))).run()
+          Source(streams.eventStream).collect { case e: AggregateRootEvent ⇒ e }.to(Sink(DelegatingSubscriber[AggregateRootEvent](eventsProbe.ref))).run()
           within(1 second) {
             droneProbe.send(droneActor, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
             droneProbe.expectMsgType[CommandExecuted]

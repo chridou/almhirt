@@ -4,9 +4,10 @@ import scala.language.postfixOps
 import scala.concurrent.duration._
 import akka.actor._
 import almhirt.common._
-import akka.stream.scaladsl2._
+import akka.stream.scaladsl._
 import akka.testkit._
 import org.scalatest._
+import akka.stream.FlowMaterializer
 
 class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixture.WordSpecLike with Matchers with BeforeAndAfterAll {
   def this() = this(ActorSystem("EventStreamTests", almhirt.TestConfigs.logWarningConfig))
@@ -120,7 +121,7 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
         val streamSubscriber = streams.eventBroker.newSubscriber
         within(1 second) {
           streams.eventStream.subscribe(streamSubscriber)
-          Source(List[Event](event)).connect(Sink(subscriber)).run()
+          Source(List[Event](event)).to(Sink(subscriber)).run()
           subscriberProbeEvent.expectMsg(100 millis, event)
         }
       }
@@ -136,9 +137,9 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
         val streamSubscriber2 = streams.eventBroker.newSubscriber
         within(1 second) {
           streams.eventStream.subscribe(subscriber)
-          Source(List[Event](event1)).connect(Sink(streamSubscriber1)).run()
+          Source(List[Event](event1)).to(Sink(streamSubscriber1)).run()
           subscriberProbeEvent.expectMsg(100 millis, event1)
-          Source(List[Event](event2)).connect(Sink(streamSubscriber2)).run()
+          Source(List[Event](event2)).to(Sink(streamSubscriber2)).run()
           subscriberProbeEvent.expectMsg(100 millis, event2)
         }
       }

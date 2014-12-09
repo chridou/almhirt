@@ -10,7 +10,7 @@ import almhirt.akkax._
 import almhirt.context.AlmhirtContext
 import almhirt.context.HasAlmhirtContext
 import akka.stream.actor._
-import akka.stream.scaladsl2._
+import akka.stream.scaladsl._
 
 object CommandEndpoint {
   def propsRaw(

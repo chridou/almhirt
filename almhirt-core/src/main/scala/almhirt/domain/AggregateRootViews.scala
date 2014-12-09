@@ -13,7 +13,8 @@ import almhirt.akkax._
 import almhirt.context.AlmhirtContext
 import akka.stream.actor._
 import org.reactivestreams.Publisher
-import akka.stream.scaladsl2._
+import akka.stream.scaladsl._
+import akka.stream.FlowMaterializer
 
 object AggregateRootViews {
 
@@ -48,11 +49,10 @@ object AggregateRootViews {
       Some(ctx.eventStream))
   }
 
-  import akka.stream.scaladsl2._
   def subscribeTo[E <: Event](
     publisher: Publisher[Event],
     views: ActorRef)(implicit mat: FlowMaterializer, tag: scala.reflect.ClassTag[E]) {
-    Source(publisher).filter(p ⇒ tag.runtimeClass.isInstance(p)).map(_.asInstanceOf[E]).connect(Sink(ActorSubscriber[E](views))).run()
+    Source(publisher).filter(p ⇒ tag.runtimeClass.isInstance(p)).map(_.asInstanceOf[E]).to(Sink(ActorSubscriber[E](views))).run()
   }
 
   def connectedActor[E <: Event](publisher: Publisher[Event])(

@@ -9,7 +9,7 @@ import almhirt.context._
 import almhirt.akkax._
 import almhirt.http._
 import akka.stream.actor._
-import akka.stream.scaladsl2._
+import akka.stream.scaladsl._
 import spray.http.StatusCode
 import spray.http.MediaType
 import spray.http.HttpMethod
@@ -39,7 +39,7 @@ abstract class ActorConsumerHttpPublisher[T](
   private case object Start
   def receiveCircuitClosed: Receive = {
     case Start ⇒
-      autoConnectTo.foreach(pub ⇒ Source[Event](pub).connect(Sink(ActorSubscriber[Event](self))).run())
+      autoConnectTo.foreach(pub ⇒ Source[Event](pub).to(Sink(ActorSubscriber[Event](self))).run())
       request(1)
 
     case ActorSubscriberMessage.OnNext(element) ⇒

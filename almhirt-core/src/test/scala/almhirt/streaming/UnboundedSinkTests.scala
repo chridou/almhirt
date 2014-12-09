@@ -4,10 +4,11 @@ import scala.language.postfixOps
 import scala.concurrent.duration._
 import akka.actor._
 import akka.stream.actor.ActorPublisher
-import akka.stream.scaladsl2._
+import akka.stream.scaladsl._
 import almhirt.common._
 import akka.testkit._
 import org.scalatest._
+import akka.stream.FlowMaterializer
 
 class UnboundedSinkTests(_system: ActorSystem) extends TestKit(_system) with FunSuiteLike with Matchers with BeforeAndAfterAll {
   def this() = this(ActorSystem("UnboundedSinkTests", almhirt.TestConfigs.logInfoConfig))
@@ -26,7 +27,7 @@ class UnboundedSinkTests(_system: ActorSystem) extends TestKit(_system) with Fun
     val eventSink = UnboundedSink[String](sinkActor)
     val probe = TestProbe()
     val subscr = DelegatingSubscriber[String](probe.ref)
-    Source(ActorPublisher[String](sinkActor)).connect(Sink(subscr)).run
+    Source(ActorPublisher[String](sinkActor)).to(Sink(subscr)).run
     eventSink.publish("1")
     probe.expectMsg("1")
     eventSink.stop()
@@ -38,7 +39,7 @@ class UnboundedSinkTests(_system: ActorSystem) extends TestKit(_system) with Fun
     val eventSink = UnboundedSink[String](sinkActor)
     val probe = TestProbe()
     val subscr = DelegatingSubscriber[String](probe.ref)
-    Source[String](ActorPublisher[String](sinkActor)).connect(Sink(subscr)).run
+    Source[String](ActorPublisher[String](sinkActor)).to(Sink(subscr)).run
     eventSink.publish("1")
     eventSink.publish("2")
     probe.expectMsg("1")
@@ -52,7 +53,7 @@ class UnboundedSinkTests(_system: ActorSystem) extends TestKit(_system) with Fun
     val eventSink = UnboundedSink[String](sinkActor)
     val probe = TestProbe()
     val subscr = DelegatingSubscriber[String](probe.ref)
-    Source[String](ActorPublisher[String](sinkActor)).connect(Sink(subscr)).run
+    Source[String](ActorPublisher[String](sinkActor)).to(Sink(subscr)).run
     (1 to 100).map(_.toString).foreach(eventSink.publish(_))
     val items = probe.receiveN(100).map(_.asInstanceOf[String]).toList
     items should equal((1 to 100).map(_.toString))

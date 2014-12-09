@@ -10,7 +10,7 @@ import almhirt.tracking.{ CommandStatus, CommandStatusChanged, CommandResult }
 import almhirt.context.AlmhirtContext
 import akka.stream.actor._
 import org.reactivestreams.Subscriber
-import akka.stream.scaladsl2._
+import akka.stream.scaladsl._
 import almhirt.akkax.AlmActor
 import almhirt.akkax.AlmActorLogging
 
@@ -119,7 +119,7 @@ private[almhirt] class MyCommandStatusTracker(
   def running(): Receive = {
     case AutoConnect ⇒
       logInfo("Subscribing to event stream.")
-      Source(almhirtContext.eventStream).collect { case e: CommandStatusChanged ⇒ e }.connect(SubscriberDrain(CommandStatusTracker(self))).run()
+      Source(almhirtContext.eventStream).collect { case e: CommandStatusChanged ⇒ e }.to(Sink(CommandStatusTracker(self))).run()
       request(1)
 
     case TrackCommand(commandId, callback, deadline) ⇒

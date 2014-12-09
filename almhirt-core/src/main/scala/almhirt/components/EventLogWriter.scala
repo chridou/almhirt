@@ -15,7 +15,7 @@ import almhirt.context.HasAlmhirtContext
 import almhirt.streaming.ActorDevNullSubscriberWithAutoSubscribe
 import akka.stream.actor._
 import org.reactivestreams.Subscriber
-import akka.stream.scaladsl2._
+import akka.stream.scaladsl._
 
 object EventLogWriter {
   def propsRaw(
@@ -104,7 +104,7 @@ private[almhirt] class EventLogWriterImpl(
   def receiveCircuitClosed(eventLog: ActorRef): Receive = {
     case AutoConnect ⇒
       logInfo("Subscribing to event stream.")
-      Source(almhirtContext.eventStream).connect(SubscriberDrain(EventLogWriter(self))).run()
+      Source(almhirtContext.eventStream).to(Sink(EventLogWriter(self))).run()
       request(1)
 
     case ActorSubscriberMessage.OnNext(event: Event) ⇒

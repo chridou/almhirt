@@ -12,10 +12,9 @@ import almhirt.context.AlmhirtContext
 import almhirt.akkax._
 import almhirt.streaming.ActorDevNullSubscriberWithAutoSubscribe
 import org.reactivestreams.Publisher
-import akka.stream.scaladsl2._
+import akka.stream.scaladsl._
 import akka.stream.actor._
 import akka.stream.OverflowStrategy
-import akka.stream.scaladsl2.ImplicitFlowMaterializer
 
 object EventSinkHubMessage {
 }
@@ -61,7 +60,7 @@ private[almhirt] class EventSinksSupervisorImpl(factories: EventSinkHub.EventSin
 
   private def createInitialMembers() {
     if (!factories.isEmpty) {
-      val drain = PublisherDrain.withFanout[Event](1, AlmMath.nextPowerOf2(factories.size))
+      val eventsSourceFannedOut = Source(ctx.eventStream).runWith(Sink.fanoutPublisher[Event](1, AlmMath.nextPowerOf2(factories.size)))
       val flow =
         buffersize match {
           case Some(bfs) if bfs > 0 ⇒
@@ -69,7 +68,6 @@ private[almhirt] class EventSinksSupervisorImpl(factories: EventSinkHub.EventSin
           case None ⇒
             Flow[Event]
         }
-      val eventsPub = flow.runWith(PublisherTap(ctx.eventStream), drain)
       factories.foreach {
         case (name, (props, filterOpt)) ⇒
           val actor = context.actorOf(props, name)
@@ -78,9 +76,9 @@ private[almhirt] class EventSinksSupervisorImpl(factories: EventSinkHub.EventSin
           val subscriber = ActorSubscriber[Event](actor)
           filterOpt match {
             case Some(filter) ⇒
-              Source(eventsPub).connect(filter).connect(Sink(subscriber)).run()
+              Source(eventsSourceFannedOut).via(filter).to(Sink(subscriber)).run()
             case None ⇒
-              Source(eventsPub).connect(Sink(subscriber)).run()
+              Source(eventsSourceFannedOut).to(Sink(subscriber)).run()
           }
       }
     } else if (factories.isEmpty && withBlackHoleIfEmpty) {
