@@ -156,7 +156,7 @@ private[almhirt] object ResourceNodeXml {
       name ← elem \@! "name"
       checkedName ← checkName(name)
       valueElem ← elem \! "value"
-      valueStr ← valueElem.text.notEmptyOrWhitespace()
+      valueStr ← valueElem.text.notEmptyOrWhitespace().map(_.replaceAll("\\s{2,}", " "))
       value ← elem \@? "type" match {
         case None          ⇒ RawStringContainerItem(valueStr).success
         case Some("plain") ⇒ RawStringContainerItem(valueStr).success
