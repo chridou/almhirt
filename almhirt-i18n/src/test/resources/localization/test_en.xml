@@ -21,7 +21,7 @@
 				</default-format>
 				<selective>
 					<format>
-						<system>us</system>
+						<system>anglo-american</system>
 						<unit-of-measurement>inch</unit-of-measurement>
 						<min-fraction-digits>2</min-fraction-digits>
 						<max-fraction-digits>2</max-fraction-digits>

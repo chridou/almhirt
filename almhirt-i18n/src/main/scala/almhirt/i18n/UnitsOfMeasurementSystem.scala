@@ -12,19 +12,14 @@ object UnitsOfMeasurementSystem {
     override val parseableString = "si"
   }
 
-  case object UnitedStatesCustomaryUnits extends UnitsOfMeasurementSystem {
-    override val parseableString = "us"
-  }
-
-  case object Imperial extends UnitsOfMeasurementSystem {
-    override val parseableString = "imperial"
+  case object AngloAmerican extends UnitsOfMeasurementSystem {
+    override val parseableString = "anglo-american"
   }
   
   def parseString(toParse: String): AlmValidation[UnitsOfMeasurementSystem] =
     toParse match {
     case "si" => SI.success
-    case "us" => UnitedStatesCustomaryUnits.success
-    case "imperial" => Imperial.success
+    case "anglo-american" => AngloAmerican.success
     case x => ParsingProblem(s""""$x" is not a units of measurement system.""").failure
   }
 }

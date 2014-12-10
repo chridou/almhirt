@@ -59,7 +59,7 @@ object UnitOfMeasureDimension {
     override def siMeasured(v: Double): MeasuredLightFlux = MeasuredLightFlux(v, siUnit)
   }
   object MassDimension extends UnitOfMeasureDimension {
-    override val siUnit = UnitsOfMeasurement.Gram
+    override val siUnit = UnitsOfMeasurement.Kilogram
     override def siMeasured(v: Double): MeasuredMass = MeasuredMass(v, siUnit)
   }
   object PowerDimension extends UnitOfMeasureDimension {

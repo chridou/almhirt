@@ -55,19 +55,34 @@ class ResourcesAndKeysTests extends FunSuite with Matchers {
     resourcesWithoutFallback.formatable(key2, new ULocale("en")).flatMap(_.withRawArg("1" -> 2).render).toOption should equal(Some("en: 2"))
   }
   
-  test("""render the length measured value 1.0 in "en".""") {
+  test("""render the length measured value 1.0m in "en".""") {
     val formatable = resourcesWithoutFallback.forceFormatable(group.withKey("length"), "en")
     info(formatable.withRawArg("length" -> 1.0).forceRender)
   }
 
-  test("""render the length measured value 1000.0 in "en".""") {
+  test("""render the length measured value 1000.0m in "en".""") {
     val formatable = resourcesWithoutFallback.forceFormatable(group.withKey("length"), "en")
     info(formatable.withRawArg("length" -> 1000.0).forceRender)
   }
 
-  test("""render the length measured value 1000.0 in "en" with us custom units.""") {
+  test("""render the length measured value 1000.0m in "en" with anglo american units.""") {
     val formatable = resourcesWithoutFallback.forceFormatable(group.withKey("length"), "en")
-    info(formatable.withRawArg("length" -> MeasuredValueArg.SiArg(1000.0, Some(UnitsOfMeasurementSystem.UnitedStatesCustomaryUnits))).forceRender)
+    info(formatable.withRawArg("length" -> MeasuredValueArg.SiArg(1000.0, Some(UnitsOfMeasurementSystem.AngloAmerican))).forceRender)
+  }
+  
+  test("""render the length measured value 1.0m in "de".""") {
+    val formatable = resourcesWithoutFallback.forceFormatable(group.withKey("length"), "de")
+    info(formatable.withRawArg("length" -> 1.0).forceRender)
+  }
+
+  test("""render the length measured value 1000.0m in "de".""") {
+    val formatable = resourcesWithoutFallback.forceFormatable(group.withKey("length"), "de")
+    info(formatable.withRawArg("length" -> 1000.0).forceRender)
+  }
+
+  test("""render the length measured value 1000.0m in "de" with anglo american units.""") {
+    val formatable = resourcesWithoutFallback.forceFormatable(group.withKey("length"), "de")
+    info(formatable.withRawArg("length" -> MeasuredValueArg.SiArg(1000.0, Some(UnitsOfMeasurementSystem.AngloAmerican))).forceRender)
   }
   
 }

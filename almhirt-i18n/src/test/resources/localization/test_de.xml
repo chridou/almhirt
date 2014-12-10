@@ -5,6 +5,23 @@
 			<key name="key_1" type="icu">
 				<value>de</value>
 			</key>
+			<key name="length" type="measured-value">
+				<parameter-name>length</parameter-name>
+				<format-width>wide</format-width>
+				<default-format>
+					<unit-of-measurement>meter</unit-of-measurement>
+					<min-fraction-digits>0</min-fraction-digits>
+					<max-fraction-digits>0</max-fraction-digits>
+				</default-format>
+				<selective>
+					<format>
+						<system>anglo-american</system>
+						<unit-of-measurement>fathom</unit-of-measurement>
+						<min-fraction-digits>2</min-fraction-digits>
+						<max-fraction-digits>2</max-fraction-digits>
+					</format>
+				</selective>
+			</key>
 		</group>
 	</section>
 </localized>

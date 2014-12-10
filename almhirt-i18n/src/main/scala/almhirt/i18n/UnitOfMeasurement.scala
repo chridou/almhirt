@@ -73,38 +73,38 @@ object UnitsOfMeasurement {
   }
 
   case object Acre extends AreaMeasureUnit {
-    private[almhirt] override def toBase(value: Double): Double = value
-    private[almhirt] override def fromBase(value: Double): Double = value
+    private[almhirt] override def toBase(value: Double): Double = value * 4046.8564224
+    private[almhirt] override def fromBase(value: Double): Double = value / 4046.8564224
     val icu = MeasureUnit.ACRE.success
     val name = "acre"
   }
   case object Hectare extends AreaMeasureUnit {
-    private[almhirt] override def toBase(value: Double): Double = value
-    private[almhirt] override def fromBase(value: Double): Double = value
+    private[almhirt] override def toBase(value: Double): Double = value * 10000.0
+    private[almhirt] override def fromBase(value: Double): Double = value / 10000.0
     val icu = MeasureUnit.HECTARE.success
     val name = "hectare"
   }
   case object SquareCentimeter extends AreaMeasureUnit {
-    private[almhirt] override def toBase(value: Double): Double = value
-    private[almhirt] override def fromBase(value: Double): Double = value
+    private[almhirt] override def toBase(value: Double): Double = value / (100.0 * 100.0)
+    private[almhirt] override def fromBase(value: Double): Double = value * (100.0 * 100.0)
     val icu = MeasureUnit.SQUARE_CENTIMETER.success
     val name = "square-centimeter"
   }
   case object SquareFoot extends AreaMeasureUnit {
-    private[almhirt] override def toBase(value: Double): Double = value
-    private[almhirt] override def fromBase(value: Double): Double = value
+    private[almhirt] override def toBase(value: Double): Double = value * 0.09290304
+    private[almhirt] override def fromBase(value: Double): Double = value / 0.09290304
     val icu = MeasureUnit.SQUARE_FOOT.success
     val name = "square-foot"
   }
   case object SquareInch extends AreaMeasureUnit {
-    private[almhirt] override def toBase(value: Double): Double = value
-    private[almhirt] override def fromBase(value: Double): Double = value
+    private[almhirt] override def toBase(value: Double): Double = value * 0.00064516
+    private[almhirt] override def fromBase(value: Double): Double = value / 0.00064516
     val icu = MeasureUnit.SQUARE_INCH.success
     val name = "square-inch"
   }
   case object SquareKilometer extends AreaMeasureUnit {
-    private[almhirt] override def toBase(value: Double): Double = value
-    private[almhirt] override def fromBase(value: Double): Double = value
+    private[almhirt] override def toBase(value: Double): Double = value * (1000.0 * 1000.0)
+    private[almhirt] override def fromBase(value: Double): Double = value / (1000.0 * 1000.0)
     val icu = MeasureUnit.SQUARE_KILOMETER.success
     val name = "square-kilomemeter"
   }
@@ -115,14 +115,14 @@ object UnitsOfMeasurement {
     val name = "square-meter"
   }
   case object SquareMile extends AreaMeasureUnit {
-    private[almhirt] override def toBase(value: Double): Double = value
-    private[almhirt] override def fromBase(value: Double): Double = value
+    private[almhirt] override def toBase(value: Double): Double = value * 2589988.11033600
+    private[almhirt] override def fromBase(value: Double): Double = value / 2589988.11033600
     val icu = MeasureUnit.SQUARE_MILE.success
     val name = "square-mile"
   }
   case object SquareYard extends AreaMeasureUnit {
-    private[almhirt] override def toBase(value: Double): Double = value
-    private[almhirt] override def fromBase(value: Double): Double = value
+    private[almhirt] override def toBase(value: Double): Double = value * 0.83612736
+    private[almhirt] override def fromBase(value: Double): Double = value / 0.83612736
     val icu = MeasureUnit.SQUARE_YARD.success
     val name = "square-yard"
   }
@@ -202,44 +202,44 @@ object UnitsOfMeasurement {
   }
 
   case object Day extends DurationMeasureUnit {
-    private[almhirt] override def toBase(value: Double): Double = value
-    private[almhirt] override def fromBase(value: Double): Double = value
+    private[almhirt] override def toBase(value: Double): Double = value * (60.0 * 60.0 * 24.0)
+    private[almhirt] override def fromBase(value: Double): Double = value / (60.0 * 60.0 * 24.0)
     val icu = MeasureUnit.DAY.success
     val name = "day"
   }
   case object Hour extends DurationMeasureUnit {
-    private[almhirt] override def toBase(value: Double): Double = value
-    private[almhirt] override def fromBase(value: Double): Double = value
+    private[almhirt] override def toBase(value: Double): Double = value * (60.0 * 60.0)
+    private[almhirt] override def fromBase(value: Double): Double = value / (60.0 * 60.0)
     val icu = MeasureUnit.HOUR.success
     val name = "hour"
   }
   case object Microsecond extends DurationMeasureUnit {
-    private[almhirt] override def toBase(value: Double): Double = value
-    private[almhirt] override def fromBase(value: Double): Double = value
+    private[almhirt] override def toBase(value: Double): Double = value * 1.0E-6
+    private[almhirt] override def fromBase(value: Double): Double = value * 1.0E6
     val icu = MeasureUnit.MICROSECOND.success
     val name = "microsecond"
   }
   case object Millisecond extends DurationMeasureUnit {
-    private[almhirt] override def toBase(value: Double): Double = value
-    private[almhirt] override def fromBase(value: Double): Double = value
+    private[almhirt] override def toBase(value: Double): Double = value * 1.0E-3
+    private[almhirt] override def fromBase(value: Double): Double = value * 1.0E3
     val icu = MeasureUnit.MILLISECOND.success
     val name = "millisecond"
   }
   case object Minute extends DurationMeasureUnit {
-    private[almhirt] override def toBase(value: Double): Double = value
-    private[almhirt] override def fromBase(value: Double): Double = value
+    private[almhirt] override def toBase(value: Double): Double = value * 60.0
+    private[almhirt] override def fromBase(value: Double): Double = value / 60.0
     val icu = MeasureUnit.MINUTE.success
     val name = "minute"
   }
   case object Month extends DurationMeasureUnit {
-    private[almhirt] override def toBase(value: Double): Double = value
-    private[almhirt] override def fromBase(value: Double): Double = value
+    private[almhirt] override def toBase(value: Double): Double = value * (60.0 * 60.0 * 24.0 * 30.0)
+    private[almhirt] override def fromBase(value: Double): Double = value * (60.0 * 60.0 * 24.0 * 30.0)
     val icu = MeasureUnit.MONTH.success
     val name = "month"
   }
   case object Nanosecond extends DurationMeasureUnit {
-    private[almhirt] override def toBase(value: Double): Double = value
-    private[almhirt] override def fromBase(value: Double): Double = value
+    private[almhirt] override def toBase(value: Double): Double = value * 1.0E-9
+    private[almhirt] override def fromBase(value: Double): Double = value * 1.0E9
     val icu = MeasureUnit.NANOSECOND.success
     val name = "nanosecond"
   }
@@ -250,14 +250,14 @@ object UnitsOfMeasurement {
     val name = "second"
   }
   case object Week extends DurationMeasureUnit {
-    private[almhirt] override def toBase(value: Double): Double = value
-    private[almhirt] override def fromBase(value: Double): Double = value
+    private[almhirt] override def toBase(value: Double): Double = value * (60.0 * 60.0 * 24.0 * 7.0)
+    private[almhirt] override def fromBase(value: Double): Double = value / (60.0 * 60.0 * 24.0 * 7.0)
     val icu = MeasureUnit.WEEK.success
     val name = "week"
   }
   case object Year extends DurationMeasureUnit {
-    private[almhirt] override def toBase(value: Double): Double = value
-    private[almhirt] override def fromBase(value: Double): Double = value
+    private[almhirt] override def toBase(value: Double): Double = value * (60.0 * 60.0 * 24.0 * 365.0)
+    private[almhirt] override def fromBase(value: Double): Double = value / (60.0 * 60.0 * 24.0 * 365.0)
     val icu = MeasureUnit.YEAR.success
     val name = "year"
   }
@@ -269,8 +269,8 @@ object UnitsOfMeasurement {
     val name = "ampere"
   }
   case object Milliampere extends CurrentMeasureUnit {
-    private[almhirt] override def toBase(value: Double): Double = value
-    private[almhirt] override def fromBase(value: Double): Double = value
+    private[almhirt] override def toBase(value: Double): Double = value / 1000.0
+    private[almhirt] override def fromBase(value: Double): Double = value * 1000.0
     val icu = MeasureUnit.MILLIAMPERE.success
     val name = "milliampere"
   }
@@ -326,57 +326,57 @@ object UnitsOfMeasurement {
     val name = "hertz"
   }
   case object Kilohertz extends FrequencyMeasureUnit {
-    private[almhirt] override def toBase(value: Double): Double = value
-    private[almhirt] override def fromBase(value: Double): Double = value
+    private[almhirt] override def toBase(value: Double): Double = value * 1000.0
+    private[almhirt] override def fromBase(value: Double): Double = value / 1000.0
     val icu = MeasureUnit.KILOHERTZ.success
     val name = "kilohertz"
   }
   case object Megahertz extends FrequencyMeasureUnit {
-    private[almhirt] override def toBase(value: Double): Double = value
-    private[almhirt] override def fromBase(value: Double): Double = value
+    private[almhirt] override def toBase(value: Double): Double = value * 1.0E6
+    private[almhirt] override def fromBase(value: Double): Double = value * 1.0E-6
     val icu = MeasureUnit.MEGAHERTZ.success
     val name = "megahertz"
   }
   case object Gigahertz extends FrequencyMeasureUnit {
-    private[almhirt] override def toBase(value: Double): Double = value
-    private[almhirt] override def fromBase(value: Double): Double = value
+    private[almhirt] override def toBase(value: Double): Double = value * 1.0E9
+    private[almhirt] override def fromBase(value: Double): Double = value * 1.0E-9
     val icu = MeasureUnit.GIGAHERTZ.success
     val name = "gigahertz"
   }
 
   case object Picometer extends LengthMeasureUnit {
-    private[almhirt] override def toBase(value: Double): Double = value
-    private[almhirt] override def fromBase(value: Double): Double = value
+    private[almhirt] override def toBase(value: Double): Double = value * 1.0E-12
+    private[almhirt] override def fromBase(value: Double): Double = value * 1.0E12
     val icu = MeasureUnit.PICOMETER.success
     val name = "picometer"
   }
   case object Nanometer extends LengthMeasureUnit {
-    private[almhirt] override def toBase(value: Double): Double = value
-    private[almhirt] override def fromBase(value: Double): Double = value
+    private[almhirt] override def toBase(value: Double): Double = value * 1.0E-9
+    private[almhirt] override def fromBase(value: Double): Double = value * 1.0E9
     val icu = MeasureUnit.NANOMETER.success
     val name = "nanometer"
   }
   case object Micrometer extends LengthMeasureUnit {
-    private[almhirt] override def toBase(value: Double): Double = value
-    private[almhirt] override def fromBase(value: Double): Double = value
+    private[almhirt] override def toBase(value: Double): Double = value * 1.0E-6
+    private[almhirt] override def fromBase(value: Double): Double = value * 1.0E6
     val icu = MeasureUnit.MICROMETER.success
     val name = "micrometer"
   }
   case object Millimeter extends LengthMeasureUnit {
-    private[almhirt] override def toBase(value: Double): Double = value
-    private[almhirt] override def fromBase(value: Double): Double = value
+    private[almhirt] override def toBase(value: Double): Double = value * 1.0E-3
+    private[almhirt] override def fromBase(value: Double): Double = value * 1.0E3
     val icu = MeasureUnit.MILLIMETER.success
     val name = "millimeter"
   }
   case object Centimeter extends LengthMeasureUnit {
-    private[almhirt] override def toBase(value: Double): Double = value
-    private[almhirt] override def fromBase(value: Double): Double = value
+    private[almhirt] override def toBase(value: Double): Double = value * 1.0E-2
+    private[almhirt] override def fromBase(value: Double): Double = value * 1.0E2
     val icu = MeasureUnit.CENTIMETER.success
     val name = "centimeter"
   }
   case object Decimeter extends LengthMeasureUnit {
-    private[almhirt] override def toBase(value: Double): Double = value
-    private[almhirt] override def fromBase(value: Double): Double = value
+    private[almhirt] override def toBase(value: Double): Double = value / 10.0
+    private[almhirt] override def fromBase(value: Double): Double = value * 10.0
     val icu = MeasureUnit.DECIMETER.success
     val name = "decimeter"
   }
@@ -387,62 +387,68 @@ object UnitsOfMeasurement {
     val name = "meter"
   }
   case object Kilometer extends LengthMeasureUnit {
-    private[almhirt] override def toBase(value: Double): Double = value
-    private[almhirt] override def fromBase(value: Double): Double = value
+    private[almhirt] override def toBase(value: Double): Double = value * 1000.0
+    private[almhirt] override def fromBase(value: Double): Double = value / 1000.0
     val icu = MeasureUnit.KILOMETER.success
     val name = "kilometer"
   }
   case object Fathom extends LengthMeasureUnit {
-    private[almhirt] override def toBase(value: Double): Double = value
-    private[almhirt] override def fromBase(value: Double): Double = value
+    private[almhirt] override def toBase(value: Double): Double = value * 1.8288
+    private[almhirt] override def fromBase(value: Double): Double = value / 1.8288
     val icu = MeasureUnit.FATHOM.success
     val name = "fathom"
   }
   case object Furlong extends LengthMeasureUnit {
-    private[almhirt] override def toBase(value: Double): Double = value
-    private[almhirt] override def fromBase(value: Double): Double = value
+    private[almhirt] override def toBase(value: Double): Double = value * 201.1684
+    private[almhirt] override def fromBase(value: Double): Double = value / 201.1684
     val icu = MeasureUnit.FURLONG.success
     val name = "furlong"
   }
   case object Inch extends LengthMeasureUnit {
-    private[almhirt] override def toBase(value: Double): Double = value
-    private[almhirt] override def fromBase(value: Double): Double = value
+    private[almhirt] override def toBase(value: Double): Double = value * 0.0254
+    private[almhirt] override def fromBase(value: Double): Double = value / 0.0254
     val icu = MeasureUnit.INCH.success
     val name = "inch"
   }
+  case object Foot extends LengthMeasureUnit {
+    private[almhirt] override def toBase(value: Double): Double = value * 0.3048
+    private[almhirt] override def fromBase(value: Double): Double = value / 0.3048
+    val icu = MeasureUnit.FOOT.success
+    val name = "foot"
+  }
   case object Lightyear extends LengthMeasureUnit {
-    private[almhirt] override def toBase(value: Double): Double = value
-    private[almhirt] override def fromBase(value: Double): Double = value
+    private[almhirt] override def toBase(value: Double): Double = value * 9.4605284E15
+    private[almhirt] override def fromBase(value: Double): Double = value * 9.4605284E-15
     val icu = MeasureUnit.LIGHT_YEAR.success
     val name = "light-year"
   }
   case object Mile extends LengthMeasureUnit {
-    private[almhirt] override def toBase(value: Double): Double = value
-    private[almhirt] override def fromBase(value: Double): Double = value
+    private[almhirt] override def toBase(value: Double): Double = value * 1609.3440
+    private[almhirt] override def fromBase(value: Double): Double = value / 1609.3440
     val icu = MeasureUnit.MILE.success
     val name = "mile"
   }
   case object NauticalMile extends LengthMeasureUnit {
-    private[almhirt] override def toBase(value: Double): Double = value
-    private[almhirt] override def fromBase(value: Double): Double = value
+    private[almhirt] override def toBase(value: Double): Double = value * 1852
+    private[almhirt] override def fromBase(value: Double): Double = value / 1852
     val icu = MeasureUnit.NAUTICAL_MILE.success
     val name = "nautical-mile"
   }
   case object Parsec extends LengthMeasureUnit {
-    private[almhirt] override def toBase(value: Double): Double = value
-    private[almhirt] override def fromBase(value: Double): Double = value
+    private[almhirt] override def toBase(value: Double): Double = value * 3.08567758E16
+    private[almhirt] override def fromBase(value: Double): Double = value * 3.08567758E-16
     val icu = MeasureUnit.PARSEC.success
     val name = "parsec"
   }
   case object Yard extends LengthMeasureUnit {
-    private[almhirt] override def toBase(value: Double): Double = value
-    private[almhirt] override def fromBase(value: Double): Double = value
+    private[almhirt] override def toBase(value: Double): Double = value * 0.3048
+    private[almhirt] override def fromBase(value: Double): Double = value / 0.3048
     val icu = MeasureUnit.YARD.success
     val name = "yard"
   }
   case object AstronomicalUnit extends LengthMeasureUnit {
-    private[almhirt] override def toBase(value: Double): Double = value
-    private[almhirt] override def fromBase(value: Double): Double = value
+    private[almhirt] override def toBase(value: Double): Double = value * 149597871.0
+    private[almhirt] override def fromBase(value: Double): Double = value / 149597871.0
     val icu = MeasureUnit.ASTRONOMICAL_UNIT.success
     val name = "astronomical-unit"
   }
@@ -462,14 +468,14 @@ object UnitsOfMeasurement {
   }
 
   case object Carat extends MassMeasureUnit {
-    private[almhirt] override def toBase(value: Double): Double = value
-    private[almhirt] override def fromBase(value: Double): Double = value
+    private[almhirt] override def toBase(value: Double): Double = value * 2.0E-4
+    private[almhirt] override def fromBase(value: Double): Double = value * 2.0E4
     val icu = MeasureUnit.CARAT.success
     val name = "carat"
   }
   case object Gram extends MassMeasureUnit {
-    private[almhirt] override def toBase(value: Double): Double = value
-    private[almhirt] override def fromBase(value: Double): Double = value
+    private[almhirt] override def toBase(value: Double): Double = value * 1000.0
+    private[almhirt] override def fromBase(value: Double): Double = value / 1000.0
     val icu = MeasureUnit.GRAM.success
     val name = "gram"
   }
@@ -480,26 +486,26 @@ object UnitsOfMeasurement {
     val name = "kilogram"
   }
   case object MetricTon extends MassMeasureUnit {
-    private[almhirt] override def toBase(value: Double): Double = value
-    private[almhirt] override def fromBase(value: Double): Double = value
+    private[almhirt] override def toBase(value: Double): Double = value * 1.0E3
+    private[almhirt] override def fromBase(value: Double): Double = value * 1.0E-3
     val icu = MeasureUnit.METRIC_TON.success
     val name = "metric-ton"
   }
   case object Microgram extends MassMeasureUnit {
-    private[almhirt] override def toBase(value: Double): Double = value
-    private[almhirt] override def fromBase(value: Double): Double = value
+    private[almhirt] override def toBase(value: Double): Double = value * 1.0E-9
+    private[almhirt] override def fromBase(value: Double): Double = value * 1.0E9
     val icu = MeasureUnit.MICROGRAM.success
     val name = ""
   }
   case object Milligram extends MassMeasureUnit {
-    private[almhirt] override def toBase(value: Double): Double = value
-    private[almhirt] override def fromBase(value: Double): Double = value
+    private[almhirt] override def toBase(value: Double): Double = value * 1.0E-6
+    private[almhirt] override def fromBase(value: Double): Double = value * 1.0E6
     val icu = MeasureUnit.MILLIGRAM.success
     val name = "milligram"
   }
   case object Ounce extends MassMeasureUnit {
-    private[almhirt] override def toBase(value: Double): Double = value
-    private[almhirt] override def fromBase(value: Double): Double = value
+    private[almhirt] override def toBase(value: Double): Double = value * 28.349523125E-3
+    private[almhirt] override def fromBase(value: Double): Double = value / 28.349523125E3
     val icu = MeasureUnit.OUNCE.success
     val name = "ounce"
   }
@@ -510,39 +516,39 @@ object UnitsOfMeasurement {
     val name = "ounce-troy"
   }
   case object Pound extends MassMeasureUnit {
-    private[almhirt] override def toBase(value: Double): Double = value
-    private[almhirt] override def fromBase(value: Double): Double = value
+    private[almhirt] override def toBase(value: Double): Double = value * 453.59237E-3
+    private[almhirt] override def fromBase(value: Double): Double = value / 453.59237E3
     val icu = MeasureUnit.POUND.success
     val name = "pound"
   }
   case object Stone extends MassMeasureUnit {
-    private[almhirt] override def toBase(value: Double): Double = value
-    private[almhirt] override def fromBase(value: Double): Double = value
+    private[almhirt] override def toBase(value: Double): Double = value * 6350.29318E-3
+    private[almhirt] override def fromBase(value: Double): Double = value / 6350.29318E3
     val icu = MeasureUnit.STONE.success
     val name = "stone"
   }
   case object Ton extends MassMeasureUnit {
-    private[almhirt] override def toBase(value: Double): Double = value
-    private[almhirt] override def fromBase(value: Double): Double = value
+    private[almhirt] override def toBase(value: Double): Double = value * 907.18474
+    private[almhirt] override def fromBase(value: Double): Double = value / 907.18474
     val icu = MeasureUnit.TON.success
     val name = "ton"
   }
 
   case object Gigawatt extends PowerMeasureUnit {
-    private[almhirt] override def toBase(value: Double): Double = value
-    private[almhirt] override def fromBase(value: Double): Double = value
+    private[almhirt] override def toBase(value: Double): Double = value * 1.0E9
+    private[almhirt] override def fromBase(value: Double): Double = value * 1.0E-9
     val icu = MeasureUnit.GIGAWATT.success
     val name = "gigawatt"
   }
   case object Megawatt extends PowerMeasureUnit {
-    private[almhirt] override def toBase(value: Double): Double = value
-    private[almhirt] override def fromBase(value: Double): Double = value
+    private[almhirt] override def toBase(value: Double): Double = value * 1.0E6
+    private[almhirt] override def fromBase(value: Double): Double = value * 1.0E-6
     val icu = MeasureUnit.MEGAWATT.success
     val name = "megawatt"
   }
   case object Kilowatt extends PowerMeasureUnit {
-    private[almhirt] override def toBase(value: Double): Double = value
-    private[almhirt] override def fromBase(value: Double): Double = value
+    private[almhirt] override def toBase(value: Double): Double = value * 1.0E3
+    private[almhirt] override def fromBase(value: Double): Double = value * 1.0E-3
     val icu = MeasureUnit.KILOWATT.success
     val name = "kilowatt"
   }
@@ -553,8 +559,8 @@ object UnitsOfMeasurement {
     val name = "watt"
   }
   case object Milliwatt extends PowerMeasureUnit {
-    private[almhirt] override def toBase(value: Double): Double = value
-    private[almhirt] override def fromBase(value: Double): Double = value
+    private[almhirt] override def toBase(value: Double): Double = value * 1.0E-3
+    private[almhirt] override def fromBase(value: Double): Double = value * 1.0E3
     val icu = MeasureUnit.MILLIWATT.success
     val name = "milliwatt"
   }
@@ -629,14 +635,14 @@ object UnitsOfMeasurement {
   }
 
   case object Celsuis extends TemperatureMeasureUnit {
-    private[almhirt] override def toBase(value: Double): Double = value
-    private[almhirt] override def fromBase(value: Double): Double = value
+    private[almhirt] override def toBase(value: Double): Double = value + 273.15
+    private[almhirt] override def fromBase(value: Double): Double = value - 273.15
     val icu = MeasureUnit.CELSIUS.success
     val name = "celsius"
   }
   case object Fahrenheit extends TemperatureMeasureUnit {
-    private[almhirt] override def toBase(value: Double): Double = value
-    private[almhirt] override def fromBase(value: Double): Double = value
+    private[almhirt] override def toBase(value: Double): Double = (value + 459.67) * (5.0 / 9.0)
+    private[almhirt] override def fromBase(value: Double): Double = (value * 1.8) - 459.67
     val icu = MeasureUnit.FAHRENHEIT.success
     val name = "fahrenheit"
   }
@@ -843,6 +849,7 @@ object UnitsOfMeasurement {
       Fathom,
       Furlong,
       Inch,
+      Foot,
       Lightyear,
       Mile,
       NauticalMile,
