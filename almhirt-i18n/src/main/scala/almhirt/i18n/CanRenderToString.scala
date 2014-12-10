@@ -5,12 +5,12 @@ import almhirt.almvalidation.kit._
 import java.text.FieldPosition
 
 trait CanRenderToString {
-  def render: AlmValidation[String] = renderIntoBuffer(new StringBuffer(), null).map(_.toString)
+  def render: AlmValidation[String] = renderIntoBuffer(new StringBuffer(), util.DontCareFieldPosition).map(_.toString)
   def renderIntoBuffer(appendTo: StringBuffer): AlmValidation[StringBuffer] = renderIntoBuffer(appendTo, null)
   def renderIntoBuffer(appendTo: StringBuffer, pos: FieldPosition): AlmValidation[StringBuffer]
 
-  def forceRender: String = forceRenderIntoBuffer(new StringBuffer(), null).toString
-  def forceRenderIntoBuffer(appendTo: StringBuffer): StringBuffer = forceRenderIntoBuffer(appendTo, null)
+  def forceRender: String = forceRenderIntoBuffer(new StringBuffer(), util.DontCareFieldPosition).toString
+  def forceRenderIntoBuffer(appendTo: StringBuffer): StringBuffer = forceRenderIntoBuffer(appendTo, util.DontCareFieldPosition)
   def forceRenderIntoBuffer(appendTo: StringBuffer, pos: FieldPosition): StringBuffer = renderIntoBuffer(appendTo, pos).resultOrEscalate
 
   def tryRender: Option[String] = render.toOption

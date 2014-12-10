@@ -55,9 +55,19 @@ class ResourcesAndKeysTests extends FunSuite with Matchers {
     resourcesWithoutFallback.formatable(key2, new ULocale("en")).flatMap(_.withRawArg("1" -> 2).render).toOption should equal(Some("en: 2"))
   }
   
-  test("""render the length measured value in "en".""") {
+  test("""render the length measured value 1.0 in "en".""") {
     val formatable = resourcesWithoutFallback.forceFormatable(group.withKey("length"), "en")
     info(formatable.withRawArg("length" -> 1.0).forceRender)
+  }
+
+  test("""render the length measured value 1000.0 in "en".""") {
+    val formatable = resourcesWithoutFallback.forceFormatable(group.withKey("length"), "en")
+    info(formatable.withRawArg("length" -> 1000.0).forceRender)
+  }
+
+  test("""render the length measured value 1000.0 in "en" with us custom units.""") {
+    val formatable = resourcesWithoutFallback.forceFormatable(group.withKey("length"), "en")
+    info(formatable.withRawArg("length" -> MeasuredValueArg.SiArg(1000.0, Some(UnitsOfMeasurementSystem.UnitedStatesCustomaryUnits))).forceRender)
   }
   
 }
