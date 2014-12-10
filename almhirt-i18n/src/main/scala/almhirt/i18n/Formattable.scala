@@ -30,25 +30,6 @@ trait Formatable extends CanRenderToString {
   def withRawArgs(args: (String, Any)*): Formatable
 
   /**
-   * Add a measured value as pre-rendered String argument.
-   *
-   * @param arg The argument name and value
-   * @param formatwidth the style to render the measured value
-   * @return Usually this
-   * @provisional This API might change or be removed in a future release.
-   */
-  def withRenderedMeasuredValue(arg: (String, Measured), formatwidth: MeasureRenderWidth): Formatable
-
-  /**
-   * Add a measured value as pre-rendered String argument.
-   * How the value is rendered is pre-defined
-   * @param arg The argument name and value
-   * @return Usually this
-   * @provisional This API might change or be removed in a future release.
-   */
-  def withRenderedMeasuredValue(arg: (String, Measured)): Formatable
-
-  /**
    * Add an argument as a pre-rendered String
    *
    * @param argname the arguments name
@@ -76,23 +57,13 @@ class IcuFormatable private (msgFormat: MessageFormat, private val _args: HashMa
     this
   }
 
-  def withRenderedMeasuredValue(arg: (String, Measured), formatwidth: MeasureRenderWidth): IcuFormatable = {
-    val fmt = MeasureFormat.getInstance(msgFormat.getULocale, mapRenderWidth(formatwidth))
-    withRawArg(arg._1 -> fmt.format(arg._2.icu))
-  }
-
-  def withRenderedMeasuredValue(arg: (String, Measured)): IcuFormatable = {
-    val fmt = MeasureFormat.getInstance(msgFormat.getULocale, mapRenderWidth(MeasureRenderWidth.Short))
-    withRawArg(arg._1 -> fmt.format(arg._2.icu))
-  }
-
   def withRenderedArg(argname: String)(f: ULocale ⇒ String): IcuFormatable = {
     withRawArg(argname -> f(msgFormat.getULocale))
   }
 
-  override def renderIntoBuffer(into: StringBuffer, pos: FieldPosition): AlmValidation[StringBuffer] =
+  override def renderIntoBuffer(appendTo: StringBuffer, pos: FieldPosition): AlmValidation[StringBuffer] =
     inTryCatch {
-      msgFormat.format(_args, into, pos)
+      msgFormat.format(_args, appendTo, pos)
     }
 
   def modify(f: MessageFormat ⇒ Unit): IcuFormatable = {
@@ -107,13 +78,35 @@ class IcuFormatable private (msgFormat: MessageFormat, private val _args: HashMa
   }
 
   val underlying = msgFormat
+}
 
-  private def mapRenderWidth(mrw: MeasureRenderWidth): MeasureFormat.FormatWidth = {
-    mrw match {
-      case MeasureRenderWidth.Wide    ⇒ MeasureFormat.FormatWidth.WIDE
-      case MeasureRenderWidth.Narrow  ⇒ MeasureFormat.FormatWidth.NARROW
-      case MeasureRenderWidth.Numeric ⇒ MeasureFormat.FormatWidth.NUMERIC
-      case MeasureRenderWidth.Short   ⇒ MeasureFormat.FormatWidth.SHORT
+class MeasuredValueFormatable(formatter: MeasuredValueFormatter, private var _args: Map[String, Any]) extends Formatable {
+  def this(formatter: MeasuredValueFormatter) = this(formatter, Map())
+
+  def withRawArg(arg: (String, Any)): MeasuredValueFormatable = {
+    _args += arg
+    this
+  }
+
+  def withRawArgs(args: (String, Any)*): MeasuredValueFormatable = {
+    _args = _args ++ args
+    this
+  }
+
+  def withRenderedArg(argname: String)(f: ULocale ⇒ String): MeasuredValueFormatable = {
+    withRawArg(argname -> f(formatter.locale))
+  }
+
+  override def renderIntoBuffer(appendTo: StringBuffer, pos: FieldPosition): AlmValidation[StringBuffer] = {
+    _args get (formatter.argname) match {
+      case Some(v) ⇒
+        formatter.renderIntoBuffer(v, appendTo, pos)
+      case None ⇒
+        scalaz.Failure(NoSuchElementProblem(s"""An argument named "${formatter.argname}" was not found."""))
     }
+  }
+
+  override def snapshot: MeasuredValueFormatable = {
+    new MeasuredValueFormatable(formatter, _args)
   }
 }

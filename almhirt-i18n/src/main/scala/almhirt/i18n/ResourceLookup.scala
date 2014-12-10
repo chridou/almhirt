@@ -18,6 +18,11 @@ trait ResourceLookup {
   def allowsLocaleFallback: Boolean
 
   /**
+   * @return when true, it will use the root locale in case no node could be found for a given locale.
+   */
+  def fallsBackToRoot: Boolean
+
+  /**
    * @return the set of supported locales that are supported without using fallbacks
    */
   def supportedLocales: Set[ULocale]
@@ -46,7 +51,9 @@ trait ResourceLookup {
     resourceNodeStrict(uLoc).fold(
       fail ⇒ {
         if (allowsLocaleFallback)
-          resourceNodeStrict(uLoc.getFallback)
+          resourceNodeStrict(uLoc.getFallback).fold(
+            fail ⇒ resourceNodeStrict(localesTree.rootLabel),
+            succ ⇒ succ.success)
         else
           ResourceNotFoundProblem(s""""${uLoc.getBaseName}" is not a supported locale.""").failure
       },
@@ -68,6 +75,8 @@ trait ResourceLookup {
           new IcuFormatable(fmt.formatInstance).success
         case raw: RawStringValue ⇒
           raw.success
+        case mvf: MeasuredValueFormatter ⇒
+          mvf.formatable.success
       }
     } yield fmt
 
@@ -80,14 +89,9 @@ trait ResourceLookup {
    */
   final def rawText[L: LocaleMagnet](key: ResourceKey, locale: L): AlmValidation[String] =
     for {
-      res ← textResource(key, locale)
-      fmt ← res match {
-        case fmt: IcuMessageFormat ⇒
-          inTryCatch { fmt.raw }
-        case RawStringValue(value) ⇒
-          value.success
-      }
-    } yield fmt
+      res ← renderable(key, locale)
+      rendered ← res.render
+    } yield rendered
 
   /**
    * Get a [[CanRenderToString]] possibly using a fallback locale
@@ -104,6 +108,8 @@ trait ResourceLookup {
           inTryCatch { CanRenderToString(fmt.raw) }
         case r: RawStringValue ⇒
           r.success
+        case x: MeasuredValueFormatter ⇒
+          ArgumentProblem(s"""Value at key "$key". does not have a direct String representation so there is no direct renderable.""").failure
       }
     } yield fmt
 
@@ -149,6 +155,9 @@ object ResourceLookup {
     def findResourceWithLocale[L: LocaleMagnet](key: ResourceKey, locale: L): Option[(ULocale, ResourceValue)] = self.resourceWithLocale(key, locale).toOption
     def findTextResource[L: LocaleMagnet](key: ResourceKey, locale: L): Option[TextResourceValue] = self.textResource(key, locale).toOption
     def findTextResourceWithLocale[L: LocaleMagnet](key: ResourceKey, locale: L): Option[(ULocale, TextResourceValue)] = self.textResourceWithLocale(key, locale).toOption
+
+    def forceFormatable[T, L: LocaleMagnet](key: ResourceKey, locale: L): Formatable =
+      self.formatable(key, locale).resultOrEscalate
 
     def formatItemInto[T, L](what: T, locale: L, buffer: StringBuffer)(implicit renderer: ItemFormat[T], magnet: LocaleMagnet[L]): AlmValidation[StringBuffer] = {
       val uLoc = magnet.toULocale(locale)

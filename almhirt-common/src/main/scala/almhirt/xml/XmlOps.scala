@@ -165,9 +165,9 @@ trait XmlOps0 extends Ops[Elem]{
     funs.flatMapOptionalFirstChild(self, label, compute)
   def \\?(label: String) = funs.elems(self)(label)
   def \\?(predicate: String ⇒ Boolean) = funs.allElems(self).filter(xml ⇒ predicate(xml.label))
-  def \!(label: String) = funs.getChild(self)(label)
-  def \?(label: String) = funs.tryGetChild(self)(label)
-  def \??(label: String) = funs.tryGetChild(self)(label).fold(_ ⇒ None, succ ⇒ succ)
+  def \!(label: String): AlmValidation[Elem] = funs.getChild(self)(label)
+  def \?(label: String): AlmValidation[Option[Elem]] = funs.tryGetChild(self)(label)
+  def \??(label: String): Option[Elem] = funs.tryGetChild(self)(label).fold(_ ⇒ None, succ ⇒ succ)
   def elems = funs.allElems(self)
   
   def \@!(name: String): AlmValidation[String] = funs.getAttributeValue(self, name)

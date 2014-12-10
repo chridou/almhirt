@@ -8,9 +8,7 @@ import java.text.FieldPosition
 
 sealed trait ResourceValue
 
-sealed trait TextResourceValue extends ResourceValue {
-  def raw: String
-}
+sealed trait TextResourceValue extends ResourceValue
 
 final case class RawStringValue(raw: String) extends TextResourceValue with Formatable {
   def withRawArg(arg: (String, Any)): RawStringValue = {
@@ -76,5 +74,12 @@ object IcuMessageFormat {
     } catch {
       case scala.util.control.NonFatal(exn) ⇒ ParsingProblem(exn.getMessage, Some(pattern), cause = Some(exn)).failure
     }
+}
+
+trait MeasuredValueFormatter extends TextResourceValue {
+  def locale: ULocale
+  def formatable: Formatable
+  def argname: String
+  def renderIntoBuffer(arg: Any, appendTo: StringBuffer, pos: FieldPosition): AlmValidation[StringBuffer]
 }
 

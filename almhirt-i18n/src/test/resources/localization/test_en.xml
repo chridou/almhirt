@@ -11,6 +11,23 @@
 			<key name="key_3_formatted_number" type="icu">
 				<value>en: {1}</value>
 			</key>
+			<key name="length" type="measured-value">
+				<parameter-name>length</parameter-name>
+				<format-width>short</format-width>
+				<default-format>
+					<unit-of-measurement>millimeter</unit-of-measurement>
+					<min-fraction-digits>0</min-fraction-digits>
+					<max-fraction-digits>0</max-fraction-digits>
+				</default-format>
+				<selective>
+					<format>
+						<system>us</system>
+						<unit-of-measurement>inch</unit-of-measurement>
+						<min-fraction-digits>2</min-fraction-digits>
+						<max-fraction-digits>2</max-fraction-digits>
+					</format>
+				</selective>
+			</key>
 		</group>
 	</section>
 </localized>

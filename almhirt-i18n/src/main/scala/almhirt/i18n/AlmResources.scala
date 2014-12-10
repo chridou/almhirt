@@ -11,16 +11,17 @@ trait AlmResources extends ResourceLookup {
 }
 
 object AlmResources {
-  def fromXmlInResources(resourcePath: String, namePrefix: String, classloader: ClassLoader, allowFallback: Boolean = true): AlmValidation[AlmResources] = {
+  def fromXmlInResources(resourcePath: String, namePrefix: String, classloader: ClassLoader, allowFallback: Boolean = true, fallBackToRootAllowed: Boolean = true): AlmValidation[AlmResources] = {
     for {
       factories ← AlmResourcesXml.getFactories(resourcePath, namePrefix, classloader)
       factoriesTree ← TreeBuilder.build(factories)
       tree ← TreeBuilder.executeFactoriesTree(None, factoriesTree)
-    } yield TreeBuilder.fromNodeTree(tree, allowFallback)
+    } yield TreeBuilder.fromNodeTree(tree, allowFallback, fallBackToRootAllowed)
   }
 
   val empty = new AlmResources {
     val allowsLocaleFallback = false
+    val fallsBackToRoot = false
     val supportedLocales = Set.empty[ULocale]
     def localesTree = throw new NoSuchElementException("There is no locales tree in the empty resources!")
     def resourceNodeStrict(locale: ULocale): AlmValidation[ResourceNode] = ArgumentProblem("The empty AlmResources does not contain any nodes").failure
@@ -29,12 +30,13 @@ object AlmResources {
 }
 
 private[almhirt] object TreeBuilder {
-  def fromNodeTree(tree: Tree[ResourceNode], allowFallback: Boolean): AlmResources = {
+  def fromNodeTree(tree: Tree[ResourceNode], allowFallback: Boolean, fallBackToRootAllowed: Boolean): AlmResources = {
     val theLocalesTree = tree.map { _.locale }
     val nodesByLocale = tree.flatten.map(tr ⇒ (tr.locale, tr)).toMap
 
     new AlmResources {
       val allowsLocaleFallback = allowFallback
+      val fallsBackToRoot = fallBackToRootAllowed
       def resourceNodeStrict(locale: ULocale): AlmValidation[ResourceNode] =
         nodesByLocale get (locale) match {
           case Some(node) ⇒ node.success
