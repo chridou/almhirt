@@ -180,7 +180,8 @@ private[almhirt] object ResourceNodeXml {
         uom ← UnitsOfMeasurement.byName(uomName)
         minFractionDigits ← (format \? "min-fraction-digits").flatMap(e ⇒ e.map { _.text.toIntAlm }.validationOut)
         maxFractionDigits ← (format \? "max-fraction-digits").flatMap(e ⇒ e.map { _.text.toIntAlm }.validationOut)
-      } yield impl.MeasuredValueFormatterBuilder.FormatDefinition(uom, minFractionDigits, maxFractionDigits)
+        useDigitGroup ← (format \? "use-digit-groups").flatMap(e ⇒ e.map { _.text.toBooleanAlm }.validationOut)
+      } yield impl.MeasuredValueFormatterBuilder.FormatDefinition(uom, minFractionDigits, maxFractionDigits, useDigitGroup)
 
     val paramNameV = for {
       theOnlyParamNameElem ← (elem \? "parameter-name")

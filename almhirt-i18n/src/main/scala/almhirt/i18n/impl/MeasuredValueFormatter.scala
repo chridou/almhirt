@@ -12,7 +12,7 @@ import com.ibm.icu.util.{ ULocale, Measure }
 import com.ibm.icu.text.{ MeasureFormat, NumberFormat }
 
 object MeasuredValueFormatterBuilder {
-  final case class FormatDefinition(uom: UnitOfMeasurement, minFractionDigits: Option[Int], maxFractionDigits: Option[Int])
+  final case class FormatDefinition(uom: UnitOfMeasurement, minFractionDigits: Option[Int], maxFractionDigits: Option[Int], useDigitsGrouping: Option[Boolean])
   final case class CtorParams(
     locale: ULocale,
     argname: String,
@@ -34,11 +34,16 @@ object MeasuredValueFormatterBuilder {
         ArgumentProblem("""Dimensions do not match""").failure
     } yield {
       val defaultUom = params.default.uom
-      val defaultFormat = createMeasureFormat(params.locale, effectiveRenderWidth, params.default.minFractionDigits, params.default.maxFractionDigits)
+      val defaultFormat = createMeasureFormat(
+        params.locale,
+        effectiveRenderWidth,
+        params.default.minFractionDigits,
+        params.default.maxFractionDigits,
+        params.default.useDigitsGrouping)
       val specificFormats =
         params.specific.map({
-          case (uomSys, FormatDefinition(uom, minFractionDigits, maxFractionDigits)) ⇒
-            (uomSys, (uom, createMeasureFormat(params.locale, effectiveRenderWidth, minFractionDigits, maxFractionDigits)))
+          case (uomSys, FormatDefinition(uom, minFractionDigits, maxFractionDigits, useDigitsGrouping)) ⇒
+            (uomSys, (uom, createMeasureFormat(params.locale, effectiveRenderWidth, minFractionDigits, maxFractionDigits, useDigitsGrouping)))
         }).toMap
       new MeasuredValueFormatterImpl(params.locale, params.argname, defaultFormat, defaultUom, specificFormats) {
         override def any2MeasuredValueArg(arg: Any): AlmValidation[MeasuredValueArg] =
@@ -59,10 +64,16 @@ object MeasuredValueFormatterBuilder {
     }
   }
 
-  private def createMeasureFormat(locale: ULocale, formatWidth: MeasureRenderWidth, minFractionDigits: Option[Int], maxFractionDigits: Option[Int]): MeasureFormat = {
+  private def createMeasureFormat(
+    locale: ULocale,
+    formatWidth: MeasureRenderWidth,
+    minFractionDigits: Option[Int],
+    maxFractionDigits: Option[Int],
+    useDigitsGrouping: Option[Boolean]): MeasureFormat = {
     val numberFormat = NumberFormat.getInstance(locale)
     minFractionDigits.foreach { digits ⇒ numberFormat.setMinimumFractionDigits(digits) }
     maxFractionDigits.foreach { digits ⇒ numberFormat.setMaximumFractionDigits(digits) }
+    useDigitsGrouping.foreach { useGrouping ⇒ numberFormat.setGroupingUsed(useGrouping) }
     MeasureFormat.getInstance(locale, formatWidth.icuFormatWidth, numberFormat)
   }
 

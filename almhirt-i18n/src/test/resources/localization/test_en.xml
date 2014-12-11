@@ -16,8 +16,9 @@
 				<format-width>short</format-width>
 				<default-format>
 					<unit-of-measurement>millimeter</unit-of-measurement>
-					<min-fraction-digits>0</min-fraction-digits>
-					<max-fraction-digits>0</max-fraction-digits>
+					<min-fraction-digits>4</min-fraction-digits>
+					<max-fraction-digits>8</max-fraction-digits>
+					<use-digit-groups>false</use-digit-groups>
 				</default-format>
 				<selective>
 					<format>
