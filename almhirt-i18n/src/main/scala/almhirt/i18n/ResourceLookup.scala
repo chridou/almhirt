@@ -77,6 +77,8 @@ trait ResourceLookup {
           raw.success
         case mvf: MeasuredValueFormatter ⇒
           mvf.formatable.success
+        case mvf: BooleanValueFormatter ⇒
+          mvf.formatable.success
       }
     } yield fmt
 
@@ -109,6 +111,8 @@ trait ResourceLookup {
         case r: RawStringValue ⇒
           r.success
         case x: MeasuredValueFormatter ⇒
+          ArgumentProblem(s"""Value at key "$key". does not have a direct String representation so there is no direct renderable.""").failure
+        case x: BooleanValueFormatter ⇒
           ArgumentProblem(s"""Value at key "$key". does not have a direct String representation so there is no direct renderable.""").failure
       }
     } yield fmt

@@ -155,7 +155,9 @@ private[almhirt] object ResourceNodeXml {
           v ← parseStringValueBasedValue(locale, valueElem, elemTypeDescriptor)
         } yield v
       } else if (elemTypeDescriptor == "measured-value") {
-        parseMeasureValue(locale, elem)
+        parseMeasureFormatterValue(locale, elem)
+      } else if (elemTypeDescriptor == "boolean-value") {
+        parseBooleanFormatterValue(locale, elem)
       } else {
         ArgumentProblem(s""""$elemTypeDescriptor" is not a valid type for a resource value.""").failure
       }
@@ -173,7 +175,7 @@ private[almhirt] object ResourceNodeXml {
       }
     } yield value
 
-  def parseMeasureValue(locale: ULocale, elem: Elem): AlmValidation[ResourceValue] = {
+  def parseMeasureFormatterValue(locale: ULocale, elem: Elem): AlmValidation[ResourceValue] = {
     def parseFormatDefinition(format: Elem): AlmValidation[impl.MeasuredValueFormatterBuilder.FormatDefinition] =
       for {
         uomName ← (format \! "unit-of-measurement").map(_.text)
@@ -204,6 +206,19 @@ private[almhirt] object ResourceNodeXml {
       }.sequence
       formatter ← impl.MeasuredValueFormatterBuilder(impl.MeasuredValueFormatterBuilder.CtorParams(locale, paramName, formatWidth, defaultDefinition, specificFormats.toMap))
     } yield formatter
+  }
+
+  def parseBooleanFormatterValue(locale: ULocale, elem: Elem): AlmValidation[ResourceValue] = {
+    val paramNameV = for {
+      theOnlyParamNameElem ← (elem \? "parameter-name")
+      definedParamName ← theOnlyParamNameElem.map(_.text.notEmptyOrWhitespace()).validationOut
+      fallbackName ← (elem \@! "name")
+    } yield definedParamName getOrElse fallbackName
+
+    for {
+      paramName ← paramNameV
+      trueText ← (elem \? "true-text").flatMap(e => e.text.notEmptyOrWhitespace().map(_.replaceAll("\\s{2,}", " ").trim()))
+    } yield impl.BooleanValueFormatterBuilder(locale, paramName, "", "")
   }
 
   def checkName(name: String): AlmValidation[String] =

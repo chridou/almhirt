@@ -52,37 +52,37 @@ class ResourcesAndKeysTests extends FunSuite with Matchers {
   }
 
   test("""render a key with a nonformatted value(integer: 2)""") {
-    resourcesWithoutFallback.formatable(key2, new ULocale("en")).flatMap(_.withRawArg("1" -> 2).render).toOption should equal(Some("en: 2"))
+    resourcesWithoutFallback.formatable(key2, new ULocale("en")).flatMap(_.withArg("1" -> 2).render).toOption should equal(Some("en: 2"))
   }
   
   test("""render the length measured value 1.0m in "en".""") {
     val formatable = resourcesWithoutFallback.forceFormatable(group.withKey("length"), "en")
-    info(formatable.withRawArg("length" -> 1.0).forceRender)
+    info(formatable.withArg("length" -> 1.0).forceRender)
   }
 
   test("""render the length measured value 100000.0m in "en".""") {
     val formatable = resourcesWithoutFallback.forceFormatable(group.withKey("length"), "en")
-    info(formatable.withRawArg("length" -> 100000.0).forceRender)
+    info(formatable.withArg("length" -> 100000.0).forceRender)
   }
 
   test("""render the length measured value 100000.0m in "en" with anglo american units.""") {
     val formatable = resourcesWithoutFallback.forceFormatable(group.withKey("length"), "en")
-    info(formatable.withRawArg("length" -> MeasuredValueArg.SiArg(100000.0, Some(UnitsOfMeasurementSystem.AngloAmerican))).forceRender)
+    info(formatable.withArg("length" -> MeasuredValueArg.SiArg(100000.0, Some(UnitsOfMeasurementSystem.AngloAmerican))).forceRender)
   }
   
   test("""render the length measured value 1.0m in "de".""") {
     val formatable = resourcesWithoutFallback.forceFormatable(group.withKey("length"), "de")
-    info(formatable.withRawArg("length" -> 1.0).forceRender)
+    info(formatable.withArg("length" -> 1.0).forceRender)
   }
 
   test("""render the length measured value 1000.0m in "de".""") {
     val formatable = resourcesWithoutFallback.forceFormatable(group.withKey("length"), "de")
-    info(formatable.withRawArg("length" -> 1000.0).forceRender)
+    info(formatable.withArg("length" -> 1000.0).forceRender)
   }
 
   test("""render the length measured value 1000.0m in "de" with anglo american units.""") {
     val formatable = resourcesWithoutFallback.forceFormatable(group.withKey("length"), "de")
-    info(formatable.withRawArg("length" -> MeasuredValueArg.SiArg(1000.0, Some(UnitsOfMeasurementSystem.AngloAmerican))).forceRender)
+    info(formatable.withArg("length" -> MeasuredValueArg.SiArg(1000.0, Some(UnitsOfMeasurementSystem.AngloAmerican))).forceRender)
   }
   
 }

@@ -11,19 +11,19 @@ sealed trait ResourceValue
 sealed trait TextResourceValue extends ResourceValue
 
 final case class RawStringValue(raw: String) extends TextResourceValue with Formatable {
-  def withRawArg(arg: (String, Any)): RawStringValue = {
+  def withArg(arg: (String, Any)): RawStringValue = {
     this
   }
 
-  def withRawArgs(args: (String, Any)*): RawStringValue = {
+  def withArgs(args: (String, Any)*): RawStringValue = {
     this
   }
 
-  def withRenderedMeasuredValue(arg: (String, Measured), formatwidth: MeasureRenderWidth): RawStringValue = {
+  override def withUnnamedArg(arg: Any): Formatable = {
     this
   }
 
-  def withRenderedMeasuredValue(arg: (String, Measured)): RawStringValue = {
+  override def withUnnamedArgs(args: Any*): Formatable = {
     this
   }
 
@@ -77,6 +77,13 @@ object IcuMessageFormat {
 }
 
 trait MeasuredValueFormatter extends TextResourceValue {
+  def locale: ULocale
+  def formatable: Formatable
+  def argname: String
+  def renderIntoBuffer(arg: Any, appendTo: StringBuffer, pos: FieldPosition): AlmValidation[StringBuffer]
+}
+
+trait BooleanValueFormatter extends TextResourceValue {
   def locale: ULocale
   def formatable: Formatable
   def argname: String
