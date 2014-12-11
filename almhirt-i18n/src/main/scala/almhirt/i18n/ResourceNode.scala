@@ -120,7 +120,7 @@ private[almhirt] object ResourceNodeXml {
       name ← elem \@! "name"
       checkedName ← checkName(name)
       keys ← parseKeys(locale, elem \\? "key", "")
-      keysFromSections ← parseKeySections(locale, elem \\? "key_section", "")
+      keysFromSections ← parseKeySections(locale, elem \\? "key-section", "")
     } yield (checkedName, keys ++ keysFromSections)
   }
 
@@ -135,7 +135,7 @@ private[almhirt] object ResourceNodeXml {
         case None              ⇒ prefix.success
       }
       keys ← parseKeys(locale, elem \\? "key", newPrefix)
-      keysFromSections ← parseKeySections(locale, elem \\? "key_section", newPrefix)
+      keysFromSections ← parseKeySections(locale, elem \\? "key-section", newPrefix)
     } yield keys ++ keysFromSections
   }
 
@@ -164,9 +164,12 @@ private[almhirt] object ResourceNodeXml {
     } yield (s"$prefix$checkedName", value)
   }
 
+  private def trimText(text: String): AlmValidation[String] =
+    text.replaceAll("\\s{2,}", " ").trim().notEmptyOrWhitespace()
+  
   def parseStringValueBasedValue(locale: ULocale, valueElem: Elem, typeDescriptor: String): AlmValidation[ResourceValue] =
     for {
-      valueStr ← valueElem.text.notEmptyOrWhitespace().map(_.replaceAll("\\s{2,}", " ").trim())
+      valueStr ← trimText(valueElem.text)
       value ← typeDescriptor match {
         case ""      ⇒ RawStringValue(valueStr).success
         case "plain" ⇒ RawStringValue(valueStr).success
@@ -217,8 +220,11 @@ private[almhirt] object ResourceNodeXml {
 
     for {
       paramName ← paramNameV
-      trueText ← (elem \? "true-text").flatMap(e => e.text.notEmptyOrWhitespace().map(_.replaceAll("\\s{2,}", " ").trim()))
-    } yield impl.BooleanValueFormatterBuilder(locale, paramName, "", "")
+      trueTextElem ← (elem \? "true-text")
+      trueText <- trueTextElem.map(e => trimText(e.text)).validationOut()
+      falseTextElem ← (elem \? "false-text")
+      falseText <- falseTextElem.map(e => trimText(e.text)).validationOut()
+    } yield impl.BooleanValueFormatterBuilder(locale, paramName, trueText getOrElse "", falseText getOrElse "")
   }
 
   def checkName(name: String): AlmValidation[String] =

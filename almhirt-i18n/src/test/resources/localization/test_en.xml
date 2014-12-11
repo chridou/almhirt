@@ -11,6 +11,10 @@
 			<key name="key_3_formatted_number" type="icu">
 				<value>en: {1}</value>
 			</key>
+			<key name="yesno" type="boolean-value">
+				<true-text>Yes!</true-text>
+				<false-text>No!</false-text>
+			</key>
 			<key name="length" type="measured-value">
 				<parameter-name>length</parameter-name>
 				<format-width>short</format-width>

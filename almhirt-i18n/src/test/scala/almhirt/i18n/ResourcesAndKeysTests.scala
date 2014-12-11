@@ -84,5 +84,15 @@ class ResourcesAndKeysTests extends FunSuite with Matchers {
     val formatable = resourcesWithoutFallback.forceFormatable(group.withKey("length"), "de")
     info(formatable.withArg("length" -> MeasuredValueArg.SiArg(1000.0, Some(UnitsOfMeasurementSystem.AngloAmerican))).forceRender)
   }
+ 
+  test("""render the boolean in en when true.""") {
+    val formatable = resourcesWithoutFallback.forceFormatable(group.withKey("yesno"), "en")
+    info(formatable.withUnnamedArg(true).forceRender)
+  }
+  
+  test("""render the boolean in en when false.""") {
+    val formatable = resourcesWithoutFallback.forceFormatable(group.withKey("yesno"), "en")
+    info(formatable.withUnnamedArg(false).forceRender)
+  }
   
 }
