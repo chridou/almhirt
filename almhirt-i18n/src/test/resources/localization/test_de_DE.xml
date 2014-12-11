@@ -2,11 +2,11 @@
 <localized locale="de-DE">
 	<section name="section_1">
 		<group name="group_1">
-			<key name="key_1" type="icu">
-				<value>de_DE</value>
+			<key name="key_1">
+				<icu>de_DE</icu>
 			</key>
-			<key name="key_2" type="icu">
-				<value>de_DE: {1}</value>
+			<key name="key_2">
+				<icu>de_DE: {1}</icu>
 			</key>
 		</group>
 	</section>

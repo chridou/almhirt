@@ -2,36 +2,40 @@
 <localized locale="en" root="true">
 	<section name="section_1">
 		<group name="group_1">
-			<key name="key_1" type="icu">
-				<value>en</value>
+			<key name="key_1">
+				<icu>en</icu>
 			</key>
-			<key name="key_2" type="icu">
-				<value>en: {1}</value>
+			<key name="key_2">
+				<icu>en: {1}</icu>
 			</key>
-			<key name="key_3_formatted_number" type="icu">
-				<value>en: {1}</value>
+			<key name="key_3_formatted_number">
+				<icu>en: {1}</icu>
 			</key>
-			<key name="yesno" type="boolean-value">
-				<true-text>Yes!</true-text>
-				<false-text>No!</false-text>
+			<key name="yesno">
+				<boolean-value>
+					<true-text>Yes!</true-text>
+					<false-text>No!</false-text>
+				</boolean-value>
 			</key>
-			<key name="length" type="measured-value">
-				<parameter-name>length</parameter-name>
-				<format-width>short</format-width>
-				<default-format>
-					<unit-of-measurement>millimeter</unit-of-measurement>
-					<min-fraction-digits>4</min-fraction-digits>
-					<max-fraction-digits>8</max-fraction-digits>
-					<use-digit-groups>false</use-digit-groups>
-				</default-format>
-				<selective>
-					<format>
-						<system>anglo-american</system>
-						<unit-of-measurement>inch</unit-of-measurement>
-						<min-fraction-digits>2</min-fraction-digits>
-						<max-fraction-digits>2</max-fraction-digits>
-					</format>
-				</selective>
+			<key name="length">
+				<measured-value>
+					<parameter-name>length</parameter-name>
+					<format-width>short</format-width>
+					<default-format>
+						<unit-of-measurement>millimeter</unit-of-measurement>
+						<min-fraction-digits>4</min-fraction-digits>
+						<max-fraction-digits>8</max-fraction-digits>
+						<use-digit-groups>false</use-digit-groups>
+					</default-format>
+					<selective>
+						<format>
+							<system>anglo-american</system>
+							<unit-of-measurement>inch</unit-of-measurement>
+							<min-fraction-digits>2</min-fraction-digits>
+							<max-fraction-digits>2</max-fraction-digits>
+						</format>
+					</selective>
+				</measured-value>
 			</key>
 		</group>
 	</section>
