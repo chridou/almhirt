@@ -912,6 +912,7 @@ object UnitsOfMeasurement {
       Teaspoon)
 
   def unitsByName: Map[String, UnitOfMeasurement] = allUnits.map { unit ⇒ (unit.name, unit) }.toMap
+  def unitsByDimension: Map[UnitOfMeasureDimension, Seq[UnitOfMeasurement]] = allUnits.groupBy { _.dimension }
 
   def byName(name: String): AlmValidation[UnitOfMeasurement] =
     unitsByName get name match {
