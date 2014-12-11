@@ -75,10 +75,8 @@ trait ResourceLookup {
           new IcuFormatable(fmt.formatInstance).success
         case raw: RawStringValue ⇒
           raw.success
-        case mvf: MeasuredValueFormatter ⇒
-          mvf.formatable.success
-        case mvf: BooleanValueFormatter ⇒
-          mvf.formatable.success
+        case f: BasicValueFormatter ⇒
+          f.formatable.success
       }
     } yield fmt
 
@@ -110,9 +108,7 @@ trait ResourceLookup {
           inTryCatch { CanRenderToString(fmt.raw) }
         case r: RawStringValue ⇒
           r.success
-        case x: MeasuredValueFormatter ⇒
-          ArgumentProblem(s"""Value at key "$key". does not have a direct String representation so there is no direct renderable.""").failure
-        case x: BooleanValueFormatter ⇒
+        case _: BasicValueFormatter ⇒
           ArgumentProblem(s"""Value at key "$key". does not have a direct String representation so there is no direct renderable.""").failure
       }
     } yield fmt

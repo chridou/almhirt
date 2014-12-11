@@ -76,17 +76,11 @@ object IcuMessageFormat {
     }
 }
 
-trait MeasuredValueFormatter extends TextResourceValue {
+trait BasicValueFormatter extends TextResourceValue {
   def locale: ULocale
   def formatable: Formatable
   def argname: String
   def renderIntoBuffer(arg: Any, appendTo: StringBuffer, pos: FieldPosition): AlmValidation[StringBuffer]
-}
-
-trait BooleanValueFormatter extends TextResourceValue {
-  def locale: ULocale
-  def formatable: Formatable
-  def argname: String
-  def renderIntoBuffer(arg: Any, appendTo: StringBuffer, pos: FieldPosition): AlmValidation[StringBuffer]
+  
 }
 

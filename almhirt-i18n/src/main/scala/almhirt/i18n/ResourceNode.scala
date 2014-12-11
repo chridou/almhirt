@@ -179,14 +179,14 @@ private[almhirt] object ResourceNodeXml {
     } yield value
 
   def parseMeasureFormatterValue(locale: ULocale, elem: Elem): AlmValidation[ResourceValue] = {
-    def parseFormatDefinition(format: Elem): AlmValidation[impl.MeasuredValueFormatterBuilder.FormatDefinition] =
+    def parseFormatDefinition(format: Elem): AlmValidation[impl.MeasuredValueFormatter.FormatDefinition] =
       for {
         uomName ← (format \! "unit-of-measurement").map(_.text)
         uom ← UnitsOfMeasurement.byName(uomName)
         minFractionDigits ← (format \? "min-fraction-digits").flatMap(e ⇒ e.map { _.text.toIntAlm }.validationOut)
         maxFractionDigits ← (format \? "max-fraction-digits").flatMap(e ⇒ e.map { _.text.toIntAlm }.validationOut)
         useDigitGroup ← (format \? "use-digit-groups").flatMap(e ⇒ e.map { _.text.toBooleanAlm }.validationOut)
-      } yield impl.MeasuredValueFormatterBuilder.FormatDefinition(uom, minFractionDigits, maxFractionDigits, useDigitGroup)
+      } yield impl.MeasuredValueFormatter.FormatDefinition(uom, minFractionDigits, maxFractionDigits, useDigitGroup)
 
     val paramNameV = for {
       theOnlyParamNameElem ← (elem \? "parameter-name")
@@ -207,7 +207,7 @@ private[almhirt] object ResourceNodeXml {
           formatDefinition ← parseFormatDefinition(elem)
         } yield (uomSys, formatDefinition)).toAgg
       }.sequence
-      formatter ← impl.MeasuredValueFormatterBuilder(impl.MeasuredValueFormatterBuilder.CtorParams(locale, paramName, formatWidth, defaultDefinition, specificFormats.toMap))
+      formatter ← impl.MeasuredValueFormatter(impl.MeasuredValueFormatter.CtorParams(locale, paramName, formatWidth, defaultDefinition, specificFormats.toMap))
     } yield formatter
   }
 
@@ -224,7 +224,7 @@ private[almhirt] object ResourceNodeXml {
       trueText <- trueTextElem.map(e => trimText(e.text)).validationOut()
       falseTextElem ← (elem \? "false-text")
       falseText <- falseTextElem.map(e => trimText(e.text)).validationOut()
-    } yield impl.BooleanValueFormatterBuilder(locale, paramName, trueText getOrElse "", falseText getOrElse "")
+    } yield impl.BooleanValueFormatter(locale, paramName, trueText getOrElse "", falseText getOrElse "")
   }
 
   def checkName(name: String): AlmValidation[String] =

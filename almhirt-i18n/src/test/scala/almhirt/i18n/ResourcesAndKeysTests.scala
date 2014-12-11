@@ -48,11 +48,11 @@ class ResourcesAndKeysTests extends FunSuite with Matchers {
 //  }
 
   test("""render 'de-AT' which is a plain string""") {
-    resourcesWithoutFallback.formatable(key1, new ULocale("de-AT")).flatMap(_.render).toOption should equal(Some("de_AT"))
+    resourcesWithoutFallback.formatable(key1, new ULocale("de-AT")).flatMap(_.render) should equal(scalaz.Success("de_AT"))
   }
 
   test("""render a key with a nonformatted value(integer: 2)""") {
-    resourcesWithoutFallback.formatable(key2, new ULocale("en")).flatMap(_.withArg("1" -> 2).render).toOption should equal(Some("en: 2"))
+    resourcesWithoutFallback.formatable(key2, new ULocale("en")).flatMap(_.withArg("1" -> 2).render) should equal(scalaz.Success("en: 2"))
   }
   
   test("""render the length measured value 1.0m in "en".""") {

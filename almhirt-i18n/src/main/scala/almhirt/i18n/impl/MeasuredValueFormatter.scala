@@ -11,7 +11,7 @@ import almhirt.i18n._
 import com.ibm.icu.util.{ ULocale, Measure }
 import com.ibm.icu.text.{ MeasureFormat, NumberFormat }
 
-object MeasuredValueFormatterBuilder {
+object MeasuredValueFormatter {
   final case class FormatDefinition(uom: UnitOfMeasurement, minFractionDigits: Option[Int], maxFractionDigits: Option[Int], useDigitsGrouping: Option[Boolean])
   final case class CtorParams(
     locale: ULocale,
@@ -20,11 +20,11 @@ object MeasuredValueFormatterBuilder {
     default: FormatDefinition,
     specific: Map[UnitsOfMeasurementSystem, FormatDefinition])
 
-  def apply(params: CtorParams): AlmValidation[MeasuredValueFormatter] = {
+  def apply(params: CtorParams): AlmValidation[BasicValueFormatter] = {
     construct(params)
   }
 
-  private def construct(params: CtorParams): AlmValidation[MeasuredValueFormatter] = {
+  private def construct(params: CtorParams): AlmValidation[BasicValueFormatter] = {
     val effectiveRenderWidth = params.formatWidth getOrElse MeasureRenderWidth.Short
     val uomDim = params.default.uom.dimension
     for {
@@ -84,7 +84,7 @@ private[almhirt] abstract class MeasuredValueFormatterImpl(
   override val argname: String,
   defaultMeasureFormat: MeasureFormat,
   defaultUnitOfMeasure: UnitOfMeasurement,
-  specific: Map[UnitsOfMeasurementSystem, (UnitOfMeasurement, MeasureFormat)]) extends MeasuredValueFormatter {
+  specific: Map[UnitsOfMeasurementSystem, (UnitOfMeasurement, MeasureFormat)]) extends BasicValueFormatter {
 
   def any2MeasuredValueArg(arg: Any): AlmValidation[MeasuredValueArg]
 
@@ -114,7 +114,7 @@ private[almhirt] abstract class MeasuredValueFormatterImpl(
     } yield rendered
   }
 
-  def formatable: Formatable = new MeasuredValueFormatable(this)
+  def formatable: Formatable = new SingleArgFormatable(this)
 
   private def renderInto(arg: Measured, uom: UnitOfMeasurement, format: MeasureFormat, into: StringBuffer, pos: FieldPosition): AlmValidation[StringBuffer] =
     (for {
