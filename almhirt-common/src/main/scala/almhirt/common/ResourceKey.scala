@@ -1,8 +1,6 @@
-package almhirt.i18n
+package almhirt.common
 
-import almhirt.common._
 import almhirt.almvalidation.kit._
-import com.ibm.icu.util.ULocale
 
 final case class ResourceSection(section: String) {
   def withGroup(group: String) = ResourceGroup(section, group)
@@ -13,10 +11,7 @@ final case class ResourceGroup(section: String, group: String) {
   def withKeyPrefix(prefix: String) = ResourceKeyPrefix(section, group, prefix)
 }
 
-final case class ResourceKey(section: String, group: String, key: String) {
-  def lookup(locale: ULocale)(implicit resources: AlmResources): AlmValidation[ResourceValue] = resources.resource(this, locale)
-  def find(locale: ULocale)(implicit resources: AlmResources): Option[ResourceValue] = resources.findResource(this, locale)
-}
+final case class ResourceKey(section: String, group: String, key: String)
 
 object ResourceKey {
   def apply(raw: String): AlmValidation[ResourceKey] =

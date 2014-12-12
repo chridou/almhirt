@@ -143,30 +143,32 @@ private[almhirt] object ResourceNodeXml {
     elems.map { elem ⇒ parseKey(locale, elem, prefix).toAgg }.toVector.sequence
   }
 
-  val stringValueBasedDescriptors = Set("", "plain", "icu")
+  val stringValueBasedDescriptors = Set("plain", "icu")
   def parseKey(locale: ULocale, elem: Elem, prefix: String): AlmValidation[(String, ResourceValue)] = {
     for {
       name ← elem \@! "name"
       checkedName ← checkName(name)
-      elemTypeDescriptor ← ((elem \@? "type") getOrElse "").success
-      value ← if (stringValueBasedDescriptors(elemTypeDescriptor)) {
-        for {
-          valueElem ← elem \! "value"
-          v ← parseStringValueBasedValue(locale, valueElem, elemTypeDescriptor)
-        } yield v
-      } else if (elemTypeDescriptor == "measured-value") {
-        parseMeasureFormatterValue(locale, elem)
-      } else if (elemTypeDescriptor == "boolean-value") {
-        parseBooleanFormatterValue(locale, elem)
-      } else {
-        ArgumentProblem(s""""$elemTypeDescriptor" is not a valid type for a resource value.""").failure
+      elemFormatterElem ← elem.firstChildNode
+      value ← {
+        val typeDescriptor = elemFormatterElem.label
+        if (stringValueBasedDescriptors(typeDescriptor)) {
+          parseStringValueBasedValue(locale, elemFormatterElem, typeDescriptor)
+        } else if (typeDescriptor == "measured-value") {
+          parseMeasureFormatterValue(locale, elemFormatterElem)
+        } else if (typeDescriptor == "boolean-value") {
+          parseBooleanFormatterValue(locale, elemFormatterElem)
+        } else if (typeDescriptor == "select-text") {
+          parseSelectTextFormatterValue(locale, elemFormatterElem)
+        } else {
+          ArgumentProblem(s""""$typeDescriptor" is not a valid type for a resource value.""").failure
+        }
       }
     } yield (s"$prefix$checkedName", value)
   }
 
   private def trimText(text: String): AlmValidation[String] =
     text.replaceAll("\\s{2,}", " ").trim().notEmptyOrWhitespace()
-  
+
   def parseStringValueBasedValue(locale: ULocale, valueElem: Elem, typeDescriptor: String): AlmValidation[ResourceValue] =
     for {
       valueStr ← trimText(valueElem.text)
@@ -189,10 +191,9 @@ private[almhirt] object ResourceNodeXml {
       } yield impl.MeasuredValueFormatter.FormatDefinition(uom, minFractionDigits, maxFractionDigits, useDigitGroup)
 
     val paramNameV = for {
-      theOnlyParamNameElem ← (elem \? "parameter-name")
-      definedParamName ← theOnlyParamNameElem.map(_.text.notEmptyOrWhitespace()).validationOut
-      fallbackName ← (elem \@! "name")
-    } yield definedParamName getOrElse fallbackName
+      theOnlyParamNameStr ← elem \@! "parameter"
+      definedParamName ← theOnlyParamNameStr.trim().notEmptyOrWhitespace()
+    } yield definedParamName
 
     for {
       paramName ← paramNameV
@@ -213,18 +214,35 @@ private[almhirt] object ResourceNodeXml {
 
   def parseBooleanFormatterValue(locale: ULocale, elem: Elem): AlmValidation[ResourceValue] = {
     val paramNameV = for {
-      theOnlyParamNameElem ← (elem \? "parameter-name")
-      definedParamName ← theOnlyParamNameElem.map(_.text.notEmptyOrWhitespace()).validationOut
-      fallbackName ← (elem \@! "name")
-    } yield definedParamName getOrElse fallbackName
+      theOnlyParamNameStr ← elem \@! "parameter"
+      definedParamName ← theOnlyParamNameStr.trim().notEmptyOrWhitespace()
+    } yield definedParamName
 
     for {
       paramName ← paramNameV
       trueTextElem ← (elem \? "true-text")
-      trueText <- trueTextElem.map(e => trimText(e.text)).validationOut()
+      trueText ← trueTextElem.map(e ⇒ trimText(e.text)).validationOut()
       falseTextElem ← (elem \? "false-text")
-      falseText <- falseTextElem.map(e => trimText(e.text)).validationOut()
+      falseText ← falseTextElem.map(e ⇒ trimText(e.text)).validationOut()
     } yield impl.BooleanValueFormatter(locale, paramName, trueText getOrElse "", falseText getOrElse "")
+  }
+
+  def parseSelectTextFormatterValue(locale: ULocale, elem: Elem): AlmValidation[ResourceValue] = {
+    val paramNameV = for {
+      theOnlyParamNameStr ← elem \@! "parameter"
+      definedParamName ← theOnlyParamNameStr.trim().notEmptyOrWhitespace()
+    } yield definedParamName
+
+    for {
+      paramName ← paramNameV
+      defaultElem ← (elem \? "defaut")
+      defaultText ← defaultElem.map(e ⇒ trimText(e.text)).validationOut()
+      selectItems ← (elem \\? "select").map { e ⇒
+        (for {
+          selector ← (e \@! "selector")
+        } yield (selector, e.text.replaceAll("\\s{2,}", " ").trim())).toAgg
+      }.toVector.sequence
+     } yield impl.SelectTextFormatter(locale, paramName, defaultText, selectItems.toMap)
   }
 
   def checkName(name: String): AlmValidation[String] =

@@ -12,15 +12,21 @@
 				<icu>en: {1}</icu>
 			</key>
 			<key name="yesno">
-				<boolean-value>
+				<boolean-value parameter = "yesno">
 					<true-text>Yes!</true-text>
 					<false-text>No!</false-text>
 				</boolean-value>
 			</key>
+			<key name="select">
+				<select-text parameter = "selector">
+					<select selector="a">Selected A</select>
+					<select selector="b">Selected B</select>
+					<defaut>Selected something else</defaut>
+				</select-text>
+			</key>
 			<key name="length">
-				<measured-value>
+				<measured-value parameter = "length">
 					<parameter-name>length</parameter-name>
-					<format-width>short</format-width>
 					<default-format>
 						<unit-of-measurement>millimeter</unit-of-measurement>
 						<min-fraction-digits>4</min-fraction-digits>

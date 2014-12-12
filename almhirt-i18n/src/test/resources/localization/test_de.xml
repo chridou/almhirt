@@ -6,8 +6,7 @@
 				<icu>de</icu>
 			</key>
 			<key name="length">
-				<measured-value>
-					<parameter-name>length</parameter-name>
+				<measured-value parameter="length">
 					<format-width>wide</format-width>
 					<default-format>
 						<unit-of-measurement>meter</unit-of-measurement>
