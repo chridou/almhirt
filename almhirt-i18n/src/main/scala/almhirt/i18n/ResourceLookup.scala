@@ -90,7 +90,7 @@ trait ResourceLookup {
   final def rawText[L: LocaleMagnet](key: ResourceKey, locale: L): AlmValidation[String] =
     for {
       res ← renderable(key, locale)
-      rendered ← res.render
+      rendered ← res.renderArgs(Map.empty)
     } yield rendered
 
   /**
@@ -159,30 +159,23 @@ object ResourceLookup {
     def forceFormatable[T, L: LocaleMagnet](key: ResourceKey, locale: L): Formatable =
       self.formatable(key, locale).resultOrEscalate
 
-    def formatItemInto[T, L](what: T, locale: L, buffer: StringBuffer)(implicit renderer: ItemFormat[T], magnet: LocaleMagnet[L]): AlmValidation[StringBuffer] = {
+    def formatItemInto[T, L](what: T, locale: L, appendTo: StringBuffer)(implicit renderer: ItemFormat[T], magnet: LocaleMagnet[L]): AlmValidation[StringBuffer] = {
       val uLoc = magnet.toULocale(locale)
-      for {
-        renderable ← renderer.prepare(what, uLoc, self)
-        rendered ← renderable.renderIntoBuffer(buffer)
-      } yield rendered
+      renderer.appendTo(what, uLoc, appendTo)(self)
     }
 
-    def formatItem[T, L](what: T, locale: L)(implicit renderer: ItemFormat[T], magnet: LocaleMagnet[L]): AlmValidation[String] = {
-      val uLoc = magnet.toULocale(locale)
-      for {
-        renderable ← renderer.prepare(what, uLoc, self)
-        rendered ← renderable.render
-      } yield rendered
+    def formatItem[T: ItemFormat, L: LocaleMagnet](what: T, locale: L): AlmValidation[String] = {
+      formatItemInto(what, locale, new StringBuffer).map(_.toString)
     }
 
-    def forceFormatItemInto[T, L: LocaleMagnet](what: T, locale: L, buffer: StringBuffer)(implicit renderer: ItemFormat[T]): StringBuffer =
-      formatItemInto(what, locale, buffer).resultOrEscalate
+    def forceFormatItemInto[T, L: LocaleMagnet](what: T, locale: L, appendTo: StringBuffer)(implicit renderer: ItemFormat[T]): StringBuffer =
+      formatItemInto(what, locale, appendTo).resultOrEscalate
 
     def forceFormatItem[T, L: LocaleMagnet](what: T, locale: L)(implicit renderer: ItemFormat[T]): String =
       formatItem(what, locale).resultOrEscalate
 
-    def tryFormatItemInto[T, L: LocaleMagnet](what: T, locale: L, buffer: StringBuffer)(implicit renderer: ItemFormat[T]): Option[StringBuffer] =
-      formatItemInto(what, locale, buffer).toOption
+    def tryFormatItemInto[T, L: LocaleMagnet](what: T, locale: L, appendTo: StringBuffer)(implicit renderer: ItemFormat[T]): Option[StringBuffer] =
+      formatItemInto(what, locale, appendTo).toOption
 
     def tryFormatItem[T, L: LocaleMagnet](what: T, locale: L)(implicit renderer: ItemFormat[T]): Option[String] =
       formatItem(what, locale).toOption

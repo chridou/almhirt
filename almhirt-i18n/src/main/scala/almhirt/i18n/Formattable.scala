@@ -10,103 +10,82 @@ import com.ibm.icu.util.ULocale
  * Implementations of this trait must be considered mutable and non thread safe.
  * With* methods usually do not return a new instance.
  */
-trait Formatable extends CanRenderToString {
-  /**
-   * Set a value of arbitrary type. If the value is not supported, this may throw an exception.
-   *
-   * @param arg The argument name and value
-   * @return Usually this
-   * @provisional This API might change or be removed in a future release.
-   */
-  def withArg(arg: (String, Any)): Formatable
+trait Formatable {
+  def formatArgsIntoBufferAt(appendTo: StringBuffer, pos: FieldPosition, args: Map[String, Any]): AlmValidation[StringBuffer]
 
-  /**
-   * Set many values of arbitrary types. If one ore more of the values is not supported, this may throw an exception.
-   *
-   * @param args The arguments names and values
-   * @return Usually this
-   * @provisional This API might change or be removed in a future release.
-   */
-  def withArgs(args: (String, Any)*): Formatable
+  def formatIntoBufferAt(appendTo: StringBuffer, pos: FieldPosition, args: (String, Any)*): AlmValidation[StringBuffer] =
+    formatArgsIntoBufferAt(appendTo, pos, Map(args: _*))
 
-  /**
-   * Set many values of arbitrary types. If one ore more of the values is not supported, this may throw an exception.
-   *
-   * @param arg The arguments value
-   * @return Usually this
-   * @provisional This API might change or be removed in a future release.
-   */
-  def withUnnamedArg(arg: Any): Formatable
+  def formatIntoBuffer(appendTo: StringBuffer, args: (String, Any)*): AlmValidation[StringBuffer] =
+    formatIntoBufferAt(appendTo, util.DontCareFieldPosition, args: _*)
 
-  /**
-   * Set many values of arbitrary types. If one ore more of the values is not supported, this may throw an exception.
-   *
-   * @param args The argument values
-   * @return Usually this
-   * @provisional This API might change or be removed in a future release.
-   */
-  def withUnnamedArgs(args: Any*): Formatable
+  def formatArgsIntoBuffer(appendTo: StringBuffer, args: Map[String, Any]): AlmValidation[StringBuffer] =
+    formatArgsIntoBufferAt(appendTo, util.DontCareFieldPosition, args)
 
-  /**
-   * Add an argument as a pre-rendered String
-   *
-   * @param argname the arguments name
-   * @param f a function that renders the value which should not throw an exception
-   *
-   * @return Usually this
-   * @provisional This API might change or be removed in a future release.
-   */
-  def withRenderedArg(argname: String)(f: ULocale ⇒ String): Formatable
+  def format(args: (String, Any)*): AlmValidation[String] =
+    formatIntoBufferAt(new StringBuffer(), util.DontCareFieldPosition, args: _*).map(_.toString)
 
-  def snapshot: Formatable
+  def formatArgs(args: Map[String, Any]): AlmValidation[String] =
+    formatArgsIntoBufferAt(new StringBuffer(), util.DontCareFieldPosition, args).map(_.toString)
 }
 
-final class IcuFormatable private (msgFormat: MessageFormat, private val _args: java.util.HashMap[String, Any], private var _argIndex: Int) extends Formatable {
-  def this(msgFormat: MessageFormat) = this(msgFormat, new java.util.HashMap[String, Any](), 1)
+object Formatable {
+  def apply(text: String): Formatable = new Formatable {
+    override def formatArgsIntoBufferAt(appendTo: StringBuffer, pos: FieldPosition, args: Map[String, Any]): AlmValidation[StringBuffer] =
+      scalaz.Success(appendTo.append(text))
 
-  override def withArg(arg: (String, Any)): IcuFormatable = {
-    _args.put(arg._1, arg._2)
-    this
+    override def formatIntoBufferAt(appendTo: StringBuffer, pos: FieldPosition, args: (String, Any)*): AlmValidation[StringBuffer] =
+      scalaz.Success(appendTo.append(text))
+
+    override def formatIntoBuffer(appendTo: StringBuffer, args: (String, Any)*): AlmValidation[StringBuffer] =
+      scalaz.Success(appendTo.append(text))
+
+    override def formatArgsIntoBuffer(appendTo: StringBuffer, args: Map[String, Any]): AlmValidation[StringBuffer] =
+      scalaz.Success(appendTo.append(text))
+
+    override def format(args: (String, Any)*): AlmValidation[String] =
+      scalaz.Success(text)
+
+    override def formatArgs(args: Map[String, Any]): AlmValidation[String] =
+      scalaz.Success(text)
   }
 
-  override def withArgs(args: (String, Any)*): IcuFormatable = {
-    args.foreach(arg ⇒ _args.put(arg._1, arg._2))
-    this
-  }
+  implicit class FormatableOps(val self: Formatable) extends AnyVal {
+    def forceFormatArgsIntoBufferAt(appendTo: StringBuffer, pos: FieldPosition, args: Map[String, Any]): StringBuffer =
+      self.formatArgsIntoBufferAt(appendTo, pos, args).resultOrEscalate
+    def forceFormatIntoBufferAt(appendTo: StringBuffer, pos: FieldPosition, args: (String, Any)*): StringBuffer =
+      self.formatIntoBufferAt(appendTo, pos, args: _*).resultOrEscalate
+    def forceFormatIntoBuffer(appendTo: StringBuffer, args: (String, Any)*): StringBuffer =
+      self.formatIntoBuffer(appendTo, args: _*).resultOrEscalate
+    def forceFormatArgsIntoBuffer(appendTo: StringBuffer, args: Map[String, Any]): StringBuffer =
+      self.formatArgsIntoBuffer(appendTo, args).resultOrEscalate
+    def forceFormat(args: (String, Any)*): String =
+      self.format(args: _*).resultOrEscalate
+    def forceFormatArgs(args: Map[String, Any]): String =
+      self.formatArgs(args).resultOrEscalate
 
-  override def withRenderedArg(argname: String)(f: ULocale ⇒ String): IcuFormatable = {
-    withArg(argname -> f(msgFormat.getULocale))
-  }
+    def tryFormatArgsIntoBufferAt(appendTo: StringBuffer, pos: FieldPosition, args: Map[String, Any]): Option[StringBuffer] =
+      self.formatArgsIntoBufferAt(appendTo, pos, args).toOption
+    def tryFormatIntoBufferAt(appendTo: StringBuffer, pos: FieldPosition, args: (String, Any)*): Option[StringBuffer] =
+      self.formatIntoBufferAt(appendTo, pos, args: _*).toOption
+    def tryFormatIntoBuffer(appendTo: StringBuffer, args: (String, Any)*): Option[StringBuffer] =
+      self.formatIntoBuffer(appendTo, args: _*).toOption
+    def tryFormatArgsIntoBuffer(appendTo: StringBuffer, args: Map[String, Any]): Option[StringBuffer] =
+      self.formatArgsIntoBuffer(appendTo, args).toOption
+    def tryFormat(args: (String, Any)*): Option[String] =
+      self.format(args: _*).toOption
+    def tryFormatArgs(args: Map[String, Any]): Option[String] =
+      self.formatArgs(args).toOption
 
-  override def withUnnamedArg(arg: Any): Formatable = {
-    _args.put(_argIndex.toString(), arg)
-    _argIndex += 1
-    this
   }
+}
 
-  override def withUnnamedArgs(args: Any*): Formatable = {
-    args.foreach { arg ⇒
-      _args.put(_argIndex.toString(), arg)
-      _argIndex += 1
-    }
-    this
-  }
-
-  override def renderIntoBuffer(appendTo: StringBuffer, pos: FieldPosition): AlmValidation[StringBuffer] =
+final class IcuFormatable (msgFormat: MessageFormat) extends Formatable {
+  override def (appendTo: StringBuffer, pos: FieldPosition, args: Map[String, Any]): AlmValidation[StringBuffer] =
     inTryCatch {
+      val map = new java.util.HashMap[String, Any]
       msgFormat.format(_args, appendTo, pos)
     }
-
-  def modify(f: MessageFormat ⇒ Unit): IcuFormatable = {
-    f(msgFormat)
-    this
-  }
-
-  override def snapshot: IcuFormatable = {
-    val newArgs = new java.util.HashMap[String, Any]()
-    newArgs.putAll(_args)
-    new IcuFormatable(msgFormat.clone.asInstanceOf[MessageFormat], newArgs, _argIndex)
-  }
 
   val underlying = msgFormat
 }
