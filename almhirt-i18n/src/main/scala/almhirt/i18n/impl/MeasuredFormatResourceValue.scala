@@ -50,6 +50,11 @@ private[almhirt] object MeasuredFormatResourceValue {
           arg match {
             case d: Double ⇒
               MeasuredValueArg.SiArg(d, None).success
+            case m: Measured ⇒
+              if (m.uom.dimension == uomDim)
+                MeasuredValueArg.FullArg(m, None).success
+              else
+                ArgumentProblem(s"Dimensions do not match: ${m.uom.dimension} <> $uomDim").failure
             case arg: MeasuredValueArg.SiArg ⇒
               arg.success
             case arg: MeasuredValueArg.FullArg ⇒

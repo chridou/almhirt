@@ -10,28 +10,90 @@ sealed trait UnitOfMeasurement {
   private[almhirt] def fromBase(value: Double): Double
   def dimension: UnitOfMeasureDimension
   def name: String
+  def measured(v: Double): Measured
 }
 
-sealed trait AccelerationMeasureUnit extends UnitOfMeasurement { override val dimension = UnitOfMeasureDimension.AccelerationDimension }
-sealed trait AngleMeasureUnit extends UnitOfMeasurement { override val dimension = UnitOfMeasureDimension.AngleDimension }
-sealed trait AreaMeasureUnit extends UnitOfMeasurement { override val dimension = UnitOfMeasureDimension.AreaDimension }
-sealed trait ConsumptionMeasureUnit extends UnitOfMeasurement { override val dimension = UnitOfMeasureDimension.ConsumptionDimension }
-sealed trait DigitalMeasureUnit extends UnitOfMeasurement { override val dimension = UnitOfMeasureDimension.DigitalDimension }
-sealed trait DurationMeasureUnit extends UnitOfMeasurement { override val dimension = UnitOfMeasureDimension.DurationDimension }
-sealed trait CurrentMeasureUnit extends UnitOfMeasurement { override val dimension = UnitOfMeasureDimension.CurrentDimension }
-sealed trait VoltageMeasureUnit extends UnitOfMeasurement { override val dimension = UnitOfMeasureDimension.VoltageDimension }
-sealed trait EnergyMeasureUnit extends UnitOfMeasurement { override val dimension = UnitOfMeasureDimension.EnergyDimension }
-sealed trait FrequencyMeasureUnit extends UnitOfMeasurement { override val dimension = UnitOfMeasureDimension.FrequencyDimension }
-sealed trait LengthMeasureUnit extends UnitOfMeasurement { override val dimension = UnitOfMeasureDimension.LengthDimension }
-sealed trait LightMeasureUnit extends UnitOfMeasurement { override val dimension = UnitOfMeasureDimension.LightDimension }
-sealed trait LightFluxMeasureUnit extends UnitOfMeasurement { override val dimension = UnitOfMeasureDimension.LightFluxDimension }
-sealed trait MassMeasureUnit extends UnitOfMeasurement { override val dimension = UnitOfMeasureDimension.MassDimension }
-sealed trait PowerMeasureUnit extends UnitOfMeasurement { override val dimension = UnitOfMeasureDimension.PowerDimension }
-sealed trait PressureMeasureUnit extends UnitOfMeasurement { override val dimension = UnitOfMeasureDimension.PressureDimension }
-sealed trait ProportionMeasureUnit extends UnitOfMeasurement { override val dimension = UnitOfMeasureDimension.ProportionDimension }
-sealed trait SpeedMeasureUnit extends UnitOfMeasurement { override val dimension = UnitOfMeasureDimension.SpeedDimension }
-sealed trait TemperatureMeasureUnit extends UnitOfMeasurement { override val dimension = UnitOfMeasureDimension.TemperatureDimension }
-sealed trait VolumeMeasureUnit extends UnitOfMeasurement { override val dimension = UnitOfMeasureDimension.VolumeDimension }
+sealed trait AccelerationMeasureUnit extends UnitOfMeasurement {
+  override val dimension = UnitOfMeasureDimension.AccelerationDimension
+  override def measured(v: Double): MeasuredAcceleration = MeasuredAcceleration(v, this)
+
+}
+sealed trait AngleMeasureUnit extends UnitOfMeasurement {
+  override val dimension = UnitOfMeasureDimension.AngleDimension
+  override def measured(v: Double): MeasuredAngle = MeasuredAngle(v, this)
+}
+sealed trait AreaMeasureUnit extends UnitOfMeasurement {
+  override val dimension = UnitOfMeasureDimension.AreaDimension
+  override def measured(v: Double): MeasuredArea = MeasuredArea(v, this)
+}
+sealed trait ConsumptionMeasureUnit extends UnitOfMeasurement {
+  override val dimension = UnitOfMeasureDimension.ConsumptionDimension
+  override def measured(v: Double): MeasuredConsumption = MeasuredConsumption(v, this)
+}
+sealed trait DigitalMeasureUnit extends UnitOfMeasurement {
+  override val dimension = UnitOfMeasureDimension.DigitalDimension
+  override def measured(v: Double): MeasuredDigital = MeasuredDigital(v, this)
+}
+sealed trait DurationMeasureUnit extends UnitOfMeasurement {
+  override val dimension = UnitOfMeasureDimension.DurationDimension
+  override def measured(v: Double): MeasuredDuration = MeasuredDuration(v, this)
+}
+sealed trait CurrentMeasureUnit extends UnitOfMeasurement {
+  override val dimension = UnitOfMeasureDimension.CurrentDimension
+  override def measured(v: Double): MeasuredCurrent = MeasuredCurrent(v, this)
+}
+sealed trait VoltageMeasureUnit extends UnitOfMeasurement {
+  override val dimension = UnitOfMeasureDimension.VoltageDimension
+  override def measured(v: Double): MeasuredVoltage = MeasuredVoltage(v, this)
+}
+sealed trait EnergyMeasureUnit extends UnitOfMeasurement {
+  override val dimension = UnitOfMeasureDimension.EnergyDimension
+  override def measured(v: Double): MeasuredEnergy = MeasuredEnergy(v, this)
+}
+sealed trait FrequencyMeasureUnit extends UnitOfMeasurement {
+  override val dimension = UnitOfMeasureDimension.FrequencyDimension
+  override def measured(v: Double): MeasuredFrequency = MeasuredFrequency(v, this)
+}
+sealed trait LengthMeasureUnit extends UnitOfMeasurement {
+  override val dimension = UnitOfMeasureDimension.LengthDimension
+  override def measured(v: Double): MeasuredLength = MeasuredLength(v, this)
+}
+sealed trait LightMeasureUnit extends UnitOfMeasurement {
+  override val dimension = UnitOfMeasureDimension.LightDimension
+  override def measured(v: Double): MeasuredLight = MeasuredLight(v, this)
+}
+sealed trait LightFluxMeasureUnit extends UnitOfMeasurement {
+  override val dimension = UnitOfMeasureDimension.LightFluxDimension
+  override def measured(v: Double): MeasuredLightFlux = MeasuredLightFlux(v, this)
+}
+sealed trait MassMeasureUnit extends UnitOfMeasurement {
+  override val dimension = UnitOfMeasureDimension.MassDimension
+  override def measured(v: Double): MeasuredMass = MeasuredMass(v, this)
+}
+sealed trait PowerMeasureUnit extends UnitOfMeasurement {
+  override val dimension = UnitOfMeasureDimension.PowerDimension
+  override def measured(v: Double): MeasuredPower = MeasuredPower(v, this)
+}
+sealed trait PressureMeasureUnit extends UnitOfMeasurement {
+  override val dimension = UnitOfMeasureDimension.PressureDimension
+  override def measured(v: Double): MeasuredPressure = MeasuredPressure(v, this)
+}
+sealed trait ProportionMeasureUnit extends UnitOfMeasurement {
+  override val dimension = UnitOfMeasureDimension.ProportionDimension
+  override def measured(v: Double): MeasuredProportion = MeasuredProportion(v, this)
+}
+sealed trait SpeedMeasureUnit extends UnitOfMeasurement {
+  override val dimension = UnitOfMeasureDimension.SpeedDimension
+  override def measured(v: Double): MeasuredSpeed = MeasuredSpeed(v, this)
+}
+sealed trait TemperatureMeasureUnit extends UnitOfMeasurement {
+  override val dimension = UnitOfMeasureDimension.TemperatureDimension
+  override def measured(v: Double): MeasuredTemperature = MeasuredTemperature(v, this)
+}
+sealed trait VolumeMeasureUnit extends UnitOfMeasurement {
+  override val dimension = UnitOfMeasureDimension.VolumeDimension
+  override def measured(v: Double): MeasuredVolume = MeasuredVolume(v, this)
+}
 
 object UnitsOfMeasurement {
   case object GForce extends AccelerationMeasureUnit {
