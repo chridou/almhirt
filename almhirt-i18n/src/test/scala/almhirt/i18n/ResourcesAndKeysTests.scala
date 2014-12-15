@@ -25,98 +25,91 @@ class ResourcesAndKeysTests extends FunSuite with Matchers {
   val key2 = ResourceKey("section_1", "group_1", "key_2")
   val group = ResourceGroup("section_1", "group_1")
 
-  //  test("""must find 'en'""") {
-  //    resourcesWithoutFallback.findTextResource(key1, new ULocale("en")).map(_.raw) should equal(Some("en"))
-  //  }
-  //
-  //  test("""must find 'en-GB'""") {
-  //    resourcesWithoutFallback.findTextResource(key1, new ULocale("en-GB")).map(_.raw) should equal(Some("en_GB"))
-  //  }
-  //
-  //  test("""must find 'en_US'""") {
-  //    resourcesWithoutFallback.findTextResource(key1, new ULocale("en_US")).map(_.raw) should equal(Some("en_US"))
-  //  }
-  //
-  //  test("""must find 'de'""") {
-  //    resourcesWithoutFallback.findTextResource(key1, new ULocale("de")).map(_.raw) should equal(Some("de"))
-  //  }
-  //
-  //  test("""must find 'de-DE'""") {
-  //    resourcesWithoutFallback.findTextResource(key1, new ULocale("de-DE")).map(_.raw) should equal(Some("de_DE"))
-  //  }
-  //
-  //  test("""must find 'de-AT'""") {
-  //    resourcesWithoutFallback.findTextResource(key1, new ULocale("de-AT")).map(_.raw) should equal(Some("de_AT"))
-  //  }
-  //
-  //  test("""must find nothing for 'de-CH' when fallback is disabled.""") {
-  //    resourcesWithoutFallback.findTextResource(key1, new ULocale("de-CH")).map(_.raw) should equal(None)
-  //  }
-  //
-  //  test("""must find 'de' for 'de-CH' when fallback is enabled""") {
-  //    resourcesWithFallbackAllowed.findTextResource(key1, new ULocale("de-CH")).map(_.raw) should equal(Some("de"))
-  //  }
-
   test("""render 'de-AT' which is a plain string""") {
-    resourcesWithoutFallback.formatable(key1, new ULocale("de-AT")).flatMap(_.render()) should equal(scalaz.Success("de_AT"))
+    resourcesWithoutFallback.formatable(key1, new ULocale("de-AT")).flatMap(_.format()) should equal(scalaz.Success("de_AT"))
   }
 
   test("""render a key with a nonformatted value(integer: 2)""") {
-    resourcesWithoutFallback.formatable(key2, new ULocale("en")).flatMap(_.render()) should equal(scalaz.Success("en: 2"))
+    resourcesWithoutFallback.formatable(key2, new ULocale("en")).flatMap(_.formatValues(2)) should equal(scalaz.Success("en: 2"))
   }
 
   test("""render the length measured value 1.0m in "en".""") {
     val formatable = resourcesWithoutFallback.forceFormatable(group.withKey("length"), "en")
-    info(formatable.forceRender("length" -> 1.0))
+    info(formatable.forceFormat("length" -> 1.0))
   }
 
   test("""render the length measured value 100000.0m in "en".""") {
     val formatable = resourcesWithoutFallback.forceFormatable(group.withKey("length"), "en")
-    info(formatable.forceRender("length" -> 100000.0))
+    info(formatable.forceFormat("length" -> 100000.0))
   }
 
   test("""render the length measured value 100000.0m in "en" with anglo american units.""") {
     val formatable = resourcesWithoutFallback.forceFormatable(group.withKey("length"), "en")
-    info(formatable.forceRender("length" -> MeasuredValueArg.SiArg(100000.0, Some(UnitsOfMeasurementSystem.AngloAmerican))))
+    info(formatable.forceFormat("length" -> MeasuredValueArg.SiArg(100000.0, Some(UnitsOfMeasurementSystem.AngloAmerican))))
   }
 
   test("""render the length measured value 1.0m in "de".""") {
     val formatable = resourcesWithoutFallback.forceFormatable(group.withKey("length"), "de")
-    info(formatable.forceRender("length" -> 1.0))
+    info(formatable.forceFormat("length" -> 1.0))
   }
 
   test("""render the length measured value 1000.0m in "de".""") {
     val formatable = resourcesWithoutFallback.forceFormatable(group.withKey("length"), "de")
-    info(formatable.forceRender("length" -> 1000.0))
+    info(formatable.forceFormat("length" -> 1000.0))
   }
 
   test("""render the length measured value 1000.0m in "de" with anglo american units.""") {
     val formatable = resourcesWithoutFallback.forceFormatable(group.withKey("length"), "de")
-    info(formatable.forceRender("length" -> MeasuredValueArg.SiArg(1000.0, Some(UnitsOfMeasurementSystem.AngloAmerican))))
+    info(formatable.forceFormat("length" -> MeasuredValueArg.SiArg(1000.0, Some(UnitsOfMeasurementSystem.AngloAmerican))))
+  }
+
+  test("""render a number without a style in en.""") {
+    val formatable = resourcesWithoutFallback.forceFormatable(group.withKey("number"), "en")
+    info(formatable.forceFormatValues(12345.67))
+  }
+
+  test("""render a number explicitly without a style in en.""") {
+    val formatable = resourcesWithoutFallback.forceFormatable(group.withKey("number-nostyle"), "en")
+    info(formatable.forceFormatValues(12345.67))
+  }
+
+  test("""render a number with style integer in en.""") {
+    val formatable = resourcesWithoutFallback.forceFormatable(group.withKey("number-integer"), "en")
+    info(formatable.forceFormatValues(12345.67))
+  }
+
+  test("""render a number with style scientific in en.""") {
+    val formatable = resourcesWithoutFallback.forceFormatable(group.withKey("number-scientific"), "en")
+    info(formatable.forceFormatValues(12345.67))
+  }
+
+  test("""render a number with style percentage in en.""") {
+    val formatable = resourcesWithoutFallback.forceFormatable(group.withKey("number-percentage"), "en")
+    info(formatable.forceFormatValues(12345.67))
   }
 
   test("""render the boolean in en when true.""") {
     val formatable = resourcesWithoutFallback.forceFormatable(group.withKey("yesno"), "en")
-    info(formatable.withUnnamedArg(true).forceRender)
+    info(formatable.forceFormatValues(true))
   }
 
   test("""render the boolean in en when false.""") {
     val formatable = resourcesWithoutFallback.forceFormatable(group.withKey("yesno"), "en")
-    info(formatable.withUnnamedArg(false).forceRender)
+    info(formatable.forceFormatValues(false))
   }
 
   test("""select an existing text(alternative a).""") {
     val formatable = resourcesWithoutFallback.forceFormatable(group.withKey("select"), "en")
-    info(formatable.withUnnamedArg("a").forceRender)
+    info(formatable.forceFormatValues("a"))
   }
 
   test("""select an existing text(alternative b).""") {
     val formatable = resourcesWithoutFallback.forceFormatable(group.withKey("select"), "en")
-    info(formatable.withUnnamedArg("b").forceRender)
+    info(formatable.forceFormatValues("b"))
   }
 
   test("""select an existing text(non existing).""") {
     val formatable = resourcesWithoutFallback.forceFormatable(group.withKey("select"), "en")
-    info(formatable.withUnnamedArg("c").forceRender)
+    info(formatable.forceFormatValues("c"))
   }
 }

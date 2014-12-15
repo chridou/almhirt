@@ -3,7 +3,7 @@
 	<section name="section_1">
 		<group name="group_1">
 			<key name="key_1">
-				<icu>en</icu>
+				<plain>en</plain>
 			</key>
 			<key name="key_2">
 				<icu>en: {1}</icu>
@@ -12,20 +12,45 @@
 				<icu>en: {1}</icu>
 			</key>
 			<key name="yesno">
-				<boolean-value parameter = "yesno">
+				<boolean-value parameter="yesno">
 					<true-text>Yes!</true-text>
 					<false-text>No!</false-text>
 				</boolean-value>
 			</key>
 			<key name="select">
-				<select-text parameter = "selector">
+				<select-text parameter="selector">
 					<select selector="a">Selected A</select>
 					<select selector="b">Selected B</select>
 					<defaut>Selected something else</defaut>
 				</select-text>
 			</key>
+			<key name="number">
+				<number parameter="number">
+				</number>
+			</key>
+			<key name="number-nostyle">
+				<number parameter="number">
+					<style>nostyle</style>
+					<use-digit-groups>false</use-digit-groups>
+				</number>
+			</key>
+			<key name="number-percentage">
+				<number parameter="number">
+					<style>percentage</style>
+				</number>
+			</key>
+			<key name="number-scientific">
+				<number parameter="number">
+					<style>scientific</style>
+				</number>
+			</key>
+			<key name="number-integer">
+				<number parameter="number">
+					<style>integer</style>
+				</number>
+			</key>
 			<key name="length">
-				<measured-value parameter = "length">
+				<measured-value parameter="length">
 					<parameter-name>length</parameter-name>
 					<default-format>
 						<unit-of-measurement>millimeter</unit-of-measurement>

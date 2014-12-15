@@ -11,7 +11,7 @@ import almhirt.i18n._
 import com.ibm.icu.util.{ ULocale, Measure }
 import com.ibm.icu.text.{ MeasureFormat, NumberFormat }
 
-object MeasuredValueFormatter {
+private[almhirt] object MeasuredFormatResourceValue {
   final case class FormatDefinition(uom: UnitOfMeasurement, minFractionDigits: Option[Int], maxFractionDigits: Option[Int], useDigitsGrouping: Option[Boolean])
   final case class CtorParams(
     locale: ULocale,
@@ -20,11 +20,11 @@ object MeasuredValueFormatter {
     default: FormatDefinition,
     specific: Map[UnitsOfMeasurementSystem, FormatDefinition])
 
-  def apply(params: CtorParams): AlmValidation[BasicValueFormatter] = {
+  def apply(params: CtorParams): AlmValidation[BasicValueResourceValue] = {
     construct(params)
   }
 
-  private def construct(params: CtorParams): AlmValidation[BasicValueFormatter] = {
+  private def construct(params: CtorParams): AlmValidation[BasicValueResourceValue] = {
     val effectiveRenderWidth = params.formatWidth getOrElse MeasureRenderWidth.Short
     val uomDim = params.default.uom.dimension
     for {
@@ -45,7 +45,7 @@ object MeasuredValueFormatter {
           case (uomSys, FormatDefinition(uom, minFractionDigits, maxFractionDigits, useDigitsGrouping)) ⇒
             (uomSys, (uom, createMeasureFormat(params.locale, effectiveRenderWidth, minFractionDigits, maxFractionDigits, useDigitsGrouping)))
         }).toMap
-      new MeasuredValueFormatterImpl(params.locale, params.argname, defaultFormat, defaultUom, specificFormats) {
+      new MeasuredFormatResourceValue(params.locale, params.argname, defaultFormat, defaultUom, specificFormats) {
         override def any2MeasuredValueArg(arg: Any): AlmValidation[MeasuredValueArg] =
           arg match {
             case d: Double ⇒
@@ -79,16 +79,16 @@ object MeasuredValueFormatter {
 
 }
 
-private[almhirt] abstract class MeasuredValueFormatterImpl(
+private[almhirt] abstract class MeasuredFormatResourceValue(
   override val locale: ULocale,
   override val argname: String,
   defaultMeasureFormat: MeasureFormat,
   defaultUnitOfMeasure: UnitOfMeasurement,
-  specific: Map[UnitsOfMeasurementSystem, (UnitOfMeasurement, MeasureFormat)]) extends BasicValueFormatter {
+  specific: Map[UnitsOfMeasurementSystem, (UnitOfMeasurement, MeasureFormat)]) extends BasicValueResourceValue with SingleArgFormattingModule {
 
   def any2MeasuredValueArg(arg: Any): AlmValidation[MeasuredValueArg]
 
-  override def renderIntoBuffer(arg: Any, appendTo: StringBuffer, pos: FieldPosition): AlmValidation[StringBuffer] =
+  override def formatIntoBuffer(appendTo: StringBuffer, pos: FieldPosition, arg: Any): AlmValidation[StringBuffer] =
     for {
       measuredValueArg ← any2MeasuredValueArg(arg)
       rendered ← renderMeasuredValueArgIntoBuffer(measuredValueArg, appendTo, pos)

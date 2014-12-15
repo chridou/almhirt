@@ -7,21 +7,21 @@ import almhirt.almvalidation.kit._
 import almhirt.i18n._
 import com.ibm.icu.util.ULocale
 
-object BooleanValueFormatter {
+private[almhirt] object BooleanFormatResourceValue {
   def apply(
     locale: ULocale,
     argname: String,
     trueText: String,
-    falseText: String): BasicValueFormatter = new BooleanValueFormatterImpl(locale, argname, trueText, falseText)
+    falseText: String): BasicValueResourceValue = new BooleanFormatResourceValue(locale, argname, trueText, falseText)
 }
 
-private[almhirt] final class BooleanValueFormatterImpl(
+private[almhirt] final class BooleanFormatResourceValue(
   override val locale: ULocale,
   override val argname: String,
   trueText: String,
-  falseText: String) extends BasicValueFormatter {
+  falseText: String) extends BasicValueResourceValue with SingleArgFormattingModule {
 
-  override def renderIntoBuffer(arg: Any, appendTo: StringBuffer, pos: FieldPosition): AlmValidation[StringBuffer] =
+  override def formatIntoBuffer(appendTo: StringBuffer, pos: FieldPosition, arg: Any): AlmValidation[StringBuffer] =
     for {
       value ←  arg.castTo[Boolean]
       rendered ← inTryCatch { appendTo.append(if (value) trueText else falseText) }

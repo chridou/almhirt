@@ -153,6 +153,8 @@ private[almhirt] object ResourceNodeXml {
         val typeDescriptor = elemFormatterElem.label
         if (stringValueBasedDescriptors(typeDescriptor)) {
           parseStringValueBasedValue(locale, elemFormatterElem, typeDescriptor)
+        } else if (typeDescriptor == "number") {
+          parseNumberFormatterValue(locale, elemFormatterElem)
         } else if (typeDescriptor == "measured-value") {
           parseMeasureFormatterValue(locale, elemFormatterElem)
         } else if (typeDescriptor == "boolean-value") {
@@ -173,22 +175,22 @@ private[almhirt] object ResourceNodeXml {
     for {
       valueStr ← trimText(valueElem.text)
       value ← typeDescriptor match {
-        case ""      ⇒ RawStringValue(valueStr).success
-        case "plain" ⇒ RawStringValue(valueStr).success
-        case "icu"   ⇒ IcuMessageFormat(valueStr, locale)
+        case ""      ⇒ RawStringResourceValue(locale, valueStr).success
+        case "plain" ⇒ RawStringResourceValue(locale, valueStr).success
+        case "icu"   ⇒ IcuResourceValue(valueStr, locale)
         case x       ⇒ ArgumentProblem(s""""$x" is not a valid type for a resource value.""").failure
       }
     } yield value
 
   def parseMeasureFormatterValue(locale: ULocale, elem: Elem): AlmValidation[ResourceValue] = {
-    def parseFormatDefinition(format: Elem): AlmValidation[impl.MeasuredValueFormatter.FormatDefinition] =
+    def parseFormatDefinition(format: Elem): AlmValidation[impl.MeasuredFormatResourceValue.FormatDefinition] =
       for {
         uomName ← (format \! "unit-of-measurement").map(_.text)
         uom ← UnitsOfMeasurement.byName(uomName)
         minFractionDigits ← (format \? "min-fraction-digits").flatMap(e ⇒ e.map { _.text.toIntAlm }.validationOut)
         maxFractionDigits ← (format \? "max-fraction-digits").flatMap(e ⇒ e.map { _.text.toIntAlm }.validationOut)
         useDigitGroup ← (format \? "use-digit-groups").flatMap(e ⇒ e.map { _.text.toBooleanAlm }.validationOut)
-      } yield impl.MeasuredValueFormatter.FormatDefinition(uom, minFractionDigits, maxFractionDigits, useDigitGroup)
+      } yield impl.MeasuredFormatResourceValue.FormatDefinition(uom, minFractionDigits, maxFractionDigits, useDigitGroup)
 
     val paramNameV = for {
       theOnlyParamNameStr ← elem \@! "parameter"
@@ -208,7 +210,24 @@ private[almhirt] object ResourceNodeXml {
           formatDefinition ← parseFormatDefinition(elem)
         } yield (uomSys, formatDefinition)).toAgg
       }.sequence
-      formatter ← impl.MeasuredValueFormatter(impl.MeasuredValueFormatter.CtorParams(locale, paramName, formatWidth, defaultDefinition, specificFormats.toMap))
+      formatter ← impl.MeasuredFormatResourceValue(impl.MeasuredFormatResourceValue.CtorParams(locale, paramName, formatWidth, defaultDefinition, specificFormats.toMap))
+    } yield formatter
+  }
+
+  def parseNumberFormatterValue(locale: ULocale, elem: Elem): AlmValidation[ResourceValue] = {
+
+    val paramNameV = for {
+      theOnlyParamNameStr ← elem \@! "parameter"
+      definedParamName ← theOnlyParamNameStr.trim().notEmptyOrWhitespace()
+    } yield definedParamName
+
+    for {
+      paramName ← paramNameV
+      style ← (elem \? "style").flatMap(e ⇒ e.map { e ⇒ impl.NumberFormatStyle.parse(e.text) }.validationOut)
+      minFractionDigits ← (elem \? "min-fraction-digits").flatMap(e ⇒ e.map { _.text.toIntAlm }.validationOut)
+      maxFractionDigits ← (elem \? "max-fraction-digits").flatMap(e ⇒ e.map { _.text.toIntAlm }.validationOut)
+      useDigitsGrouping ← (elem \? "use-digit-groups").flatMap(e ⇒ e.map { _.text.toBooleanAlm }.validationOut)
+      formatter ← impl.NumberFormatResourceValue.apply(locale, paramName, style, minFractionDigits, maxFractionDigits, useDigitsGrouping)
     } yield formatter
   }
 
@@ -224,7 +243,7 @@ private[almhirt] object ResourceNodeXml {
       trueText ← trueTextElem.map(e ⇒ trimText(e.text)).validationOut()
       falseTextElem ← (elem \? "false-text")
       falseText ← falseTextElem.map(e ⇒ trimText(e.text)).validationOut()
-    } yield impl.BooleanValueFormatter(locale, paramName, trueText getOrElse "", falseText getOrElse "")
+    } yield impl.BooleanFormatResourceValue(locale, paramName, trueText getOrElse "", falseText getOrElse "")
   }
 
   def parseSelectTextFormatterValue(locale: ULocale, elem: Elem): AlmValidation[ResourceValue] = {
@@ -242,7 +261,7 @@ private[almhirt] object ResourceNodeXml {
           selector ← (e \@! "selector")
         } yield (selector, e.text.replaceAll("\\s{2,}", " ").trim())).toAgg
       }.toVector.sequence
-     } yield impl.SelectTextFormatter(locale, paramName, defaultText, selectItems.toMap)
+    } yield impl.SelectTextFormatResourceValue(locale, paramName, defaultText, selectItems.toMap)
   }
 
   def checkName(name: String): AlmValidation[String] =

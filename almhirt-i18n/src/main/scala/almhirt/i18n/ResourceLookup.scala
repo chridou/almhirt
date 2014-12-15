@@ -71,11 +71,11 @@ trait ResourceLookup {
     for {
       res ← textResourceWithLocale(key, locale)
       fmt ← res._2 match {
-        case fmt: IcuMessageFormat ⇒
+        case fmt: IcuResourceValue ⇒
           new IcuFormatable(fmt.formatInstance).success
-        case raw: RawStringValue ⇒
+        case raw: RawStringResourceValue ⇒
           raw.success
-        case f: BasicValueFormatter ⇒
+        case f: BasicValueResourceValue ⇒
           f.formatable.success
       }
     } yield fmt
@@ -89,29 +89,16 @@ trait ResourceLookup {
    */
   final def rawText[L: LocaleMagnet](key: ResourceKey, locale: L): AlmValidation[String] =
     for {
-      res ← renderable(key, locale)
-      rendered ← res.renderArgs(Map.empty)
-    } yield rendered
-
-  /**
-   * Get a [[CanRenderToString]] possibly using a fallback locale
-   *
-   * @param key the [[ResourceKey]] for the queried [[CanRenderToString]]
-   * @param locale the locale for the queried [[CanRenderToString]]
-   * @return the possibly found [[CanRenderToString]]
-   */
-  final def renderable[L: LocaleMagnet](key: ResourceKey, locale: L): AlmValidation[CanRenderToString] =
-    for {
       res ← textResource(key, locale)
-      fmt ← res match {
-        case fmt: IcuMessageFormat ⇒
-          inTryCatch { CanRenderToString(fmt.raw) }
-        case r: RawStringValue ⇒
-          r.success
-        case _: BasicValueFormatter ⇒
+      str ← res match {
+        case fmt: IcuResourceValue ⇒
+          inTryCatch { fmt.raw }
+        case r: RawStringResourceValue ⇒
+          r.raw.success
+        case _: BasicValueResourceValue ⇒
           ArgumentProblem(s"""Value at key "$key". does not have a direct String representation so there is no direct renderable.""").failure
       }
-    } yield fmt
+    } yield str
 
   /**
    * If the given locale is not supported, try to make it a compatible locale that is supported.
@@ -173,12 +160,6 @@ object ResourceLookup {
 
     def forceFormatItem[T, L: LocaleMagnet](what: T, locale: L)(implicit renderer: ItemFormat[T]): String =
       formatItem(what, locale).resultOrEscalate
-
-    def tryFormatItemInto[T, L: LocaleMagnet](what: T, locale: L, appendTo: StringBuffer)(implicit renderer: ItemFormat[T]): Option[StringBuffer] =
-      formatItemInto(what, locale, appendTo).toOption
-
-    def tryFormatItem[T, L: LocaleMagnet](what: T, locale: L)(implicit renderer: ItemFormat[T]): Option[String] =
-      formatItem(what, locale).toOption
   }
 }
 
