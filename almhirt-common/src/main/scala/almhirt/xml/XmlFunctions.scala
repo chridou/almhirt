@@ -214,6 +214,13 @@ trait XmlFunctions {
     }
   }
 
+  def getFirstChildNodeExcluding(node: Elem, excludeLabel: String): AlmValidation[Elem] = {
+    allElems(node).filterNot { _.label == excludeLabel }.toList match {
+      case Nil ⇒ BadDataProblem(s"""Element "${node.label}" has no children.""").withLabel(node.label).failure
+      case l :: ls ⇒ l.success
+    }
+  }
+  
   def mapOptionalFirstChild[T](node: Elem, label: String, compute: Elem ⇒ AlmValidation[T]): AlmValidation[Option[T]] =
     elems(node)(label).headOption match {
       case Some(t) ⇒ compute(t) map { r ⇒ Some(r) }

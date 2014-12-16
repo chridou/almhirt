@@ -148,7 +148,7 @@ private[almhirt] object ResourceNodeXml {
     for {
       name ← elem \@! "name"
       checkedName ← checkName(name)
-      elemFormatterElem ← elem.firstChildNode
+      elemFormatterElem ← elem.firstChildNodeExcluding("comment")
       value ← {
         val typeDescriptor = elemFormatterElem.label
         if (stringValueBasedDescriptors(typeDescriptor)) {

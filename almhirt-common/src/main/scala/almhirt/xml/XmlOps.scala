@@ -159,6 +159,8 @@ trait XmlOps0 extends Ops[Elem]{
     funs.firstChildNodeMandatory(self, label)
   def firstChildNode: AlmValidation[Elem] = 
     funs.getFirstChildNode(self)
+  def firstChildNodeExcluding(excludeLabel: String): AlmValidation[Elem] = 
+    funs.getFirstChildNodeExcluding(self, excludeLabel)
   def mapOptionalFirstChild[T](label: String, compute: Elem ⇒ AlmValidation[T]): AlmValidation[Option[T]] =
     funs.mapOptionalFirstChild(self, label, compute)
   def flatMapOptionalFirstChild[T](label: String, compute: Elem ⇒ AlmValidation[Option[T]]): AlmValidation[Option[T]] =
