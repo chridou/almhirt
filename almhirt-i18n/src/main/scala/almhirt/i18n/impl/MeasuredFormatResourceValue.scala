@@ -45,27 +45,10 @@ private[almhirt] object MeasuredFormatResourceValue {
           case (uomSys, FormatDefinition(uom, minFractionDigits, maxFractionDigits, useDigitsGrouping)) ⇒
             (uomSys, (uom, createMeasureFormat(params.locale, effectiveRenderWidth, minFractionDigits, maxFractionDigits, useDigitsGrouping)))
         }).toMap
-      new MeasuredFormatResourceValue(params.locale, params.argname, defaultFormat, defaultUom, specificFormats) {
-        override def any2MeasuredValueArg(arg: Any): AlmValidation[MeasuredValueArg] =
-          arg match {
-            case d: Double ⇒
-              MeasuredValueArg.SiArg(d, None).success
-            case m: Measured ⇒
-              if (m.uom.dimension == uomDim)
-                MeasuredValueArg.FullArg(m, None).success
-              else
-                ArgumentProblem(s"Dimensions do not match: ${m.uom.dimension} <> $uomDim").failure
-            case arg: MeasuredValueArg.SiArg ⇒
-              arg.success
-            case arg: MeasuredValueArg.FullArg ⇒
-              if (arg.measured.uom.dimension == uomDim)
-                arg.success
-              else
-                ArgumentProblem(s"Dimensions do not match: ${arg.measured.uom.dimension} <> $uomDim").failure
-            case x ⇒
-              ArgumentProblem(s""""$x" is not a valid argument for a measured value.""").failure
-          }
-      }
+      if (uomDim == UnitOfMeasureDimension.LightFluxDimension)
+        new LightFluxMeasuredFormatResourceValue(params.locale, params.argname, defaultFormat, defaultUom, specificFormats)
+      else
+        new MeasuredFormatResourceValue(params.locale, params.argname, defaultFormat, defaultUom, specificFormats)
     }
   }
 
@@ -84,14 +67,34 @@ private[almhirt] object MeasuredFormatResourceValue {
 
 }
 
-private[almhirt] abstract class MeasuredFormatResourceValue(
+private[almhirt] class MeasuredFormatResourceValue(
   override val locale: ULocale,
   override val argname: String,
   defaultMeasureFormat: MeasureFormat,
   defaultUnitOfMeasure: UnitOfMeasurement,
   specific: Map[UnitsOfMeasurementSystem, (UnitOfMeasurement, MeasureFormat)]) extends BasicValueResourceValue with SingleArgFormattingModule {
 
-  def any2MeasuredValueArg(arg: Any): AlmValidation[MeasuredValueArg]
+  def any2MeasuredValueArg(arg: Any): AlmValidation[MeasuredValueArg] = {
+    val uomDim = defaultUnitOfMeasure.dimension
+    arg match {
+      case d: Double ⇒
+        MeasuredValueArg.SiArg(d, None).success
+      case m: Measured ⇒
+        if (m.uom.dimension == uomDim)
+          MeasuredValueArg.FullArg(m, None).success
+        else
+          ArgumentProblem(s"Dimensions do not match: ${m.uom.dimension} <> $uomDim").failure
+      case arg: MeasuredValueArg.SiArg ⇒
+        arg.success
+      case arg: MeasuredValueArg.FullArg ⇒
+        if (arg.measured.uom.dimension == uomDim)
+          arg.success
+        else
+          ArgumentProblem(s"Dimensions do not match: ${arg.measured.uom.dimension} <> $uomDim").failure
+      case x ⇒
+        ArgumentProblem(s""""$x" is not a valid argument for a measured value.""").failure
+    }
+  }
 
   override def formatIntoBuffer(appendTo: StringBuffer, pos: FieldPosition, arg: Any): AlmValidation[StringBuffer] =
     for {
@@ -125,6 +128,77 @@ private[almhirt] abstract class MeasuredFormatResourceValue(
     (for {
       icuMeasured ← uom.icu
       buffer ← inTryCatch { format.format(new Measure(arg.calcDirectTo(uom), icuMeasured), into, pos) }
+    } yield buffer).leftMap { p ⇒ ArgumentProblem("Error formatting the value.", cause = Some(p)) }
+
+}
+
+private[almhirt] class LightFluxMeasuredFormatResourceValue(
+  override val locale: ULocale,
+  override val argname: String,
+  defaultMeasureFormat: MeasureFormat,
+  defaultUnitOfMeasure: UnitOfMeasurement,
+  specific: Map[UnitsOfMeasurementSystem, (UnitOfMeasurement, MeasureFormat)]) extends BasicValueResourceValue with SingleArgFormattingModule {
+
+  def any2MeasuredValueArg(arg: Any): AlmValidation[MeasuredValueArg] = {
+    val uomDim = defaultUnitOfMeasure.dimension
+    arg match {
+      case d: Double ⇒
+        MeasuredValueArg.SiArg(d, None).success
+      case m: Measured ⇒
+        if (m.uom.dimension == uomDim)
+          MeasuredValueArg.FullArg(m, None).success
+        else
+          ArgumentProblem(s"Dimensions do not match: ${m.uom.dimension} <> $uomDim").failure
+      case arg: MeasuredValueArg.SiArg ⇒
+        arg.success
+      case arg: MeasuredValueArg.FullArg ⇒
+        if (arg.measured.uom.dimension == uomDim)
+          arg.success
+        else
+          ArgumentProblem(s"Dimensions do not match: ${arg.measured.uom.dimension} <> $uomDim").failure
+      case x ⇒
+        ArgumentProblem(s""""$x" is not a valid argument for a measured value.""").failure
+    }
+  }
+
+  override def formatIntoBuffer(appendTo: StringBuffer, pos: FieldPosition, arg: Any): AlmValidation[StringBuffer] =
+    for {
+      measuredValueArg ← any2MeasuredValueArg(arg)
+      rendered ← renderMeasuredValueArgIntoBuffer(measuredValueArg, appendTo, pos)
+    } yield rendered
+
+  def renderMeasuredValueArgIntoBuffer(arg: MeasuredValueArg, appendTo: StringBuffer, pos: FieldPosition): AlmValidation[StringBuffer] = {
+    val measured = arg match {
+      case MeasuredValueArg.FullArg(measured, _) ⇒ measured
+      case MeasuredValueArg.SiArg(value, _)      ⇒ defaultUnitOfMeasure.dimension.siMeasured(value)
+    }
+    for {
+      rendered ← arg.targetSystem match {
+        case None ⇒
+          renderInto(measured, defaultUnitOfMeasure, defaultMeasureFormat, appendTo, pos)
+        case Some(ts) ⇒
+          specific get ts match {
+            case None ⇒
+              renderInto(measured, defaultUnitOfMeasure, defaultMeasureFormat, appendTo, pos)
+            case Some((uom, format)) ⇒
+              renderInto(measured, uom, format, appendTo, pos)
+          }
+      }
+    } yield rendered
+  }
+
+  def formatable: Formatable = new SingleArgFormatable(this)
+
+  private def renderInto(arg: Measured, uom: UnitOfMeasurement, format: MeasureFormat, into: StringBuffer, pos: FieldPosition): AlmValidation[StringBuffer] =
+    (for {
+      icuMeasured ← uom.icu
+      buffer ← if (uom == UnitsOfMeasurement.Lumen)
+        inTryCatch {
+          format.getNumberFormat.format(arg.value, into, pos)
+          into.append(" lm")
+        }
+      else
+        inTryCatch { format.format(new Measure(arg.calcDirectTo(uom), icuMeasured), into, pos) }
     } yield buffer).leftMap { p ⇒ ArgumentProblem("Error formatting the value.", cause = Some(p)) }
 
 }
