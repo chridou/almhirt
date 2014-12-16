@@ -169,11 +169,15 @@ private[almhirt] object AlmResourcesXml {
       xmls ← inTryCatch {
         files.map { fn ⇒
           val stream = classloader.getResourceAsStream(fn)
-          try {
-            val xml = IOUtils.toString(stream, Charsets.UTF_8)
-            XML.loadString(xml)
-          } finally {
-            stream.close
+          if (stream != null)
+            try {
+              val xml = IOUtils.toString(stream, Charsets.UTF_8)
+              XML.loadString(xml)
+            } finally {
+              stream.close
+            }
+          else {
+            throw new Exception(s"No resources found for $fn.")
           }
         }
       }
