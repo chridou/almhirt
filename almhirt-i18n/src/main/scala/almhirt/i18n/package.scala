@@ -10,9 +10,6 @@ import almhirt.i18n.MeasuredLength
  * Calculation functions are only to be used for display purposes!
  */
 package object i18n {
-//  implicit def uom2IcuMeasurement(self: UnitOfMeasurement): MeasureUnit = self.icu
-//  implicit def measured2IcuMeasure(self: Measured): Measure = self.icu
-
   implicit object ULocaleMagnet extends LocaleMagnet[ULocale] {
     @inline
     def toULocale(what: ULocale) = what
