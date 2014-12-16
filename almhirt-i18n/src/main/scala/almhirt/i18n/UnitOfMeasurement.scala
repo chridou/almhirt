@@ -696,7 +696,7 @@ object UnitsOfMeasurement {
     val name = "mile-per-hour"
   }
 
-  case object Celsuis extends TemperatureMeasureUnit {
+  case object Celsius extends TemperatureMeasureUnit {
     private[almhirt] override def toBase(value: Double): Double = value + 273.15
     private[almhirt] override def fromBase(value: Double): Double = value - 273.15
     val icu = MeasureUnit.CELSIUS.success
@@ -947,7 +947,7 @@ object UnitsOfMeasurement {
       KilometerPerHour,
       MeterPerSecond,
       MilePerHour,
-      Celsuis,
+      Celsius,
       Fahrenheit,
       Kelvin,
       AcreFoot,

@@ -86,7 +86,7 @@ package object i18n {
       def kilowatt = MeasuredPower(d, UnitsOfMeasurement.Kilowatt)
 
       def fahrenheit = MeasuredTemperature(d, UnitsOfMeasurement.Fahrenheit)
-      def celsius = MeasuredTemperature(d, UnitsOfMeasurement.Celsuis)
+      def celsius = MeasuredTemperature(d, UnitsOfMeasurement.Celsius)
       def kelvin = MeasuredTemperature(d, UnitsOfMeasurement.Kelvin)
 
       def lux = MeasuredLight(d, UnitsOfMeasurement.Lux)
