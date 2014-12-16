@@ -1,5 +1,6 @@
 package almhirt.i18n
 
+import java.text.FieldPosition
 import scalaz.syntax.validation._
 import scalaz.Tree
 import scalaz.Validation.FlatMap._
@@ -160,6 +161,31 @@ object ResourceLookup {
 
     def forceFormatItem[T, L: LocaleMagnet](what: T, locale: L)(implicit renderer: ItemFormat[T]): String =
       formatItem(what, locale).resultOrEscalate
+
+    def formatIntoBuffer[L: LocaleMagnet](key: ResourceKey, locale: L, appendTo: StringBuffer, args: (String, Any)*): AlmValidation[StringBuffer] =
+      for {
+        formatable ← self.formatable(key, locale)
+        res ← formatable.formatIntoBuffer(appendTo, args: _*)
+      } yield res
+
+    def formatArgsIntoBuffer[L: LocaleMagnet](key: ResourceKey, locale: L, appendTo: StringBuffer, args: Map[String, Any]): AlmValidation[StringBuffer] =
+      for {
+        formatable ← self.formatable(key, locale)
+        res ← formatable.formatArgsIntoBuffer(appendTo, args)
+      } yield res
+
+    def format[L: LocaleMagnet](key: ResourceKey, locale: L, args: (String, Any)*): AlmValidation[String] =
+      for {
+        formatable ← self.formatable(key, locale)
+        res ← formatable.format(args: _*)
+      } yield res
+
+    def formatArgs[L: LocaleMagnet](key: ResourceKey, locale: L, args: Map[String, Any]): AlmValidation[String] =
+      for {
+        formatable ← self.formatable(key, locale)
+        res ← formatable.formatArgs(args)
+      } yield res
+
   }
 }
 
