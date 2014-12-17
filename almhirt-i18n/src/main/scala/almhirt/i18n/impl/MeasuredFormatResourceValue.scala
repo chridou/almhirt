@@ -189,17 +189,18 @@ private[almhirt] class LightFluxMeasuredFormatResourceValue(
 
   def formatable: Formatable = new SingleArgFormatable(this)
 
-  private def renderInto(arg: Measured, uom: UnitOfMeasurement, format: MeasureFormat, into: StringBuffer, pos: FieldPosition): AlmValidation[StringBuffer] =
-    (for {
-      icuMeasured ← uom.icu
-      buffer ← if (uom == UnitsOfMeasurement.Lumen)
-        inTryCatch {
-          format.getNumberFormat.format(arg.value, into, pos)
-          into.append(" lm")
-        }
-      else
-        inTryCatch { format.format(new Measure(arg.calcDirectTo(uom), icuMeasured), into, pos) }
-    } yield buffer).leftMap { p ⇒ ArgumentProblem("Error formatting the value.", cause = Some(p)) }
-
+  private def renderInto(arg: Measured, uom: UnitOfMeasurement, format: MeasureFormat, into: StringBuffer, pos: FieldPosition): AlmValidation[StringBuffer] = {
+    val targetValue = arg.calcDirectTo(uom)
+    (if (uom == UnitsOfMeasurement.Lumen)
+      inTryCatch {
+      format.getNumberFormat.format(targetValue, into, pos)
+      into.append(" lm")
+    }
+    else
+      for {
+        icuMeasured ← uom.icu
+        buffer ← inTryCatch { format.format(new Measure(targetValue, icuMeasured), into, pos) }
+      } yield buffer).leftMap { p ⇒ ArgumentProblem("Error formatting the value.", cause = Some(p)) }
+  }
 }
 
