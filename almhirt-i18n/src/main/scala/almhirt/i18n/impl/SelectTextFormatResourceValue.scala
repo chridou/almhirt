@@ -41,7 +41,7 @@ private[almhirt] final class SelectTextFormatResourceValue(
             case Some(txt) ⇒
               txt.success
             case None ⇒
-              ArgumentProblem(s"""No value for selector "$selector" in parameter "$argname". Consider adding a value for "$selector" or define a default for unknown values.""").failure
+              ArgumentProblem(s"""No value for selector "$selector" in parameter "$argname". Consider adding a value for "$selector" or define a default for unknown selectors.""").failure
           }
       }
       rendered ← inTryCatch { appendTo.append(selected) }
