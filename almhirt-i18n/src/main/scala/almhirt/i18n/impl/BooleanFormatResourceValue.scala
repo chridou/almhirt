@@ -27,5 +27,5 @@ private[almhirt] final class BooleanFormatResourceValue(
       rendered ← inTryCatch { appendTo.append(if (value) trueText else falseText) }
     } yield rendered
 
-  def formatable: Formatable = new SingleArgFormatable(this)
+  def formatable: AlmFormatter = new SingleArgFormatter(this)
 }

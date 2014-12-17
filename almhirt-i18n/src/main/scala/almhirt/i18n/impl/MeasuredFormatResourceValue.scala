@@ -122,7 +122,7 @@ private[almhirt] class MeasuredFormatResourceValue(
     } yield rendered
   }
 
-  def formatable: Formatable = new SingleArgFormatable(this)
+  def formatable: AlmFormatter = new SingleArgFormatter(this)
 
   private def renderInto(arg: Measured, uom: UnitOfMeasurement, format: MeasureFormat, into: StringBuffer, pos: FieldPosition): AlmValidation[StringBuffer] =
     (for {
@@ -187,7 +187,7 @@ private[almhirt] class LightFluxMeasuredFormatResourceValue(
     } yield rendered
   }
 
-  def formatable: Formatable = new SingleArgFormatable(this)
+  def formatable: AlmFormatter = new SingleArgFormatter(this)
 
   private def renderInto(arg: Measured, uom: UnitOfMeasurement, format: MeasureFormat, into: StringBuffer, pos: FieldPosition): AlmValidation[StringBuffer] = {
     val targetValue = arg.calcDirectTo(uom)

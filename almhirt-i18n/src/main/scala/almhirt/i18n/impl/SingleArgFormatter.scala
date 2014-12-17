@@ -6,7 +6,7 @@ import almhirt.i18n._
 import com.ibm.icu.util.ULocale
 import java.text.FieldPosition
 
-private[almhirt] final class SingleArgFormatable(formatter: SingleArgFormattingModule) extends Formatable {
+private[almhirt] final class SingleArgFormatter(formatter: SingleArgFormattingModule) extends AlmFormatter {
   override def locale = formatter.locale
   override def formatArgsIntoBufferAt(appendTo: StringBuffer, pos: FieldPosition, args: Map[String, Any]): AlmValidation[StringBuffer] =
     args get (formatter.argname) match {

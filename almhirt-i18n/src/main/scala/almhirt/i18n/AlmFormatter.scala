@@ -7,10 +7,12 @@ import java.text.FieldPosition
 import com.ibm.icu.util.ULocale
 
 /**
+ * A [[Formatable]] contains something that can be formatted given the required arguments to fill the gaps. 
+ * 
  * Implementations of this trait must be considered non thread safe.
  * With* methods usually do not return a new instance.
  */
-trait Formatable {
+trait AlmFormatter {
   def locale: ULocale
 
   def formatArgsIntoBufferAt(appendTo: StringBuffer, pos: FieldPosition, args: Map[String, Any]): AlmValidation[StringBuffer]
@@ -43,8 +45,9 @@ trait Formatable {
     formatValuesIntoBufferAt(new StringBuffer(), util.DontCareFieldPosition, values: _*).map(_.toString)
 }
 
-object Formatable {
-  def apply(theLocale: ULocale, text: String): Formatable = new Formatable {
+
+object AlmFormatter {
+  def apply(theLocale: ULocale, text: String): AlmFormatter = new AlmFormatter {
     override val locale = theLocale
     
     override def formatArgsIntoBufferAt(appendTo: StringBuffer, pos: FieldPosition, args: Map[String, Any]): AlmValidation[StringBuffer] =
@@ -66,7 +69,7 @@ object Formatable {
       scalaz.Success(text)
   }
 
-  implicit class FormatableOps(val self: Formatable) extends AnyVal {
+  implicit class AlmFormatterOps(val self: AlmFormatter) extends AnyVal {
     def forceFormatArgsIntoBufferAt(appendTo: StringBuffer, pos: FieldPosition, args: Map[String, Any]): StringBuffer =
       self.formatArgsIntoBufferAt(appendTo, pos, args).resultOrEscalate
     def forceFormatIntoBufferAt(appendTo: StringBuffer, pos: FieldPosition, args: (String, Any)*): StringBuffer =
@@ -93,7 +96,7 @@ object Formatable {
   }
 }
 
-final class IcuFormatable(msgFormat: MessageFormat) extends Formatable {
+final class IcuFormatter(msgFormat: MessageFormat) extends AlmFormatter {
   override val locale = msgFormat.getULocale
   
   override def formatArgsIntoBufferAt(appendTo: StringBuffer, pos: FieldPosition, args: Map[String, Any]): AlmValidation[StringBuffer] =

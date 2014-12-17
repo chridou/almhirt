@@ -26,11 +26,11 @@ class ResourcesAndKeysTests extends FunSuite with Matchers {
   val group = ResourceGroup("section_1", "group_1")
 
   test("""render 'de-AT' which is a plain string""") {
-    resourcesWithoutFallback.formatable(key1, new ULocale("de-AT")).flatMap(_.format()) should equal(scalaz.Success("de_AT"))
+    resourcesWithoutFallback.formatter(key1, new ULocale("de-AT")).flatMap(_.format()) should equal(scalaz.Success("de_AT"))
   }
 
   test("""render a key with a nonformatted value(integer: 2)""") {
-    resourcesWithoutFallback.formatable(key2, new ULocale("en")).flatMap(_.formatValues(2)) should equal(scalaz.Success("en: 2"))
+    resourcesWithoutFallback.formatter(key2, new ULocale("en")).flatMap(_.formatValues(2)) should equal(scalaz.Success("en: 2"))
   }
 
   test("""render the length measured value 1.0m in "en".""") {

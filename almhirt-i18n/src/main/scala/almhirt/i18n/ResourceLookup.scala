@@ -62,18 +62,18 @@ trait ResourceLookup {
   }
 
   /**
-   * Get a [[Formatable]] possibly using a fallback locale
+   * Get an [[AlmFormatter]] possibly using a fallback locale
    *
-   * @param key the [[ResourceKey]] for the queried [[Formatable]]
-   * @param locale the locale for the queried [[Formatable]]
-   * @return the possibly found [[Formatable]]
+   * @param key the [[ResourceKey]] for the queried [[AlmFormatter]]
+   * @param locale the locale for the queried [[AlmFormatter]]
+   * @return the possibly found [[AlmFormatter]]
    */
-  final def formatable[L: LocaleMagnet](key: ResourceKey, locale: L): AlmValidation[Formatable] =
+  final def formatter[L: LocaleMagnet](key: ResourceKey, locale: L): AlmValidation[AlmFormatter] =
     for {
       res ← textResourceWithLocale(key, locale)
       fmt ← res._2 match {
         case fmt: IcuResourceValue ⇒
-          new IcuFormatable(fmt.formatInstance).success
+          new IcuFormatter(fmt.formatInstance).success
         case raw: RawStringResourceValue ⇒
           raw.success
         case f: BasicValueResourceValue ⇒
@@ -144,8 +144,8 @@ object ResourceLookup {
     def findTextResource[L: LocaleMagnet](key: ResourceKey, locale: L): Option[TextResourceValue] = self.textResource(key, locale).toOption
     def findTextResourceWithLocale[L: LocaleMagnet](key: ResourceKey, locale: L): Option[(ULocale, TextResourceValue)] = self.textResourceWithLocale(key, locale).toOption
 
-    def forceFormatable[T, L: LocaleMagnet](key: ResourceKey, locale: L): Formatable =
-      self.formatable(key, locale).resultOrEscalate
+    def forceFormatable[T, L: LocaleMagnet](key: ResourceKey, locale: L): AlmFormatter =
+      self.formatter(key, locale).resultOrEscalate
 
     def formatItemInto[T, L](what: T, locale: L, appendTo: StringBuffer)(implicit renderer: ItemFormat[T], magnet: LocaleMagnet[L]): AlmValidation[StringBuffer] = {
       val uLoc = magnet.toULocale(locale)
@@ -164,25 +164,25 @@ object ResourceLookup {
 
     def formatIntoBuffer[L: LocaleMagnet](key: ResourceKey, locale: L, appendTo: StringBuffer, args: (String, Any)*): AlmValidation[StringBuffer] =
       for {
-        formatable ← self.formatable(key, locale)
+        formatable ← self.formatter(key, locale)
         res ← formatable.formatIntoBuffer(appendTo, args: _*)
       } yield res
 
     def formatArgsIntoBuffer[L: LocaleMagnet](key: ResourceKey, locale: L, appendTo: StringBuffer, args: Map[String, Any]): AlmValidation[StringBuffer] =
       for {
-        formatable ← self.formatable(key, locale)
+        formatable ← self.formatter(key, locale)
         res ← formatable.formatArgsIntoBuffer(appendTo, args)
       } yield res
 
     def format[L: LocaleMagnet](key: ResourceKey, locale: L, args: (String, Any)*): AlmValidation[String] =
       for {
-        formatable ← self.formatable(key, locale)
+        formatable ← self.formatter(key, locale)
         res ← formatable.format(args: _*)
       } yield res
 
     def formatArgs[L: LocaleMagnet](key: ResourceKey, locale: L, args: Map[String, Any]): AlmValidation[String] =
       for {
-        formatable ← self.formatable(key, locale)
+        formatable ← self.formatter(key, locale)
         res ← formatable.formatArgs(args)
       } yield res
 

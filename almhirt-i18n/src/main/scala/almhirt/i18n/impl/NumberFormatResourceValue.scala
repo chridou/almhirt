@@ -46,9 +46,9 @@ private[almhirt] final class NumberFormatResourceValue(
   val argname: String,
   format: NumberFormat) extends BasicValueResourceValue {
 
-  def formatable: Formatable = {
+  def formatable: AlmFormatter = {
     val numberFormat = format.clone().asInstanceOf[NumberFormat]
-    new SingleArgFormatable(new SingleArgFormattingModule {
+    new SingleArgFormatter(new SingleArgFormattingModule {
       val locale = NumberFormatResourceValue.this.locale
       val argname = NumberFormatResourceValue.this.argname
       def formatIntoBuffer(appendTo: StringBuffer, pos: FieldPosition, arg: Any): AlmValidation[StringBuffer] =

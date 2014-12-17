@@ -10,7 +10,7 @@ sealed trait ResourceValue
 
 sealed trait TextResourceValue extends ResourceValue
 
-final case class RawStringResourceValue(override val locale: ULocale, raw: String) extends TextResourceValue with Formatable {
+final case class RawStringResourceValue(override val locale: ULocale, raw: String) extends TextResourceValue with AlmFormatter {
   override def formatArgsIntoBufferAt(appendTo: StringBuffer, pos: FieldPosition, args: Map[String, Any]): AlmValidation[StringBuffer] =
     appendTo.append(raw).success
 
@@ -73,6 +73,6 @@ object IcuResourceValue {
 
 trait BasicValueResourceValue extends TextResourceValue {
   def locale: ULocale
-  def formatable: Formatable
+  def formatable: AlmFormatter
 }
 
