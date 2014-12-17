@@ -190,7 +190,8 @@ private[almhirt] object ResourceNodeXml {
         minFractionDigits ← (format \? "min-fraction-digits").flatMap(e ⇒ e.map { _.text.toIntAlm }.validationOut)
         maxFractionDigits ← (format \? "max-fraction-digits").flatMap(e ⇒ e.map { _.text.toIntAlm }.validationOut)
         useDigitGroup ← (format \? "use-digit-groups").flatMap(e ⇒ e.map { _.text.toBooleanAlm }.validationOut)
-      } yield impl.MeasuredFormatResourceValue.FormatDefinition(uom, minFractionDigits, maxFractionDigits, useDigitGroup)
+        rangeSeparator ← (elem \? "range-separator").map(e ⇒ e.map(_.text))
+      } yield impl.MeasuredFormatResourceValue.FormatDefinition(uom, minFractionDigits, maxFractionDigits, useDigitGroup, rangeSeparator)
 
     val paramNameV = for {
       theOnlyParamNameStr ← elem \@! "parameter"
@@ -227,7 +228,8 @@ private[almhirt] object ResourceNodeXml {
       minFractionDigits ← (elem \? "min-fraction-digits").flatMap(e ⇒ e.map { _.text.toIntAlm }.validationOut)
       maxFractionDigits ← (elem \? "max-fraction-digits").flatMap(e ⇒ e.map { _.text.toIntAlm }.validationOut)
       useDigitsGrouping ← (elem \? "use-digit-groups").flatMap(e ⇒ e.map { _.text.toBooleanAlm }.validationOut)
-      formatter ← impl.NumberFormatResourceValue.apply(locale, paramName, style, minFractionDigits, maxFractionDigits, useDigitsGrouping)
+      rangeSeparator ← (elem \? "range-separator").map(e ⇒ e.map(_.text))
+      formatter ← impl.NumberFormatResourceValue.apply(locale, paramName, style, minFractionDigits, maxFractionDigits, useDigitsGrouping, rangeSeparator)
     } yield formatter
   }
 

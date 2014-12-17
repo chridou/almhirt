@@ -82,6 +82,43 @@ trait ResourceLookup {
     } yield fmt
 
   /**
+   * Get an [[AlmNumericFormatter]] possibly using a fallback locale
+   *
+   * @param key the [[ResourceKey]] for the queried [[AlmNumericFormatter]]
+   * @param locale the locale for the queried [[AlmNumericFormatter]]
+   * @return the possibly found [[AlmNumericFormatter]]
+   */
+  final def numericFormatter[L: LocaleMagnet](key: ResourceKey, locale: L): AlmValidation[AlmNumericFormatter] =
+    for {
+      res ← textResourceWithLocale(key, locale)
+      fmt ← res._2 match {
+        case f: NumericValueResourceValue ⇒
+          f.formatable.success
+        case x ⇒
+          ArgumentProblem(s"""Value at key "$key" is not a numeric formatter.""").failure
+
+      }
+    } yield fmt
+
+  /**
+   * Get an [[AlmMeasureFormatter]] possibly using a fallback locale
+   *
+   * @param key the [[ResourceKey]] for the queried [[AlmMeasureFormatter]]
+   * @param locale the locale for the queried [[AlmMeasureFormatter]]
+   * @return the possibly found [[AlmMeasureFormatter]]
+   */
+  final def measureFormatter[L: LocaleMagnet](key: ResourceKey, locale: L): AlmValidation[AlmMeasureFormatter] =
+    for {
+      res ← textResourceWithLocale(key, locale)
+      fmt ← res._2 match {
+        case f: MeasuredValueResourceValue ⇒
+          f.formatable.success
+        case x ⇒
+          ArgumentProblem(s"""Value at key "$key" is not a measure formatter.""").failure
+     }
+    } yield fmt
+
+  /**
    * Get a String possibly using a fallback locale
    *
    * @param key the [[ResourceKey]] for the queried String
@@ -97,7 +134,7 @@ trait ResourceLookup {
         case r: RawStringResourceValue ⇒
           r.raw.success
         case _: BasicValueResourceValue ⇒
-          ArgumentProblem(s"""Value at key "$key". does not have a direct String representation so there is no direct renderable.""").failure
+          ArgumentProblem(s"""Value at key "$key" does not have a direct String representation so there is no direct renderable.""").failure
       }
     } yield str
 

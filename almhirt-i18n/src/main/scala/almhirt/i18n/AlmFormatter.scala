@@ -7,8 +7,8 @@ import java.text.FieldPosition
 import com.ibm.icu.util.ULocale
 
 /**
- * A [[Formatable]] contains something that can be formatted given the required arguments to fill the gaps. 
- * 
+ * A [[Formatable]] contains something that can be formatted given the required arguments to fill the gaps.
+ *
  * Implementations of this trait must be considered non thread safe.
  * With* methods usually do not return a new instance.
  */
@@ -45,11 +45,38 @@ trait AlmFormatter {
     formatValuesIntoBufferAt(new StringBuffer(), util.DontCareFieldPosition, values: _*).map(_.toString)
 }
 
+trait AlmNumericFormatter extends AlmFormatter {
+  def formatNumericIntoAt[T: Numeric](num: T, appendTo: StringBuffer, pos: FieldPosition): AlmValidation[StringBuffer]
+  def formatNumericInto[T: Numeric](num: T, appendTo: StringBuffer): AlmValidation[StringBuffer] =
+    formatNumericIntoAt(num, appendTo, util.DontCareFieldPosition)
+  def formatNumeric[T: Numeric](num: T): AlmValidation[String] =
+    formatNumericIntoAt(num, new StringBuffer(), util.DontCareFieldPosition).map(_.toString())
+
+  def formatNumericRangeIntoAt[T: Numeric](lower: T, upper: T, appendTo: StringBuffer, pos: FieldPosition): AlmValidation[StringBuffer]
+  def formatNumericRangeInto[T: Numeric](lower: T, upper: T, appendTo: StringBuffer): AlmValidation[StringBuffer] =
+    formatNumericRangeIntoAt(lower, upper, appendTo, util.DontCareFieldPosition)
+  def formatNumericRange[T: Numeric](lower: T, upper: T): AlmValidation[String] =
+    formatNumericRangeIntoAt(lower, upper, new StringBuffer(), util.DontCareFieldPosition).map(_.toString())
+}
+
+trait AlmMeasureFormatter extends AlmNumericFormatter {
+  def formatMeasureIntoAt(v: Measured, appendTo: StringBuffer, pos: FieldPosition, uomSys: Option[UnitsOfMeasurementSystem]): AlmValidation[StringBuffer]
+  def formatMeasureInto(v: Measured, appendTo: StringBuffer, uomSys: Option[UnitsOfMeasurementSystem]): AlmValidation[StringBuffer] =
+    formatMeasureIntoAt(v, appendTo, util.DontCareFieldPosition, uomSys)
+  def formatMeasure(v: Measured, uomSys: Option[UnitsOfMeasurementSystem]): AlmValidation[String] =
+    formatMeasureIntoAt(v, new StringBuffer(), util.DontCareFieldPosition, uomSys).map(_.toString())
+
+  def formatMeasureRangeIntoAt(lower: Measured, upper: Measured, appendTo: StringBuffer, pos: FieldPosition, uomSys: Option[UnitsOfMeasurementSystem]): AlmValidation[StringBuffer]
+  def formatMeasureRangeInto(lower: Measured, upper: Measured, appendTo: StringBuffer, uomSys: Option[UnitsOfMeasurementSystem]): AlmValidation[StringBuffer] =
+    formatMeasureRangeIntoAt(lower, upper, appendTo, util.DontCareFieldPosition, uomSys)
+  def formatMeasureRange(lower: Measured, upper: Measured, uomSys: Option[UnitsOfMeasurementSystem]): AlmValidation[String] =
+    formatMeasureRangeIntoAt(lower, upper, new StringBuffer(), util.DontCareFieldPosition, uomSys).map(_.toString())
+}
 
 object AlmFormatter {
   def apply(theLocale: ULocale, text: String): AlmFormatter = new AlmFormatter {
     override val locale = theLocale
-    
+
     override def formatArgsIntoBufferAt(appendTo: StringBuffer, pos: FieldPosition, args: Map[String, Any]): AlmValidation[StringBuffer] =
       scalaz.Success(appendTo.append(text))
 
@@ -98,7 +125,7 @@ object AlmFormatter {
 
 final class IcuFormatter(msgFormat: MessageFormat) extends AlmFormatter {
   override val locale = msgFormat.getULocale
-  
+
   override def formatArgsIntoBufferAt(appendTo: StringBuffer, pos: FieldPosition, args: Map[String, Any]): AlmValidation[StringBuffer] =
     inTryCatch {
       val map = new java.util.HashMap[String, Any]

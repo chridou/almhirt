@@ -76,3 +76,13 @@ trait BasicValueResourceValue extends TextResourceValue {
   def formatable: AlmFormatter
 }
 
+trait NumericValueResourceValue extends BasicValueResourceValue {
+  def locale: ULocale
+  def formatable: AlmNumericFormatter
+}
+
+trait MeasuredValueResourceValue extends NumericValueResourceValue {
+  def locale: ULocale
+  def formatable: AlmMeasureFormatter
+}
+

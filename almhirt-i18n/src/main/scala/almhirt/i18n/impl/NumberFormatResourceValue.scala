@@ -2,6 +2,7 @@ package almhirt.i18n.impl
 
 import java.text.FieldPosition
 import scalaz.syntax.validation._
+import scalaz.Validation.FlatMap._
 import almhirt.common._
 import almhirt.i18n._
 import com.ibm.icu.util.ULocale
@@ -15,15 +16,17 @@ object NumberFormatResourceValue {
     style: Option[NumberFormatStyle],
     minFractionDigits: Option[Int],
     maxFractionDigits: Option[Int],
-    useDigitsGrouping: Option[Boolean]): AlmValidation[BasicValueResourceValue] =
-    construct(locale, argname, style, minFractionDigits, maxFractionDigits, useDigitsGrouping)
+    useDigitsGrouping: Option[Boolean],
+    rangeSeparator: Option[String]): AlmValidation[BasicValueResourceValue] =
+    construct(locale, argname, style, minFractionDigits, maxFractionDigits, useDigitsGrouping, rangeSeparator)
 
   private def construct(locale: ULocale,
                         argname: String,
                         style: Option[NumberFormatStyle],
                         minFractionDigits: Option[Int],
                         maxFractionDigits: Option[Int],
-                        useDigitsGrouping: Option[Boolean]): AlmValidation[NumberFormatResourceValue] = {
+                        useDigitsGrouping: Option[Boolean],
+                        rangeSeparator: Option[String]): AlmValidation[NumberFormatResourceValue] = {
     val numberFormat =
       style match {
         case None                               ⇒ NumberFormat.getInstance(locale)
@@ -36,7 +39,7 @@ object NumberFormatResourceValue {
     minFractionDigits.foreach { digits ⇒ numberFormat.setMinimumFractionDigits(digits) }
     maxFractionDigits.foreach { digits ⇒ numberFormat.setMaximumFractionDigits(digits) }
     useDigitsGrouping.foreach { useGrouping ⇒ numberFormat.setGroupingUsed(useGrouping) }
-    new NumberFormatResourceValue(locale, argname, numberFormat).success
+    new NumberFormatResourceValue(locale, argname, rangeSeparator getOrElse "-", numberFormat).success
   }
 
 }
@@ -44,15 +47,24 @@ object NumberFormatResourceValue {
 private[almhirt] final class NumberFormatResourceValue(
   override val locale: ULocale,
   val argname: String,
-  format: NumberFormat) extends BasicValueResourceValue {
+  val rangeSeparator: String,
+  format: NumberFormat) extends NumericValueResourceValue {
 
-  def formatable: AlmFormatter = {
+  def formatable: AlmNumericFormatter = {
     val numberFormat = format.clone().asInstanceOf[NumberFormat]
-    new SingleArgFormatter(new SingleArgFormattingModule {
+    new NumericArgFormatter(new NumericArgFormattingModule {
       val locale = NumberFormatResourceValue.this.locale
       val argname = NumberFormatResourceValue.this.argname
-      def formatIntoBuffer(appendTo: StringBuffer, pos: FieldPosition, arg: Any): AlmValidation[StringBuffer] =
+
+      override def formatIntoBuffer[T: Numeric](appendTo: StringBuffer, pos: FieldPosition, arg: T): AlmValidation[StringBuffer] =
         inTryCatch { numberFormat.format(arg, appendTo, pos) }
+
+      override def formatRangeIntoBuffer[T: Numeric](appendTo: StringBuffer, pos: FieldPosition, arg1: T, arg2: T): AlmValidation[StringBuffer] = {
+        for {
+          a ← inTryCatch { numberFormat.format(arg1, appendTo, pos).append(rangeSeparator) }
+          b ← inTryCatch { numberFormat.format(arg2, appendTo, pos) }
+        } yield b
+      }
     })
   }
 
