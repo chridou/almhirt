@@ -11,16 +11,16 @@ sealed trait ResourceValue
 sealed trait TextResourceValue extends ResourceValue
 
 final case class RawStringResourceValue(override val locale: ULocale, raw: String) extends TextResourceValue with AlmFormatter {
-  override def formatArgsIntoBufferAt(appendTo: StringBuffer, pos: FieldPosition, args: Map[String, Any]): AlmValidation[StringBuffer] =
+  override def formatArgsIntoAt(appendTo: StringBuffer, pos: FieldPosition, args: Map[String, Any]): AlmValidation[StringBuffer] =
     appendTo.append(raw).success
 
-  override def formatIntoBufferAt(appendTo: StringBuffer, pos: FieldPosition, args: (String, Any)*): AlmValidation[StringBuffer] =
+  override def formatIntoAt(appendTo: StringBuffer, pos: FieldPosition, args: (String, Any)*): AlmValidation[StringBuffer] =
     appendTo.append(raw).success
 
-  override def formatIntoBuffer(appendTo: StringBuffer, args: (String, Any)*): AlmValidation[StringBuffer] =
+  override def formatInto(appendTo: StringBuffer, args: (String, Any)*): AlmValidation[StringBuffer] =
     appendTo.append(raw).success
 
-  override def formatArgsIntoBuffer(appendTo: StringBuffer, args: Map[String, Any]): AlmValidation[StringBuffer] =
+  override def formatArgsInto(appendTo: StringBuffer, args: Map[String, Any]): AlmValidation[StringBuffer] =
     appendTo.append(raw).success
 
   override def format(args: (String, Any)*): AlmValidation[String] =
@@ -29,11 +29,11 @@ final case class RawStringResourceValue(override val locale: ULocale, raw: Strin
   override def formatArgs(args: Map[String, Any]): AlmValidation[String] =
     raw.success
 
-  override def formatValuesIntoBufferAt(appendTo: StringBuffer, pos: FieldPosition, values: Any*): AlmValidation[StringBuffer] =
+  override def formatValuesIntoAt(appendTo: StringBuffer, pos: FieldPosition, values: Any*): AlmValidation[StringBuffer] =
     appendTo.append(raw).success
 
-  override def formatValuesIntoBuffer(appendTo: StringBuffer, values: Any*): AlmValidation[StringBuffer] =
-    formatValuesIntoBufferAt(appendTo, util.DontCareFieldPosition, values: _*)
+  override def formatValuesInto(appendTo: StringBuffer, values: Any*): AlmValidation[StringBuffer] =
+    formatValuesIntoAt(appendTo, util.DontCareFieldPosition, values: _*)
 
   override def formatValues(values: Any*): AlmValidation[String] =
     raw.success

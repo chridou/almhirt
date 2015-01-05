@@ -23,9 +23,9 @@ object AlmResources {
     val allowsLocaleFallback = false
     val fallsBackToRoot = false
     val supportedLocales = Set.empty[ULocale]
-    def localesTree = throw new NoSuchElementException("There is no locales tree in the empty resources!")
-    def resourceNodeStrict(locale: ULocale): AlmValidation[ResourceNode] = ArgumentProblem("The empty AlmResources does not contain any nodes").failure
-    def withFallback(fallback: AlmResources): AlmValidation[AlmResources] = ???
+    override def localesTree = throw new NoSuchElementException("There is no locales tree in the empty resources!")
+    override def getResourceNodeStrict(locale: ULocale): AlmValidation[ResourceNode] = ArgumentProblem("The empty AlmResources does not contain any nodes").failure
+    override def withFallback(fallback: AlmResources): AlmValidation[AlmResources] = ???
   }
 }
 
@@ -37,17 +37,17 @@ private[almhirt] object TreeBuilder {
     new AlmResources {
       val allowsLocaleFallback = allowFallback
       val fallsBackToRoot = fallBackToRootAllowed
-      def resourceNodeStrict(locale: ULocale): AlmValidation[ResourceNode] =
+      override def getResourceNodeStrict(locale: ULocale): AlmValidation[ResourceNode] =
         nodesByLocale get (locale) match {
           case Some(node) ⇒ node.success
           case None       ⇒ ResourceNotFoundProblem(s""""${locale.getBaseName}" is not a supported locale.""").failure
         }
 
-      val supportedLocales: Set[ULocale] = nodesByLocale.keySet
+      override val supportedLocales: Set[ULocale] = nodesByLocale.keySet
 
-      def localesTree: Tree[ULocale] = theLocalesTree
+      override def localesTree: Tree[ULocale] = theLocalesTree
 
-      def withFallback(fallback: AlmResources): AlmValidation[AlmResources] =
+      override def withFallback(fallback: AlmResources): AlmValidation[AlmResources] =
         ???
     }
   }

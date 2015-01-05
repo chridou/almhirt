@@ -15,38 +15,39 @@ import com.ibm.icu.util.ULocale
 trait AlmFormatter {
   def locale: ULocale
 
-  def formatArgsIntoBufferAt(appendTo: StringBuffer, pos: FieldPosition, args: Map[String, Any]): AlmValidation[StringBuffer]
+  def formatArgsIntoAt(appendTo: StringBuffer, pos: FieldPosition, args: Map[String, Any]): AlmValidation[StringBuffer]
 
-  def formatIntoBufferAt(appendTo: StringBuffer, pos: FieldPosition, args: (String, Any)*): AlmValidation[StringBuffer] =
-    formatArgsIntoBufferAt(appendTo, pos, Map(args: _*))
+  def formatIntoAt(appendTo: StringBuffer, pos: FieldPosition, args: (String, Any)*): AlmValidation[StringBuffer] =
+    formatArgsIntoAt(appendTo, pos, Map(args: _*))
 
-  def formatIntoBuffer(appendTo: StringBuffer, args: (String, Any)*): AlmValidation[StringBuffer] =
-    formatIntoBufferAt(appendTo, util.DontCareFieldPosition, args: _*)
+  def formatInto(appendTo: StringBuffer, args: (String, Any)*): AlmValidation[StringBuffer] =
+    formatIntoAt(appendTo, util.DontCareFieldPosition, args: _*)
 
-  def formatArgsIntoBuffer(appendTo: StringBuffer, args: Map[String, Any]): AlmValidation[StringBuffer] =
-    formatArgsIntoBufferAt(appendTo, util.DontCareFieldPosition, args)
+  def formatArgsInto(appendTo: StringBuffer, args: Map[String, Any]): AlmValidation[StringBuffer] =
+    formatArgsIntoAt(appendTo, util.DontCareFieldPosition, args)
 
   def format(args: (String, Any)*): AlmValidation[String] =
-    formatIntoBufferAt(new StringBuffer(), util.DontCareFieldPosition, args: _*).map(_.toString)
+    formatIntoAt(new StringBuffer(), util.DontCareFieldPosition, args: _*).map(_.toString)
 
   def formatArgs(args: Map[String, Any]): AlmValidation[String] =
-    formatArgsIntoBufferAt(new StringBuffer(), util.DontCareFieldPosition, args).map(_.toString)
+    formatArgsIntoAt(new StringBuffer(), util.DontCareFieldPosition, args).map(_.toString)
 
-  def formatValuesIntoBufferAt(appendTo: StringBuffer, pos: FieldPosition, values: Any*): AlmValidation[StringBuffer] = {
+  def formatValuesIntoAt(appendTo: StringBuffer, pos: FieldPosition, values: Any*): AlmValidation[StringBuffer] = {
     var i = 0
     val theMap = values.map { x ⇒ i = i + 1; (i.toString, x) }.toMap
-    formatArgsIntoBufferAt(appendTo, pos, theMap)
+    formatArgsIntoAt(appendTo, pos, theMap)
   }
 
-  def formatValuesIntoBuffer(appendTo: StringBuffer, values: Any*): AlmValidation[StringBuffer] =
-    formatValuesIntoBufferAt(appendTo, util.DontCareFieldPosition, values: _*)
+  def formatValuesInto(appendTo: StringBuffer, values: Any*): AlmValidation[StringBuffer] =
+    formatValuesIntoAt(appendTo, util.DontCareFieldPosition, values: _*)
 
   def formatValues(values: Any*): AlmValidation[String] =
-    formatValuesIntoBufferAt(new StringBuffer(), util.DontCareFieldPosition, values: _*).map(_.toString)
+    formatValuesIntoAt(new StringBuffer(), util.DontCareFieldPosition, values: _*).map(_.toString)
 }
 
 trait AlmNumericFormatter extends AlmFormatter {
   def formatNumericIntoAt[T: Numeric](num: T, appendTo: StringBuffer, pos: FieldPosition): AlmValidation[StringBuffer]
+
   def formatNumericInto[T: Numeric](num: T, appendTo: StringBuffer): AlmValidation[StringBuffer] =
     formatNumericIntoAt(num, appendTo, util.DontCareFieldPosition)
   def formatNumeric[T: Numeric](num: T): AlmValidation[String] =
@@ -73,20 +74,33 @@ trait AlmMeasureFormatter extends AlmNumericFormatter {
     formatMeasureRangeIntoAt(lower, upper, new StringBuffer(), util.DontCareFieldPosition, uomSys).map(_.toString())
 }
 
+final class IcuFormatter(msgFormat: MessageFormat) extends AlmFormatter {
+  override val locale = msgFormat.getULocale
+
+  override def formatArgsIntoAt(appendTo: StringBuffer, pos: FieldPosition, args: Map[String, Any]): AlmValidation[StringBuffer] =
+    inTryCatch {
+      val map = new java.util.HashMap[String, Any]
+      args.foreach({ case (k, v) ⇒ map.put(k, v) })
+      msgFormat.format(map, appendTo, pos)
+    }
+
+  val underlying = msgFormat
+}
+
 object AlmFormatter {
   def apply(theLocale: ULocale, text: String): AlmFormatter = new AlmFormatter {
     override val locale = theLocale
 
-    override def formatArgsIntoBufferAt(appendTo: StringBuffer, pos: FieldPosition, args: Map[String, Any]): AlmValidation[StringBuffer] =
+    override def formatArgsIntoAt(appendTo: StringBuffer, pos: FieldPosition, args: Map[String, Any]): AlmValidation[StringBuffer] =
       scalaz.Success(appendTo.append(text))
 
-    override def formatIntoBufferAt(appendTo: StringBuffer, pos: FieldPosition, args: (String, Any)*): AlmValidation[StringBuffer] =
+    override def formatIntoAt(appendTo: StringBuffer, pos: FieldPosition, args: (String, Any)*): AlmValidation[StringBuffer] =
       scalaz.Success(appendTo.append(text))
 
-    override def formatIntoBuffer(appendTo: StringBuffer, args: (String, Any)*): AlmValidation[StringBuffer] =
+    override def formatInto(appendTo: StringBuffer, args: (String, Any)*): AlmValidation[StringBuffer] =
       scalaz.Success(appendTo.append(text))
 
-    override def formatArgsIntoBuffer(appendTo: StringBuffer, args: Map[String, Any]): AlmValidation[StringBuffer] =
+    override def formatArgsInto(appendTo: StringBuffer, args: Map[String, Any]): AlmValidation[StringBuffer] =
       scalaz.Success(appendTo.append(text))
 
     override def format(args: (String, Any)*): AlmValidation[String] =
@@ -97,43 +111,120 @@ object AlmFormatter {
   }
 
   implicit class AlmFormatterOps(val self: AlmFormatter) extends AnyVal {
-    def forceFormatArgsIntoBufferAt(appendTo: StringBuffer, pos: FieldPosition, args: Map[String, Any]): StringBuffer =
-      self.formatArgsIntoBufferAt(appendTo, pos, args).resultOrEscalate
-    def forceFormatIntoBufferAt(appendTo: StringBuffer, pos: FieldPosition, args: (String, Any)*): StringBuffer =
-      self.formatIntoBufferAt(appendTo, pos, args: _*).resultOrEscalate
-    def forceFormatIntoBuffer(appendTo: StringBuffer, args: (String, Any)*): StringBuffer =
-      self.formatIntoBuffer(appendTo, args: _*).resultOrEscalate
+    def forceFormatArgsIntoAt(appendTo: StringBuffer, pos: FieldPosition, args: Map[String, Any]): StringBuffer =
+      self.formatArgsIntoAt(appendTo, pos, args) fold (
+        fail ⇒ appendTo.append(fail.message),
+        succ ⇒ succ)
+
+    def forceFormatIntoAt(appendTo: StringBuffer, pos: FieldPosition, args: (String, Any)*): StringBuffer =
+      self.formatArgsIntoAt(appendTo, pos, Map(args: _*)) fold (
+        fail ⇒ appendTo.append(s"{${fail.message}}"),
+        succ ⇒ succ)
+
+    def forceFormatInto(appendTo: StringBuffer, args: (String, Any)*): StringBuffer =
+      self.formatIntoAt(appendTo, util.DontCareFieldPosition, args: _*) fold (
+        fail ⇒ appendTo.append(s"{${fail.message}}"),
+        succ ⇒ succ)
+
     def forceFormatArgsIntoBuffer(appendTo: StringBuffer, args: Map[String, Any]): StringBuffer =
-      self.formatArgsIntoBuffer(appendTo, args).resultOrEscalate
+      self.formatArgsIntoAt(appendTo, util.DontCareFieldPosition, args) fold (
+        fail ⇒ appendTo.append(s"{${fail.message}}"),
+        succ ⇒ succ)
+
     def forceFormat(args: (String, Any)*): String =
-      self.format(args: _*).resultOrEscalate
+      self.formatIntoAt(new StringBuffer(), util.DontCareFieldPosition, args: _*).map(_.toString) fold (
+        fail ⇒ s"{${fail.message}}",
+        succ ⇒ succ)
+
     def forceFormatArgs(args: Map[String, Any]): String =
-      self.formatArgs(args).resultOrEscalate
+      self.formatArgsIntoAt(new StringBuffer(), util.DontCareFieldPosition, args).map(_.toString) fold (
+        fail ⇒ s"{${fail.message}}",
+        succ ⇒ succ)
 
-    def forceFormatValuesIntoBufferAt(appendTo: StringBuffer, pos: FieldPosition, values: Any*): StringBuffer = {
-      self.formatValuesIntoBufferAt(appendTo, pos, values: _*).resultOrEscalate
-    }
+    def forceFormatValuesIntoAt(appendTo: StringBuffer, pos: FieldPosition, values: Any*): StringBuffer =
+      self.formatValuesIntoAt(appendTo, pos, values: _*) fold (
+        fail ⇒ appendTo.append(s"{${fail.message}}"),
+        succ ⇒ succ)
 
-    def forceFormatValuesIntoBuffer(appendTo: StringBuffer, values: Any*): StringBuffer =
-      self.formatValuesIntoBuffer(appendTo, values: _*).resultOrEscalate
+    def forceFormatValuesInto(appendTo: StringBuffer, values: Any*): StringBuffer =
+      self.formatValuesIntoAt(appendTo, util.DontCareFieldPosition, values: _*) fold (
+        fail ⇒ appendTo.append(s"{${fail.message}}"),
+        succ ⇒ succ)
 
     def forceFormatValues(values: Any*): String =
-      self.formatValues(values: _*).resultOrEscalate
-
+      self.formatValuesIntoAt(new StringBuffer(), util.DontCareFieldPosition, values: _*).map(_.toString) fold (
+        fail ⇒ s"{${fail.message}}",
+        succ ⇒ succ)
   }
 }
 
-final class IcuFormatter(msgFormat: MessageFormat) extends AlmFormatter {
-  override val locale = msgFormat.getULocale
+object AlmNumericFormatter {
+  implicit class AlmNumericFormatterOps(val self: AlmNumericFormatter) extends AnyVal {
+    def forceFormatNumericIntoAt[T: Numeric](num: T, appendTo: StringBuffer, pos: FieldPosition): StringBuffer =
+      self.formatNumericIntoAt(num, appendTo, pos) fold (
+        fail ⇒ appendTo.append(s"{${fail.message}}"),
+        succ ⇒ succ)
 
-  override def formatArgsIntoBufferAt(appendTo: StringBuffer, pos: FieldPosition, args: Map[String, Any]): AlmValidation[StringBuffer] =
-    inTryCatch {
-      val map = new java.util.HashMap[String, Any]
-      args.foreach({ case (k, v) ⇒ map.put(k, v) })
-      msgFormat.format(map, appendTo, pos)
-    }
+    def forceFormatNumericInto[T: Numeric](num: T, appendTo: StringBuffer): StringBuffer =
+      self.formatNumericIntoAt(num, appendTo, util.DontCareFieldPosition) fold (
+        fail ⇒ appendTo.append(s"{${fail.message}}"),
+        succ ⇒ succ)
 
-  val underlying = msgFormat
+    def forceFormatNumeric[T: Numeric](num: T): String =
+      self.formatNumericIntoAt(num, new StringBuffer(), util.DontCareFieldPosition).map(_.toString()) fold (
+        fail ⇒ s"{${fail.message}}",
+        succ ⇒ succ)
+
+    def forceFormatNumericRangeIntoAt[T: Numeric](lower: T, upper: T, appendTo: StringBuffer, pos: FieldPosition): StringBuffer =
+      self.formatNumericRangeIntoAt(lower, upper, appendTo, pos) fold (
+        fail ⇒ appendTo.append(s"{${fail.message}}"),
+        succ ⇒ succ)
+
+    def forceFormatNumericRangeInto[T: Numeric](lower: T, upper: T, appendTo: StringBuffer): StringBuffer =
+      self.formatNumericRangeIntoAt(lower, upper, appendTo, util.DontCareFieldPosition) fold (
+        fail ⇒ appendTo.append(s"{${fail.message}}"),
+        succ ⇒ succ)
+
+    def forceFormatNumericRange[T: Numeric](lower: T, upper: T): String =
+      self.formatNumericRangeIntoAt(lower, upper, new StringBuffer(), util.DontCareFieldPosition).map(_.toString()) fold (
+        fail ⇒ s"{${fail.message}}",
+        succ ⇒ succ)
+  }
 }
+
+object AlmMeasureFormatter {
+  implicit class AlmMeasureFormatterOps(val self: AlmMeasureFormatter) extends AnyVal {
+    def forceFormatMeasureIntoAt(v: Measured, appendTo: StringBuffer, pos: FieldPosition, uomSys: Option[UnitsOfMeasurementSystem]): StringBuffer =
+      self.formatMeasureIntoAt(v, appendTo, pos, uomSys) fold (
+        fail ⇒ appendTo.append(s"{${fail.message}}"),
+        succ ⇒ succ)
+
+    def forceFormatMeasureInto(v: Measured, appendTo: StringBuffer, uomSys: Option[UnitsOfMeasurementSystem]): StringBuffer =
+      self.formatMeasureIntoAt(v, appendTo, util.DontCareFieldPosition, uomSys) fold (
+        fail ⇒ appendTo.append(s"{${fail.message}}"),
+        succ ⇒ succ)
+
+    def forceFormatMeasure(v: Measured, uomSys: Option[UnitsOfMeasurementSystem]): String =
+      self.formatMeasureIntoAt(v, new StringBuffer(), util.DontCareFieldPosition, uomSys).map(_.toString()) fold (
+        fail ⇒ s"{${fail.message}}",
+        succ ⇒ succ)
+
+    def forceFormatMeasureRangeIntoAt(lower: Measured, upper: Measured, appendTo: StringBuffer, pos: FieldPosition, uomSys: Option[UnitsOfMeasurementSystem]): StringBuffer =
+      self.formatMeasureRangeIntoAt(lower, upper, appendTo, pos, uomSys) fold (
+        fail ⇒ appendTo.append(s"{${fail.message}}"),
+        succ ⇒ succ)
+
+    def forceFormatMeasureRangeInto(lower: Measured, upper: Measured, appendTo: StringBuffer, uomSys: Option[UnitsOfMeasurementSystem]): StringBuffer =
+      self.formatMeasureRangeIntoAt(lower, upper, appendTo, util.DontCareFieldPosition, uomSys) fold (
+        fail ⇒ appendTo.append(s"{${fail.message}}"),
+        succ ⇒ succ)
+
+    def forceFormatMeasureRange(lower: Measured, upper: Measured, uomSys: Option[UnitsOfMeasurementSystem]): String =
+      self.formatMeasureRangeIntoAt(lower, upper, new StringBuffer(), util.DontCareFieldPosition, uomSys).map(_.toString()) fold (
+        fail ⇒ s"{${fail.message}}",
+        succ ⇒ succ)
+  }
+}
+
 
 

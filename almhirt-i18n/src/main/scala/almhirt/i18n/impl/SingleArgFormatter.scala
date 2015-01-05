@@ -8,7 +8,7 @@ import java.text.FieldPosition
 
 private[almhirt] final class SingleArgFormatter(formatter: SingleArgFormattingModule) extends AlmFormatter {
   override def locale = formatter.locale
-  override def formatArgsIntoBufferAt(appendTo: StringBuffer, pos: FieldPosition, args: Map[String, Any]): AlmValidation[StringBuffer] =
+  override def formatArgsIntoAt(appendTo: StringBuffer, pos: FieldPosition, args: Map[String, Any]): AlmValidation[StringBuffer] =
     args get (formatter.argname) match {
       case Some(v) ⇒
         formatter.formatIntoBuffer(appendTo, pos, v)
@@ -16,7 +16,7 @@ private[almhirt] final class SingleArgFormatter(formatter: SingleArgFormattingMo
         scalaz.Failure(NoSuchElementProblem(s"""An argument named "${formatter.argname}" was not found."""))
     }
 
-  override def formatValuesIntoBufferAt(appendTo: StringBuffer, pos: FieldPosition, values: Any*): AlmValidation[StringBuffer] =
+  override def formatValuesIntoAt(appendTo: StringBuffer, pos: FieldPosition, values: Any*): AlmValidation[StringBuffer] =
     if (values.isEmpty) {
       scalaz.Failure(NoSuchElementProblem(s"""An argument is required."""))
     } else {
@@ -26,15 +26,15 @@ private[almhirt] final class SingleArgFormatter(formatter: SingleArgFormattingMo
 
 private[almhirt] final class NumericArgFormatter(formatter: NumericArgFormattingModule) extends AlmNumericFormatter {
   override def locale = formatter.locale
-  override def formatArgsIntoBufferAt(appendTo: StringBuffer, pos: FieldPosition, args: Map[String, Any]): AlmValidation[StringBuffer] =
+  override def formatArgsIntoAt(appendTo: StringBuffer, pos: FieldPosition, args: Map[String, Any]): AlmValidation[StringBuffer] =
     args get (formatter.argname) match {
       case Some(v) ⇒
-        formatValuesIntoBufferAt(appendTo, pos, v)
+        formatValuesIntoAt(appendTo, pos, v)
       case None ⇒
         scalaz.Failure(NoSuchElementProblem(s"""An argument named "${formatter.argname}" was not found."""))
     }
 
-  override def formatValuesIntoBufferAt(appendTo: StringBuffer, pos: FieldPosition, values: Any*): AlmValidation[StringBuffer] =
+  override def formatValuesIntoAt(appendTo: StringBuffer, pos: FieldPosition, values: Any*): AlmValidation[StringBuffer] =
     if (values.isEmpty) {
       scalaz.Failure(NoSuchElementProblem(s"""An argument is required."""))
     } else {
@@ -63,15 +63,15 @@ private[almhirt] final class NumericArgFormatter(formatter: NumericArgFormatting
 
 private[almhirt] final class MeasuredArgFormatter(formatter: MeasuredArgFormattingModule) extends AlmMeasureFormatter {
   override def locale = formatter.locale
-  override def formatArgsIntoBufferAt(appendTo: StringBuffer, pos: FieldPosition, args: Map[String, Any]): AlmValidation[StringBuffer] =
+  override def formatArgsIntoAt(appendTo: StringBuffer, pos: FieldPosition, args: Map[String, Any]): AlmValidation[StringBuffer] =
     args get (formatter.argname) match {
       case Some(v) ⇒
-        formatValuesIntoBufferAt(appendTo, pos, v)
+        formatValuesIntoAt(appendTo, pos, v)
       case None ⇒
         scalaz.Failure(NoSuchElementProblem(s"""An argument named "${formatter.argname}" was not found."""))
     }
 
-  override def formatValuesIntoBufferAt(appendTo: StringBuffer, pos: FieldPosition, values: Any*): AlmValidation[StringBuffer] =
+  override def formatValuesIntoAt(appendTo: StringBuffer, pos: FieldPosition, values: Any*): AlmValidation[StringBuffer] =
     if (values.isEmpty) {
       scalaz.Failure(NoSuchElementProblem(s"""An argument is required."""))
     } else {
@@ -100,7 +100,7 @@ private[almhirt] final class MeasuredArgFormatter(formatter: MeasuredArgFormatti
     formatter.formatRangeIntoBuffer(appendTo, pos, lower, upper, uomSys)
 
   override def formatNumericIntoAt[T: Numeric](num: T, appendTo: StringBuffer, pos: FieldPosition): AlmValidation[StringBuffer] =
-    formatValuesIntoBufferAt(appendTo, pos, num)
+    formatValuesIntoAt(appendTo, pos, num)
 
   override def formatNumericRangeIntoAt[T](lower: T, upper: T, appendTo: StringBuffer, pos: FieldPosition)(implicit num: Numeric[T]): AlmValidation[StringBuffer] =
     formatMeasureRangeIntoAt(
