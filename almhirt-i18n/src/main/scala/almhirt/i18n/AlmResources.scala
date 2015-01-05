@@ -71,6 +71,7 @@ private[almhirt] object TreeBuilder {
                 case scalaz.Success(acc) ⇒
                   acc get nextLoc match {
                     case Some(toAddFallbacks) ⇒
+                      toAddFallbacks.withFallback(nextNode).map(merged => acc + (nextLoc -> merged))
                       acc.success
                     case None ⇒
                       (acc + (nextLoc -> nextNode)).success
