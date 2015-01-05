@@ -248,6 +248,18 @@ object ResourceLookup {
           res ← formatable.formatArgs(args)
         } yield res
 
+      def formatValuesInto[L: LocaleMagnet](key: ResourceKey, locale: L, appendTo: StringBuffer, values: Any*): AlmValidation[StringBuffer] =
+        for {
+          formatable ← self.getFormatter(key, locale)
+          res ← formatable.formatValuesInto(appendTo, values: _*)
+        } yield res
+
+      def formatValues[L: LocaleMagnet](key: ResourceKey, locale: L, values: Any*): AlmValidation[String] =
+        for {
+          formatable ← self.getFormatter(key, locale)
+          res ← formatable.formatValues(values: _*)
+        } yield res
+
       def formatNumericIntoAt[T: Numeric, L: LocaleMagnet](key: ResourceKey, locale: L, num: T, appendTo: StringBuffer, pos: FieldPosition): AlmValidation[StringBuffer] =
         for {
           formatable ← self.getNumericFormatter(key, locale)
@@ -319,6 +331,12 @@ object ResourceLookup {
       def forceFormatArgs[L: LocaleMagnet](key: ResourceKey, locale: L, args: Map[String, Any]): String =
         forceFormatArgsInto(key, locale, new StringBuffer, args).toString()
 
+      def forceFormatValuesInto[L: LocaleMagnet](key: ResourceKey, locale: L, appendTo: StringBuffer, values: Any*): StringBuffer =
+        intoBuffer[AlmFormatter](key, appendTo, () ⇒ self.getFormatter(key, locale), (formatter, buffer) ⇒ formatter.formatValuesInto(buffer, values: _*))
+
+      def forceFormatValues[L: LocaleMagnet](key: ResourceKey, locale: L, values: Any*): String =
+        forceFormatValuesInto(key, locale, new StringBuffer, values).toString
+        
       def forceFormatNumericInto[T: Numeric, L: LocaleMagnet](key: ResourceKey, locale: L, num: T, appendTo: StringBuffer): StringBuffer =
         intoBuffer[AlmNumericFormatter](key, appendTo, () ⇒ self.getNumericFormatter(key, locale), (formatter, buffer) ⇒ formatter.formatNumericInto(num, appendTo))
 
