@@ -27,7 +27,7 @@ trait ResourceLookup {
    * @return the set of supported locales that are supported without using fallbacks
    */
   def supportedLocales: Set[ULocale]
-  
+
   /**
    * @return a tree of the [[ResourceNode]]s hierarchy
    */
@@ -191,7 +191,7 @@ object ResourceLookup {
 
     def rawText[L: LocaleMagnet](key: ResourceKey, locale: L): String =
       self.getRawText(key, locale) fold (
-        fail ⇒ s"{${fail.message}}",
+        fail ⇒ s"{$key: ${fail.message}}",
         succ ⇒ succ)
   }
 
@@ -215,16 +215,24 @@ object ResourceLookup {
     }
 
     def forceFormatItemInto[T, L: LocaleMagnet](what: T, locale: L, uomSys: Option[UnitsOfMeasurementSystem], appendTo: StringBuffer)(implicit renderer: ItemFormatter[T]): StringBuffer =
-      formatItemInto(what, locale, uomSys, appendTo).resultOrEscalate
+      formatItemInto(what, locale, uomSys, appendTo) fold (
+        fail ⇒ appendTo.append(s"{${what.getClass().getSimpleName}: ${fail.message}}"),
+        succ ⇒ succ)
 
     def forceFormatItemInto[T, L: LocaleMagnet](what: T, locale: L, appendTo: StringBuffer)(implicit renderer: ItemFormatter[T]): StringBuffer =
-      formatItemInto(what, locale, appendTo).resultOrEscalate
+      formatItemInto(what, locale, appendTo) fold (
+        fail ⇒ appendTo.append(s"{${what.getClass().getSimpleName}: ${fail.message}}"),
+        succ ⇒ succ)
 
     def forceFormatItem[T, L: LocaleMagnet](what: T, locale: L, uomSys: Option[UnitsOfMeasurementSystem])(implicit renderer: ItemFormatter[T]): String =
-      formatItem(what, locale, uomSys).resultOrEscalate
+      formatItem(what, locale, uomSys) fold (
+        fail ⇒ s"{${what.getClass().getSimpleName}: ${fail.message}}",
+        succ ⇒ succ)
 
     def forceFormatItem[T, L: LocaleMagnet](what: T, locale: L)(implicit renderer: ItemFormatter[T]): String =
-      formatItem(what, locale).resultOrEscalate
+      formatItem(what, locale) fold (
+        fail ⇒ s"{${what.getClass().getSimpleName}: ${fail.message}}",
+        succ ⇒ succ)
   }
 
   object SafeFormattingImplicits {
@@ -341,7 +349,7 @@ object ResourceLookup {
 
       def forceFormatValues[L: LocaleMagnet](key: ResourceKey, locale: L, values: Any*): String =
         forceFormatValuesInto(key, locale, new StringBuffer, values).toString
-        
+
       def forceFormatNumericInto[T: Numeric, L: LocaleMagnet](key: ResourceKey, locale: L, num: T, appendTo: StringBuffer): StringBuffer =
         intoBuffer[AlmNumericFormatter](key, appendTo, () ⇒ self.getNumericFormatter(key, locale), (formatter, buffer) ⇒ formatter.formatNumericInto(num, appendTo))
 
