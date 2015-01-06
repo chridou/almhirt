@@ -13,7 +13,7 @@ class XmlResourcesTest extends FunSuite with Matchers {
 
   test("The resources must be created") {
     val resources = AlmResources.fromXmlInResources("localization", "test", getClass.getClassLoader).forceResult
-    info(resources.localesTree.map(n => s"${n.getBaseName} / ${n.getDisplayLanguage} / ${n.getDisplayCountry}").drawTree)
+    info(resources.localeTree.map(n => s"${n.getBaseName} / ${n.getDisplayLanguage} / ${n.getDisplayCountry}").drawTree)
     resources.supportedLocales should have size(6)
   }
 }

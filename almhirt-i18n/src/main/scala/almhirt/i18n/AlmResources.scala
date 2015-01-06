@@ -20,10 +20,11 @@ object AlmResources {
   }
 
   val empty = new AlmResources {
-    val allowsLocaleFallback = false
-    val fallsBackToRoot = false
-    val supportedLocales = Set.empty[ULocale]
-    override def localesTree = throw new NoSuchElementException("There is no locales tree in the empty resources!")
+    override val allowsLocaleFallback = false
+    override val fallsBackToRoot = false
+    override val supportedLocales = Set.empty[ULocale]
+    override def nodeTree = throw new NoSuchElementException("There is no node tree in the empty resources!")
+    override def localeTree = throw new NoSuchElementException("There is no locale tree in the empty resources!")
     override def getResourceNodeStrict(locale: ULocale): AlmValidation[ResourceNode] = ArgumentProblem("The empty AlmResources does not contain any nodes").failure
     override def withFallback(fallback: AlmResources): AlmValidation[AlmResources] = fallback.success
   }
@@ -45,7 +46,8 @@ private[almhirt] object TreeBuilder {
 
       override val supportedLocales: Set[ULocale] = nodesByLocale.keySet
 
-      override def localesTree: Tree[ULocale] = theLocalesTree
+      override val nodeTree: Tree[ResourceNode] = tree
+      override val localeTree: Tree[ULocale] = tree.map(_.locale)
 
       override def withFallback(fallback: AlmResources): AlmValidation[AlmResources] =
         addFallback(this, fallback)
@@ -56,14 +58,11 @@ private[almhirt] object TreeBuilder {
     if (fallback.supportedLocales.isEmpty) {
       orig.success
     } else {
-      val nodesV = for {
-        origNodes ← orig.supportedLocales.toList.map(loc ⇒ orig.getResourceNodeStrict(loc).toAgg).sequence
-        fallbackNodes ← fallback.supportedLocales.toList.map(loc ⇒ fallback.getResourceNodeStrict(loc).toAgg).sequence
-      } yield (origNodes.map(n ⇒ (n.locale, n)).toMap, fallbackNodes.map(n ⇒ (n.locale, n)).toMap)
-
-      val mergedV = nodesV.flatMap {
-        case (orig, fallback) ⇒
-          fallback.foldLeft(orig.success) {
+      val origNodes = orig.nodeTree.flatten.map(t => (t.locale, t)).toMap
+      val fallbackNodes = fallback.nodeTree.flatten.map(t => (t.locale, t)).toMap
+      
+      val mergedV = 
+          fallbackNodes.foldLeft(origNodes.success) {
             case (accV, (nextLoc, nextNode)) ⇒
               accV match {
                 case scalaz.Failure(_) ⇒
@@ -78,10 +77,9 @@ private[almhirt] object TreeBuilder {
                   }
               }
           }
-      }
       
       val treeV = mergedV.flatMap({merged =>
-        val rootLocale = orig.localesTree.rootLabel
+        val rootLocale = orig.localeTree.rootLabel
         val root = (rootLocale, merged(rootLocale)) 
         val rest = merged - rootLocale
         buildTree[ResourceNode](root, rest.toSeq)

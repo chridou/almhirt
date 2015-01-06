@@ -26,10 +26,9 @@ object ResourcesService {
 }
 
 private[almhirt] class FixedResourcesService(fixedResources: AlmResources)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging {
-
   def receive: Receive = {
     case "ShowLocales" ⇒
-      inTryCatch { fixedResources.localesTree.flatten.map(_.toLanguageTag()) }.fold(
+      inTryCatch { fixedResources.localeTree.flatten.map(_.toLanguageTag()) }.fold(
         fail ⇒ {
           logWarning(s"There are no supported locales:\n$fail")
         },
@@ -41,6 +40,5 @@ private[almhirt] class FixedResourcesService(fixedResources: AlmResources)(impli
     context.parent ! ResourcesService.ResourcesInitialized
     self ! "ShowLocales"
   }
-
 }
 

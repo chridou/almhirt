@@ -27,11 +27,16 @@ trait ResourceLookup {
    * @return the set of supported locales that are supported without using fallbacks
    */
   def supportedLocales: Set[ULocale]
+  
+  /**
+   * @return a tree of the [[ResourceNode]]s hierarchy
+   */
+  def nodeTree: Tree[ResourceNode]
 
   /**
    * @return a tree of that represents the structure of the [[ResourceNode]]s
    */
-  def localesTree: Tree[ULocale]
+  def localeTree: Tree[ULocale] = nodeTree.map { _.locale }
 
   /**
    * Get a [[ResourceNode]] without using a fallback locale
@@ -53,7 +58,7 @@ trait ResourceLookup {
       fail ⇒ {
         if (allowsLocaleFallback)
           getResourceNodeStrict(uLoc.getFallback).fold(
-            fail ⇒ getResourceNodeStrict(localesTree.rootLabel),
+            fail ⇒ getResourceNodeStrict(localeTree.rootLabel),
             succ ⇒ succ.success)
         else
           ResourceNotFoundProblem(s""""${uLoc.getBaseName}" is not a supported locale.""").failure
