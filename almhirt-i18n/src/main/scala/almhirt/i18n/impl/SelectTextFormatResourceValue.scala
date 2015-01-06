@@ -47,5 +47,5 @@ private[almhirt] final class SelectTextFormatResourceValue(
       rendered ← inTryCatch { appendTo.append(selected) }
     } yield rendered
 
-  def formatable: AlmFormatter = new SingleArgFormatter(this)
+  override def formatable: AlmFormatter = new SingleArgFormatter(this)
 }

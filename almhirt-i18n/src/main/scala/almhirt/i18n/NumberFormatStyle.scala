@@ -1,10 +1,10 @@
-package almhirt.i18n.impl
+package almhirt.i18n
 
 import almhirt.common._
 
-private[almhirt] sealed trait NumberFormatStyle { def parsableString: String }
+sealed trait NumberFormatStyle { def parsableString: String }
 
-private[almhirt] object NumberFormatStyle {
+object NumberFormatStyle {
   case object Percentage extends NumberFormatStyle { val parsableString = "percentage" }
   case object Scientific extends NumberFormatStyle { val parsableString = "scientific" }
   case object Integer extends NumberFormatStyle { val parsableString = "integer" }

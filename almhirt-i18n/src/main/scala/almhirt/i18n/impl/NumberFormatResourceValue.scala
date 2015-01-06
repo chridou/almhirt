@@ -50,7 +50,7 @@ private[almhirt] final class NumberFormatResourceValue(
   val rangeSeparator: String,
   format: NumberFormat) extends NumericValueResourceValue {
 
-  def formatable: AlmNumericFormatter = {
+  override def formatable: AlmNumericFormatter = {
     val numberFormat = format.clone().asInstanceOf[NumberFormat]
     new NumericArgFormatter(new NumericArgFormattingModule {
       val locale = NumberFormatResourceValue.this.locale

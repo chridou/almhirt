@@ -224,7 +224,7 @@ private[almhirt] object ResourceNodeXml {
 
     for {
       paramName ← paramNameV
-      style ← (elem \? "style").flatMap(e ⇒ e.map { e ⇒ impl.NumberFormatStyle.parse(e.text) }.validationOut)
+      style ← (elem \? "style").flatMap(e ⇒ e.map { e ⇒ NumberFormatStyle.parse(e.text) }.validationOut)
       minFractionDigits ← (elem \? "min-fraction-digits").flatMap(e ⇒ e.map { _.text.toIntAlm }.validationOut)
       maxFractionDigits ← (elem \? "max-fraction-digits").flatMap(e ⇒ e.map { _.text.toIntAlm }.validationOut)
       useDigitsGrouping ← (elem \? "use-digit-groups").flatMap(e ⇒ e.map { _.text.toBooleanAlm }.validationOut)
