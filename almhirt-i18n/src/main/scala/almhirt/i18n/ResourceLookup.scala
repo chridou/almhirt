@@ -29,6 +29,11 @@ trait ResourceLookup {
   def supportedLocales: Set[ULocale] 
 
   /**
+   * @return a tree of that represents the structure of the locales
+   */
+  def localeTree: Tree[ULocale]
+  
+  /**
    * Get an [[AlmFormatter]] possibly using a fallback locale
    *
    * @param key the [[ResourceKey]] for the queried [[AlmFormatter]]

@@ -18,7 +18,7 @@ trait AlmResources extends ResourceLookup {
   /**
    * @return a tree of that represents the structure of the [[PinnedResources]]s
    */
-  def localeTree: Tree[ULocale] = pinnedResourcesTree.map { _.locale }
+  override def localeTree: Tree[ULocale] = pinnedResourcesTree.map { _.locale }
 
   /**
    * Get a [[PinnedResources]] without using a fallback locale
