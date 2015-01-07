@@ -90,8 +90,8 @@ private[almhirt] object TreeBuilder {
   }
 
   private def find(key: ResourceKey, current: PinnedResources, resourcesWithParents: Map[ULocale, Option[PinnedResources]]): Option[(ULocale, ResourceValue)] = {
-    current.getWithLocale(key) match {
-      case scalaz.Success(locAndRes) => Some(locAndRes)
+    current(key) match {
+      case scalaz.Success(resource) => Some(current.locale, resource)
       case scalaz.Failure(_) => 
        resourcesWithParents(current.locale) match {
          case Some(parent) => find(key, parent, resourcesWithParents)

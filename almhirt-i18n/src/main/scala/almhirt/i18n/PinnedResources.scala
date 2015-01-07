@@ -9,6 +9,9 @@ import com.ibm.icu.text.MessageFormat
 
 /**
  * Basic function to retrieve resources for a locale
+ * 
+ * IMPORTANT!
+ * Whoever mixes in this trait must override get, getWithLocale or both to prevent a stack overflow.
  */
 trait PinnedResourceLookup extends Function1[ResourceKey, AlmValidation[ResourceValue]] {
   final def apply(key: ResourceKey): AlmValidation[ResourceValue] = get(key)
@@ -102,13 +105,13 @@ private[almhirt] object ResourceNodeXml {
     } yield {
       val keysMap = keys.toMap
       new PinnedResources {
-        def locale = theLocale
-        def getLocally(key: ResourceKey): AlmValidation[ResourceValue] =
+        override val locale = theLocale
+        override def get(key: ResourceKey): AlmValidation[ResourceValue] =
           keysMap get key match {
             case Some(v) ⇒ v.success
             case None    ⇒ ResourceNotFoundProblem(s"No resource for key $key.").failure
           }
-        def mappings = keysMap
+        override val mappings = keysMap
       }
     }
   }
