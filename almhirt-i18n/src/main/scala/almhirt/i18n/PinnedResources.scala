@@ -101,7 +101,7 @@ private[almhirt] object ResourceNodeXml {
     for {
       localeStr ← xmlElem \@! "locale"
       theLocale ← inTryCatch { new ULocale(localeStr) }
-      keys ← parseSections(theLocale, xmlElem \\? "section")
+      keys ← parseSections(theLocale, xmlElem \\? "section").leftMap(p => UnspecifiedProblem(s"""Problem in resources for locale ${theLocale.toLanguageTag}.""", cause = Some(p)))
     } yield {
       val keysMap = keys.toMap
       new PinnedResources {
@@ -124,7 +124,7 @@ private[almhirt] object ResourceNodeXml {
     for {
       name ← elem \@! "name"
       checkedName ← checkName(name)
-      groups ← parseGroups(locale, elem \\? "group")
+      groups ← parseGroups(locale, elem \\? "group").leftMap(p => UnspecifiedProblem(s"""Problem in section "$checkedName" for locale ${locale.toLanguageTag}.""", cause = Some(p)))
     } yield groups.flatMap({ case (groupName, keys) ⇒ keys.map({ case (keyName, value) ⇒ (ResourceKey(checkedName, groupName, keyName), value) }) })
   }
 
@@ -136,8 +136,8 @@ private[almhirt] object ResourceNodeXml {
     for {
       name ← elem \@! "name"
       checkedName ← checkName(name)
-      keys ← parseKeys(locale, elem \\? "key", "")
-      keysFromSections ← parseKeySections(locale, elem \\? "key-section", "")
+      keys ← parseKeys(locale, elem \\? "key", "").leftMap(p => UnspecifiedProblem(s"""Problem in group "$checkedName" for locale ${locale.toLanguageTag}.""", cause = Some(p)))
+      keysFromSections ← parseKeySections(locale, elem \\? "key-section", "").leftMap(p => UnspecifiedProblem(s"""Problem in group "$checkedName"(in a key-section) for locale ${locale.toLanguageTag}.""", cause = Some(p)))
     } yield (checkedName, keys ++ keysFromSections)
   }
 
@@ -146,14 +146,14 @@ private[almhirt] object ResourceNodeXml {
   }
 
   def parseKeySection(locale: ULocale, elem: Elem, prefix: String): AlmValidation[Vector[(String, ResourceValue)]] = {
-    for {
+    (for {
       newPrefix ← (elem \@? "prefix") match {
         case Some(localPrefix) ⇒ checkName(s"$prefix$localPrefix")
         case None              ⇒ prefix.success
       }
       keys ← parseKeys(locale, elem \\? "key", newPrefix)
       keysFromSections ← parseKeySections(locale, elem \\? "key-section", newPrefix)
-    } yield keys ++ keysFromSections
+    } yield keys ++ keysFromSections).leftMap(p => UnspecifiedProblem(s"""Problem in key-section.""", cause = Some(p)))
   }
 
   def parseKeys(locale: ULocale, elems: Seq[Elem], prefix: String): AlmValidation[Vector[(String, ResourceValue)]] = {
@@ -162,7 +162,7 @@ private[almhirt] object ResourceNodeXml {
 
   val stringValueBasedDescriptors = Set("plain", "icu")
   def parseKey(locale: ULocale, elem: Elem, prefix: String): AlmValidation[(String, ResourceValue)] = {
-    for {
+    (for {
       name ← elem \@! "name"
       checkedName ← checkName(name)
       elemFormatterElem ← elem.firstChildNodeExcluding("comment")
@@ -181,8 +181,8 @@ private[almhirt] object ResourceNodeXml {
         } else {
           ArgumentProblem(s""""$typeDescriptor" is not a valid type for a resource value.""").failure
         }
-      }
-    } yield (s"$prefix$checkedName", value)
+      }.leftMap(p => UnspecifiedProblem(s"""Problem with key "$checkedName" for locale ${locale.toLanguageTag}.""", cause = Some(p)))
+    } yield (s"$prefix$checkedName", value))
   }
 
   private def trimText(text: String): AlmValidation[String] =
