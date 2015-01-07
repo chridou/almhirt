@@ -26,45 +26,7 @@ trait ResourceLookup {
   /**
    * @return the set of supported locales that are supported without using fallbacks
    */
-  def supportedLocales: Set[ULocale]
-
-  /**
-   * @return a tree of the [[ResourceNode]]s hierarchy
-   */
-  def nodeTree: Tree[ResourceNode]
-
-  /**
-   * @return a tree of that represents the structure of the [[ResourceNode]]s
-   */
-  def localeTree: Tree[ULocale] = nodeTree.map { _.locale }
-
-  /**
-   * Get a [[ResourceNode]] without using a fallback locale
-   *
-   * @param locale the exact locale for the queried [[ResourceNode]]
-   * @return the possibly found [[ResourceNode]]
-   */
-  def getResourceNodeStrict(locale: ULocale): AlmValidation[ResourceNode]
-
-  /**
-   * Get a [[ResourceNode]] possibly using a fallback locale
-   *
-   * @param locale the locale for the queried [[ResourceNode]]
-   * @return the possibly found [[ResourceNode]]
-   */
-  final def getResourceNode[L](locale: L)(implicit magnet: LocaleMagnet[L]): AlmValidation[ResourceNode] = {
-    val uLoc = magnet.toULocale(locale)
-    getResourceNodeStrict(uLoc).fold(
-      fail ⇒ {
-        if (allowsLocaleFallback)
-          getResourceNodeStrict(uLoc.getFallback).fold(
-            fail ⇒ getResourceNodeStrict(localeTree.rootLabel),
-            succ ⇒ succ.success)
-        else
-          ResourceNotFoundProblem(s""""${uLoc.getBaseName}" is not a supported locale.""").failure
-      },
-      succ ⇒ succ.success)
-  }
+  def supportedLocales: Set[ULocale] 
 
   /**
    * Get an [[AlmFormatter]] possibly using a fallback locale
@@ -165,10 +127,9 @@ trait ResourceLookup {
     }
   }
 
-  final def getResource[L: LocaleMagnet](key: ResourceKey, locale: L): AlmValidation[ResourceValue] = getResourceWithLocale(key, locale).map(_._2)
+  def getResource[L: LocaleMagnet](key: ResourceKey, locale: L): AlmValidation[ResourceValue] = getResourceWithLocale(key, locale).map(_._2)
 
-  final def getResourceWithLocale[L: LocaleMagnet](key: ResourceKey, locale: L): AlmValidation[(ULocale, ResourceValue)] =
-    getResourceNode(locale).flatMap(node ⇒ node(key).map((node.locale, _)))
+  def getResourceWithLocale[L: LocaleMagnet](key: ResourceKey, locale: L): AlmValidation[(ULocale, ResourceValue)]
 
   final def getTextResource[L: LocaleMagnet](key: ResourceKey, locale: L): AlmValidation[TextResourceValue] = getTextResourceWithLocale(key, locale).map(_._2)
 

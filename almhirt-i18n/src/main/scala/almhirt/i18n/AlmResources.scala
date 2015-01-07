@@ -6,48 +6,129 @@ import almhirt.common._
 import almhirt.almvalidation.kit._
 import com.ibm.icu.util.ULocale
 
+/**
+ * Access resources
+ */
 trait AlmResources extends ResourceLookup {
+  /**
+   * @return a tree of the [[PinnedResources]]s hierarchy
+   */
+  def pinnedResourcesTree: Tree[PinnedResources]
+
+  /**
+   * @return a tree of that represents the structure of the [[PinnedResources]]s
+   */
+  def localeTree: Tree[ULocale] = pinnedResourcesTree.map { _.locale }
+
+  /**
+   * Get a [[PinnedResources]] without using a fallback locale
+   *
+   * @param locale the exact locale for the queried [[PinnedResources]]
+   * @return the possibly found [[PinnedResources]]
+   */
+  def getPinnedResourcesStrict(locale: ULocale): AlmValidation[PinnedResources]
+
+  /**
+   * Get a [[PinnedResources]] possibly using a fallback locale or using the root locale
+   *
+   * @param locale the locale for the queried [[PinnedResources]]
+   * @return the possibly found [[PinnedResources]]
+   */
+  final def getPinnedResources(locale: ULocale): AlmValidation[PinnedResources] = {
+    getPinnedResourcesStrict(locale).fold(
+      fail ⇒ {
+        if (allowsLocaleFallback)
+          getPinnedResourcesStrict(locale.getFallback).fold(
+            fail ⇒
+              if (fallsBackToRoot)
+                pinnedResourcesTree.rootLabel.success
+              else
+                NotFoundProblem(s""""${locale.getBaseName}" is not a supported locale. Even though I used the fallback locale ${locale.getFallback.toLanguageTag()}""").failure,
+            succ ⇒ succ.success)
+        else
+          NotFoundProblem(s""""${locale.getBaseName}" is not a supported locale.""").failure
+      },
+      succ ⇒ succ.success)
+  }
+
+  /**
+   * Adds resources (and languages) not in this [[almhirt.i18n.AlmResources]].
+   *
+   * The root locale will stay the same.
+   *
+   * Does not overwrite already existing resources.
+   *
+   * @param fallback the resources to use as a fallback
+   * @return the new resources
+   */
   def withFallback(fallback: AlmResources): AlmValidation[AlmResources]
 }
 
 object AlmResources {
   def fromXmlInResources(resourcePath: String, namePrefix: String, classloader: ClassLoader, allowFallback: Boolean = true, fallBackToRootAllowed: Boolean = true): AlmValidation[AlmResources] = {
     for {
-      factories ← AlmResourcesXml.getFactories(resourcePath, namePrefix, classloader)
-      factoriesTree ← TreeBuilder.build(factories)
-      tree ← TreeBuilder.executeFactoriesTree(None, factoriesTree)
-    } yield TreeBuilder.fromNodeTree(tree, allowFallback, fallBackToRootAllowed)
+      nodes ← AlmResourcesXml.getNodes(resourcePath, namePrefix, classloader)
+      nodeTree ← TreeBuilder.build(nodes)
+    } yield TreeBuilder.fromNodeTree(nodeTree, allowFallback, fallBackToRootAllowed)
   }
 
   val empty = new AlmResources {
     override val allowsLocaleFallback = false
     override val fallsBackToRoot = false
     override val supportedLocales = Set.empty[ULocale]
-    override def nodeTree = throw new NoSuchElementException("There is no node tree in the empty resources!")
+    override def pinnedResourcesTree = throw new NoSuchElementException("There is no node tree in the empty resources!")
     override def localeTree = throw new NoSuchElementException("There is no locale tree in the empty resources!")
-    override def getResourceNodeStrict(locale: ULocale): AlmValidation[ResourceNode] = ArgumentProblem("The empty AlmResources does not contain any nodes").failure
+    override def getPinnedResourcesStrict(locale: ULocale): AlmValidation[PinnedResources] = ArgumentProblem("The empty AlmResources does not contain any nodes").failure
+    override def getResourceWithLocale[L: LocaleMagnet](key: ResourceKey, locale: L): AlmValidation[(ULocale, ResourceValue)] = NotFoundProblem("The empty AlmResources does not contain any resources").failure
     override def withFallback(fallback: AlmResources): AlmValidation[AlmResources] = fallback.success
   }
 }
 
 private[almhirt] object TreeBuilder {
-  def fromNodeTree(tree: Tree[ResourceNode], allowFallback: Boolean, fallBackToRootAllowed: Boolean): AlmResources = {
+  private def makeTreeWithParents(tree: Tree[PinnedResources], parent: Option[PinnedResources]): Seq[(PinnedResources, Option[PinnedResources])] = {
+    Seq((tree.rootLabel, parent)) ++ tree.subForest.toList.map { child ⇒ makeTreeWithParents(child, Some(tree.rootLabel)) }.flatten
+  }
+
+  private def find(key: ResourceKey, current: PinnedResources, resourcesWithParents: Map[ULocale, Option[PinnedResources]]): Option[(ULocale, ResourceValue)] = {
+    current.getWithLocale(key) match {
+      case scalaz.Success(locAndRes) => Some(locAndRes)
+      case scalaz.Failure(_) => 
+       resourcesWithParents(current.locale) match {
+         case Some(parent) => find(key, parent, resourcesWithParents)
+         case None => None
+       }
+    }
+  }
+
+  def fromNodeTree(tree: Tree[PinnedResources], allowFallback: Boolean, fallBackToRootAllowed: Boolean): AlmResources = {
     val theLocalesTree = tree.map { _.locale }
     val nodesByLocale = tree.flatten.map(tr ⇒ (tr.locale, tr)).toMap
+
+    val resourcesWithParents = makeTreeWithParents(tree, None).map { case (resources, parent) ⇒ (resources.locale, parent) }.toMap
 
     new AlmResources {
       val allowsLocaleFallback = allowFallback
       val fallsBackToRoot = fallBackToRootAllowed
-      override def getResourceNodeStrict(locale: ULocale): AlmValidation[ResourceNode] =
+      override def getPinnedResourcesStrict(locale: ULocale): AlmValidation[PinnedResources] =
         nodesByLocale get (locale) match {
           case Some(node) ⇒ node.success
-          case None       ⇒ ResourceNotFoundProblem(s""""${locale.getBaseName}" is not a supported locale.""").failure
+          case None       ⇒ NotFoundProblem(s""""${locale.getBaseName}" is not a supported locale.""").failure
         }
 
       override val supportedLocales: Set[ULocale] = nodesByLocale.keySet
 
-      override val nodeTree: Tree[ResourceNode] = tree
-      override val localeTree: Tree[ULocale] = tree.map(_.locale)
+      override val pinnedResourcesTree: Tree[PinnedResources] = tree
+      override val localeTree: Tree[ULocale] = theLocalesTree
+
+      override def getResourceWithLocale[L: LocaleMagnet](key: ResourceKey, locale: L): AlmValidation[(ULocale, ResourceValue)] = {
+        val uLoc = implicitly[LocaleMagnet[L]].toULocale(locale)
+        this.getPinnedResources(uLoc) fold (
+          fail ⇒ ResourceNotFoundProblem(s""""${uLoc.getBaseName}" is not a supported locale. The queried key is $key.""", cause = Some(fail)).failure,
+          startWith ⇒ find(key, startWith, resourcesWithParents) match {
+            case Some(res) ⇒ res.success
+            case None      ⇒ ResourceNotFoundProblem(s"""$key not found for locale ${uLoc.getBaseName}".""").failure
+          })
+      }
 
       override def withFallback(fallback: AlmResources): AlmValidation[AlmResources] =
         addFallback(this, fallback)
@@ -58,45 +139,38 @@ private[almhirt] object TreeBuilder {
     if (fallback.supportedLocales.isEmpty) {
       orig.success
     } else {
-      val origNodes = orig.nodeTree.flatten.map(t => (t.locale, t)).toMap
-      val fallbackNodes = fallback.nodeTree.flatten.map(t => (t.locale, t)).toMap
-      
-      val mergedV = 
-          fallbackNodes.foldLeft(origNodes.success) {
-            case (accV, (nextLoc, nextNode)) ⇒
-              accV match {
-                case scalaz.Failure(_) ⇒
-                  accV
-                case scalaz.Success(acc) ⇒
-                  acc get nextLoc match {
-                    case Some(toAddFallbacks) ⇒
-                      toAddFallbacks.withFallback(nextNode).map(merged => acc + (nextLoc -> merged))
-                      acc.success
-                    case None ⇒
-                      (acc + (nextLoc -> nextNode)).success
-                  }
-              }
-          }
-      
-      val treeV = mergedV.flatMap({merged =>
+      val origNodes = orig.pinnedResourcesTree.flatten.map(t ⇒ (t.locale, t)).toMap
+      val fallbackNodes = fallback.pinnedResourcesTree.flatten.map(t ⇒ (t.locale, t)).toMap
+
+      val mergedV =
+        fallbackNodes.foldLeft(origNodes.success) {
+          case (accV, (nextLoc, nextNode)) ⇒
+            accV match {
+              case scalaz.Failure(_) ⇒
+                accV
+              case scalaz.Success(acc) ⇒
+                acc get nextLoc match {
+                  case Some(toAddFallbacks) ⇒
+                    toAddFallbacks.withFallback(nextNode).map(merged ⇒ acc + (nextLoc -> merged))
+                    acc.success
+                  case None ⇒
+                    (acc + (nextLoc -> nextNode)).success
+                }
+            }
+        }
+
+      val treeV = mergedV.flatMap({ merged ⇒
         val rootLocale = orig.localeTree.rootLabel
-        val root = (rootLocale, merged(rootLocale)) 
+        val root = (rootLocale, merged(rootLocale))
         val rest = merged - rootLocale
-        buildTree[ResourceNode](root, rest.toSeq)
+        buildTree[PinnedResources](root, rest.toSeq)
       })
-      
-      treeV.map(tree => fromNodeTree(tree, orig.allowsLocaleFallback, orig.fallsBackToRoot))
+
+      treeV.map(tree ⇒ fromNodeTree(tree, orig.allowsLocaleFallback, orig.fallsBackToRoot))
     }
   }
 
-  def executeFactoriesTree(parent: Option[ResourceNode], tree: Tree[Option[ResourceNode] ⇒ AlmValidation[ResourceNode]]): AlmValidation[Tree[ResourceNode]] = {
-    for {
-      root ← tree.rootLabel(parent)
-      subForest ← tree.subForest.map(child ⇒ executeFactoriesTree(Some(root), child).toAgg).toVector.sequence
-    } yield root.node(subForest: _*)
-  }
-
-  def build[T](items: Seq[(ULocale, Boolean, T)]): AlmValidation[Tree[T]] = {
+  def build(items: Seq[(ULocale, Boolean, PinnedResources)]): AlmValidation[Tree[PinnedResources]] = {
     for {
       _ ← {
         val roots = items.filter(_._2 == true)
@@ -196,7 +270,7 @@ private[almhirt] object AlmResourcesXml {
   import almhirt.xml.all._
   import scala.xml._
 
-  def getFactories(resourcePath: String, namePrefix: String, classloader: ClassLoader): AlmValidation[Seq[(ULocale, Boolean, Option[ResourceNode] ⇒ AlmValidation[ResourceNode])]] = {
+  def getNodes(resourcePath: String, namePrefix: String, classloader: ClassLoader): AlmValidation[Seq[(ULocale, Boolean, PinnedResources)]] = {
     for {
       files ← AlmClassLoaderResourcesHelper.getFilesToLoad(resourcePath, namePrefix, classloader).flatMap(fs ⇒
         if (fs.isEmpty)
@@ -219,10 +293,11 @@ private[almhirt] object AlmResourcesXml {
         }
       }
       prepared ← getLocalesAndIsRoot(xmls)
-    } yield prepared.map({ case (elem, locale, isRoot) ⇒ (locale, isRoot, (parent: Option[ResourceNode]) ⇒ ResourceNode.fromXml(elem, parent)) })
+      nodes ← prepared.map({ case (elem, locale, isRoot) ⇒ PinnedResources.fromXml(elem).map((locale, isRoot, _)).toAgg }).sequence
+    } yield nodes
   }
 
-  def getLocalesAndIsRoot(xmls: Seq[Elem]): AlmValidation[Seq[(Elem, ULocale, Boolean)]] = {
+  def getLocalesAndIsRoot(xmls: Seq[Elem]): AlmValidation[List[(Elem, ULocale, Boolean)]] = {
     val resV = xmls.map { elem ⇒
       (for {
         isRoot ← elem \@? "root" match {
@@ -233,7 +308,7 @@ private[almhirt] object AlmResourcesXml {
         locale ← inTryCatch { new ULocale(localeAttV) }
       } yield (elem, locale, isRoot)).toAgg
     }
-    resV.toVector.sequence.map(_.toSeq)
+    resV.toList.sequence
   }
 
 }

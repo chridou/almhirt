@@ -7,19 +7,54 @@ import almhirt.common._
 import com.ibm.icu.util.ULocale
 import com.ibm.icu.text.MessageFormat
 
-trait DirectResourceLookup {
+/**
+ * Basic function to retrieve resources for a locale
+ */
+trait PinnedResourceLookup extends Function1[ResourceKey, AlmValidation[ResourceValue]] {
+  final def apply(key: ResourceKey): AlmValidation[ResourceValue] = get(key)
+
+  /**
+   * @return the locale for all resources
+   */
   def locale: ULocale
-  def parent: Option[ResourceNode]
+
+  /**
+   * Get a resource key
+   *
+   * @param key the [[almhirt.common.ResourceKey]] to use for the lookup
+   * @return the resource for the key or an error
+   */
   def get(key: ResourceKey): AlmValidation[ResourceValue] = getWithLocale(key).map(_._2)
-  def getWithLocale(key: ResourceKey): AlmValidation[(ULocale, ResourceValue)]
-  def find(key: ResourceKey): Option[ResourceValue] = findWithLocale(key).map(_._2)
+
+  /**
+   * Get a resource key and the locale
+   *
+   * @param key the [[almhirt.common.ResourceKey]] to use for the lookup
+   * @return the resource for the key and the locale or an error
+   */
+  def getWithLocale(key: ResourceKey): AlmValidation[(ULocale, ResourceValue)] = get(key).map { (locale, _) }
+
+  /**
+   * Find a resource key
+   *
+   * @param key the [[almhirt.common.ResourceKey]] to use for the lookup
+   * @return the found Resource for the key or none
+   */
+  def find(key: ResourceKey): Option[ResourceValue] = get(key).toOption
+
+  /**
+   * Find a resource key and the locale
+   *
+   * @param key the [[almhirt.common.ResourceKey]] to use for the lookup
+   * @return the found Resource for the key and the locale or none
+   */
   def findWithLocale(key: ResourceKey): Option[(ULocale, ResourceValue)] = getWithLocale(key).toOption
 }
 
-trait ResourceNode extends DirectResourceLookup {
-  final def apply(key: ResourceKey): AlmValidation[ResourceValue] = get(key)
+trait PinnedResources extends PinnedResourceLookup {
   def mappings: Map[ResourceKey, ResourceValue]
-  final def withFallbackKeys(fallbackKeys: Map[ResourceKey, ResourceValue]): ResourceNode = {
+
+  final def withFallbackKeys(fallbackKeys: Map[ResourceKey, ResourceValue]): PinnedResources = {
     val newMappings = fallbackKeys.foldLeft(mappings)({
       case (acc, (fallbackKey, fallbackValue)) ⇒
         acc get fallbackKey match {
@@ -29,9 +64,8 @@ trait ResourceNode extends DirectResourceLookup {
             acc
         }
     })
-    new ResourceNode {
-      val locale = ResourceNode.this.locale
-      val parent = ResourceNode.this.parent
+    new PinnedResources {
+      val locale = PinnedResources.this.locale
       def getLocally(key: ResourceKey): AlmValidation[ResourceValue] =
         newMappings get key match {
           case Some(v) ⇒ v.success
@@ -41,37 +75,18 @@ trait ResourceNode extends DirectResourceLookup {
     }
   }
 
-  final def withFallback(fallback: ResourceNode): AlmValidation[ResourceNode] =
+  final def withFallback(fallback: PinnedResources): AlmValidation[PinnedResources] =
     if (this.locale.getBaseName == fallback.locale.getBaseName) {
       withFallbackKeys(fallback.mappings).success
     } else {
       ArgumentProblem(s"""Locales do not match: "${this.locale.getBaseName}"(this) differs from "${fallback.locale.getBaseName}"(fallback).""").failure
     }
-
-  override def getWithLocale(key: ResourceKey): AlmValidation[(ULocale, ResourceValue)] =
-    getLocally(key).fold(
-      fail ⇒ {
-        fail match {
-          case ResourceNotFoundProblem(_) ⇒
-            parent match {
-              case Some(p) ⇒
-                p.getWithLocale(key)
-              case None ⇒
-                fail.failure
-            }
-          case _ ⇒
-            fail.failure
-        }
-      },
-      succ ⇒ (this.locale, succ).success)
-
-  def getLocally(key: ResourceKey): AlmValidation[ResourceValue]
 }
 
-object ResourceNode {
+object PinnedResources {
   import almhirt.xml._
   import almhirt.xml.all._
-  def fromXml(xmlElem: Elem, parent: Option[ResourceNode]): AlmValidation[ResourceNode] = ResourceNodeXml.parse(xmlElem, parent)
+  def fromXml(xmlElem: Elem): AlmValidation[PinnedResources] = ResourceNodeXml.parse(xmlElem)
 }
 
 private[almhirt] object ResourceNodeXml {
@@ -79,16 +94,15 @@ private[almhirt] object ResourceNodeXml {
   import almhirt.almvalidation.kit._
   import almhirt.xml._
   import almhirt.xml.all._
-  def parse(xmlElem: Elem, theParent: Option[ResourceNode]): AlmValidation[ResourceNode] = {
+  def parse(xmlElem: Elem): AlmValidation[PinnedResources] = {
     for {
       localeStr ← xmlElem \@! "locale"
       theLocale ← inTryCatch { new ULocale(localeStr) }
       keys ← parseSections(theLocale, xmlElem \\? "section")
     } yield {
       val keysMap = keys.toMap
-      new ResourceNode {
+      new PinnedResources {
         def locale = theLocale
-        val parent = theParent
         def getLocally(key: ResourceKey): AlmValidation[ResourceValue] =
           keysMap get key match {
             case Some(v) ⇒ v.success
