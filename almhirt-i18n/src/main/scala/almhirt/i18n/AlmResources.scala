@@ -72,6 +72,14 @@ object AlmResources {
     } yield TreeBuilder.fromNodeTree(nodeTree, allowFallback, fallBackToRootAllowed)
   }
 
+  def fromXml(pinnedResources: Seq[scala.xml.Elem], allowFallback: Boolean = true, fallBackToRootAllowed: Boolean = true): AlmValidation[AlmResources] = {
+    for {
+      prepared ← AlmResourcesXml.getLocalesAndIsRoot(pinnedResources)
+      nodes ← prepared.map({ case (elem, locale, isRoot) ⇒ PinnedResources.fromXml(elem).map((locale, isRoot, _)).toAgg }).sequence
+      nodeTree ← TreeBuilder.build(nodes)
+    } yield TreeBuilder.fromNodeTree(nodeTree, allowFallback, fallBackToRootAllowed)
+  }
+
   val empty = new AlmResources {
     override val allowsLocaleFallback = false
     override val fallsBackToRoot = false
@@ -91,12 +99,12 @@ private[almhirt] object TreeBuilder {
 
   private def find(key: ResourceKey, current: PinnedResources, resourcesWithParents: Map[ULocale, Option[PinnedResources]]): Option[(ULocale, ResourceValue)] = {
     current(key) match {
-      case scalaz.Success(resource) => Some(current.locale, resource)
-      case scalaz.Failure(_) => 
-       resourcesWithParents(current.locale) match {
-         case Some(parent) => find(key, parent, resourcesWithParents)
-         case None => None
-       }
+      case scalaz.Success(resource) ⇒ Some(current.locale, resource)
+      case scalaz.Failure(_) ⇒
+        resourcesWithParents(current.locale) match {
+          case Some(parent) ⇒ find(key, parent, resourcesWithParents)
+          case None         ⇒ None
+        }
     }
   }
 
