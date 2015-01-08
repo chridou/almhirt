@@ -5,14 +5,15 @@ import scalaz.Validation.FlatMap._
 import akka.actor.Actor
 import almhirt.common._
 import almhirt.httpx.spray.service.AlmHttpEndpoint
-import almhirt.context.{ HasAlmhirtContext, AlmhirtContext  }
+import almhirt.context.{ HasAlmhirtContext, AlmhirtContext }
 import spray.httpx.marshalling.Marshaller
 import spray.http.StatusCodes
 import spray.routing.Directives
 import org.joda.time.LocalDateTime
 import org.joda.time.DateTime
+import spray.routing.RequestContext
 
-object HttpUtilitiesEndpoint {
+object HttpUtilitiesEndpointFactory {
   final case class HttpUtilitiesEndpointParams(
     returnConfigEnabled: Boolean,
     localDateTimeMarshaller: Marshaller[LocalDateTime],
@@ -37,25 +38,22 @@ object HttpUtilitiesEndpoint {
         HttpUtilitiesEndpointParams(returnConfigEnabled, localDateTimeMarshaller, dateTimeMarshaller, stringMarshaller, uuidMarshaller, problemMarshaller)
     }
   }
-
 }
 
-trait HttpUtilitiesEndpoint extends Directives { me: Actor with AlmHttpEndpoint with HasAlmhirtContext ⇒
-  import HttpUtilitiesEndpoint._
+trait HttpUtilitiesEndpointFactory extends Directives { me: Actor with AlmHttpEndpoint with HasAlmhirtContext ⇒
 
-  protected def httpUtilitiesEndpointParams: HttpUtilitiesEndpointParams
+  def createCommandEndpoint(params: HttpUtilitiesEndpointFactory.HttpUtilitiesEndpointParams): RequestContext ⇒ Unit = {
 
-  implicit private val problemMarshaller = httpUtilitiesEndpointParams.problemMarshaller
-  implicit private val dateTimeMarshaller = httpUtilitiesEndpointParams.dateTimeMarshaller
-  implicit private val localDateTimeMarshaller = httpUtilitiesEndpointParams.localDateTimeMarshaller
-  implicit private val stringMarshaller = httpUtilitiesEndpointParams.stringMarshaller
-  implicit private val uuidMarshaller = httpUtilitiesEndpointParams.uuidMarshaller
+    implicit val problemMarshaller = params.problemMarshaller
+    implicit val dateTimeMarshaller = params.dateTimeMarshaller
+    implicit val localDateTimeMarshaller = params.localDateTimeMarshaller
+    implicit val stringMarshaller = params.stringMarshaller
+    implicit val uuidMarshaller = params.uuidMarshaller
 
-  val utilitiesTerminator =
     pathPrefix("config") {
       pathEnd {
         get { ctx ⇒
-          if (httpUtilitiesEndpointParams.returnConfigEnabled)
+          if (params.returnConfigEnabled)
             ctx.complete(almhirtContext.config.root().render())
           else
             ctx.complete(StatusCodes.Forbidden, "Sorry...")
@@ -116,4 +114,5 @@ trait HttpUtilitiesEndpoint extends Directives { me: Actor with AlmHttpEndpoint 
           }
         }
     }
+  }
 }

@@ -18,7 +18,7 @@ import almhirt.http.AlmMediaTypesProvider
 import almhirt.httpx.spray.marshalling.DefaultMarshallingInstances
 import riftwarp.util.WarpHttpSerializer
 import almhirt.httpx.spray.marshalling.MarshallingContentTypesProvider
-import almhirt.corex.spray.service.HttpHerderService
+import almhirt.corex.spray.service.HttpHerderServiceFactory
 import almhirt.context.HasAlmhirtContext
 import com.typesafe.config.Config
 import almhirt.context.ComponentFactoryBuilderEntry
@@ -72,10 +72,10 @@ object Boot {
 
     val entry1 = { (ctx: AlmhirtContext) ⇒
       {
-        HttpHerderService.paramsFactory(ctx).map(paramsFactory ⇒
+        HttpHerderServiceFactory.paramsFactory(ctx).map(paramsFactory ⇒
           Props(new {
             override val almhirtContext = ctx
-            override val httpHerderServiceParams = paramsFactory(problemMarshaller)
+            override val params = paramsFactory(problemMarshaller)
           } with SillyHerderService with Actor with ActorLogging with HasAlmhirtContext {
             def receive = runRoute(route)
             override val actorRefFactory = this.context
