@@ -42,7 +42,7 @@ object HttpUtilitiesEndpointFactory {
 
 trait HttpUtilitiesEndpointFactory extends Directives { me: Actor with AlmHttpEndpoint with HasAlmhirtContext ⇒
 
-  def createCommandEndpoint(params: HttpUtilitiesEndpointFactory.HttpUtilitiesEndpointParams): RequestContext ⇒ Unit = {
+  def createUtilitiesEndpoint(params: HttpUtilitiesEndpointFactory.HttpUtilitiesEndpointParams): RequestContext ⇒ Unit = {
 
     implicit val problemMarshaller = params.problemMarshaller
     implicit val dateTimeMarshaller = params.dateTimeMarshaller
