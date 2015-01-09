@@ -24,6 +24,11 @@ trait ResourceLookup {
   def fallsBackToRoot: Boolean
 
   /**
+   * @return when true, it will move upwards in the locale hierarchy to lookup a key in case it is not found for the current locale.
+   */
+  def doesUpwardLookup: Boolean
+  
+  /**
    * @return the set of supported locales that are supported without using fallbacks
    */
   def supportedLocales: Set[ULocale] 

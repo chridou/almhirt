@@ -12,7 +12,7 @@ class ResourcesAndKeysTests extends FunSuite with Matchers {
   //val resourcesWithFallbackAllowed = AlmResources.fromXmlInResources("localization", "test", getClass.getClassLoader, true).forceResult
   val resourcesWithoutFallback =
     try {
-      AlmResources.fromXmlInResources("localization", "test", getClass.getClassLoader, false).forceResult
+      AlmResources.fromXmlInResources("localization", "test", getClass.getClassLoader, true, false, true).forceResult
     } catch {
       case exn: ResultForcedFromValidationException ⇒
         info(exn.problem.toString)

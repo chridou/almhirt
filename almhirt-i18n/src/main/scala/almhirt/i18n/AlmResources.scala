@@ -65,23 +65,24 @@ trait AlmResources extends ResourceLookup {
 }
 
 object AlmResources {
-  def fromXmlInResources(resourcePath: String, namePrefix: String, classloader: ClassLoader, allowFallback: Boolean = true, fallBackToRootAllowed: Boolean = true): AlmValidation[AlmResources] = {
+  def fromXmlInResources(resourcePath: String, namePrefix: String, classloader: ClassLoader, allowUpwardsLookup: Boolean = true, allowFallback: Boolean = true, fallBackToRootAllowed: Boolean = true): AlmValidation[AlmResources] = {
     for {
       nodes ← AlmResourcesXml.getNodes(resourcePath, namePrefix, classloader)
       nodeTree ← TreeBuilder.build(nodes)
-    } yield TreeBuilder.fromNodeTree(nodeTree, allowFallback, fallBackToRootAllowed)
+    } yield TreeBuilder.fromNodeTree(nodeTree, allowUpwardsLookup, allowFallback, fallBackToRootAllowed)
   }
 
-  def fromXml(pinnedResources: Seq[scala.xml.Elem], allowFallback: Boolean = true, fallBackToRootAllowed: Boolean = true): AlmValidation[AlmResources] = {
+  def fromXml(pinnedResources: Seq[scala.xml.Elem], allowUpwardsLookup: Boolean = true, allowFallback: Boolean = true, fallBackToRootAllowed: Boolean = true): AlmValidation[AlmResources] = {
     for {
       prepared ← AlmResourcesXml.getLocalesAndIsRoot(pinnedResources)
       nodes ← prepared.map({ case (elem, locale, isRoot) ⇒ PinnedResources.fromXml(elem).map((locale, isRoot, _)).toAgg }).sequence
       nodeTree ← TreeBuilder.build(nodes)
-    } yield TreeBuilder.fromNodeTree(nodeTree, allowFallback, fallBackToRootAllowed)
+    } yield TreeBuilder.fromNodeTree(nodeTree, allowUpwardsLookup, allowFallback, fallBackToRootAllowed)
   }
 
   val empty = new AlmResources {
     override val allowsLocaleFallback = false
+    override val doesUpwardLookup = false
     override val fallsBackToRoot = false
     override val supportedLocales = Set.empty[ULocale]
     override def pinnedResourcesTree = throw new NoSuchElementException("There is no node tree in the empty resources!")
@@ -97,18 +98,21 @@ private[almhirt] object TreeBuilder {
     Seq((tree.rootLabel, parent)) ++ tree.subForest.toList.map { child ⇒ makeTreeWithParents(child, Some(tree.rootLabel)) }.flatten
   }
 
-  private def find(key: ResourceKey, current: PinnedResources, resourcesWithParents: Map[ULocale, Option[PinnedResources]]): Option[(ULocale, ResourceValue)] = {
+  private def find(key: ResourceKey, current: PinnedResources, resourcesWithParents: Map[ULocale, Option[PinnedResources]], doUpwardLookup: Boolean): Option[(ULocale, ResourceValue)] = {
     current(key) match {
       case scalaz.Success(resource) ⇒ Some(current.locale, resource)
       case scalaz.Failure(_) ⇒
-        resourcesWithParents(current.locale) match {
-          case Some(parent) ⇒ find(key, parent, resourcesWithParents)
-          case None         ⇒ None
-        }
+        if (doUpwardLookup)
+          resourcesWithParents(current.locale) match {
+            case Some(parent) ⇒ find(key, parent, resourcesWithParents, doUpwardLookup)
+            case None         ⇒ None
+          }
+        else
+          None
     }
   }
 
-  def fromNodeTree(tree: Tree[PinnedResources], allowFallback: Boolean, fallBackToRootAllowed: Boolean): AlmResources = {
+  def fromNodeTree(tree: Tree[PinnedResources], allowUpwardsLookup: Boolean, allowFallback: Boolean, fallBackToRootAllowed: Boolean): AlmResources = {
     val theLocalesTree = tree.map { _.locale }
     val nodesByLocale = tree.flatten.map(tr ⇒ (tr.locale, tr)).toMap
 
@@ -116,6 +120,7 @@ private[almhirt] object TreeBuilder {
 
     new AlmResources {
       val allowsLocaleFallback = allowFallback
+      val doesUpwardLookup = allowUpwardsLookup
       val fallsBackToRoot = fallBackToRootAllowed
       override def getPinnedResourcesStrict(locale: ULocale): AlmValidation[PinnedResources] =
         nodesByLocale get (locale) match {
@@ -132,10 +137,11 @@ private[almhirt] object TreeBuilder {
         val uLoc = implicitly[LocaleMagnet[L]].toULocale(locale)
         this.getPinnedResources(uLoc) fold (
           fail ⇒ ResourceNotFoundProblem(s""""${uLoc.getBaseName}" is not a supported locale. The queried key is $key.""", cause = Some(fail)).failure,
-          startWith ⇒ find(key, startWith, resourcesWithParents) match {
-            case Some(res) ⇒ res.success
-            case None      ⇒ ResourceNotFoundProblem(s"""$key not found for locale ${uLoc.getBaseName}".""").failure
-          })
+          startWith ⇒
+            find(key, startWith, resourcesWithParents, allowUpwardsLookup) match {
+              case Some(res) ⇒ res.success
+              case None      ⇒ ResourceNotFoundProblem(s"""$key not found(even after an upwards lookup) for locale ${uLoc.getBaseName}".""").failure
+            })
       }
 
       override def withFallback(fallback: AlmResources): AlmValidation[AlmResources] =
@@ -151,16 +157,15 @@ private[almhirt] object TreeBuilder {
       val fallbackNodes = fallback.pinnedResourcesTree.flatten.map(t ⇒ (t.locale, t)).toMap
 
       val mergedV =
-        fallbackNodes.foldLeft(origNodes.success) {
+        fallbackNodes.foldLeft(origNodes.success[almhirt.common.Problem]) {
           case (accV, (nextLoc, nextNode)) ⇒
             accV match {
               case scalaz.Failure(_) ⇒
                 accV
               case scalaz.Success(acc) ⇒
                 acc get nextLoc match {
-                  case Some(toAddFallbacks) ⇒
-                    toAddFallbacks.withFallback(nextNode).map(merged ⇒ acc + (nextLoc -> merged))
-                    acc.success
+                  case Some(toAddFallbacksTo) ⇒
+                    toAddFallbacksTo.withFallback(nextNode).map(merged ⇒ acc + (nextLoc -> merged))
                   case None ⇒
                     (acc + (nextLoc -> nextNode)).success
                 }
@@ -174,7 +179,7 @@ private[almhirt] object TreeBuilder {
         buildTree[PinnedResources](root, rest.toSeq)
       })
 
-      treeV.map(tree ⇒ fromNodeTree(tree, orig.allowsLocaleFallback, orig.fallsBackToRoot))
+      treeV.map(tree ⇒ fromNodeTree(tree, orig.doesUpwardLookup, orig.allowsLocaleFallback, orig.fallsBackToRoot))
     }
   }
 

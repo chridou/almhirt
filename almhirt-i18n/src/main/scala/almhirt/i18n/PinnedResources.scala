@@ -69,7 +69,7 @@ trait PinnedResources extends PinnedResourceLookup {
     })
     new PinnedResources {
       val locale = PinnedResources.this.locale
-      def getLocally(key: ResourceKey): AlmValidation[ResourceValue] =
+      override def get(key: ResourceKey): AlmValidation[ResourceValue] =
         newMappings get key match {
           case Some(v) ⇒ v.success
           case None    ⇒ ResourceNotFoundProblem(s"No resource for key $key.").failure
