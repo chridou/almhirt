@@ -65,14 +65,14 @@ trait AlmResources extends ResourceLookup {
 }
 
 object AlmResources {
-  def fromXmlInResources(resourcePath: String, namePrefix: String, classloader: ClassLoader, allowUpwardsLookup: Boolean = true, allowFallback: Boolean = true, fallBackToRootAllowed: Boolean = true): AlmValidation[AlmResources] = {
+  def fromXmlInResources(resourcePath: String, namePrefix: String, classloader: ClassLoader, allowUpwardsLookup: Boolean, allowFallback: Boolean, fallBackToRootAllowed: Boolean): AlmValidation[AlmResources] = {
     for {
       nodes ← AlmResourcesXml.getNodes(resourcePath, namePrefix, classloader)
       nodeTree ← TreeBuilder.build(nodes)
     } yield TreeBuilder.fromNodeTree(nodeTree, allowUpwardsLookup, allowFallback, fallBackToRootAllowed)
   }
 
-  def fromXml(pinnedResources: Seq[scala.xml.Elem], allowUpwardsLookup: Boolean = true, allowFallback: Boolean = true, fallBackToRootAllowed: Boolean = true): AlmValidation[AlmResources] = {
+  def fromXml(pinnedResources: Seq[scala.xml.Elem], allowUpwardsLookup: Boolean, allowFallback: Boolean, fallBackToRootAllowed: Boolean): AlmValidation[AlmResources] = {
     for {
       prepared ← AlmResourcesXml.getLocalesAndIsRoot(pinnedResources)
       nodes ← prepared.map({ case (elem, locale, isRoot) ⇒ PinnedResources.fromXml(elem).map((locale, isRoot, _)).toAgg }).sequence
