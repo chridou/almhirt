@@ -42,4 +42,11 @@ class ULocaleExplorationTests extends FunSuite with Matchers {
     info(loc.getDisplayCountry)
     info(loc.getDisplayVariant)
   }
+  
+  test("the display language for de-DE is") {
+    val loc = new ULocale("en-UK")
+    info(loc.getDisplayName(new ULocale("de-DE")))
+    info(loc.getDisplayCountry)
+    info(loc.getDisplayVariant)
+  }
 }
