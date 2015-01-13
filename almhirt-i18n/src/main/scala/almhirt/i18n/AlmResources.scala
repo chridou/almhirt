@@ -61,7 +61,7 @@ trait AlmResources extends ResourceLookup {
    * @param fallback the resources to use as a fallback
    * @return the new resources
    */
-  def withFallback(fallback: AlmResources): AlmValidation[AlmResources]
+  def withFallback(fallback: AlmResources, fallbackToNewLanguages: Boolean): AlmValidation[AlmResources]
 }
 
 object AlmResources {
@@ -89,7 +89,7 @@ object AlmResources {
     override def localeTree = throw new NoSuchElementException("There is no locale tree in the empty resources!")
     override def getPinnedResourcesStrict(locale: ULocale): AlmValidation[PinnedResources] = ArgumentProblem("The empty AlmResources does not contain any nodes").failure
     override def getResourceWithLocale[L: LocaleMagnet](key: ResourceKey, locale: L): AlmValidation[(ULocale, ResourceValue)] = NotFoundProblem("The empty AlmResources does not contain any resources").failure
-    override def withFallback(fallback: AlmResources): AlmValidation[AlmResources] = fallback.success
+    override def withFallback(fallback: AlmResources, fallbackToNewLanguages: Boolean): AlmValidation[AlmResources] = fallback.success
   }
 }
 
@@ -144,12 +144,12 @@ private[almhirt] object TreeBuilder {
             })
       }
 
-      override def withFallback(fallback: AlmResources): AlmValidation[AlmResources] =
-        addFallback(this, fallback)
+      override def withFallback(fallback: AlmResources, fallbackToNewLanguages: Boolean): AlmValidation[AlmResources] =
+        addFallback(this, fallback, fallbackToNewLanguages)
     }
   }
 
-  private def addFallback(orig: AlmResources, fallback: AlmResources): AlmValidation[AlmResources] = {
+  private def addFallback(orig: AlmResources, fallback: AlmResources, fallbackToNewLanguages: Boolean): AlmValidation[AlmResources] = {
     if (fallback.supportedLocales.isEmpty) {
       orig.success
     } else {
@@ -167,7 +167,10 @@ private[almhirt] object TreeBuilder {
                   case Some(toAddFallbacksTo) ⇒
                     toAddFallbacksTo.withFallback(nextNode).map(merged ⇒ acc + (nextLoc -> merged))
                   case None ⇒
-                    (acc + (nextLoc -> nextNode)).success
+                    if (fallbackToNewLanguages)
+                      (acc + (nextLoc -> nextNode)).success
+                    else
+                      acc.success
                 }
             }
         }

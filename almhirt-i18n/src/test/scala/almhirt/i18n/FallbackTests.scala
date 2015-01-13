@@ -71,7 +71,7 @@ class FallbackTests extends FunSpec with Matchers {
 
   describe("""Two resources A and B, that have the locales "en", "de", "fr"""") {
     describe("when A uses B as a fallback") {
-      val resources = AlmResources.fromXml(resAXmls, false, false, false).flatMap(a ⇒ AlmResources.fromXml(resBXmls, false, false, false).flatMap(a.withFallback(_))).forceResult
+      val resources = AlmResources.fromXml(resAXmls, false, false, false).flatMap(a ⇒ AlmResources.fromXml(resBXmls, false, false, false).flatMap(a.withFallback(_, true))).forceResult
 
       describe("""and the locale is "en"""") {
         val loc = new ULocale("en")
@@ -113,7 +113,7 @@ class FallbackTests extends FunSpec with Matchers {
 
     }
     describe("when B uses A as a fallback") {
-      val resources = AlmResources.fromXml(resBXmls, false, false, false).flatMap(b ⇒ AlmResources.fromXml(resAXmls, false, false, false).flatMap(b.withFallback(_))).forceResult
+      val resources = AlmResources.fromXml(resBXmls, false, false, false).flatMap(b ⇒ AlmResources.fromXml(resAXmls, false, false, false).flatMap(b.withFallback(_, true))).forceResult
 
       describe("""and the locale is "en"""") {
         val loc = new ULocale("en")
