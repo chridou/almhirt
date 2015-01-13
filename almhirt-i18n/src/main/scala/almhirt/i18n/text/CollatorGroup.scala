@@ -13,14 +13,32 @@ trait Collators {
 
   def originalLocales: Set[ULocale]
 
+  /**
+   * Get a [[Collator]]. Fail when there is no pre-created [[Collator]] for the locale
+   *
+   * @param the locale for the requested [[Collator]]
+   * @return a pre-created [[Collator]] or an failure
+   */
   def get[L: LocaleMagnet](locale: L): AlmValidation[Collator]
 
+  /**
+   * Get or create a [[Collator]].Creates a new [[Collator]] if get would fail.
+   *
+   * @param the locale for the requested [[Collator]]
+   * @return a pre-created [[Collator]] or an failure
+   */
   final def getOrCreate[L: LocaleMagnet](locale: L): Collator =
     get(locale) match {
       case scalaz.Success(collator) ⇒ collator
       case scalaz.Failure(_)        ⇒ Collator(locale, strength)
     }
 
+  /**
+   * Find a [[Collator]]. None when there is no pre-created [[Collator]] for the locale
+   *
+   * @param the locale for the requested [[Collator]]
+   * @return a pre-created [[Collator]] or None
+   */
   final def find[L: LocaleMagnet](locale: L): Option[Collator] =
     get(locale).toOption
 

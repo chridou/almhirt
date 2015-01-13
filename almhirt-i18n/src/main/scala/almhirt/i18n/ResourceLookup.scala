@@ -27,17 +27,17 @@ trait ResourceLookup {
    * @return when true, it will move upwards in the locale hierarchy to lookup a key in case it is not found for the current locale.
    */
   def doesUpwardLookup: Boolean
-  
+
   /**
    * @return the set of supported locales that are supported without using fallbacks
    */
-  def supportedLocales: Set[ULocale] 
+  def supportedLocales: Set[ULocale]
 
   /**
    * @return a tree of that represents the structure of the locales
    */
   def localeTree: Tree[ULocale]
-  
+
   /**
    * Get an [[AlmFormatter]] possibly using a fallback locale
    *
@@ -129,9 +129,13 @@ trait ResourceLookup {
       val fb = uLoc.getFallback
       if (supportedLocales.contains(fb)) {
         fb.success
+      } else if (fallsBackToRoot) {
+        localeTree.rootLabel.success
       } else {
         ArgumentProblem(s"""The locale "${uLoc.getBaseName}" is not supported neither is its fallback "${fb.getBaseName}".""").failure
       }
+    } else if (fallsBackToRoot) {
+      localeTree.rootLabel.success
     } else {
       ArgumentProblem(s"""The locale "${uLoc.getBaseName}" is not supported.""").failure
     }
