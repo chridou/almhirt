@@ -6,7 +6,7 @@ import almhirt.i18n.LocaleMagnet
 
 /**
  * Access collator functions by locale.
- * Acts as a cache of precreated [[Collator]]s but can also create new ones on demand.
+ * Acts as a cache of precreated [[Collator]]s and as a factory.
  */
 trait Collators {
   def strength: Option[CollatorStrength]
