@@ -121,23 +121,17 @@ trait ResourceLookup {
    * @param locale the locale that should be supported
    * @return A success if the locale is supported or if it could be transformed into a supported locale.
    */
-  final def asSupportedLocale[L](locale: L)(implicit magnet: LocaleMagnet[L]): AlmValidation[ULocale] = {
+  final def toSupportedLocale[L](locale: L)(implicit magnet: LocaleMagnet[L]): ULocale = {
     val uLoc = magnet.toULocale(locale)
     if (supportedLocales.contains(uLoc)) {
-      uLoc.success
-    } else if (allowsLocaleFallback) {
+      uLoc
+    } else {
       val fb = uLoc.getFallback
       if (supportedLocales.contains(fb)) {
-        fb.success
-      } else if (fallsBackToRoot) {
-        localeTree.rootLabel.success
+        fb
       } else {
-        ArgumentProblem(s"""The locale "${uLoc.getBaseName}" is not supported neither is its fallback "${fb.getBaseName}".""").failure
+        localeTree.rootLabel
       }
-    } else if (fallsBackToRoot) {
-      localeTree.rootLabel.success
-    } else {
-      ArgumentProblem(s"""The locale "${uLoc.getBaseName}" is not supported.""").failure
     }
   }
 
