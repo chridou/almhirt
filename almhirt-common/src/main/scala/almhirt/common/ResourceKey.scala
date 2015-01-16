@@ -9,7 +9,7 @@ final case class ResourceSection(section: String) extends Function1[String, Reso
   /**
    * Create a [[almhirt.common.ResourceGroup]].
    * It is assumed that the group parameter does not contain any dots.
-   * 
+   *
    * Same as #withGroup
    *
    * @param group the name of the group
@@ -85,7 +85,7 @@ final case class ResourceGroup(section: String, group: String) extends Function1
   /**
    * Create a [[almhirt.common.ResourceKey]]
    * It is assumed that the key parameter does not contain any dots.
-   * 
+   *
    * Same as #withKey
    *
    * @param group the name of the key
@@ -111,6 +111,39 @@ final case class ResourceGroup(section: String, group: String) extends Function1
    */
   def withKeyPrefix(prefix: String) = ResourceKeyPrefix(section, group, prefix)
 
+  /**
+   * Create a [[almhirt.common.ResourceKey]]
+   * This function will fail if there is any dot in the string.
+   *
+   * @param key key name
+   * @return the [[almhirt.common.ResourceKey]]
+   */
+  def makeKey(key: String): AlmValidation[ResourceKey] =
+    key.split("\\.") match {
+      case Array(key) ⇒ scalaz.Success(ResourceKey(section, group, key))
+      case _          ⇒ scalaz.Failure(ArgumentProblem(s""""$key" is not suitable to complete $this to a key."""))
+    }
+
+  /**
+   * Create a [[almhirt.common.ResourceKey]].
+   * All dots will be replaced by a given string
+   *
+   * @param key key name
+   * @param dotReplacement the string that replaces all contained dots
+   * @return the [[almhirt.common.ResourceKey]]
+   */
+  def makeKey(key: String, dotReplacement: String): ResourceKey =
+    ResourceKey(section, group, key.replaceAll("\\.", dotReplacement))
+
+  /**
+   * Create a [[almhirt.common.ResourceKey]]
+   * This function will throw an exception if there is any dot in the string.
+   *
+   * @param key key name
+   * @return the [[almhirt.common.ResourceKey]]
+   */
+  def forceKey(key: String): ResourceKey =
+    makeKey(key).resultOrEscalate
 }
 
 /**
@@ -122,8 +155,8 @@ object ResourceKey {
   /**
    * Parse a string that must contain 2 dots into a [[almhirt.common.ResourceKey]]
    * This function may fail.
-   * 
-   * Same as parse 
+   *
+   * Same as parse
    *
    * @param toParse a string to parse
    * @return the [[almhirt.common.ResourceKey]] made from the string
@@ -166,7 +199,7 @@ final case class ResourceKeyPrefix(section: String, group: String, prefix: Strin
   /**
    * Append finalPart to the prefix.
    * It is assumed that the finalPart parameter does not contain any dots.
-   * 
+   *
    * Same as append.
    *
    * @param finalPart the final part that makes the key complete
