@@ -1,5 +1,7 @@
 package almhirt.akkax
 
+import scala.language.implicitConversions
+
 import scala.concurrent._
 import scala.concurrent.duration._
 import scalaz.syntax.validation._
@@ -10,43 +12,47 @@ import scala.concurrent.ExecutionContext
 import almhirt.problem.CauseIsThrowable
 
 trait AlmActorSupport { me: Actor ⇒
-  def pipeTo[T](what: ⇒ AlmFuture[T])(receiver: ActorRef, unwrapProblem: Boolean = true)(implicit executionContext: ExecutionContext) {
+
+  @deprecated("Do not used. Will be removed", "0.7.4")
+  def pipeTo[T](what: AlmFuture[T])(receiver: ActorRef, unwrapProblem: Boolean = true)(implicit executionContext: ExecutionContext): AlmFuture[T] = {
     what.pipeTo(receiver, unwrapProblem)
   }
 
-  def recoverPipeTo[T](what: ⇒ AlmFuture[T], recover: Problem ⇒ Any)(receiver: ActorRef)(implicit executionContext: ExecutionContext) {
-    what.pipeTo(receiver)
+  @deprecated("Do not used. Will be removed", "0.7.4")
+  def recoverPipeTo[T](what: AlmFuture[T], recover: Problem ⇒ Any)(receiver: ActorRef)(implicit executionContext: ExecutionContext): AlmFuture[T] = {
+    what.recoverPipeTo(recover)(receiver)
   }
 
-  def mapRecoverPipeTo[T](what: ⇒ AlmFuture[T], map: T ⇒ Any, recover: Problem ⇒ Any)(receiver: ActorRef)(implicit executionContext: ExecutionContext) {
+  @deprecated("Do not used. Will be removed", "0.7.4")
+  def mapRecoverPipeTo[T](what: AlmFuture[T], map: T ⇒ Any, recover: Problem ⇒ Any)(receiver: ActorRef)(implicit executionContext: ExecutionContext): AlmFuture[T] = {
     what.mapRecoverPipeTo(map, recover)(receiver)
   }
 
-  private def innerRetry[T](f: => AlmFuture[T], lastFailure: Problem, promise: Promise[AlmValidation[T]], retriesLeft: Int, retryDelay: FiniteDuration, executor: ExecutionContext) {
+  private def innerRetry[T](f: ⇒ AlmFuture[T], lastFailure: Problem, promise: Promise[AlmValidation[T]], retriesLeft: Int, retryDelay: FiniteDuration, executor: ExecutionContext) {
     if (retriesLeft == 0) {
       promise.success(lastFailure.failure)
     } else {
       if (retryDelay == Duration.Zero) {
         f.onComplete(
-          fail => innerRetry(f, fail, promise, retriesLeft - 1, retryDelay, executor),
-          succ => promise.success(succ.success))(executor)
+          fail ⇒ innerRetry(f, fail, promise, retriesLeft - 1, retryDelay, executor),
+          succ ⇒ promise.success(succ.success))(executor)
       } else {
         me.context.system.scheduler.scheduleOnce(retryDelay) {
           f.onComplete(
-            fail => innerRetry(f, fail, promise, retriesLeft - 1, retryDelay, executor),
-            succ => promise.success(succ.success))(executor)
+            fail ⇒ innerRetry(f, fail, promise, retriesLeft - 1, retryDelay, executor),
+            succ ⇒ promise.success(succ.success))(executor)
         }(executor)
       }
     }
   }
 
-  def retry[T](f: => AlmFuture[T])(numRetries: Int, retryDelay: FiniteDuration, executor: ExecutionContext = me.context.dispatcher): AlmFuture[T] = {
+  def retry[T](f: ⇒ AlmFuture[T])(numRetries: Int, retryDelay: FiniteDuration, executor: ExecutionContext = me.context.dispatcher): AlmFuture[T] = {
     if (numRetries >= 0) {
       val p = Promise[AlmValidation[T]]
 
       f.onComplete(
-        fail => innerRetry(f, fail, p, numRetries, retryDelay, executor),
-        succ => p.success(succ.success))(executor)
+        fail ⇒ innerRetry(f, fail, p, numRetries, retryDelay, executor),
+        succ ⇒ p.success(succ.success))(executor)
 
       new AlmFuture(p.future)
     } else {
@@ -54,10 +60,12 @@ trait AlmActorSupport { me: Actor ⇒
     }
   }
 
-  implicit class AlmFuturePipeTo[T](self: AlmFuture[T]) {
-    def pipeTo(receiver: ActorRef, unwrapProblem: Boolean = true)(implicit executionContext: ExecutionContext) {
+  implicit def almFuture2PipeableFuture[T](future: AlmFuture[T]): PipeableAlmFuture[T] = new PipeableAlmFuture(future)
+
+  class PipeableAlmFuture[T](future: AlmFuture[T]) extends AnyRef {
+    def pipeTo(receiver: ActorRef, unwrapProblem: Boolean = true)(implicit executionContext: ExecutionContext): AlmFuture[T] = {
       import almhirt.problem._
-      self.onComplete(
+      future.onComplete(
         problem ⇒
           problem match {
             case ExceptionCaughtProblem(ContainsThrowable(throwable)) ⇒
@@ -68,20 +76,23 @@ trait AlmActorSupport { me: Actor ⇒
               receiver ! Status.Failure(new EscalatedProblemException(problem))
           },
         succ ⇒ receiver ! succ)
+      future
     }
 
-    def recoverPipeTo(recover: Problem ⇒ Any)(receiver: ActorRef)(implicit executionContext: ExecutionContext) {
+    def recoverPipeTo(recover: Problem ⇒ Any)(receiver: ActorRef)(implicit executionContext: ExecutionContext): AlmFuture[T] = {
       import almhirt.problem._
-      self.onComplete(
+      future.onComplete(
         problem ⇒ receiver ! recover(problem),
         succ ⇒ receiver ! succ)
+      future
     }
 
-    def mapRecoverPipeTo(map: T ⇒ Any, recover: Problem ⇒ Any)(receiver: ActorRef)(implicit executionContext: ExecutionContext) {
+    def mapRecoverPipeTo(map: T ⇒ Any, recover: Problem ⇒ Any)(receiver: ActorRef)(implicit executionContext: ExecutionContext): AlmFuture[T] = {
       import almhirt.problem._
-      self.onComplete(
+      future.onComplete(
         problem ⇒ receiver ! recover(problem),
         succ ⇒ receiver ! map(succ))
+      future
     }
   }
 }
