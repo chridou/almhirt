@@ -41,7 +41,7 @@ final case class ResourceSection(section: String) extends Function1[String, Reso
 
   /**
    * Create a [[almhirt.common.ResourceKey]] by using the first dot as a group/key separator.
-   * All dots after the first will be replaced by a given string
+   * All dots after the first will be replaced by a given string.
    * This function may fail.
    *
    * @param groupAndKey group- and key name separated by a dot
@@ -67,7 +67,7 @@ final case class ResourceSection(section: String) extends Function1[String, Reso
 
   /**
    * Create a [[almhirt.common.ResourceKey]] by using the first dot as a group/key separator.
-   * All dots after the first will be replaced by a given string
+   * All dots after the first will be replaced by a given string.
    * This function may throw an exception.
    *
    * @param groupAndKey group- and key name separated by a dot
@@ -126,7 +126,7 @@ final case class ResourceGroup(section: String, group: String) extends Function1
 
   /**
    * Create a [[almhirt.common.ResourceKey]].
-   * All dots will be replaced by a given string
+   * All dots will be replaced by a given string.
    *
    * @param key key name
    * @param dotReplacement the string that replaces all contained dots
