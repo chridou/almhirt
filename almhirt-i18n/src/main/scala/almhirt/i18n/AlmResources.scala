@@ -20,6 +20,9 @@ trait AlmResources extends ResourceLookup {
    */
   override def localeTree: Tree[ULocale] = pinnedResourcesTree.map { _.locale }
 
+  /** Path from the locale to the root */
+  def rootLocalePath(locale: ULocale): AlmValidation[Seq[ULocale]]
+
   /**
    * Get a [[PinnedResources]] without using a fallback locale
    *
@@ -88,14 +91,35 @@ object AlmResources {
     override val supportedLocales = Set.empty[ULocale]
     override def pinnedResourcesTree = throw new NoSuchElementException("There is no node tree in the empty resources!")
     override def localeTree = throw new NoSuchElementException("There is no locale tree in the empty resources!")
+    override def rootLocalePath(locale: ULocale): AlmValidation[Seq[ULocale]] = ArgumentProblem("The empty AlmResources does not contain any locales").failure
     override def getPinnedResourcesStrict(locale: ULocale): AlmValidation[PinnedResources] = ArgumentProblem("The empty AlmResources does not contain any nodes").failure
     override def getResourceWithLocale[L: LocaleMagnet](key: ResourceKey, locale: L): AlmValidation[(ULocale, ResourceValue)] = NotFoundProblem("The empty AlmResources does not contain any resources").failure
     override def withFallback(fallback: AlmResources, fallbackToNewLanguages: Boolean): AlmValidation[AlmResources] = fallback.success
   }
+
+  implicit class SuperMegaOps(val resources: AlmResources) extends AnyVal {
+    def pinAllAccessibleResources(locale: ULocale): AlmValidation[PinnedResources] = {
+      for {
+        pinnedRes ← resources.getPinnedResources(locale)
+        pathToRoot ← resources.rootLocalePath(pinnedRes.locale)
+        allMappingsFromRoot ← pathToRoot.toList.map(loc ⇒ resources.getPinnedResources(loc).map(_.mappings).toAgg).sequence.map(_.reverse)
+      } yield {
+        val mergedMappings = allMappingsFromRoot.tail.foldLeft(allMappingsFromRoot.head) { (acc, cur) ⇒
+          acc ++ cur
+        }
+        PinnedResources(locale, mergedMappings)
+      }
+    }
+    def pinAllAccessibleResourcesInSection(section: ResourceSection, locale: ULocale): AlmValidation[PinnedResources] =
+      pinAllAccessibleResources(locale).map(res ⇒ PinnedResources(locale, res.mappings.filterKeys { _.section == section.section }))
+
+    def pinAllAccessibleResourcesInGroup(group: ResourceGroup, locale: ULocale): AlmValidation[PinnedResources] =
+      pinAllAccessibleResources(locale).map(res ⇒ PinnedResources(locale, res.mappings.filterKeys { key ⇒ key.section == group.section && key.group == group.group }))
+  }
 }
 
 private[almhirt] object TreeBuilder {
-  private def makeTreeWithParents(tree: Tree[PinnedResources], parent: Option[PinnedResources]): Seq[(PinnedResources, Option[PinnedResources])] = {
+  def makeTreeWithParents(tree: Tree[PinnedResources], parent: Option[PinnedResources]): Seq[(PinnedResources, Option[PinnedResources])] = {
     Seq((tree.rootLabel, parent)) ++ tree.subForest.toList.map { child ⇒ makeTreeWithParents(child, Some(tree.rootLabel)) }.flatten
   }
 
@@ -110,6 +134,13 @@ private[almhirt] object TreeBuilder {
           }
         else
           None
+    }
+  }
+
+ private def pathToRoot(locale: Option[ULocale], resourcesWithParents: Map[ULocale, Option[ULocale]]): List[ULocale] = {
+    locale match {
+      case None => Nil
+      case Some(l) => l :: pathToRoot(resourcesWithParents.get(l).flatten, resourcesWithParents)
     }
   }
 
@@ -133,6 +164,12 @@ private[almhirt] object TreeBuilder {
 
       override val pinnedResourcesTree: Tree[PinnedResources] = tree
       override val localeTree: Tree[ULocale] = theLocalesTree
+
+      override def rootLocalePath(locale: ULocale): AlmValidation[Seq[ULocale]] = {
+        for {
+          entryLocale <- getPinnedResources(locale).map(_.locale)
+        } yield pathToRoot(Some(entryLocale), resourcesWithParents.mapValues(_.map(_.locale)))
+      }
 
       override def getResourceWithLocale[L: LocaleMagnet](key: ResourceKey, locale: L): AlmValidation[(ULocale, ResourceValue)] = {
         val uLoc = implicitly[LocaleMagnet[L]].toULocale(locale)
