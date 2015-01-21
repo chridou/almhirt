@@ -62,6 +62,7 @@ trait AlmResources extends ResourceLookup {
    * @return the new resources
    */
   def withFallback(fallback: AlmResources, fallbackToNewLanguages: Boolean): AlmValidation[AlmResources]
+
 }
 
 object AlmResources {
