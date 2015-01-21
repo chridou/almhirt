@@ -22,6 +22,9 @@ trait AlmActor extends Actor with HasAlmhirtContext with AlmActorSupport {
   implicit def CommandToCommandRepresentation(cmd: Command): CommandRepresentation = CommandRepresentation.FullCommand(cmd)
   implicit def CommandIdToCommandRepresentation(id: CommandId): CommandRepresentation = CommandRepresentation.CommandIdOnly(id)
 
+  def selectExecutionContext(implicit selector: ExtendedExecutionContextSelector): ExecutionContext =
+    selector.select(this.almhirtContext, this.context)
+  
   def registerCircuitControl(circuitControl: CircuitControl)(implicit cnp: ActorComponentIdProvider): Unit =
     almhirtContext.tellHerder(HerderMessages.CircuitMessages.RegisterCircuitControl(cnp.componentId, circuitControl))
 
