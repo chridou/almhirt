@@ -18,6 +18,7 @@ import spray.routing.Directives
 import spray.httpx.marshalling.Marshaller
 import spray.http.StatusCodes
 import spray.routing.RequestContext
+import spray.routing.HttpService
 
 object HttpHerderServiceFactory {
   final case class HttpHerderServiceParams(
@@ -40,12 +41,41 @@ object HttpHerderServiceFactory {
 
 }
 
-trait HttpHerderServiceFactory extends Directives { me: Actor with AlmHttpEndpoint with HasAlmhirtContext ⇒
+object HttpHerderService {
+  def propsRaw(
+    maxCallDuration: scala.concurrent.duration.FiniteDuration,
+    exectionContextSelector: ExtendedExecutionContextSelector,
+    problemMarshaller: Marshaller[Problem])(implicit ctx: AlmhirtContext): Props =
+    Props(new HttpHerderServiceActor(HttpHerderServiceFactory.HttpHerderServiceParams(maxCallDuration, exectionContextSelector, problemMarshaller)))
+
+  def propsRaw(params: HttpHerderServiceFactory.HttpHerderServiceParams)(implicit ctx: AlmhirtContext): Props =
+    Props(new HttpHerderServiceActor(params))
+    
+
+  def props(problemMarshaller: Marshaller[Problem])(implicit ctx: AlmhirtContext): AlmValidation[Props] =
+    HttpHerderServiceFactory.paramsFactory.map(f => propsRaw(f(problemMarshaller)))
+    
+ def componentFactory(problemMarshaller: Marshaller[Problem])(implicit ctx: AlmhirtContext): AlmValidation[ComponentFactory] =
+   props(problemMarshaller).map(props => ComponentFactory(props, actorname))
+  
+    
+  val actorname = "herder-service"
+}
+
+private[almhirt] class HttpHerderServiceActor(params: HttpHerderServiceFactory.HttpHerderServiceParams)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging with HttpService with HttpHerderServiceFactory {
+  override def actorRefFactory = this.context
+
+  val route = this.createHerderServiceEndpoint(params)
+
+  override def receive = runRoute(route)
+}
+
+trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLogging ⇒
   import almhirt.components.EventSinkHubMessage
 
   def createHerderServiceEndpoint(params: HttpHerderServiceFactory.HttpHerderServiceParams): RequestContext ⇒ Unit = {
 
-    implicit val execCtx = params.exectionContextSelector.select(me.almhirtContext, me.context)
+    implicit val execCtx = selectExecutionContext(params.exectionContextSelector)
     implicit val problemMarshaller = params.problemMarshaller
     val maxCallDuration = params.maxCallDuration
 

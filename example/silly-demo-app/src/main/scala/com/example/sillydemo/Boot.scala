@@ -76,7 +76,7 @@ object Boot {
           Props(new {
             override val almhirtContext = ctx
             override val params = paramsFactory(problemMarshaller)
-          } with SillyHerderService with Actor with ActorLogging with HasAlmhirtContext {
+          } with SillyHerderService with AlmActor with AlmActorLogging with HasAlmhirtContext {
             def receive = runRoute(route)
             override val actorRefFactory = this.context
           })).map(props ⇒ ComponentFactory(props, s"herder-service"))
