@@ -20,7 +20,7 @@ object HerderServiceApp {
   def props(problemMarshaller: Marshaller[Problem])(implicit almhirtContext: AlmhirtContext): AlmValidation[Props] =
     for {
       configSection ← almhirtContext.config.v[Config]("almhirt.http.endpoints.herder-service")
-      maxStartupDur ← almhirtContext.config.v[FiniteDuration]("max-startup-duration")
+      maxStartupDur ← configSection.v[FiniteDuration]("max-startup-duration")
       enabled ← configSection.v[Boolean]("enabled")
       params ← if (enabled) {
         for {
