@@ -56,6 +56,7 @@ object Boot {
   private def createComponentFactories(): ComponentFactories = {
     ComponentFactories(
       None,
+      None,
       Seq.empty,
       Seq.empty,
       Seq.empty,

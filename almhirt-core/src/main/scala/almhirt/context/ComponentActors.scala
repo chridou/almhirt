@@ -48,7 +48,7 @@ private[almhirt] object componentactors {
    */
   class ComponentsSupervisor(
     dedicatedAppsDispatcher: Option[String],
-    dedicatedAppsFuturesExecutor: Option[ExecutionContext])(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging with ActorLogging {
+    dedicatedAppsFuturesExecutor: Option[ExecutionContext])(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging {
     import akka.actor.SupervisorStrategy._
     override val supervisorStrategy = OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1.minute) {
       case exn ⇒
@@ -89,7 +89,9 @@ private[almhirt] object componentactors {
 
     var factories: ComponentFactories = null
 
-    def receive: Receive = {
+    override def receive = receiveStart(false)
+
+    def receiveStart(canAdvance: Boolean): Receive = {
       case UnfoldFromFactories(theFactories) ⇒
         factories = theFactories
         logInfo("Received unfold components.")
@@ -104,9 +106,13 @@ private[almhirt] object componentactors {
         }
 
       case ResourcesService.ResourcesInitialized ⇒
-        logInfo("Resources initialized.")
-        context.become(receiveBuildEarlyComponents(factories.buildEventLogs.size + factories.buildNexus.size + factories.buildViews.size))
-        self ! "early"
+        if (canAdvance) {
+          logInfo("Resources initialized.")
+          context.become(receiveBuildHerderApp)
+          self ! "herder"
+        } else {
+          context.become(receiveStart(true))
+        }
 
       case ResourcesService.InitializeResourcesFailed(failure) ⇒
         logError(s"Failed to initialize resources\n$failure.")
@@ -131,8 +137,42 @@ private[almhirt] object componentactors {
         reportCriticalFailure(problem)
         sys.error(s"A child actor was not created:\n$problem")
 
-      case ActorMessages.ChildActorCreated(_, _) ⇒
-        ()
+      case ActorMessages.ChildActorCreated(actor, _) ⇒
+        if (canAdvance) {
+          logInfo(s"Created ${actor.path}.")
+          context.become(receiveBuildHerderApp)
+          self ! "herder"
+        } else {
+          context.become(receiveStart(true))
+        }
+    }
+
+    def receiveBuildHerderApp: Receive = {
+      case "herder" ⇒
+        factories.buildHerderService match {
+          case Some(ComponentFactoryBuilderEntry(factoryBuilder, severity)) ⇒
+            logInfo("Create herder app")
+            factoryBuilder(almhirtContext).onComplete(
+              problem ⇒ {
+                logError(s"Could not create herder app factory :\n$problem")
+                reportFailure(problem, severity)
+                self ! ActorMessages.HerderServiceAppFailedToStart(problem)
+              },
+              factory ⇒ apps ! ActorMessages.CreateChildActor(factory, true, None))(almhirtContext.futuresContext)
+          case None ⇒
+            logInfo("No herder app.")
+            context.become(receiveBuildEarlyComponents(factories.buildEventLogs.size + factories.buildNexus.size + factories.buildViews.size))
+            self ! "early"
+        }
+
+      case ActorMessages.HerderServiceAppFailedToStart(problem) ⇒
+        sys.error(problem.toString())
+
+      case ActorMessages.HerderServiceAppStarted ⇒
+        logInfo("No herder app started.")
+        context.become(receiveBuildEarlyComponents(factories.buildEventLogs.size + factories.buildNexus.size + factories.buildViews.size))
+        self ! "early"
+
     }
 
     def receiveBuildEarlyComponents(stillToCreate: Int): Receive = {
@@ -280,6 +320,9 @@ private[almhirt] object componentactors {
             if (returnActorRef)
               sender() ! ActorMessages.ChildActorCreated(actorRef, correlationId)
           })
+
+      case m: ActorMessages.HerderAppStartupMessage ⇒
+        context.parent ! m
     }
   }
 }

@@ -31,6 +31,11 @@ object ActorMessages {
   case object CircuitFuseRemoved extends CircuitAllWillFail
   case object CircuitDestroyed extends CircuitAllWillFail
   case object CircuitCircumvented extends CircuitNotAllWillFail
+  
+  sealed trait HerderAppStartupMessage
+  case object HerderServiceAppStarted extends HerderAppStartupMessage
+  final case class HerderServiceAppFailedToStart(problem: Problem) extends HerderAppStartupMessage
+  
 }
 
 object CreateChildActorHelper {
