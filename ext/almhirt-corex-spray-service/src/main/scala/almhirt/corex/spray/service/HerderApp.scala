@@ -49,8 +49,8 @@ object HerderServiceApp {
 }
 
 private[almhirt] class HerderServiceApp(
-    httpServiceParams: Option[(ComponentFactory, String, Int)],
-    maxStartupDur: FiniteDuration)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging {
+  httpServiceParams: Option[(ComponentFactory, String, Int)],
+  maxStartupDur: FiniteDuration)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging {
 
   import akka.actor.SupervisorStrategy._
   import akka.io.IO
@@ -61,7 +61,7 @@ private[almhirt] class HerderServiceApp(
       reportCriticalFailure(exn)
       Stop
   }
-  
+
   private case object StartupExpired
 
   def receive: Receive = {
@@ -89,8 +89,9 @@ private[almhirt] class HerderServiceApp(
     case Http.Bound(socketAddr) ⇒
       logInfo(s"Bound HerderApp to $socketAddr")
       context.parent ! ActorMessages.HerderServiceAppStarted
-      
-    case StartupExpired =>
+      context.become(receiveRunning)
+
+    case StartupExpired ⇒
       val msg = s"Maximum startup duration of ${maxStartupDur.defaultUnitString} expired."
       logError(msg)
       reportCriticalFailure(StartupProblem(msg))
@@ -98,9 +99,14 @@ private[almhirt] class HerderServiceApp(
       context.stop(self)
   }
 
+  def receiveRunning: Receive = {
+    case StartupExpired ⇒
+      logDebug("Receive the StartupExpired wich can be skipped now, since I'm already running...")
+  }
+
   override def preStart() {
     context.system.scheduler.scheduleOnce(maxStartupDur, self, StartupExpired)(context.dispatcher)
     self ! "Initialize"
-    
+
   }
 }
