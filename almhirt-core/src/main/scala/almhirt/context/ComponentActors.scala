@@ -96,14 +96,16 @@ private[almhirt] object componentactors {
         factories = theFactories
         logInfo("Received unfold components.")
 
-        factories.createResourceServiceProps match {
+        val componentFactoryF = factories.createResourceServiceProps match {
           case None ⇒
-            context.actorOf(ResourcesService.emptyProps, ResourcesService.actorname)
+            AlmFuture.successful(ComponentFactory(ResourcesService.emptyProps, ResourcesService.actorname))
           case Some(f) ⇒
-            f(almhirtContext).map(props ⇒ ComponentFactory(props, ResourcesService.actorname)).onComplete(
-              fail ⇒ self ! ResourcesService.InitializeResourcesFailed(fail),
-              factory ⇒ self ! ActorMessages.CreateChildActor(factory, true, None))
+            f(almhirtContext).map(props ⇒ ComponentFactory(props, ResourcesService.actorname))
         }
+
+        componentFactoryF.onComplete(
+          fail ⇒ self ! ResourcesService.InitializeResourcesFailed(fail),
+          factory ⇒ self ! ActorMessages.CreateChildActor(factory, true, None))
 
       case ResourcesService.ResourcesInitialized ⇒
         if (canAdvance) {
