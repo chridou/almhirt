@@ -19,6 +19,9 @@ import almhirt.streaming.ActorDevNullSubscriberWithAutoSubscribe
 import com.typesafe.config.Config
 
 object ElasticSearchEventPublisher {
+  def apply(elasticSearchEventPublischer: ActorRef): Subscriber[Event] =
+    ActorSubscriber[Event](elasticSearchEventPublischer)
+
   def propsRaw(
     host: String,
     index: String,
@@ -52,8 +55,8 @@ object ElasticSearchEventPublisher {
     } yield res
   }
 
-  def apply(elasticSearchEventPublischer: ActorRef): Subscriber[Event] =
-    ActorSubscriber[Event](elasticSearchEventPublischer)
+  def componentFactory(implicit ctx: AlmhirtContext, serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem]): AlmValidation[ComponentFactory] =
+    props().map(props ⇒ ComponentFactory(props, actorname))
 
   val actorname = "elastic-search-event-publisher"
 }
@@ -77,7 +80,7 @@ private[almhirt] class ElasticSearchEventPublisherImpl(
   }
 
   override def filter(item: Event) = !item.header.isLocal
-  
+
   implicit override val executionContext = executionContexts.futuresContext
   override val serializationExecutionContext = executionContexts.futuresContext
 
