@@ -141,7 +141,14 @@ trait ResourceLookup {
    */
   def selectOneFrom[L](locale: L, from: Set[ULocale], createFallbacksInFrom: Boolean)(implicit magnet: LocaleMagnet[L]): Option[ULocale]
 
-  final def selectOneFrom[L](locale: L, from: Set[ULocale])(implicit magnet: LocaleMagnet[L]): Option[ULocale] = selectOneFrom(locale, from, true)
+  final def selectOneFrom[L](locale: L, from: Set[ULocale])(implicit magnet: LocaleMagnet[L]): Option[ULocale] = selectOneFrom(locale, from, false)
+
+  final def selectOneFrom2[L, LL](locale: L, from: Set[LL], createFallbacksInFrom: Boolean)(implicit magnet: LocaleMagnet[L], magnet2: LocaleMagnet[LL]): Option[ULocale] = 
+    selectOneFrom(locale, from.map(magnet2.toULocale(_)), createFallbacksInFrom)
+  
+
+  final def selectOneFrom2[L, LL](locale: L, from: Set[LL])(implicit magnet: LocaleMagnet[L], magnet2: LocaleMagnet[LL]): Option[ULocale] = 
+    selectOneFrom2(locale, from, false)
 
   def getResource[L: LocaleMagnet](key: ResourceKey, locale: L): AlmValidation[ResourceValue] = getResourceWithLocale(key, locale).map(_._2)
 
