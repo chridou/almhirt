@@ -66,6 +66,32 @@ trait AlmResources extends ResourceLookup {
    */
   def withFallback(fallback: AlmResources, fallbackToNewLanguages: Boolean): AlmValidation[AlmResources]
 
+  override def selectOneFrom[L](locale: L, from: Set[ULocale])(implicit magnet: LocaleMagnet[L]): Option[ULocale] = {
+    @scala.annotation.tailrec
+    def tryFindUpwards(innerFrom: Set[ULocale], rest: List[ULocale]): Option[ULocale] = {
+      rest match {
+        case Nil => None
+        case x :: xs =>
+          if(from.contains(x)) {
+            Some(x)
+          } else if(this.doesUpwardLookup){
+            tryFindUpwards(innerFrom, xs)
+          } else {
+            None
+          }
+      }
+    }
+    
+    val uLoc = implicitly[LocaleMagnet[L]].toULocale(locale)
+    rootLocalePath(uLoc).fold (
+      fail => None,
+      path => {
+        val pathList = path.toList
+        tryFindUpwards(from, pathList)
+      }
+    )
+  }
+
 }
 
 object AlmResources {
@@ -137,10 +163,10 @@ private[almhirt] object TreeBuilder {
     }
   }
 
- private def pathToRoot(locale: Option[ULocale], resourcesWithParents: Map[ULocale, Option[ULocale]]): List[ULocale] = {
+  private def pathToRoot(locale: Option[ULocale], resourcesWithParents: Map[ULocale, Option[ULocale]]): List[ULocale] = {
     locale match {
-      case None => Nil
-      case Some(l) => l :: pathToRoot(resourcesWithParents.get(l).flatten, resourcesWithParents)
+      case None    ⇒ Nil
+      case Some(l) ⇒ l :: pathToRoot(resourcesWithParents.get(l).flatten, resourcesWithParents)
     }
   }
 
@@ -167,7 +193,7 @@ private[almhirt] object TreeBuilder {
 
       override def rootLocalePath(locale: ULocale): AlmValidation[Seq[ULocale]] = {
         for {
-          entryLocale <- getPinnedResources(locale).map(_.locale)
+          entryLocale ← getPinnedResources(locale).map(_.locale)
         } yield pathToRoot(Some(entryLocale), resourcesWithParents.mapValues(_.map(_.locale)))
       }
 
@@ -184,6 +210,7 @@ private[almhirt] object TreeBuilder {
 
       override def withFallback(fallback: AlmResources, fallbackToNewLanguages: Boolean): AlmValidation[AlmResources] =
         addFallback(this, fallback, fallbackToNewLanguages)
+
     }
   }
 
