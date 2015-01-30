@@ -134,8 +134,14 @@ trait ResourceLookup {
       }
     }
   }
-    
-  def selectOneFrom[L](locale: L, from: Set[ULocale])(implicit magnet: LocaleMagnet[L]): Option[ULocale]
+
+  /**
+   *
+   * @param createFallbacksInFrom if true, fallback locales will be used in addition to the locales already present in from
+   */
+  def selectOneFrom[L](locale: L, from: Set[ULocale], createFallbacksInFrom: Boolean)(implicit magnet: LocaleMagnet[L]): Option[ULocale]
+
+  final def selectOneFrom[L](locale: L, from: Set[ULocale])(implicit magnet: LocaleMagnet[L]): Option[ULocale] = selectOneFrom(locale, from, true)
 
   def getResource[L: LocaleMagnet](key: ResourceKey, locale: L): AlmValidation[ResourceValue] = getResourceWithLocale(key, locale).map(_._2)
 

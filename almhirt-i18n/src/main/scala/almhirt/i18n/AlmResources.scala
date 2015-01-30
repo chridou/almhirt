@@ -66,7 +66,7 @@ trait AlmResources extends ResourceLookup {
    */
   def withFallback(fallback: AlmResources, fallbackToNewLanguages: Boolean): AlmValidation[AlmResources]
 
-  override def selectOneFrom[L](locale: L, from: Set[ULocale])(implicit magnet: LocaleMagnet[L]): Option[ULocale] = {
+  override def selectOneFrom[L](locale: L, from: Set[ULocale], createFallbacksInFrom: Boolean)(implicit magnet: LocaleMagnet[L]): Option[ULocale] = {
     @scala.annotation.tailrec
     def tryFindUpwards(innerFrom: Set[ULocale], rest: List[ULocale]): Option[ULocale] = {
       rest match {
@@ -87,7 +87,12 @@ trait AlmResources extends ResourceLookup {
       fail => None,
       path => {
         val pathList = path.toList
-        tryFindUpwards(from, pathList)
+        val newFrom = 
+          if(createFallbacksInFrom)
+            from.union(from.map(_.getFallback))
+          else
+            from
+        tryFindUpwards(newFrom, pathList)
       }
     )
   }
