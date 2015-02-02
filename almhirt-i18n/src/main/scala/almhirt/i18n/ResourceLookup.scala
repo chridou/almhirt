@@ -136,19 +136,12 @@ trait ResourceLookup {
   }
 
   /**
+   * Selects a locale from a given set, that is supported by this lookup.
+   * The behavior is the same as a resource has been looked up, e.g. treat from, as it contained resources.
    *
    * @param createFallbacksInFrom if true, fallback locales will be used in addition to the locales already present in from
    */
-  def selectOneFrom[L](locale: L, from: Set[ULocale], createFallbacksInFrom: Boolean)(implicit magnet: LocaleMagnet[L]): Option[ULocale]
-
-  final def selectOneFrom[L](locale: L, from: Set[ULocale])(implicit magnet: LocaleMagnet[L]): Option[ULocale] = selectOneFrom(locale, from, false)
-
-  final def selectOneFrom2[L, LL](locale: L, from: Set[LL], createFallbacksInFrom: Boolean)(implicit magnet: LocaleMagnet[L], magnet2: LocaleMagnet[LL]): Option[ULocale] = 
-    selectOneFrom(locale, from.map(magnet2.toULocale(_)), createFallbacksInFrom)
-  
-
-  final def selectOneFrom2[L, LL](locale: L, from: Set[LL])(implicit magnet: LocaleMagnet[L], magnet2: LocaleMagnet[LL]): Option[ULocale] = 
-    selectOneFrom2(locale, from, false)
+  def selectOneLocaleFrom[L](locale: L, from: Set[ULocale], createFallbacksInFrom: Boolean)(implicit magnet: LocaleMagnet[L]): Option[ULocale]
 
   def getResource[L: LocaleMagnet](key: ResourceKey, locale: L): AlmValidation[ResourceValue] = getResourceWithLocale(key, locale).map(_._2)
 
@@ -177,6 +170,35 @@ object ResourceLookup {
       self.getRawText(key, locale) fold (
         fail ⇒ s"{$key: ${fail.message}}",
         succ ⇒ succ)
+
+    def selectOneLocaleFrom[L](locale: L, from: Set[ULocale])(implicit magnet: LocaleMagnet[L]): Option[ULocale] =
+      self.selectOneLocaleFrom(locale, from, false)
+
+    def selectOneLocaleFrom2[L, LL](locale: L, from: Set[LL], createFallbacksInFrom: Boolean)(implicit magnet: LocaleMagnet[L], magnet2: LocaleMagnet[LL]): Option[ULocale] =
+      self.selectOneLocaleFrom(locale, from.map(magnet2.toULocale(_)), createFallbacksInFrom)
+
+    def selectOneLocaleFrom2[L, LL](locale: L, from: Set[LL])(implicit magnet: LocaleMagnet[L], magnet2: LocaleMagnet[LL]): Option[ULocale] =
+      selectOneLocaleFrom2(locale, from, false)
+
+    def selectOneItemFrom[L, T](locale: L, from: Map[ULocale, T], createFallbacksInFrom: Boolean)(implicit magnet: LocaleMagnet[L]): Option[T] = {
+      val source =
+        if (createFallbacksInFrom)
+          from.map { case (loc, v) ⇒ (loc.getFallback, v) } ++ from
+        else
+          from
+      selectOneLocaleFrom(locale, source.keySet).map(loc ⇒ source(loc))
+    }
+
+    def selectOneItemFrom[L, T](locale: L, from: Map[ULocale, T])(implicit magnet: LocaleMagnet[L]): Option[T] =
+      selectOneItemFrom(locale, from, false)
+
+    def selectOneItemFrom2[L, LL, T](locale: L, from: Map[LL, T], createFallbacksInFrom: Boolean)(implicit magnet: LocaleMagnet[L], magnet2: LocaleMagnet[LL]): Option[T] = {
+      selectOneItemFrom(locale, from.map { case (loc, v) ⇒ (magnet2.toULocale(loc), v) }, createFallbacksInFrom)
+    }
+
+    def selectOneItemFrom2[L, LL, T](locale: L, from: Map[LL, T])(implicit magnet: LocaleMagnet[L], magnet2: LocaleMagnet[LL]): Option[T] = {
+      selectOneItemFrom2(locale, from, false)
+    }
   }
 
   implicit class ResourceLookupItemOps(val self: ResourceLookup) extends AnyVal {

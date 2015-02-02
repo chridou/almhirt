@@ -66,35 +66,34 @@ trait AlmResources extends ResourceLookup {
    */
   def withFallback(fallback: AlmResources, fallbackToNewLanguages: Boolean): AlmValidation[AlmResources]
 
-  override def selectOneFrom[L](locale: L, from: Set[ULocale], createFallbacksInFrom: Boolean)(implicit magnet: LocaleMagnet[L]): Option[ULocale] = {
+  override def selectOneLocaleFrom[L](locale: L, from: Set[ULocale], createFallbacksInFrom: Boolean)(implicit magnet: LocaleMagnet[L]): Option[ULocale] = {
     @scala.annotation.tailrec
     def tryFindUpwards(innerFrom: Set[ULocale], rest: List[ULocale]): Option[ULocale] = {
       rest match {
-        case Nil => None
-        case x :: xs =>
-          if(from.contains(x)) {
+        case Nil ⇒ None
+        case x :: xs ⇒
+          if (from.contains(x)) {
             Some(x)
-          } else if(this.doesUpwardLookup){
+          } else if (this.doesUpwardLookup) {
             tryFindUpwards(innerFrom, xs)
           } else {
             None
           }
       }
     }
-    
-    val uLoc = implicitly[LocaleMagnet[L]].toULocale(locale)
-    rootLocalePath(uLoc).fold (
-      fail => None,
-      path => {
-        val pathList = path.toList
-        val newFrom = 
-          if(createFallbacksInFrom)
-            from.union(from.map(_.getFallback))
-          else
-            from
-        tryFindUpwards(newFrom, pathList)
-      }
-    )
+
+    (for {
+      containedLocale ← getPinnedResources(implicitly[LocaleMagnet[L]].toULocale(locale)).map { _.locale }
+      rootPath ← rootLocalePath(containedLocale)
+    } yield {
+      val pathList = rootPath.toList
+      val newFrom =
+        if (createFallbacksInFrom)
+          from.map(_.getFallback).union(from)
+        else
+          from
+      tryFindUpwards(newFrom, pathList)
+    }).getOrElse(None)
   }
 
 }
