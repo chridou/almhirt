@@ -16,7 +16,7 @@ class UnboundedSinkTests(_system: ActorSystem) extends TestKit(_system) with Fun
   implicit val executionContext = system.dispatchers.defaultGlobalDispatcher
   implicit val ccuad = CanCreateUuidsAndDateTimes()
 
-  implicit val mat = FlowMaterializer()
+  implicit val mat = akka.stream.ActorFlowMaterializer()
 
   private val currentTestId = new java.util.concurrent.atomic.AtomicInteger(1)
   def nextTestId = currentTestId.getAndIncrement()

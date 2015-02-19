@@ -21,7 +21,7 @@ class AggregateRootNexusTests(_system: ActorSystem)
   implicit val executionContext = system.dispatchers.defaultGlobalDispatcher
   implicit val ccuad = CanCreateUuidsAndDateTimes()
 
-  implicit val mat = FlowMaterializer()
+  implicit val mat = akka.stream.ActorFlowMaterializer()
 
   val counter = new java.util.concurrent.atomic.AtomicInteger(1)
   def nextCounter = counter.getAndIncrement()

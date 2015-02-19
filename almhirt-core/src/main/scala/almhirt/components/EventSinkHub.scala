@@ -83,7 +83,7 @@ private[almhirt] class EventSinksSupervisorImpl(factories: EventSinkHub.EventSin
       }
     } else if (factories.isEmpty && withBlackHoleIfEmpty) {
       log.warning("No members, but I created a black hole!")
-      Source(ctx.eventStream).foreach(_ ⇒ ())
+      Source(ctx.eventStream).runForeach(_ ⇒ ())
     } else {
       log.warning("No members. Nothing will be subscribed")
     }

@@ -20,7 +20,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
   val nMsgSome = 1000L
   val nMsgSomePublishers = 10L
 
-  implicit val mat = FlowMaterializer()
+  implicit val mat = akka.stream.ActorFlowMaterializer()
 
   "The StreamShipper" when {
     import akka.stream.actor.ActorSubscriber

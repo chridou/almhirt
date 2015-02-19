@@ -15,7 +15,7 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
   implicit val executionContext = system.dispatchers.defaultGlobalDispatcher
   implicit val ccuad = CanCreateUuidsAndDateTimes()
 
-  implicit val mat = FlowMaterializer()
+  implicit val mat = akka.stream.ActorFlowMaterializer()
 
   case class TestEvent(header: EventHeader) extends Event
   object TestEvent {

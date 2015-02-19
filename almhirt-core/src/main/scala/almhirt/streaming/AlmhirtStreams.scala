@@ -140,7 +140,7 @@ object AlmhirtStreams {
             val (_, eventsPub) = eventFlow.runWith(Source(eventShipperOut), eventsSink)
 
             if (soakEvents)
-              Source(eventsPub).foreach { _ ⇒ () }
+              Source(eventsPub).to(BlackholeSink)
 
             // commands
 
@@ -155,7 +155,7 @@ object AlmhirtStreams {
             val (_, commandsPub) = commandFlow.runWith(Source(commandShipperOut), commandsDrain)
 
             if (soakCommands)
-              Source(commandsPub).foreach(_ ⇒ ())
+              Source(commandsPub).to(BlackholeSink)
 
             new AlmhirtStreams with Stoppable {
               override val eventBroker = eventShipperIn

@@ -2,7 +2,6 @@ package almhirt.akkastreamsexploration
 
 import org.scalatest._
 import akka.testkit._
-import akka.stream.FlowMaterializer
 import akka.actor.ActorSystem
 import akka.stream.scaladsl._
 import akka.stream.OverflowStrategy
@@ -10,7 +9,7 @@ import org.reactivestreams.{ Subscriber, Publisher }
 
 class AkkaStreamsExplorationTests(_system: ActorSystem) extends TestKit(_system) with FunSuiteLike with Matchers with BeforeAndAfterAll {
   def this() = this(ActorSystem("AkkaStreamsExplorationTests"))
-  implicit val mat = FlowMaterializer()
+  implicit val mat = akka.stream.ActorFlowMaterializer()
 
   //- Connect via faked flow *** FAILED ***
   //  java.lang.IllegalArgumentException: requirement failed: Graph must be connected
