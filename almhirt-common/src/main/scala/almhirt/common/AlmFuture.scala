@@ -70,13 +70,13 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
       case scala.util.Failure(exn) ⇒
         handleThrowable(exn) match {
           case OperationTimedOutProblem(prob) ⇒ p complete (scala.util.Success(withTimeout(prob).failure))
-          case prob ⇒ p failure (exn)
+          case prob                           ⇒ p failure (exn)
         }
       case scala.util.Success(validation) ⇒
         validation fold (
           fail ⇒ fail match {
             case OperationTimedOutProblem(prob) ⇒ p complete (scala.util.Success(withTimeout(prob).failure))
-            case prob ⇒ p complete scala.util.Success(prob.failure)
+            case prob                           ⇒ p complete scala.util.Success(prob.failure)
           },
           succ ⇒ p complete scala.util.Success(succ.success))
     }
@@ -169,26 +169,31 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
   }
 
   /** Act on completion */
-  def onComplete(handler: AlmValidation[R] ⇒ Unit)(implicit executionContext: ExecutionContext): Unit = {
+  def onComplete(handler: AlmValidation[R] ⇒ Unit)(implicit executionContext: ExecutionContext): AlmFuture[R] = {
     underlying.onComplete {
       case scala.util.Success(validation) ⇒ handler(validation)
-      case scala.util.Failure(err) ⇒ handler(handleThrowable(err).failure)
+      case scala.util.Failure(err)        ⇒ handler(handleThrowable(err).failure)
     }
+    this
   }
 
   /** Act on completion */
-  def onComplete(fail: Problem ⇒ Unit, succ: R ⇒ Unit)(implicit executionContext: ExecutionContext): Unit = {
+  def onComplete(fail: Problem ⇒ Unit, succ: R ⇒ Unit)(implicit executionContext: ExecutionContext): AlmFuture[R] = {
     underlying.onComplete {
       case scala.util.Success(validation) ⇒ validation fold (fail, succ)
-      case scala.util.Failure(err) ⇒ fail(handleThrowable(err))
+      case scala.util.Failure(err)        ⇒ fail(handleThrowable(err))
     }
+    this
   }
 
   /** Use when only interested in a success and a failure result doesn't matter */
-  def onSuccess(onSucc: R ⇒ Unit)(implicit executionContext: ExecutionContext): Unit =
+  def onSuccess(onSucc: R ⇒ Unit)(implicit executionContext: ExecutionContext): AlmFuture[R] = {
     onComplete(_ fold (_ ⇒ (), onSucc))
+    this
+  }
 
   /** As soon as a success is known, schedule the effect */
+  @deprecated(message = "Use onSuccess", since = "0.7.6")
   def successEffect(effect: R ⇒ Unit)(implicit executionContext: ExecutionContext): AlmFuture[R] =
     andThen { _.fold(_ ⇒ (), succ ⇒ effect(succ)) }
 
@@ -201,28 +206,33 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
     this.recover(rejoin).onSuccess(onRes)
 
   /** Use when only interested in a failure and a successful result doesn't matter */
-  def onFailure(onProb: Problem ⇒ Unit)(implicit executionContext: ExecutionContext): Unit =
+  def onFailure(onProb: Problem ⇒ Unit)(implicit executionContext: ExecutionContext): AlmFuture[R] = {
     onComplete(_ fold (onProb, _ ⇒ ()))
+    this
+  }
 
+  @deprecated(message = "Use onComplete", since = "0.7.6")
   def andThen(effect: AlmValidation[R] ⇒ Unit)(implicit executionContext: ExecutionContext): AlmFuture[R] = {
     new AlmFuture(underlying.andThen {
-      case scala.util.Success(r) ⇒ effect(r)
+      case scala.util.Success(r)   ⇒ effect(r)
       case scala.util.Failure(err) ⇒ effect(handleThrowable(err).failure)
     })
   }
 
+  @deprecated(message = "Use onComplete", since = "0.7.6")
   def andThen(fail: Problem ⇒ Unit, succ: R ⇒ Unit)(implicit executionContext: ExecutionContext): AlmFuture[R] = {
     new AlmFuture(underlying.andThen {
-      case scala.util.Success(r) ⇒ r.fold(fail, succ)
+      case scala.util.Success(r)   ⇒ r.fold(fail, succ)
       case scala.util.Failure(err) ⇒ fail(handleThrowable(err))
     })
   }
 
-  @deprecated(message = "Use failureEffect", since = "0.5.210")
+  @deprecated(message = "Use onFailure", since = "0.5.210")
   def withFailure(effect: Problem ⇒ Unit)(implicit executionContext: ExecutionContext): AlmFuture[R] =
     failureEffect(effect)
 
   /** As soon as a failure is known, schedule the effect */
+  @deprecated(message = "Use onFailure", since = "0.5.210")
   def failureEffect(effect: Problem ⇒ Unit)(implicit executionContext: ExecutionContext): AlmFuture[R] =
     andThen { _.fold(effect, succ ⇒ ()) }
 
@@ -241,7 +251,7 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
   }
 
   /** In case of a failure, rejoin with the happy path */
-  def mapRecover[U](map: R => U, recover: Problem ⇒ U)(implicit executionContext: ExecutionContext): AlmFuture[U] = {
+  def mapRecover[U](map: R ⇒ U, recover: Problem ⇒ U)(implicit executionContext: ExecutionContext): AlmFuture[U] = {
     this.fold[U](
       recover,
       succ ⇒ map(succ))
