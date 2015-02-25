@@ -24,7 +24,7 @@ trait AlmActor extends Actor with HasAlmhirtContext with AlmActorSupport {
 
   def selectExecutionContext(implicit selector: ExtendedExecutionContextSelector): ExecutionContext =
     selector.select(this.almhirtContext, this.context)
-  
+
   def registerCircuitControl(circuitControl: CircuitControl)(implicit cnp: ActorComponentIdProvider): Unit =
     almhirtContext.tellHerder(HerderMessages.CircuitMessages.RegisterCircuitControl(cnp.componentId, circuitControl))
 
@@ -65,7 +65,38 @@ trait AlmActor extends Actor with HasAlmhirtContext with AlmActorSupport {
   def informVeryImportant(message: String)(implicit cnp: ActorComponentIdProvider): Unit =
     inform(message, Importance.VeryImportant)(cnp)
 
-  private def innerRetryInforming[T](f: => AlmFuture[T], lastFailure: Problem, promise: Promise[AlmValidation[T]], retriesLeft: Int, originalRetries: Int, retryDelay: FiniteDuration, importance: Importance, executor: ExecutionContext) {
+  def retryFuture[T](settings: XRetrySettings, executor: ExecutionContext)(f: ⇒ AlmFuture[T]): AlmFuture[T] = {
+    import almhirt.configuration.RetrySettings2
+    val retrySettings = RetrySettings2(settings.numberOfRetries, settings.delay)
+    val retryNotification: Option[(almhirt.configuration.NumberOfRetries, scala.concurrent.duration.FiniteDuration) ⇒ Unit] =
+      settings.notifiyingParams.map {
+        case XRetrySettings.NotifyingParams(importance, Some(contextDesc)) ⇒
+          (nor, nextIn) ⇒ inform(s"""  |$contextDesc
+                                       |Retries left: $nor
+                                       |Next retry in: ${nextIn.defaultUnitString}""".stripMargin, importance)
+          case XRetrySettings.NotifyingParams(importance, None) ⇒
+          (nor, nextIn) ⇒ inform(s"Retries left: $nor; Next retry in: ${nextIn.defaultUnitString}", importance)
+      }
+
+    AlmFuture.retryScaffolding(f, retrySettings, executor, this.context.system.scheduler, retryNotification)
+  }
+
+  @deprecated(message = "Use retryFuture", since = "0.7.6")
+  def retryInforming[T](f: ⇒ AlmFuture[T])(numRetries: Int, retryDelay: FiniteDuration, importance: Importance = Importance.Mentionable, executor: ExecutionContext = this.context.dispatcher): AlmFuture[T] = {
+    if (numRetries >= 0) {
+      val p = Promise[AlmValidation[T]]
+
+      f.onComplete(
+        fail ⇒ innerRetryInforming(f, fail, p, numRetries, numRetries, retryDelay, importance, executor),
+        succ ⇒ p.success(succ.success))(executor)
+
+      new AlmFuture(p.future)
+    } else {
+      AlmFuture.failed(ArgumentProblem("numRetries must not be lower than zero!"))
+    }
+  }
+
+    private def innerRetryInforming[T](f: ⇒ AlmFuture[T], lastFailure: Problem, promise: Promise[AlmValidation[T]], retriesLeft: Int, originalRetries: Int, retryDelay: FiniteDuration, importance: Importance, executor: ExecutionContext) {
     if (retriesLeft == 0) {
       inform(s"No retries left. Finally failed after $originalRetries retries.", importance)
       promise.success(lastFailure.failure)
@@ -73,30 +104,17 @@ trait AlmActor extends Actor with HasAlmhirtContext with AlmActorSupport {
       inform(s"$retriesLeft of $originalRetries retries left.", importance)
       if (retryDelay == Duration.Zero) {
         f.onComplete(
-          fail => innerRetryInforming(f, fail, promise, retriesLeft - 1, originalRetries, retryDelay, importance, executor),
-          succ => promise.success(succ.success))(executor)
+          fail ⇒ innerRetryInforming(f, fail, promise, retriesLeft - 1, originalRetries, retryDelay, importance, executor),
+          succ ⇒ promise.success(succ.success))(executor)
       } else {
         this.context.system.scheduler.scheduleOnce(retryDelay) {
           f.onComplete(
-            fail => innerRetryInforming(f, fail, promise, retriesLeft - 1, originalRetries, retryDelay, importance, executor),
-            succ => promise.success(succ.success))(executor)
+            fail ⇒ innerRetryInforming(f, fail, promise, retriesLeft - 1, originalRetries, retryDelay, importance, executor),
+            succ ⇒ promise.success(succ.success))(executor)
         }(executor)
       }
     }
   }
 
-  def retryInforming[T](f: => AlmFuture[T])(numRetries: Int, retryDelay: FiniteDuration, importance: Importance = Importance.Mentionable, executor: ExecutionContext = this.context.dispatcher): AlmFuture[T] = {
-    if (numRetries >= 0) {
-      val p = Promise[AlmValidation[T]]
-
-      f.onComplete(
-        fail => innerRetryInforming(f, fail, p, numRetries, numRetries, retryDelay, importance, executor),
-        succ => p.success(succ.success))(executor)
-
-      new AlmFuture(p.future)
-    } else {
-      AlmFuture.failed(ArgumentProblem("numRetries must not be lower than zero!"))
-    }
-  }
 
 }

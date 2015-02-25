@@ -7,11 +7,18 @@ import scala.concurrent.duration._
 import scalaz.syntax.validation._
 import almhirt.common._
 import almhirt.almfuture.all._
+import almhirt.problem.CauseIsThrowable
+import almhirt.configuration._
 import akka.actor._
 import scala.concurrent.ExecutionContext
-import almhirt.problem.CauseIsThrowable
 
 trait AlmActorSupport { me: Actor ⇒
+
+  protected implicit val ContextSchedulerSchedulingMagnet = new almhirt.almfuture.ActionSchedulingMagnet[Scheduler] {
+    def schedule(to: Scheduler, action: () ⇒ Unit, in: scala.concurrent.duration.FiniteDuration, executor: scala.concurrent.ExecutionContext): Unit = {
+      to.scheduleOnce(in) { () ⇒ action() }(executor)
+    }
+  }
 
   @deprecated("Do not use. Will be removed", "0.7.4")
   def pipeTo[T](what: AlmFuture[T])(receiver: ActorRef, unwrapProblem: Boolean = true)(implicit executionContext: ExecutionContext): AlmFuture[T] = {
@@ -28,36 +35,14 @@ trait AlmActorSupport { me: Actor ⇒
     what.mapRecoverPipeTo(map, recover)(receiver)
   }
 
-  private def innerRetry[T](f: ⇒ AlmFuture[T], lastFailure: Problem, promise: Promise[AlmValidation[T]], retriesLeft: Int, retryDelay: FiniteDuration, executor: ExecutionContext) {
-    if (retriesLeft == 0) {
-      promise.success(lastFailure.failure)
-    } else {
-      if (retryDelay == Duration.Zero) {
-        f.onComplete(
-          fail ⇒ innerRetry(f, fail, promise, retriesLeft - 1, retryDelay, executor),
-          succ ⇒ promise.success(succ.success))(executor)
-      } else {
-        me.context.system.scheduler.scheduleOnce(retryDelay) {
-          f.onComplete(
-            fail ⇒ innerRetry(f, fail, promise, retriesLeft - 1, retryDelay, executor),
-            succ ⇒ promise.success(succ.success))(executor)
-        }(executor)
-      }
-    }
+  @deprecated("Use retryFuture", "0.7.6")
+  def retry[T](f: ⇒ AlmFuture[T])(numRetries: Int, retryDelay: FiniteDuration, executor: ExecutionContext = me.context.dispatcher): AlmFuture[T] = {
+    implicit val exCtx = executor
+    retryFuture(RetrySettings2(NumberOfRetries(numRetries), RetryDelayMode(retryDelay)), executor)(f)
   }
 
-  def retry[T](f: ⇒ AlmFuture[T])(numRetries: Int, retryDelay: FiniteDuration, executor: ExecutionContext = me.context.dispatcher): AlmFuture[T] = {
-    if (numRetries >= 0) {
-      val p = Promise[AlmValidation[T]]
-
-      f.onComplete(
-        fail ⇒ innerRetry(f, fail, p, numRetries, retryDelay, executor),
-        succ ⇒ p.success(succ.success))(executor)
-
-      new AlmFuture(p.future)
-    } else {
-      AlmFuture.failed(ArgumentProblem("numRetries must not be lower than zero!"))
-    }
+  def retryFuture[T](settings: RetrySettings2, executor: ExecutionContext)(f: ⇒ AlmFuture[T]): AlmFuture[T] = {
+    AlmFuture.retry(f, settings, me.context.system.scheduler)(AlmActorSupport.this.ContextSchedulerSchedulingMagnet, executor)
   }
 
   implicit def almFuture2PipeableFuture[T](future: AlmFuture[T]): PipeableAlmFuture[T] = new PipeableAlmFuture(future)

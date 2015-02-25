@@ -116,7 +116,7 @@ package object akkax {
     def tryGetValue(config: Config, path: String): AlmValidation[Option[ResolveSettings]] =
       config.opt[Config](path).flatMap {
         case Some(_) ⇒ getValue(config, path).map(Some(_))
-        case None ⇒ scalaz.Success(None)
+        case None    ⇒ scalaz.Success(None)
       }
   }
 
@@ -130,7 +130,7 @@ package object akkax {
     def tryGetValue(config: Config, path: String): AlmValidation[Option[CircuitStartState]] =
       config.opt[String](path).flatMap {
         case Some(_) ⇒ getValue(config, path).map(Some(_))
-        case None ⇒ scalaz.Success(None)
+        case None    ⇒ scalaz.Success(None)
       }
 
   }
@@ -145,7 +145,7 @@ package object akkax {
     def tryGetValue(config: Config, path: String): AlmValidation[Option[ExtendedExecutionContextSelector]] =
       config.opt[Config](path).flatMap {
         case Some(_) ⇒ getValue(config, path).map(Some(_))
-        case None ⇒ scalaz.Success(None)
+        case None    ⇒ scalaz.Success(None)
       }
 
   }
@@ -164,7 +164,75 @@ package object akkax {
     def tryGetValue(config: Config, path: String): AlmValidation[Option[CircuitControlSettings]] =
       config.opt[Config](path).flatMap {
         case Some(_) ⇒ getValue(config, path).map(Some(_))
-        case None ⇒ scalaz.Success(None)
+        case None    ⇒ scalaz.Success(None)
       }
   }
+
+  implicit object XRetrySettingsConfigExtractor extends ConfigExtractor[XRetrySettings] {
+    def getValue(config: Config, path: String): AlmValidation[XRetrySettings] = {
+      for {
+        section ← config.v[Config](path)
+        numberOfRetries ← section.v[String]("number-of-retries")
+        delayMode ← section.v[String]("delay-mode")
+        importanceStrOpt ← section.magicOption[String]("importance")
+        importanceOpt ← importanceStrOpt.map(Importance.fromString).validationOut
+        contextStrOpt ← section.opt[String]("context-description")
+        res ← build(numberOfRetries, delayMode, importanceOpt, contextStrOpt)
+      } yield res
+    }
+
+    def tryGetValue(config: Config, path: String): AlmValidation[Option[XRetrySettings]] =
+      config.opt[Config](path).flatMap {
+        case Some(_) ⇒ getValue(config, path).map(Some(_))
+        case None    ⇒ scalaz.Success(None)
+      }
+
+    private def build(numberOfRetries: String, delayMode: String, importanceOpt: Option[Importance], contextStrOpt: Option[String]): AlmValidation[XRetrySettings] = {
+      import almhirt.almvalidation.kit._
+      import scalaz._, Scalaz._
+      val norV =
+        numberOfRetries.toLowerCase match {
+          case "no-retry" ⇒
+            NumberOfRetries.NoRetry.success
+          case "0" ⇒
+            NumberOfRetries.NoRetry.success
+          case "infinite" ⇒
+            NumberOfRetries.InfiniteRetries.success
+          case "∞" ⇒
+            NumberOfRetries.InfiniteRetries.success
+          case x ⇒
+            x.toIntAlm.flatMap(v ⇒
+              if (v == 0)
+                NumberOfRetries.NoRetry.success
+              else if (v < 0)
+                ConstraintViolatedProblem(s"number-of-retries may not be less than zero: $x").failure
+              else
+                NumberOfRetries.LimitedRetries(v).success)
+        }
+      val dmV =
+        delayMode.toLowerCase match {
+          case "no-delay" ⇒
+            RetryDelayMode.NoDelay.success
+          case x ⇒
+            x.toDurationAlm.flatMap(dur ⇒
+              if (dur == scala.concurrent.duration.Duration.Zero)
+                RetryDelayMode.NoDelay.success
+              else if (dur < scala.concurrent.duration.Duration.Zero)
+                ConstraintViolatedProblem(s"delay-mode may not travel back in time: $x").failure
+              else
+                RetryDelayMode.ConstantDelay(dur).success)
+        }
+
+      val npParamsV =
+        (importanceOpt, contextStrOpt) match {
+          case (None, None)           ⇒ None.success
+          case (Some(imp), None)      ⇒ Some(XRetrySettings.NotifyingParams(imp, None)).success
+          case (Some(imp), Some(ctx)) ⇒ Some(XRetrySettings.NotifyingParams(imp, Some(ctx))).success
+          case (None, Some(ctx))      ⇒ ConstraintViolatedProblem("""It makes no sense to specify "context-description" when there is no importance.""").failure
+        }
+
+      (norV.toAgg |@| dmV.toAgg |@| npParamsV.toAgg)(XRetrySettings.apply).leftMap { p ⇒ ConfigurationProblem("Could not create XRetrySettings.", cause = Some(p)) }
+    }
+  }
+
 }

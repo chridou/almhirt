@@ -251,20 +251,36 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
   }
 
   /** In case of a failure, rejoin with the happy path */
+  @deprecated(message = "Use mapOrRecover", since = "0.7.6")
   def mapRecover[U](map: R ⇒ U, recover: Problem ⇒ U)(implicit executionContext: ExecutionContext): AlmFuture[U] = {
     this.fold[U](
       recover,
       succ ⇒ map(succ))
   }
 
+  /** In case of a failure, rejoin with the happy path */
+  def mapOrRecover[U](map: R ⇒ U, recover: Problem ⇒ U)(implicit executionContext: ExecutionContext): AlmFuture[U] = {
+    this.fold[U](
+      recover,
+      succ ⇒ map(succ))
+  }
+
   /** extract an U from the success. In case of a failure, rejoin with the happy path */
+  @deprecated(message = "Use collectOrRecover", since = "0.7.6")
   def collectRecover[U](collect: PartialFunction[R, U], recover: Problem ⇒ U)(implicit executionContext: ExecutionContext): AlmFuture[U] = {
     this.fold[U](
       recover,
       succ ⇒ collect(succ))
   }
 
-  /** A success becaomes a failure */
+  /** extract an U from the success. In case of a failure, rejoin with the happy path */
+  def collectOrRecover[U](collect: PartialFunction[R, U], recover: Problem ⇒ U)(implicit executionContext: ExecutionContext): AlmFuture[U] = {
+    this.fold[U](
+      recover,
+      succ ⇒ collect(succ))
+  }
+
+  /** A success becomes a failure */
   def divertToFailure(divert: PartialFunction[R, Problem])(implicit executionContext: ExecutionContext): AlmFuture[R] = {
     this.foldV(
       fail ⇒ fail.failure,
