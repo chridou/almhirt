@@ -410,4 +410,56 @@ object AlmFuture {
     delayed(duration)(problem.failure)
   }
 
+  def retry[T, S: almhirt.almfuture.ActionSchedulingMagnet](f: ⇒ AlmFuture[T], settings: almhirt.configuration.RetrySettings2, scheduler: S)(implicit executor: ExecutionContext): AlmFuture[T] =
+    retryScaffolding(f, settings, executor, scheduler, None)
+
+  def retryScaffolding[T, S: almhirt.almfuture.ActionSchedulingMagnet](
+    f: ⇒ AlmFuture[T],
+    settings: almhirt.configuration.RetrySettings2,
+    executor: ExecutionContext,
+    actionScheduler: S,
+    beforeRetry: Option[(almhirt.configuration.NumberOfRetries, scala.concurrent.duration.FiniteDuration) ⇒ Unit]): AlmFuture[T] = {
+
+    val scheduler = implicitly[almhirt.almfuture.ActionSchedulingMagnet[S]]
+
+    def scheduleFun(action: () ⇒ Unit, in: scala.concurrent.duration.FiniteDuration) =
+      scheduler.schedule(actionScheduler, action, in, executor)
+
+    val p = Promise[AlmValidation[T]]
+
+    f.onComplete(
+      fail ⇒ innerRetry(f, beforeRetry, fail, p, settings.numberOfRetries, settings.delay.calculator, scheduleFun, executor),
+      succ ⇒ p.success(succ.success))(executor)
+
+    new AlmFuture(p.future)
+  }
+
+  private def innerRetry[T](
+    f: ⇒ AlmFuture[T],
+    beforeRetry: Option[(almhirt.configuration.NumberOfRetries, scala.concurrent.duration.FiniteDuration) ⇒ Unit],
+    lastFailure: Problem,
+    promise: Promise[AlmValidation[T]],
+    retries: almhirt.configuration.NumberOfRetries,
+    delayCalculator: almhirt.configuration.RetryDelayCalculator,
+    schedule: (() ⇒ Unit, scala.concurrent.duration.FiniteDuration) ⇒ Unit,
+    executor: ExecutionContext) {
+    if (!retries.hasRetriesLeft) {
+      promise.success(lastFailure.failure)
+    } else {
+      val (nextDelay, newCalculator) = delayCalculator.next
+
+      beforeRetry.foreach(_(retries, nextDelay))
+
+      if (nextDelay == Duration.Zero) {
+        f.onComplete(
+          fail ⇒ innerRetry(f, beforeRetry, fail, promise, retries.oneLess, newCalculator, schedule, executor),
+          succ ⇒ promise.success(succ.success))(executor)
+      } else {
+        schedule(() ⇒ f.onComplete(
+          fail ⇒ innerRetry(f, beforeRetry, fail, promise, retries.oneLess, newCalculator, schedule, executor),
+          succ ⇒ promise.success(succ.success))(executor), nextDelay)
+      }
+    }
+  }
+
 }

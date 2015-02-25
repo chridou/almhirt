@@ -63,6 +63,13 @@
 					<style>integer</style>
 				</number>
 			</key>
+			<key name="plural_number_no_decimal_separator">
+				<icu>{amount, plural,
+					=0{None}
+					=1{One}
+					other{{amount, number, } items}}
+				</icu>
+			</key>
 			<key name="length">
 				<comment>A Comment</comment>
 				<measured-value parameter="length">

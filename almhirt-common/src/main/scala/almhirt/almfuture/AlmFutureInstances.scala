@@ -19,9 +19,15 @@ import scala.language.implicitConversions
 import scala.concurrent.Future
 import almhirt.common._
 
-
 trait AlmFutureInstances {
   /** Turn this [[scala.concurrent.Future]] into an [[almhirt.common.AlmFuture]] */
   implicit def akkaFutureToAlmhirtFuture[T](akkaFuture: Future[AlmValidation[T]]): AlmFuture[T] =
     new AlmFuture(akkaFuture)
+
+  implicit val javaTimerSchedulingMagnet = new ActionSchedulingMagnet[java.util.Timer] {
+    def schedule(to: java.util.Timer, action: () ⇒ Unit, in: scala.concurrent.duration.FiniteDuration, executor: scala.concurrent.ExecutionContext): Unit = {
+      val r = new java.util.TimerTask() { def run() { action() } }
+      to.schedule(r, in.toMillis)
+    }
+  }
 }

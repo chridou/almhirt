@@ -6,7 +6,6 @@ import almhirt.almvalidation.kit._
 import org.scalatest._
 import com.ibm.icu.util.ULocale
 import MeasuredImplicits._
-import com.ibm.icu.text.MessageFormat
 
 class ResourcesAndKeysTests extends FunSuite with Matchers {
   //val resourcesWithFallbackAllowed = AlmResources.fromXmlInResources("localization", "test", getClass.getClassLoader, true).forceResult

@@ -31,7 +31,7 @@ package object configuration {
         mayBeMagicValue ⇒ {
           mayBeMagicValue.toLowerCase() match {
             case "none" ⇒ scalaz.Success(None)
-            case _ ⇒ self.value[T](path).map(Some(_))
+            case _      ⇒ self.value[T](path).map(Some(_))
           }
         })
 
@@ -92,7 +92,7 @@ package object configuration {
     def tryGetValue(config: Config, path: String): AlmValidation[Option[Importance]] =
       config.opt[Config](path).flatMap {
         case Some(_) ⇒ getValue(config, path).map(Some(_))
-        case None ⇒ scalaz.Success(None)
+        case None    ⇒ scalaz.Success(None)
       }
   }
 
@@ -106,10 +106,10 @@ package object configuration {
     def tryGetValue(config: Config, path: String): AlmValidation[Option[almhirt.problem.Severity]] =
       config.opt[Config](path).flatMap {
         case Some(_) ⇒ getValue(config, path).map(Some(_))
-        case None ⇒ scalaz.Success(None)
+        case None    ⇒ scalaz.Success(None)
       }
   }
-  
+
   implicit object ExecutionContextConfigExtractor extends ConfigExtractor[ExecutionContextSelector] {
     def getValue(config: Config, path: String): AlmValidation[ExecutionContextSelector] =
       for {
@@ -120,7 +120,7 @@ package object configuration {
     def tryGetValue(config: Config, path: String): AlmValidation[Option[ExecutionContextSelector]] =
       config.opt[Config](path).flatMap {
         case Some(_) ⇒ getValue(config, path).map(Some(_))
-        case None ⇒ scalaz.Success(None)
+        case None    ⇒ scalaz.Success(None)
       }
   }
 
@@ -140,7 +140,7 @@ package object configuration {
     def tryGetValue(config: Config, path: String): AlmValidation[Option[RetrySettings]] =
       config.opt[Config](path).flatMap {
         case Some(_) ⇒ getValue(config, path).map(Some(_))
-        case None ⇒ scalaz.Success(None)
+        case None    ⇒ scalaz.Success(None)
       }
 
     private def build(pause: FiniteDuration, mode: Option[String], maxTime: Option[FiniteDuration], maxAttempts: Option[Int], infiniteLoopPause: Option[FiniteDuration]): AlmValidation[RetrySettings] = {
@@ -158,6 +158,61 @@ package object configuration {
         case x ⇒
           UnspecifiedProblem("""Invalid retry settings: $x.""").failure
       }
+    }
+  }
+
+  implicit object RetrySettings2ConfigExtractor extends ConfigExtractor[RetrySettings2] {
+    def getValue(config: Config, path: String): AlmValidation[RetrySettings2] = {
+      for {
+        section ← config.v[Config](path)
+        numberOfRetries ← section.v[String]("number-of-retries")
+        delayMode ← section.v[String]("delay-mode")
+        res ← build(numberOfRetries, delayMode)
+      } yield res
+    }
+
+    def tryGetValue(config: Config, path: String): AlmValidation[Option[RetrySettings2]] =
+      config.opt[Config](path).flatMap {
+        case Some(_) ⇒ getValue(config, path).map(Some(_))
+        case None    ⇒ scalaz.Success(None)
+      }
+
+    private def build(numberOfRetries: String, delayMode: String): AlmValidation[RetrySettings2] = {
+      import almhirt.almvalidation.kit._
+      import scalaz._, Scalaz._
+      val norV =
+        numberOfRetries.toLowerCase match {
+          case "no-retry" ⇒
+            NumberOfRetries.NoRetry.success
+          case "0" ⇒
+            NumberOfRetries.NoRetry.success
+          case "infinite" ⇒
+            NumberOfRetries.InfiniteRetries.success
+          case "∞" ⇒
+            NumberOfRetries.InfiniteRetries.success
+          case x ⇒
+            x.toIntAlm.flatMap(v ⇒
+              if (v == 0)
+                NumberOfRetries.NoRetry.success
+              else if (v < 0)
+                ConstraintViolatedProblem(s"number-of-retries may not be less than zero: $x").failure
+              else
+                NumberOfRetries.LimitedRetries(v).success)
+        }
+      val dmV =
+        delayMode.toLowerCase match {
+          case "no-delay" ⇒
+            RetryDelayMode.NoDelay.success
+          case x ⇒
+            x.toDurationAlm.flatMap(dur ⇒
+              if (dur == scala.concurrent.duration.Duration.Zero)
+                RetryDelayMode.NoDelay.success
+              else if (dur < scala.concurrent.duration.Duration.Zero)
+                ConstraintViolatedProblem(s"delay-mode may not travel back in time: $x").failure
+              else
+                RetryDelayMode.ConstantDelay(dur).success)
+        }
+      (norV.toAgg |@| dmV.toAgg)(RetrySettings2.apply).leftMap { p ⇒ ConfigurationProblem("Could not create RetrySettings.", cause = Some(p)) }
     }
   }
 
