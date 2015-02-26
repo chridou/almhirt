@@ -10,6 +10,7 @@ object XRetrySettings {
 final case class XRetrySettings(
   numberOfRetries: NumberOfRetries,
   delay: RetryDelayMode,
+  executorSelector: Option[ExtendedExecutionContextSelector],
   notifiyingParams: Option[XRetrySettings.NotifyingParams]) {
   
   def withNotifyingParams(params: XRetrySettings.NotifyingParams) = this.copy(notifiyingParams = Some(params))

@@ -177,7 +177,8 @@ package object akkax {
         importanceStrOpt ← section.magicOption[String]("importance")
         importanceOpt ← importanceStrOpt.map(Importance.fromString).validationOut
         contextStrOpt ← section.opt[String]("context-description")
-        res ← build(numberOfRetries, delayMode, importanceOpt, contextStrOpt)
+        executorSelectorOpt ← section.opt[ExtendedExecutionContextSelector]("executor")
+        res ← build(numberOfRetries, delayMode, importanceOpt, contextStrOpt, executorSelectorOpt)
       } yield res
     }
 
@@ -187,7 +188,12 @@ package object akkax {
         case None    ⇒ scalaz.Success(None)
       }
 
-    private def build(numberOfRetries: String, delayMode: String, importanceOpt: Option[Importance], contextStrOpt: Option[String]): AlmValidation[XRetrySettings] = {
+    private def build(
+      numberOfRetries: String,
+      delayMode: String,
+      importanceOpt: Option[Importance],
+      contextStrOpt: Option[String],
+      executorSelectorOpt: Option[ExtendedExecutionContextSelector]): AlmValidation[XRetrySettings] = {
       import almhirt.almvalidation.kit._
       import scalaz._, Scalaz._
       val norV =
@@ -231,7 +237,9 @@ package object akkax {
           case (None, Some(ctx))      ⇒ ConstraintViolatedProblem("""It makes no sense to specify "context-description" when there is no importance.""").failure
         }
 
-      (norV.toAgg |@| dmV.toAgg |@| npParamsV.toAgg)(XRetrySettings.apply).leftMap { p ⇒ ConfigurationProblem("Could not create XRetrySettings.", cause = Some(p)) }
+      val ecs = executorSelectorOpt.success
+
+      (norV.toAgg |@| dmV.toAgg |@| ecs.toAgg |@| npParamsV.toAgg)(XRetrySettings.apply).leftMap { p ⇒ ConfigurationProblem("Could not create XRetrySettings.", cause = Some(p)) }
     }
   }
 
