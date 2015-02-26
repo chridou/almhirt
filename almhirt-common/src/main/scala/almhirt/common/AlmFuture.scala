@@ -408,6 +408,7 @@ object AlmFuture {
   })
 
   /** Returns the result after the given duration */
+  @deprecated("Use delayedComputation.", since = "0.7.6")
   def delayed[T](duration: scala.concurrent.duration.FiniteDuration)(result: ⇒ AlmValidation[T]): AlmFuture[T] = {
     val p = Promise[AlmValidation[T]]
     val timer = new java.util.Timer()
@@ -417,13 +418,41 @@ object AlmFuture {
   }
 
   /** Returns the value after the given duration */
+  @deprecated("Use the other delayedSuccess.", since = "0.7.6")
   def delayedSuccess[T](duration: scala.concurrent.duration.FiniteDuration)(result: ⇒ T): AlmFuture[T] = {
     delayed(duration)(result.success)
   }
 
   /** Returns the failure with the given Problem after the given duration */
+  @deprecated("Use the other delayedFailure.", since = "0.7.6")
   def delayedFailure[T](duration: scala.concurrent.duration.FiniteDuration)(problem: ⇒ Problem): AlmFuture[Nothing] = {
     delayed(duration)(problem.failure)
+  }
+
+  /** Returns the result after the given duration */
+  def delayedResult[T, S: almhirt.almfuture.ActionSchedulingMagnet](duration: scala.concurrent.duration.FiniteDuration, scheduler: S)(result: AlmValidation[T])(implicit executor: ExecutionContext): AlmFuture[T] = {
+    implicit val schedulerMagnet = implicitly[almhirt.almfuture.ActionSchedulingMagnet[S]]
+    val p = Promise[AlmValidation[T]]
+    schedulerMagnet.schedule(scheduler, () ⇒ p.complete(scala.util.Success(result)), duration, executor)
+    new AlmFuture(p.future)
+  }
+
+  /** Starts computing the result after the given duration */
+  def delayedComputation[T, S: almhirt.almfuture.ActionSchedulingMagnet](duration: scala.concurrent.duration.FiniteDuration, scheduler: S)(result: ⇒ AlmValidation[T])(implicit executor: ExecutionContext): AlmFuture[T] = {
+    implicit val schedulerMagnet = implicitly[almhirt.almfuture.ActionSchedulingMagnet[S]]
+    val p = Promise[AlmValidation[T]]
+    schedulerMagnet.schedule(scheduler, () ⇒ p.complete(scala.util.Success(result)), duration, executor)
+    new AlmFuture(p.future)
+  }
+
+  /** Returns the failure with the given Problem after the given duration */
+  def delayedFailure[T, S: almhirt.almfuture.ActionSchedulingMagnet](duration: scala.concurrent.duration.FiniteDuration, scheduler: S)(problem: Problem)(implicit executor: ExecutionContext): AlmFuture[T] = {
+    delayedResult(duration, scheduler)(problem.failure)
+  }
+
+  /** Returns the value after the given duration */
+  def delayedSuccess[T, S: almhirt.almfuture.ActionSchedulingMagnet](duration: scala.concurrent.duration.FiniteDuration, scheduler: S)(result: T)(implicit executor: ExecutionContext): AlmFuture[T] = {
+    delayedResult(duration, scheduler)(result.success)
   }
 
   def retry[T, S: almhirt.almfuture.ActionSchedulingMagnet](f: ⇒ AlmFuture[T], settings: almhirt.configuration.RetrySettings2, scheduler: S)(implicit executor: ExecutionContext): AlmFuture[T] =
