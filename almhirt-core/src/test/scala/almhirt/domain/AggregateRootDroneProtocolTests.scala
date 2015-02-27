@@ -82,7 +82,7 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
         "emit NO aggregate events" in { fixture ⇒
           val FixtureParam(testId, droneActor, droneProbe, streams) = fixture
           val eventsProbe = TestProbe()
-          Source(streams.eventStream).collect{case e: AggregateRootEvent ⇒ e}.to(Sink(DelegatingSubscriber[AggregateRootEvent](eventsProbe.ref))).run()
+          Source(streams.eventStream).collect { case e: AggregateRootEvent ⇒ e }.to(Sink(DelegatingSubscriber[AggregateRootEvent](eventsProbe.ref))).run()
           within(1 second) {
             droneProbe.send(droneActor, UserUow(CommandHeader(), "a", 0L, Seq.empty))
             eventsProbe.expectNoMsg(500 millis)
@@ -165,6 +165,8 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
         def futuresContext: ExecutionContext = executionContext
         def aggregateEventLog: ActorRef = eventlogActor
         def snapshotStorage: Option[ActorRef] = None
+        val notifyHiveAboutUndispatchedEventsAfter: Option[FiniteDuration] = None
+        val notifyHiveAboutUnstoredEventsAfterPerEvent: Option[FiniteDuration] = None
         val eventsBroker: StreamBroker[Event] = streams.eventBroker
         val returnToUnitializedAfter = None
 

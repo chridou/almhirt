@@ -45,6 +45,10 @@ trait AlmActorSupport { me: Actor ⇒
     AlmFuture.retry(f, settings, me.context.system.scheduler)(AlmActorSupport.this.ContextSchedulerSchedulingMagnet, executor)
   }
 
+  def retryFutureOnMyDispatcher[T](settings: RetrySettings2)(f: ⇒ AlmFuture[T]): AlmFuture[T] = {
+    AlmFuture.retry(f, settings, me.context.system.scheduler)(AlmActorSupport.this.ContextSchedulerSchedulingMagnet, me.context.dispatcher)
+  }
+
   implicit def almFuture2PipeableFuture[T](future: AlmFuture[T]): PipeableAlmFuture[T] = new PipeableAlmFuture(future)
 
   class PipeableAlmFuture[T](future: AlmFuture[T]) extends AnyRef {

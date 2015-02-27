@@ -1,7 +1,7 @@
 package almhirt.domain
 
 import scala.language.postfixOps
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext
 import scalaz.Validation.FlatMap._
 import akka.actor._
@@ -77,6 +77,8 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
   def snapshotStorage: Option[ActorRef]
   def eventsBroker: StreamBroker[Event]
   def returnToUnitializedAfter: Option[FiniteDuration]
+  def notifyHiveAboutUndispatchedEventsAfter: Option[FiniteDuration]
+  def notifyHiveAboutUnstoredEventsAfterPerEvent: Option[FiniteDuration]
   implicit def ccuad: CanCreateUuidsAndDateTimes
 
   def handleAggregateCommand: ConfirmationContext[E] ⇒ (AggregateRootCommand, AggregateRootLifecycle[T]) ⇒ Unit
@@ -139,6 +141,12 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
   private case class Rejected(problem: Problem) extends CommandResult
   private case object Unhandled extends CommandResult
 
+  private case class EventsShouldHaveBeenDispatchedByNow(correlationId: CorrelationId)
+  private case class EventsShouldHaveBeenStoredByNow(correlationId: CorrelationId)
+
+  private var cancelWaitingForDispatchedEventsNotification: Option[Cancellable] = None
+  private var cancelWaitingForLoggedEventsNotification: Option[Cancellable] = None
+
   private var capturedId: Option[AggregateRootId] = None
 
   private def receiveUninitialized: Receive = {
@@ -197,6 +205,10 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
     case AggregateRootDroneInternal.ReturnToUninitialized ⇒
       context.parent ! AggregateRootHiveInternals.ReportDroneDebug(s"Returning to idle state after ${returnToUnitializedAfter.map(_.defaultUnitString)}.")
       context.become(receiveUninitialized)
+
+    case EventsShouldHaveBeenDispatchedByNow(_) | EventsShouldHaveBeenStoredByNow(_) ⇒
+      //Do nothing..
+      ()
   }
 
   private def receiveRebuildFromScratch(currentCommand: AggregateRootCommand): Receive = {
@@ -217,6 +229,10 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
 
     case GetAggregateRootEventsFailed(problem) ⇒
       onError(AggregateRootEventStoreFailedReadingException(currentCommand.aggId, s"An error has occured fetching the aggregate root events:\n$problem"), currentCommand, Seq.empty)
+
+    case EventsShouldHaveBeenDispatchedByNow(_) | EventsShouldHaveBeenStoredByNow(_) ⇒
+      //Do nothing..
+      ()
 
     case unexpectedCommand: AggregateRootCommand ⇒
       sendMessage(Busy(unexpectedCommand))
@@ -245,7 +261,14 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
     case Commit(events) ⇒
       events.foldLeft[AggregateRootLifecycle[T]](persistedState) { case (acc, cur) ⇒ applyEventLifecycleAgnostic(acc, cur) } match {
         case postnatalis: Postnatalis[T] ⇒
-          context.become(receiveCommitEvents(currentCommand, events.head, events.tail, Seq.empty, postnatalis))
+          val cid = CorrelationId(ccuad.getUniqueString())
+
+          notifyHiveAboutUnstoredEventsAfterPerEvent.foreach(delay ⇒
+            cancelWaitingForLoggedEventsNotification =
+              Some(context.system.scheduler.scheduleOnce(delay * events.size, self, EventsShouldHaveBeenStoredByNow(cid))(context.dispatcher)))
+
+          context.become(receiveCommitEvents(currentCommand, events.head, events.tail, Seq.empty, postnatalis, false, Deadline.now, cid))
+
           aggregateEventLog ! CommitAggregateRootEvent(events.head)
         case Vacat ⇒
           val problem = ConstraintViolatedProblem(s"""Command with events did not result in Postnatalis. This might be an error in your command handler.""")
@@ -258,46 +281,111 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
     case Unhandled ⇒
       handleCommandFailed(persistedState, currentCommand, UnspecifiedProblem(s"""Could not handle command of type "${currentCommand.getClass().getName()}"."""))
 
+    case EventsShouldHaveBeenDispatchedByNow(_) | EventsShouldHaveBeenStoredByNow(_) ⇒
+      //Do nothing..
+      ()
+
     case unexpectedCommand: AggregateRootCommand ⇒
       sendMessage(Busy(unexpectedCommand))
   }
 
-  private def receiveCommitEvents(currentCommand: AggregateRootCommand, inFlight: E, rest: Seq[E], done: Seq[E], unpersisted: Postnatalis[T]): Receive = {
+  private def receiveCommitEvents(
+    currentCommand: AggregateRootCommand,
+    inFlight: E,
+    rest: Seq[E],
+    done: Seq[E],
+    unpersisted: Postnatalis[T],
+    hiveNotified: Boolean,
+    startedStoring: Deadline,
+    correlationId: CorrelationId): Receive = {
     case AggregateRootEventCommitted(id) ⇒
       val newDone = done :+ inFlight
       rest match {
         case Seq() ⇒
+          if (hiveNotified)
+            context.parent ! AggregateRootHiveInternals.EventsFinallyLogged(currentCommand.aggId)
+
+          cancelWaitingForLoggedEventsNotification.foreach { _.cancel() }
+          cancelWaitingForLoggedEventsNotification = None
+
+          val cid = CorrelationId(ccuad.getUniqueString())
+
+          notifyHiveAboutUndispatchedEventsAfter.foreach(delay ⇒
+            cancelWaitingForDispatchedEventsNotification =
+              Some(context.system.scheduler.scheduleOnce(delay, self, EventsShouldHaveBeenDispatchedByNow(cid))(context.dispatcher)))
+
           this.offerAndThen(newDone, None) {
+            case EventsShouldHaveBeenDispatchedByNow(_) | EventsShouldHaveBeenStoredByNow(_) ⇒
+              //Do nothing..
+              ()
+
             case unexpectedCommand: AggregateRootCommand ⇒
               sendMessage(Busy(unexpectedCommand))
-          }(receiveWaitingForEventsDispatched(currentCommand, unpersisted, newDone))
+          }(receiveWaitingForEventsDispatched(currentCommand, unpersisted, newDone, false, Deadline.now, cid))
         case next +: newRest ⇒
           aggregateEventLog ! CommitAggregateRootEvent(next)
-          context.become(receiveCommitEvents(currentCommand, next, newRest, newDone, unpersisted))
+          context.become(receiveCommitEvents(currentCommand, next, newRest, newDone, unpersisted, hiveNotified, startedStoring, correlationId))
       }
 
     case AggregateRootEventNotCommitted(id, problem) ⇒
+      cancelWaitingForLoggedEventsNotification.foreach { _.cancel() }
+      cancelWaitingForLoggedEventsNotification = None
       onError(AggregateRootEventStoreFailedWritingException(currentCommand.aggId, s"The aggregate event store failed writing:\n$problem"), currentCommand, done)
+
+    case EventsShouldHaveBeenStoredByNow(incomingCorrelationId) ⇒
+      if (incomingCorrelationId == correlationId) {
+        context.parent ! AggregateRootHiveInternals.LogEventsTakesTooLong(currentCommand.aggId, startedStoring.lap)
+        context.become(receiveCommitEvents(currentCommand, inFlight, rest, done, unpersisted, hiveNotified = true, startedStoring, correlationId))
+      }
+
+    case EventsShouldHaveBeenDispatchedByNow(_) ⇒
+      // Do nothing....
+      ()
 
     case unexpectedCommand: AggregateRootCommand ⇒
       sendMessage(Busy(unexpectedCommand))
   }
 
-  private def receiveWaitingForEventsDispatched(currentCommand: AggregateRootCommand, persisted: Postnatalis[T], committedEvents: Seq[E]): Receive = {
+  private def receiveWaitingForEventsDispatched(
+    currentCommand: AggregateRootCommand,
+    persisted: Postnatalis[T],
+    committedEvents: Seq[E],
+    hiveNotified: Boolean,
+    startedDispatching: Deadline,
+    correlationId: CorrelationId): Receive = {
     case DeliveryResult(d: DeliveryJobDone, payload) ⇒
+      if (hiveNotified)
+        context.parent ! AggregateRootHiveInternals.EventsFinallyDispatchedToStream(persisted.id)
+      cancelWaitingForDispatchedEventsNotification.foreach { _.cancel() }
+      cancelWaitingForDispatchedEventsNotification = None
       handleCommandExecuted(persisted, currentCommand)
 
     case DeliveryResult(DeliveryJobFailed(problem, _), payload) ⇒
+      cancelWaitingForDispatchedEventsNotification.foreach { _.cancel() }
       onError(CouldNotDispatchAllAggregateRootEventsException(currentCommand), currentCommand, committedEvents)
+
+    case EventsShouldHaveBeenDispatchedByNow(incomingCorrelationId) ⇒
+      if (incomingCorrelationId == correlationId) {
+        context.parent ! AggregateRootHiveInternals.DispatchEventsToStreamTakesTooLong(persisted.id, startedDispatching.lap)
+        context.become(receiveWaitingForEventsDispatched(currentCommand, persisted, committedEvents, hiveNotified = true, startedDispatching, correlationId))
+      }
+
+    case EventsShouldHaveBeenStoredByNow(_) ⇒
+      // Do nothing....
+      ()
 
     case unexpectedCommand: AggregateRootCommand ⇒
       sendMessage(CommandNotExecuted(unexpectedCommand, UnspecifiedProblem(s"Command ${currentCommand.header} is currently executed.")))
-      context.become(receiveWaitingForEventsDispatched(currentCommand, persisted, committedEvents))
+      context.become(receiveWaitingForEventsDispatched(currentCommand, persisted, committedEvents, hiveNotified, startedDispatching, correlationId))
   }
 
   private def receiveMortuus(state: Mortuus): Receive = {
     case commandNotToExecute: AggregateRootCommand ⇒
       handleCommandFailed(state, commandNotToExecute, AggregateRootDeletedProblem(commandNotToExecute.aggId))
+
+    case EventsShouldHaveBeenDispatchedByNow(_) | EventsShouldHaveBeenStoredByNow(_) ⇒
+      //Do nothing..
+      ()
   }
 
   def receive: Receive = receiveUninitialized

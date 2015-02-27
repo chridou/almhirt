@@ -46,8 +46,8 @@ class AggregateRootNexusTests(_system: ActorSystem)
       events.collect { case x: CommandStatusChanged ⇒ x }.foldLeft((Seq[CommandStatusChanged](), Seq[CommandStatusChanged](), Seq[CommandStatusChanged]())) {
         case ((a, b, c), cur) ⇒
           cur match {
-            case x @ CommandStatusChanged(_, _, CommandStatus.Initiated) ⇒ (a :+ x, b, c)
-            case x @ CommandStatusChanged(_, _, CommandStatus.Executed) ⇒ (a, b :+ x, c)
+            case x @ CommandStatusChanged(_, _, CommandStatus.Initiated)      ⇒ (a :+ x, b, c)
+            case x @ CommandStatusChanged(_, _, CommandStatus.Executed)       ⇒ (a, b :+ x, c)
             case x @ CommandStatusChanged(_, _, CommandStatus.NotExecuted(_)) ⇒ (a, b, c :+ x)
           }
       }
@@ -181,6 +181,8 @@ class AggregateRootNexusTests(_system: ActorSystem)
         def aggregateEventLog: ActorRef = ars
         def snapshotStorage: Option[ActorRef] = ss
         val eventsBroker: StreamBroker[Event] = almhirtContext.eventBroker
+        val notifyHiveAboutUndispatchedEventsAfter: Option[FiniteDuration] = None
+        val notifyHiveAboutUnstoredEventsAfterPerEvent: Option[FiniteDuration] = None
         val returnToUnitializedAfter = None
 
         override val aggregateCommandValidator = AggregateRootCommandValidator.Validated
@@ -193,7 +195,7 @@ class AggregateRootNexusTests(_system: ActorSystem)
       def propsForCommand(command: AggregateRootCommand, ars: ActorRef, ss: Option[ActorRef]): AlmValidation[Props] = {
         command match {
           case c: UserCommand ⇒ droneProps(ars, ss).success
-          case x ⇒ NoSuchElementProblem(s"I don't have props for command $x").failure
+          case x              ⇒ NoSuchElementProblem(s"I don't have props for command $x").failure
         }
       }
     }

@@ -49,8 +49,8 @@ class AggregateRootHiveTests(_system: ActorSystem)
       events.collect { case x: CommandStatusChanged ⇒ x }.foldLeft((Seq[CommandStatusChanged](), Seq[CommandStatusChanged](), Seq[CommandStatusChanged]())) {
         case ((a, b, c), cur) ⇒
           cur match {
-            case x @ CommandStatusChanged(_, _, CommandStatus.Initiated) ⇒ (a :+ x, b, c)
-            case x @ CommandStatusChanged(_, _, CommandStatus.Executed) ⇒ (a, b :+ x, c)
+            case x @ CommandStatusChanged(_, _, CommandStatus.Initiated)      ⇒ (a :+ x, b, c)
+            case x @ CommandStatusChanged(_, _, CommandStatus.Executed)       ⇒ (a, b :+ x, c)
             case x @ CommandStatusChanged(_, _, CommandStatus.NotExecuted(_)) ⇒ (a, b, c :+ x)
           }
       }
@@ -142,8 +142,8 @@ class AggregateRootHiveTests(_system: ActorSystem)
           val statusProbe = TestProbe()
           Source(streams.eventStream).collect { case e: SystemEvent ⇒ e }.to(Sink(DelegatingSubscriber[SystemEvent](statusProbe.ref))).run()
           val flow = Source((1 to bigN).toSeq.map(id ⇒ CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"): AggregateRootCommand) ++
-          (1 to bigN).toSeq.map(id ⇒ ChangeUserLastname(CommandHeader(), s"$id", 1L, "müller"): AggregateRootCommand) ++
-          (1 to bigN).toSeq.map(id ⇒ ConfirmUserDeath(CommandHeader(), s"$id", 2L): AggregateRootCommand))
+            (1 to bigN).toSeq.map(id ⇒ ChangeUserLastname(CommandHeader(), s"$id", 1L, "müller"): AggregateRootCommand) ++
+            (1 to bigN).toSeq.map(id ⇒ ConfirmUserDeath(CommandHeader(), s"$id", 2L): AggregateRootCommand))
           val start = Deadline.now
           within(15 seconds) {
             flow.to(Sink(commandSubscriber)).run()
@@ -175,14 +175,16 @@ class AggregateRootHiveTests(_system: ActorSystem)
     val eventlogActor: ActorRef = system.actorOf(eventlogProps, s"eventlog-$testId")
 
     implicit val almhirtContext = AlmhirtContext.TestContext.noComponentsDefaultGlobalDispatcher(s"almhirt-context-$testId", AggregateRootHiveTests.this.ccuad, 5.seconds.dilated).awaitResultOrEscalate(5.seconds.dilated)
- 
+
     def droneProps(ars: ActorRef, ss: Option[ActorRef]): Props = Props(
       new AggregateRootDrone[User, UserEvent] with ActorLogging with UserEventHandler with UserCommandHandler with UserUpdater with AggregateRootDroneCommandHandlerAdaptor[User, UserCommand, UserEvent] {
-         def ccuad = AggregateRootHiveTests.this.ccuad
+        def ccuad = AggregateRootHiveTests.this.ccuad
         def futuresContext: ExecutionContext = executionContext
         def aggregateEventLog: ActorRef = ars
         def snapshotStorage: Option[ActorRef] = ss
         val eventsBroker: StreamBroker[Event] = almhirtContext.eventBroker
+        val notifyHiveAboutUndispatchedEventsAfter: Option[FiniteDuration] = None
+        val notifyHiveAboutUnstoredEventsAfterPerEvent: Option[FiniteDuration] = None
         val returnToUnitializedAfter = None
 
         override val aggregateCommandValidator = AggregateRootCommandValidator.Validated
@@ -195,7 +197,7 @@ class AggregateRootHiveTests(_system: ActorSystem)
       def propsForCommand(command: AggregateRootCommand, ars: ActorRef, ss: Option[ActorRef]): AlmValidation[Props] = {
         command match {
           case c: UserCommand ⇒ droneProps(ars, ss).success
-          case x ⇒ NoSuchElementProblem(s"I don't have props for command $x").failure
+          case x              ⇒ NoSuchElementProblem(s"I don't have props for command $x").failure
         }
       }
     }

@@ -6,6 +6,7 @@ import scala.concurrent.duration._
 import scalaz.Validation.FlatMap._
 import akka.actor._
 import almhirt.common._
+import almhirt.aggregates.AggregateRootId
 import almhirt.tracking._
 import almhirt.akkax._
 import almhirt.context.AlmhirtContext
@@ -67,6 +68,21 @@ private[almhirt] object AggregateRootHiveInternals {
   final case class ReportDroneDebug(msg: String)
   final case class ReportDroneError(msg: String, cause: ProblemCause)
   final case class ReportDroneWarning(msg: String, cause: ProblemCause)
+
+  sealed trait SomethingIsOverdue {
+    def aggId: AggregateRootId
+    def elapsed: FiniteDuration
+  }
+
+  sealed trait SomethingOverdueGotDone {
+    def aggId: AggregateRootId
+  }
+
+  final case class DispatchEventsToStreamTakesTooLong(aggId: AggregateRootId, elapsed: FiniteDuration) extends SomethingIsOverdue
+  final case class EventsFinallyDispatchedToStream(aggId: AggregateRootId) extends SomethingOverdueGotDone
+
+  final case class LogEventsTakesTooLong(aggId: AggregateRootId, elapsed: FiniteDuration) extends SomethingIsOverdue
+  final case class EventsFinallyLogged(aggId: AggregateRootId) extends SomethingOverdueGotDone
 }
 
 private[almhirt] class AggregateRootHive(
@@ -156,7 +172,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
   def receiveInitialize(aggregateEventLog: ActorRef, snapshotStorage: Option[ActorRef]): Receive = {
     case ReadyForDeliveries ⇒
       requestCommands()
-      context.become(receiveRunning(aggregateEventLog, snapshotStorage))
+      context.become(receiveRunning(aggregateEventLog, snapshotStorage, Set.empty))
   }
 
   private var remainingRequestCapacity: Int = commandBuffersize
@@ -192,25 +208,31 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
     bufferedEvents = rest
   }
 
-  def receiveRunning(aggregateEventLog: ActorRef, snapshotStorage: Option[ActorRef]): Receive = {
+  def receiveRunning(aggregateEventLog: ActorRef, snapshotStorage: Option[ActorRef], haveOverdueActions: Set[AggregateRootId]): Receive = {
     case ActorSubscriberMessage.OnNext(aggregateCommand: AggregateRootCommand) ⇒
       numReceivedInternal += 1
-      val drone = context.child(aggregateCommand.aggId.value) match {
-        case Some(drone) ⇒
-          drone
-        case None ⇒
-          droneFactory(aggregateCommand, aggregateEventLog, snapshotStorage) match {
-            case scalaz.Success(props) ⇒
-              context.actorOf(props, aggregateCommand.aggId.value)
-            //context watch drone
-            case scalaz.Failure(problem) ⇒ {
-              reportCriticalFailure(problem)
-              throw new Exception(s"Could not create a drone for command ${aggregateCommand.header}:\n$problem")
+      if (haveOverdueActions.isEmpty) {
+        val drone = context.child(aggregateCommand.aggId.value) match {
+          case Some(drone) ⇒
+            drone
+          case None ⇒
+            droneFactory(aggregateCommand, aggregateEventLog, snapshotStorage) match {
+              case scalaz.Success(props) ⇒
+                context.actorOf(props, aggregateCommand.aggId.value)
+              //context watch drone
+              case scalaz.Failure(problem) ⇒ {
+                reportCriticalFailure(problem)
+                throw new Exception(s"Could not create a drone for command ${aggregateCommand.header}:\n$problem")
+              }
             }
-          }
+        }
+        drone ! aggregateCommand
+        enqueueEvent(CommandExecutionInitiated(aggregateCommand))
+      } else {
+        numFailedInternal += 1
+        val msg = s"Rejecting command because there are ${haveOverdueActions.size} drones which are overdue completing their actions."
+        reportRejectedCommand(aggregateCommand, MinorSeverity, ServiceBusyProblem(msg))
       }
-      drone ! aggregateCommand
-      enqueueEvent(CommandExecutionInitiated(aggregateCommand))
 
     case rsp: AggregateRootDroneInternalMessages.ExecuteCommandResponse ⇒
       receivedCommandResponse()
@@ -232,6 +254,18 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
       enqueueEvent(event)
       requestCommands()
 
+    case AggregateRootHiveInternals.DispatchEventsToStreamTakesTooLong(aggId, elapsed) ⇒
+      logWarning(s"Drone ${aggId.value} is overdue on dispatching events after ${elapsed.defaultUnitString}.")
+      context.become(receiveRunning(aggregateEventLog, snapshotStorage, haveOverdueActions + aggId))
+
+    case AggregateRootHiveInternals.LogEventsTakesTooLong(aggId, elapsed) ⇒
+      logWarning(s"Drone ${aggId.value} is overdue on logging events after ${elapsed.defaultUnitString}.")
+      context.become(receiveRunning(aggregateEventLog, snapshotStorage, haveOverdueActions + aggId))
+
+    case m: AggregateRootHiveInternals.SomethingOverdueGotDone ⇒
+      logInfo(s"Drone ${m.aggId.value} got it's stuff done.")
+      context.become(receiveRunning(aggregateEventLog, snapshotStorage, haveOverdueActions - m.aggId))
+
     case OnDeliverSuppliesNow(amount) ⇒
       deliverEvents(amount)
       requestCommands()
@@ -251,14 +285,14 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
     case OnContractExpired ⇒
       logInfo(s"Contract with broker expired. There are ${bufferedEvents.size} events still to deliver.")
 
-    case ReportDroneDebug(msg) =>
+    case ReportDroneDebug(msg) ⇒
       logDebug(s"Drone ${sender().path.name} reported a debug message: $msg")
 
-    case ReportDroneError(msg, cause) =>
+    case ReportDroneError(msg, cause) ⇒
       logError(s"Drone ${sender().path.name} reported an error: $msg")
       reportMajorFailure(cause)
 
-    case ReportDroneWarning(msg, cause) =>
+    case ReportDroneWarning(msg, cause) ⇒
       logWarning(s"Drone ${sender().path.name} reported a warning: $msg")
       reportMinorFailure(cause)
   }

@@ -477,11 +477,13 @@ class AggregateRootDroneTests(_system: ActorSystem)
         def aggregateEventLog: ActorRef = eventlogActor
         def snapshotStorage: Option[ActorRef] = None
         val eventsBroker: StreamBroker[Event] = streams.eventBroker
+        val notifyHiveAboutUndispatchedEventsAfter: Option[FiniteDuration] = None
+        val notifyHiveAboutUnstoredEventsAfterPerEvent: Option[FiniteDuration] = None
         val returnToUnitializedAfter = None
 
         override val aggregateCommandValidator = AggregateRootCommandValidator.Validated
         override val tag = scala.reflect.ClassTag[UserCommand](classOf[UserCommand])
-        
+
         override def sendMessage(msg: AggregateRootDroneInternalMessages.AggregateDroneMessage) {
           testProbe.ref ! msg
         }
