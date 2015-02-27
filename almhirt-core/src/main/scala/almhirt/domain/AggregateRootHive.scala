@@ -65,16 +65,38 @@ object AggregateRootHive {
 
 private[almhirt] object AggregateRootHiveInternals {
   import almhirt.problem.ProblemCause
-  final case class ReportDroneDebug(msg: String)
-  final case class ReportDroneError(msg: String, cause: ProblemCause)
-  final case class ReportDroneWarning(msg: String, cause: ProblemCause)
 
-  sealed trait SomethingIsOverdue {
+  sealed trait AggregateDroneMessage
+
+  sealed trait AggregateDroneLoggingMessage extends AggregateDroneMessage
+
+  final case class ReportDroneDebug(msg: String) extends AggregateDroneLoggingMessage
+  final case class ReportDroneError(msg: String, cause: ProblemCause) extends AggregateDroneLoggingMessage
+  final case class ReportDroneWarning(msg: String, cause: ProblemCause) extends AggregateDroneLoggingMessage
+
+  sealed trait ExecuteCommandResponse extends AggregateDroneMessage {
+    def command: Command
+    def isSuccess: Boolean
+  }
+  final case class CommandExecuted(command: AggregateRootCommand) extends ExecuteCommandResponse {
+    def isSuccess = true
+  }
+  final case class CommandNotExecuted(command: AggregateRootCommand, problem: Problem) extends ExecuteCommandResponse {
+    def isSuccess = false
+  }
+
+  final case class Busy(command: AggregateRootCommand) extends ExecuteCommandResponse {
+    def isSuccess = false
+  }
+
+  sealed trait OverdueMessage extends AggregateDroneMessage
+
+  sealed trait SomethingIsOverdue extends OverdueMessage {
     def aggId: AggregateRootId
     def elapsed: FiniteDuration
   }
 
-  sealed trait SomethingOverdueGotDone {
+  sealed trait SomethingOverdueGotDone extends OverdueMessage {
     def aggId: AggregateRootId
   }
 
@@ -234,7 +256,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
         reportRejectedCommand(aggregateCommand, MinorSeverity, ServiceBusyProblem(msg))
       }
 
-    case rsp: AggregateRootDroneInternalMessages.ExecuteCommandResponse ⇒
+    case rsp: ExecuteCommandResponse ⇒
       receivedCommandResponse()
       if (rsp.isSuccess) {
         numSucceededInternal += 1
@@ -242,12 +264,12 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
         numFailedInternal += 1
       }
       val event: Event = rsp match {
-        case AggregateRootDroneInternalMessages.CommandExecuted(command) ⇒
+        case CommandExecuted(command) ⇒
           CommandSuccessfullyExecuted(command)
-        case AggregateRootDroneInternalMessages.CommandNotExecuted(command, problem) ⇒
+        case CommandNotExecuted(command, problem) ⇒
           reportRejectedCommand(command, MinorSeverity, problem)
           CommandExecutionFailed(command, problem)
-        case AggregateRootDroneInternalMessages.Busy(command) ⇒
+        case Busy(command) ⇒
           reportRejectedCommand(command, MinorSeverity, CollisionProblem("Command can not be executed since another command is being executed."))
           CommandExecutionFailed(command, CollisionProblem("Command can not be executed since another command is being executed."))
       }

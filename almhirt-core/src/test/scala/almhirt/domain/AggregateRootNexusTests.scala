@@ -183,6 +183,7 @@ class AggregateRootNexusTests(_system: ActorSystem)
         val eventsBroker: StreamBroker[Event] = almhirtContext.eventBroker
         val notifyHiveAboutUndispatchedEventsAfter: Option[FiniteDuration] = None
         val notifyHiveAboutUnstoredEventsAfterPerEvent: Option[FiniteDuration] = None
+        def retryEventLogActionDelay: Option[FiniteDuration] = None
         val returnToUnitializedAfter = None
 
         override val aggregateCommandValidator = AggregateRootCommandValidator.Validated

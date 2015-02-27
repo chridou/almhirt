@@ -31,7 +31,7 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
 
   "The AggregateRootDrone" when {
     import almhirt.eventlog.AggregateRootEventLog._
-    import AggregateRootDroneInternalMessages._
+    import AggregateRootHiveInternals._
     import almhirt.aggregates._
     import almhirt.tracking._
     import aggregatesforthelazyones._
@@ -167,13 +167,14 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
         def snapshotStorage: Option[ActorRef] = None
         val notifyHiveAboutUndispatchedEventsAfter: Option[FiniteDuration] = None
         val notifyHiveAboutUnstoredEventsAfterPerEvent: Option[FiniteDuration] = None
+        def retryEventLogActionDelay: Option[FiniteDuration] = None
         val eventsBroker: StreamBroker[Event] = streams.eventBroker
         val returnToUnitializedAfter = None
 
         override val aggregateCommandValidator = AggregateRootCommandValidator.Validated
         override val tag = scala.reflect.ClassTag[UserCommand](classOf[UserCommand])
 
-        override def sendMessage(msg: AggregateRootDroneInternalMessages.AggregateDroneMessage) {
+        override def sendMessage(msg: AggregateRootHiveInternals.AggregateDroneMessage) {
           droneProbe.ref ! msg
         }
 

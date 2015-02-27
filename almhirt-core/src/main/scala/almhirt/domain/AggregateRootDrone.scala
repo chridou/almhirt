@@ -13,7 +13,7 @@ import almhirt.context.AlmhirtContext
 import almhirt.streaming._
 import play.api.libs.iteratee.{ Enumerator, Iteratee }
 import scala.util.Success
-import almhirt.domain.AggregateRootHiveInternals.ReportDroneWarning
+import almhirt.domain.AggregateRootHiveInternals._
 
 /** Used to commit or reject the events resulting from a command */
 trait ConfirmationContext[E <: AggregateRootEvent] {
@@ -63,7 +63,6 @@ private[almhirt] object AggregateRootDroneInternal {
  */
 trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends StateChangingActorContractor[Event] {
   me: AggregateRootEventHandler[T, E] ⇒
-  import AggregateRootDroneInternalMessages._
   import almhirt.eventlog.AggregateRootEventLog._
 
   type TPayload = Any
@@ -79,6 +78,10 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
   def returnToUnitializedAfter: Option[FiniteDuration]
   def notifyHiveAboutUndispatchedEventsAfter: Option[FiniteDuration]
   def notifyHiveAboutUnstoredEventsAfterPerEvent: Option[FiniteDuration]
+  /**
+   * None means fail instead of another attempt....
+   */
+  def retryEventLogActionDelay: Option[FiniteDuration]
   implicit def ccuad: CanCreateUuidsAndDateTimes
 
   def handleAggregateCommand: ConfirmationContext[E] ⇒ (AggregateRootCommand, AggregateRootLifecycle[T]) ⇒ Unit
@@ -132,6 +135,8 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
   }
 
   private case object SignContract
+
+  private case object RetryLogEvent
 
   private case class InternalArBuildResult(ar: AggregateRootLifecycle[T])
   private case class InternalBuildArFailed(error: Throwable)
@@ -203,7 +208,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
       context.become(receiveWaitingForCommandResult(nextCommand, persistedState))
 
     case AggregateRootDroneInternal.ReturnToUninitialized ⇒
-      context.parent ! AggregateRootHiveInternals.ReportDroneDebug(s"Returning to idle state after ${returnToUnitializedAfter.map(_.defaultUnitString)}.")
+      sendMessage(AggregateRootHiveInternals.ReportDroneDebug(s"Returning to idle state after ${returnToUnitializedAfter.map(_.defaultUnitString)}."))
       context.become(receiveUninitialized)
 
     case EventsShouldHaveBeenDispatchedByNow(_) | EventsShouldHaveBeenStoredByNow(_) ⇒
@@ -303,7 +308,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
       rest match {
         case Seq() ⇒
           if (hiveNotified)
-            context.parent ! AggregateRootHiveInternals.EventsFinallyLogged(currentCommand.aggId)
+            sendMessage(AggregateRootHiveInternals.EventsFinallyLogged(currentCommand.aggId))
 
           cancelWaitingForLoggedEventsNotification.foreach { _.cancel() }
           cancelWaitingForLoggedEventsNotification = None
@@ -327,14 +332,22 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
           context.become(receiveCommitEvents(currentCommand, next, newRest, newDone, unpersisted, hiveNotified, startedStoring, correlationId))
       }
 
-    case AggregateRootEventNotCommitted(id, problem) ⇒
-      cancelWaitingForLoggedEventsNotification.foreach { _.cancel() }
-      cancelWaitingForLoggedEventsNotification = None
-      onError(AggregateRootEventStoreFailedWritingException(currentCommand.aggId, s"The aggregate event store failed writing:\n$problem"), currentCommand, done)
+    case AggregateRootEventNotCommitted(id, cause) ⇒
+      retryEventLogActionDelay match {
+        case Some(delay) =>
+          sendMessage(AggregateRootHiveInternals.ReportDroneWarning(s"Failed to log event ${inFlight.eventId.value} for AR ${inFlight.aggId.value}(Initiate a retry...).", cause))
+          context.system.scheduler.scheduleOnce(delay, self, RetryLogEvent)(context.dispatcher)
+          context.become(receiveRetryLogEventInFlight(currentCommand, inFlight, rest, done, unpersisted, hiveNotified, startedStoring, correlationId))
+
+        case None =>
+          cancelWaitingForLoggedEventsNotification.foreach { _.cancel() }
+          cancelWaitingForLoggedEventsNotification = None
+          onError(AggregateRootEventStoreFailedWritingException(currentCommand.aggId, s"The aggregate event store failed writing:\n$cause"), currentCommand, done)
+      }
 
     case EventsShouldHaveBeenStoredByNow(incomingCorrelationId) ⇒
       if (incomingCorrelationId == correlationId) {
-        context.parent ! AggregateRootHiveInternals.LogEventsTakesTooLong(currentCommand.aggId, startedStoring.lap)
+        sendMessage(AggregateRootHiveInternals.LogEventsTakesTooLong(currentCommand.aggId, startedStoring.lap))
         context.become(receiveCommitEvents(currentCommand, inFlight, rest, done, unpersisted, hiveNotified = true, startedStoring, correlationId))
       }
 
@@ -346,6 +359,52 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
       sendMessage(Busy(unexpectedCommand))
   }
 
+  private def receiveRetryLogEventInFlight(
+    currentCommand: AggregateRootCommand,
+    inFlight: E,
+    rest: Seq[E],
+    done: Seq[E],
+    unpersisted: Postnatalis[T],
+    hiveNotified: Boolean,
+    startedStoring: Deadline,
+    correlationId: CorrelationId): Receive = {
+    case RetryLogEvent =>
+      sendMessage(AggregateRootHiveInternals.ReportDroneDebug(s"Retry to log event ${inFlight.eventId.value} for AR ${inFlight.aggId.value}."))
+      aggregateEventLog ! GetAggregateRootEvent(inFlight.eventId)
+
+    case FetchedAggregateRootEvent(_, None) =>
+      sendMessage(AggregateRootHiveInternals.ReportDroneDebug("Retry to log event in event log."))
+      // Not already logged? Store it while we can...
+      aggregateEventLog ! CommitAggregateRootEvent(inFlight)
+      context.become(receiveCommitEvents(currentCommand, inFlight, rest, done, unpersisted, hiveNotified, startedStoring, correlationId))
+
+    case FetchedAggregateRootEvent(_, Some(e)) =>
+      sendMessage(AggregateRootHiveInternals.ReportDroneDebug("Recovered. Event was already stored"))
+      // Impersonate the event log....
+      context.become(receiveCommitEvents(currentCommand, inFlight, rest, done, unpersisted, hiveNotified, startedStoring, correlationId))
+      self ! AggregateRootEventCommitted(e.eventId)
+
+    case GetAggregateRootEventFailed(eventId, cause) =>
+      sendMessage(AggregateRootHiveInternals.ReportDroneWarning(s"Could not verify whether event ${inFlight.eventId.value} for AR ${inFlight.aggId.value} was logged(retrying to store the event).", cause))
+      retryEventLogActionDelay.foreach { delay =>
+        context.system.scheduler.scheduleOnce(delay, self, RetryLogEvent)(context.dispatcher)
+      }
+
+    case EventsShouldHaveBeenStoredByNow(incomingCorrelationId) ⇒
+      if (incomingCorrelationId == correlationId) {
+        sendMessage(AggregateRootHiveInternals.LogEventsTakesTooLong(currentCommand.aggId, startedStoring.lap))
+        context.become(receiveRetryLogEventInFlight(currentCommand, inFlight, rest, done, unpersisted, hiveNotified = true, startedStoring, correlationId))
+      }
+
+    case EventsShouldHaveBeenDispatchedByNow(_) ⇒
+      // Do nothing....
+      ()
+
+    case unexpectedCommand: AggregateRootCommand ⇒
+      sendMessage(Busy(unexpectedCommand))
+
+  }
+
   private def receiveWaitingForEventsDispatched(
     currentCommand: AggregateRootCommand,
     persisted: Postnatalis[T],
@@ -355,7 +414,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
     correlationId: CorrelationId): Receive = {
     case DeliveryResult(d: DeliveryJobDone, payload) ⇒
       if (hiveNotified)
-        context.parent ! AggregateRootHiveInternals.EventsFinallyDispatchedToStream(persisted.id)
+        sendMessage(AggregateRootHiveInternals.EventsFinallyDispatchedToStream(persisted.id))
       cancelWaitingForDispatchedEventsNotification.foreach { _.cancel() }
       cancelWaitingForDispatchedEventsNotification = None
       handleCommandExecuted(persisted, currentCommand)
@@ -366,7 +425,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
 
     case EventsShouldHaveBeenDispatchedByNow(incomingCorrelationId) ⇒
       if (incomingCorrelationId == correlationId) {
-        context.parent ! AggregateRootHiveInternals.DispatchEventsToStreamTakesTooLong(persisted.id, startedDispatching.lap)
+        sendMessage(AggregateRootHiveInternals.DispatchEventsToStreamTakesTooLong(persisted.id, startedDispatching.lap))
         context.become(receiveWaitingForEventsDispatched(currentCommand, persisted, committedEvents, hiveNotified = true, startedDispatching, correlationId))
       }
 
@@ -392,7 +451,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
 
   /** Ends with termination */
   private def onError(exn: AggregateRootDomainException, currentCommand: AggregateRootCommand, commitedEvents: Seq[E]) {
-    context.parent ! AggregateRootHiveInternals.ReportDroneError(s"Escalating! Something terrible happened executing a command(${currentCommand.getClass.getSimpleName} with agg id ${currentCommand.aggId.value})", exn)
+    sendMessage(AggregateRootHiveInternals.ReportDroneError(s"Escalating! Something terrible happened executing a command(${currentCommand.getClass.getSimpleName} with agg id ${currentCommand.aggId.value})", exn))
     sendMessage(CommandNotExecuted(currentCommand, UnspecifiedProblem(s"""Something really bad happened: "${exn.getMessage}". Escalating.""", cause = Some(exn))))
     throw exn
   }
@@ -403,7 +462,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
   }
 
   private def handleCommandFailed(persistedState: AggregateRootLifecycle[T], command: AggregateRootCommand, prob: Problem) {
-    context.parent ! AggregateRootHiveInternals.ReportDroneWarning(s"Executing a command(${command.getClass.getSimpleName} with agg id ${command.aggId.value}) failed: ${prob.message}", prob)
+    sendMessage(AggregateRootHiveInternals.ReportDroneWarning(s"Executing a command(${command.getClass.getSimpleName} with agg id ${command.aggId.value}) failed: ${prob.message}", prob))
     sendMessage(CommandNotExecuted(command, prob))
     becomeReceiveWaitingForCommand(persistedState)
   }
@@ -420,7 +479,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
   }
 
   override def preRestart(reason: Throwable, message: Option[Any]) {
-    context.parent ! AggregateRootHiveInternals.ReportDroneWarning("Restarting.", reason)
+    sendMessage(AggregateRootHiveInternals.ReportDroneWarning("Restarting.", reason))
     super.preRestart(reason, message)
     cancelContract()
   }
@@ -431,23 +490,4 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
   }
 }
 
-private[almhirt] object AggregateRootDroneInternalMessages {
-  sealed trait AggregateDroneMessage
-
-  sealed trait ExecuteCommandResponse extends AggregateDroneMessage {
-    def command: Command
-    def isSuccess: Boolean
-  }
-  final case class CommandExecuted(command: AggregateRootCommand) extends ExecuteCommandResponse {
-    def isSuccess = true
-  }
-  final case class CommandNotExecuted(command: AggregateRootCommand, problem: Problem) extends ExecuteCommandResponse {
-    def isSuccess = false
-  }
-
-  final case class Busy(command: AggregateRootCommand) extends ExecuteCommandResponse {
-    def isSuccess = false
-  }
-
-}
 
