@@ -21,7 +21,7 @@ object EventSinkHubMessage {
 
 object EventSinkHub {
   /** [Name, (Props, Option[Filter])] */
-  type EventSinkHubMemberFactories = Map[String, (Props, Option[Flow[Event, Event]])]
+  type EventSinkHubMemberFactories = Map[String, (Props, Option[Flow[Event, Event, Unit]])]
 
   def propsRaw(factories: EventSinkHub.EventSinkHubMemberFactories, buffersize: Option[Int], withBlackHoleIfEmpty: Boolean)(implicit ctx: AlmhirtContext): Props =
     Props(new EventSinksSupervisorImpl(factories, buffersize, withBlackHoleIfEmpty))
