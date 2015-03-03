@@ -210,7 +210,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
       context.become(receiveRunning(aggregateEventLog, snapshotStorage, Set.empty))
   }
 
-  private var remainingCommandRequestCapacity: Int = commandBuffersize
+  private var numberOfCommandsThatCanBeRequested: Int = commandBuffersize
   private var bufferedEvents: Vector[Event] = Vector.empty
 
   private var throttled = false
@@ -219,23 +219,19 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
       if (bufferedEvents.size > enqueudEventsThrottlingThreshold) {
         logWarning(s"Number of buffered events(${bufferedEvents.size}) is getting too large(>=$enqueudEventsThrottlingThreshold). Can not dispatch the command results fast enough. Throttling.")
         throttled = true
-      } else {
-        if (remainingCommandRequestCapacity > 0) {
-          request(remainingCommandRequestCapacity)
-          remainingCommandRequestCapacity = 0
-        } else {
-          logWarning(s"Maximum number of cachable commands($commandBuffersize) has been reached. Will not request more commands.")
-        }
+      } else if (numberOfCommandsThatCanBeRequested > 0) {
+        request(numberOfCommandsThatCanBeRequested)
+        numberOfCommandsThatCanBeRequested = 0
       }
     }
   }
 
   private def receivedCommandResponse() {
-    remainingCommandRequestCapacity = remainingCommandRequestCapacity + 1
+    numberOfCommandsThatCanBeRequested = numberOfCommandsThatCanBeRequested + 1
   }
 
   private def receivedInvalidCommand() {
-    remainingCommandRequestCapacity = remainingCommandRequestCapacity + 1
+    numberOfCommandsThatCanBeRequested = numberOfCommandsThatCanBeRequested + 1
   }
 
   private def enqueueEvent(event: Event) {
@@ -248,9 +244,13 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
     val rest = bufferedEvents.drop(toDeliver.size)
     deliver(toDeliver)
     bufferedEvents = rest
-    if (throttled && rest.isEmpty) {
-      throttled = false
-      logInfo("Released throttle.")
+    if (throttled) {
+      if (rest.isEmpty) {
+        throttled = false
+        logInfo("Released throttle.")
+      } else {
+        logInfo(s"There are still ${rest.size} events that need to be delivered. Can not release the throttle.")
+      }
     }
   }
 
