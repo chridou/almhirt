@@ -25,7 +25,7 @@ object AggregateRootHive {
     commandBuffersize: Int,
     droneFactory: AggregateRootDroneFactory,
     otherThanContextEventBroker: Option[StreamBroker[Event]],
-    enqueudEventsThrottlingThresholdFactor: Int = 2)(implicit ctx: AlmhirtContext): Props =
+    enqueuedEventsThrottlingThreshold: Int = 4)(implicit ctx: AlmhirtContext): Props =
     Props(new AggregateRootHive(
       hiveDescriptor,
       aggregateEventLogToResolve,
@@ -34,7 +34,7 @@ object AggregateRootHive {
       commandBuffersize,
       droneFactory,
       otherThanContextEventBroker.getOrElse(ctx.eventBroker),
-      enqueudEventsThrottlingThresholdFactor))
+      enqueuedEventsThrottlingThreshold))
 
   def props(
     hiveDescriptor: HiveDescriptor,
@@ -50,7 +50,7 @@ object AggregateRootHive {
       snapShotStorageToResolve ← inTryCatch { snapShotStoragePath.map(path ⇒ ResolvePath(ActorPath.fromString(path))) }
       resolveSettings ← section.v[ResolveSettings]("resolve-settings")
       commandBuffersize ← section.v[Int]("command-buffer-size")
-      enqueudEventsThrottlingThresholdFactor ← section.v[Int]("enqueued-events-throttling-threshold-factor")
+      enqueuedEventsThrottlingThreshold ← section.v[Int]("enqueued-events-throttling-threshold")
     } yield propsRaw(
       hiveDescriptor,
       aggregateEventLogToResolve,
@@ -59,7 +59,7 @@ object AggregateRootHive {
       commandBuffersize,
       droneFactory,
       Some(ctx.eventBroker),
-      enqueudEventsThrottlingThresholdFactor)
+      enqueuedEventsThrottlingThreshold)
   }
 }
 
@@ -117,11 +117,10 @@ private[almhirt] class AggregateRootHive(
   override val commandBuffersize: Int,
   override val droneFactory: AggregateRootDroneFactory,
   override val eventsBroker: StreamBroker[Event],
-  override val enqueudEventsThrottlingThresholdFactor: Int)(implicit override val almhirtContext: AlmhirtContext)
+  override val enqueuedEventsThrottlingThreshold: Int)(implicit override val almhirtContext: AlmhirtContext)
   extends AlmActor with AlmActorLogging with ActorContractor[Event] with ActorLogging with ActorSubscriber with AggregateRootHiveSkeleton {
 
   override val requestStrategy = ZeroRequestStrategy
-  override val enqueudEventsThrottlingThreshold = commandBuffersize * enqueudEventsThrottlingThresholdFactor
 
 }
 
@@ -169,7 +168,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
   def droneFactory: AggregateRootDroneFactory
   implicit val futuresContext: ExecutionContext = almhirtContext.futuresContext
   def eventsBroker: StreamBroker[Event]
-  def enqueudEventsThrottlingThreshold: Int
+  def enqueuedEventsThrottlingThreshold: Int
 
   private var numReceivedInternal = 0
   private var numSucceededInternal = 0
@@ -216,8 +215,8 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
   private var throttled = false
   private def requestCommands() {
     if (!throttled) {
-      if (bufferedEvents.size > enqueudEventsThrottlingThreshold) {
-        logWarning(s"Number of buffered events(${bufferedEvents.size}) is getting too large(>=$enqueudEventsThrottlingThreshold). Can not dispatch the command results fast enough. Throttling.")
+      if (bufferedEvents.size > enqueuedEventsThrottlingThreshold) {
+        logWarning(s"Number of buffered events(${bufferedEvents.size}) is getting too large(>=$enqueuedEventsThrottlingThreshold). Can not dispatch the command results fast enough. Throttling.")
         throttled = true
       } else if (numberOfCommandsThatCanBeRequested > 0) {
         request(numberOfCommandsThatCanBeRequested)
@@ -366,7 +365,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
     logInfo(s""" |Starting...
                  |
                  |command-buffer-size: $commandBuffersize
-                 |enqueued-events-throttling-threshold-factor: $enqueudEventsThrottlingThreshold""".stripMargin)
+                 |enqueued-events-throttling-threshold-factor: $enqueuedEventsThrottlingThreshold""".stripMargin)
     self ! Resolve
   }
 
