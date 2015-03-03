@@ -117,7 +117,7 @@ private[almhirt] class AggregateRootHive(
   override val commandBuffersize: Int,
   override val droneFactory: AggregateRootDroneFactory,
   override val eventsBroker: StreamBroker[Event],
-  enqueudEventsThrottlingThresholdFactor: Int = 2)(implicit override val almhirtContext: AlmhirtContext)
+  override val enqueudEventsThrottlingThresholdFactor: Int)(implicit override val almhirtContext: AlmhirtContext)
   extends AlmActor with AlmActorLogging with ActorContractor[Event] with ActorLogging with ActorSubscriber with AggregateRootHiveSkeleton {
 
   override val requestStrategy = ZeroRequestStrategy
