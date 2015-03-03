@@ -363,7 +363,10 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
 
   override def preStart() {
     super.preStart()
-    logInfo("Starting.")
+    logInfo(s""" |Starting...
+                 |
+                 |command-buffer-size: $commandBuffersize
+                 |enqueued-events-throttling-threshold-factor: $enqueudEventsThrottlingThreshold""".stripMargin)
     self ! Resolve
   }
 
