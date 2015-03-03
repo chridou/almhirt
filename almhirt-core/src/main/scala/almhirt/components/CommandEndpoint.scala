@@ -121,12 +121,14 @@ private[almhirt] class CommandEndpointImpl(
       cmd.success
     } else {
       val reason =
-        if (!isCanceled) {
-          ServiceShutDownProblem("Command processing was shut down.")
+        if (isCanceled) {
+          ServiceShutDownProblem("Command processing was shut down. The stream subscriber cancelled the stream.")
         } else if (isErrorEmitted) {
-          ServiceBrokenProblem("Command processing is broken.")
+          ServiceBrokenProblem("Command processing is broken. An error was already emitted.")
         } else if (!isActive) {
           ServiceNotAvailableProblem("Command processing is not yet ready.")
+        } else if (isCompleted) {
+          ServiceNotAvailableProblem("The service is not available any more.")
         } else if (totalDemand == 0) {
           ServiceBusyProblem("No demand. Try again later.")
         } else {
