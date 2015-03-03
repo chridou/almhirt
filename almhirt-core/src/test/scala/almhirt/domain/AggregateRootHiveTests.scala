@@ -209,9 +209,10 @@ class AggregateRootHiveTests(_system: ActorSystem)
         NoResolvingRequired(eventlogActor),
         None,
         ResolveSettings.default,
-        commandBuffersize = 10,
+        commandBuffersize = 16,
         droneFactory = droneFactory,
-        almhirtContext.eventBroker))
+        almhirtContext.eventBroker,
+        enqueuedEventsThrottlingThreshold = 8))
     val hiveActor = system.actorOf(hiveProps, s"hive-$testId-test")
     val hiveSubscriber = akka.stream.actor.ActorSubscriber[AggregateRootCommand](hiveActor)
 

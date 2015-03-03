@@ -207,9 +207,10 @@ class AggregateRootNexusTests(_system: ActorSystem)
         NoResolvingRequired(eventlogActor),
         None,
         ResolveSettings.default,
-        commandBuffersize = 10,
+        commandBuffersize = 16,
         droneFactory = droneFactory,
-        almhirtContext.eventBroker))
+        almhirtContext.eventBroker,
+        enqueuedEventsThrottlingThreshold = 8))
 
     val hiveFactory = new AggregateRootHiveFactory {
       def props(descriptor: HiveDescriptor): AlmValidation[Props] = hiveProps(descriptor).success
