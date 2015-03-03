@@ -365,7 +365,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
     logInfo(s""" |Starting...
                  |
                  |command-buffer-size: $commandBuffersize
-                 |enqueued-events-throttling-threshold-factor: $enqueuedEventsThrottlingThreshold""".stripMargin)
+                 |enqueued-events-throttling-threshold: $enqueuedEventsThrottlingThreshold""".stripMargin)
     self ! Resolve
   }
 
