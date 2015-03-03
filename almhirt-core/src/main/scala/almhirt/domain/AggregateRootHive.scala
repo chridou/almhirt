@@ -25,7 +25,7 @@ object AggregateRootHive {
     commandBuffersize: Int,
     droneFactory: AggregateRootDroneFactory,
     otherThanContextEventBroker: Option[StreamBroker[Event]],
-    enqueuedEventsThrottlingThreshold: Int = 4)(implicit ctx: AlmhirtContext): Props =
+    enqueuedEventsThrottlingThreshold: Int)(implicit ctx: AlmhirtContext): Props =
     Props(new AggregateRootHive(
       hiveDescriptor,
       aggregateEventLogToResolve,
