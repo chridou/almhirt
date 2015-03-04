@@ -332,7 +332,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
       logDebug(s"Aggregate command stream completed after receiving $numReceived commands. $numSucceeded succeeded, $numFailed failed.")
 
     case OnBrokerProblem(problem) ⇒
-      reportCriticalFailure(problem)
+      reportCriticalFailure(problem.withArg("hive", hiveDescriptor.value))
       throw new Exception(s"The broker reported a problem:\n$problem")
 
     case OnContractExpired ⇒
@@ -343,11 +343,11 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
 
     case ReportDroneError(msg, cause) ⇒
       logError(s"Drone ${sender().path.name} reported an error: $msg")
-      reportMajorFailure(cause)
+      reportMajorFailure(cause.mapProblem { _.withArg("hive", hiveDescriptor.value) })
 
     case ReportDroneWarning(msg, cause) ⇒
       logWarning(s"Drone ${sender().path.name} reported a warning: $msg")
-      reportMinorFailure(cause)
+      reportMinorFailure(cause.mapProblem { _.withArg("hive", hiveDescriptor.value) })
 
     case AggregateRootHiveInternals.CargoJettisoned(id) ⇒
       this.numJettisonedSinceLastReport += 1

@@ -46,11 +46,11 @@ object ProblemCause {
   implicit def throwable2ProblemCause(exn: Throwable): ProblemCause = ProblemCause(exn)
   implicit def prob2ProblemCause(problem: Problem): ProblemCause = ProblemCause(problem)
 
-  implicit class ProblemCauseOps(self: ProblemCause) {
+  implicit class ProblemCauseOps(val self: ProblemCause) extends AnyVal {
     def toProblem: Problem =
       self match {
-        case CauseIsProblem(p) ⇒ p
-        case CauseIsThrowable(HasAThrowable(exn)) ⇒ almhirt.common.ExceptionCaughtProblem(exn)
+        case CauseIsProblem(p)                           ⇒ p
+        case CauseIsThrowable(HasAThrowable(exn))        ⇒ almhirt.common.ExceptionCaughtProblem(exn)
         case CauseIsThrowable(d: HasAThrowableDescribed) ⇒ almhirt.common.UnspecifiedProblem(s"There was a description of an exception:\n$d")
       }
 
@@ -69,6 +69,12 @@ object ProblemCause {
           else
             r
         case x ⇒ x
+      }
+
+    def mapProblem(m: Problem ⇒ Problem): ProblemCause =
+      self match {
+        case CauseIsProblem(p) ⇒ CauseIsProblem(m(p))
+        case x                 ⇒ x
       }
   }
 }
