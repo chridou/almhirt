@@ -101,7 +101,7 @@ private[almhirt] class CommandEndpointImpl(
         } else if (isCompleted) {
           ServiceNotAvailableProblem("The service is not available any more.")
         } else if (totalDemand == 0) {
-          ServiceBusyProblem("No demand. Try again later.")
+          ServiceBusyProblem("Currently there is no demand for commands. Try again later.")
         } else {
           UnspecifiedProblem("Unknown cause.")
         }
