@@ -99,7 +99,7 @@ private[almhirt] class CommandEndpointImpl(
         } else if (!isActive) {
           ServiceNotAvailableProblem("Command processing is not yet ready.")
         } else if (isCompleted) {
-          ServiceNotAvailableProblem("The service is not available any more.")
+          ServiceNotAvailableProblem("The service is not available any more. The commad stream was closed.")
         } else if (totalDemand == 0) {
           ServiceBusyProblem("Currently there is no demand for commands. Try again later.")
         } else {
