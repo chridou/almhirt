@@ -17,17 +17,11 @@ object CommandEndpoint {
     commandStatusTrackerToResolve: ToResolve,
     resolveSettings: ResolveSettings,
     maxTrackingDuration: FiniteDuration,
-    circuitControlSettings: CircuitControlSettings,
-    circuitStateReportingInterval: Option[FiniteDuration],
-    circuitControlCallbackExecutor: ExtendedExecutionContextSelector,
     autoConnect: Boolean = false)(implicit ctx: AlmhirtContext): Props =
     Props(new CommandEndpointImpl(
       commandStatusTrackerToResolve,
       resolveSettings,
       maxTrackingDuration,
-      circuitControlSettings,
-      circuitStateReportingInterval,
-      circuitControlCallbackExecutor,
       autoConnect))
 
   def props(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
@@ -38,11 +32,8 @@ object CommandEndpoint {
       section ← ctx.config.v[com.typesafe.config.Config]("almhirt.components.misc.command-endpoint")
       maxTrackingDuration ← section.v[FiniteDuration]("max-tracking-duration")
       resolveSettings ← section.v[ResolveSettings]("resolve-settings")
-      circuitControlSettings ← section.v[CircuitControlSettings]("circuit-control")
-      circuitControlCallbackExecutor ← section.v[ExtendedExecutionContextSelector]("circuit-control.callback-executor")
-      circuitStateReportingInterval ← section.magicOption[FiniteDuration]("circuit-state-reporting-interval")
       autoConnect ← section.v[Boolean]("auto-connect")
-    } yield propsRaw(commandStatusTrackerToResolve, resolveSettings, maxTrackingDuration, circuitControlSettings, circuitStateReportingInterval, circuitControlCallbackExecutor, autoConnect)
+    } yield propsRaw(commandStatusTrackerToResolve, resolveSettings, maxTrackingDuration, autoConnect)
   }
 
   def apply(commandEndpoint: ActorRef): org.reactivestreams.Publisher[Command] =
@@ -56,14 +47,8 @@ private[almhirt] class CommandEndpointImpl(
   commandStatusTrackerToResolve: ToResolve,
   resolveSettings: ResolveSettings,
   maxTrackingDuration: FiniteDuration,
-  override val circuitControlSettings: CircuitControlSettings,
-  override val circuitStateReportingInterval: Option[FiniteDuration],
-  override val circuitControlCallbackExecutorSelector: ExtendedExecutionContextSelector,
-  autoConnect: Boolean)(implicit override val almhirtContext: AlmhirtContext) extends ActorPublisher[Command] with AlmActor with AlmActorLogging with SyncFusedActor with ActorLogging with ImplicitFlowMaterializer {
+  autoConnect: Boolean)(implicit override val almhirtContext: AlmhirtContext) extends ActorPublisher[Command] with AlmActor with AlmActorLogging with ActorLogging with ImplicitFlowMaterializer {
   import CommandStatusTracker._
-
-  override def circuitControlLoggingAdapter = Some(this.log)
-  override val sendStateChangedEvents = true
 
   private case object AutoConnect
   private case object Resolve
@@ -75,8 +60,7 @@ private[almhirt] class CommandEndpointImpl(
     case ActorMessages.ResolvedSingle(commandStatusTracker, _) ⇒
       logInfo("Found command status tracker.")
       if (autoConnect) self ! AutoConnect
-      registerCircuitControl()
-      context.becomeFused(receiveRunningWithClosedCircuit(commandStatusTracker))
+      context.become(receiveRunning(commandStatusTracker))
 
     case ActorMessages.SingleNotResolved(problem, _) ⇒
       logError(s"Could not resolve command status tracker @ ${commandStatusTrackerToResolve}:\n$problem")
@@ -87,7 +71,7 @@ private[almhirt] class CommandEndpointImpl(
       sender() ! CommandNotAccepted(cmd.commandId, ServiceNotAvailableProblem("Command endpoint not ready! Try again later."))
   }
 
-  def receiveRunningWithClosedCircuit(commandStatusTracker: ActorRef): Receive = {
+  def receiveRunning(commandStatusTracker: ActorRef): Receive = {
     case AutoConnect ⇒
       logInfo("Connecting to command consumer.")
       CommandEndpoint(self).subscribe(almhirtContext.commandBroker.newSubscriber)
@@ -95,22 +79,9 @@ private[almhirt] class CommandEndpointImpl(
     case cmd: Command ⇒
       dispatchCommandResult(
         cmd,
-        fused(checkCommandDispatchable(cmd)),
+        checkCommandDispatchable(cmd),
         sender(),
         commandStatusTracker)
-
-    case m: ActorMessages.CircuitAllWillFail ⇒
-      logWarning("The circuit was opened!")
-      context.becomeFused(receiveRunningWithOpenCircuit(commandStatusTracker))
-  }
-
-  def receiveRunningWithOpenCircuit(commandStatusTracker: ActorRef): Receive = {
-    case cmd: Command ⇒
-      sender() ! CommandNotAccepted(cmd.commandId, ServiceBrokenProblem("Command processing is currently broken. Try again later."))
-
-    case m: ActorMessages.CircuitNotAllWillFail ⇒
-      logInfo("The circuit was closed!")
-      context.becomeFused(receiveRunningWithClosedCircuit(commandStatusTracker))
 
   }
 
@@ -140,8 +111,7 @@ private[almhirt] class CommandEndpointImpl(
   private def dispatchCommandResult(cmd: Command, result: AlmValidation[Command], receiver: ActorRef, commandStatusTracker: ActorRef) {
     result.fold(
       problem ⇒ {
-        logWarning(s"""	|
-        					|Rejecting command with id "${cmd.commandId.value}".
+        logWarning(s"""|Rejecting command with id "${cmd.commandId.value}".
         					|Current demand is $totalDemand commands.
         					|Reason:
         					|$problem""".stripMargin)
@@ -172,11 +142,12 @@ private[almhirt] class CommandEndpointImpl(
   }
 
   override def preStart() {
+    logInfo("Starting...")
     self ! Resolve
   }
 
   override def postStop() {
-    deregisterCircuitControl()
+    logInfo("Stopped")
   }
 
 }
