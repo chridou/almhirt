@@ -353,7 +353,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
 
     case ReportJettisonedCargo ⇒
       if (numJettisonedSinceLastReport > 0)
-        logInfo(s"$numJettisonedSinceLastReport drones jettisoned their carge since the last report.")
+        logInfo(s"$numJettisonedSinceLastReport drones jettisoned their cargo since the last report.")
       this.numJettisonedSinceLastReport = 0
       context.system.scheduler.scheduleOnce(5.minutes, self, ReportJettisonedCargo)
   }
