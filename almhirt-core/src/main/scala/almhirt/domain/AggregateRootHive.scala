@@ -263,8 +263,9 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
           case None ⇒
             droneFactory(aggregateCommand, aggregateEventLog, snapshotStorage) match {
               case scalaz.Success(props) ⇒
-                context.actorOf(props, aggregateCommand.aggId.value)
-              //context watch drone
+                val droneActor = context.actorOf(props, aggregateCommand.aggId.value)
+                context watch droneActor
+                droneActor
               case scalaz.Failure(problem) ⇒ {
                 reportCriticalFailure(problem.withArg("hive", hiveDescriptor.value))
                 throw new Exception(s"Could not create a drone for command ${aggregateCommand.header}:\n$problem")
@@ -357,6 +358,9 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
         logInfo(s"$numJettisonedSinceLastReport drones jettisoned their cargo since the last report.")
       this.numJettisonedSinceLastReport = 0
       context.system.scheduler.scheduleOnce(5.minutes, self, ReportJettisonedCargo)
+      
+    case Terminated(actor) =>
+      logDebug(s"""${actor} terminated.""")
   }
 
   override def receive: Receive = receiveResolve
