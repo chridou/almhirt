@@ -192,7 +192,7 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
       }
 
     case AggregateRootViewInternal.ReturnToUninitialized ⇒
-      context.parent ! AggregateRootViewsInternals.ReportViewDebug(s"Returning to idle state after ${returnToUnitializedAfter.map(_.defaultUnitString)}.")
+      context.parent !  AggregateRootHiveInternals.CargoJettisoned(aggregateRootId)
       context.become(receiveUninitialized)
 
   }
