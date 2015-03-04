@@ -69,14 +69,19 @@ trait AlmActor extends Actor with HasAlmhirtContext with AlmActorSupport {
     import almhirt.configuration.RetrySettings2
     val executor = settings.executorSelector.map { selectExecutionContext(_) } getOrElse this.context.dispatcher
     val retrySettings = RetrySettings2(settings.numberOfRetries, settings.delay)
-    val retryNotification: Option[(almhirt.configuration.NumberOfRetries, scala.concurrent.duration.FiniteDuration) ⇒ Unit] =
+    val retryNotification: Option[(almhirt.configuration.NumberOfRetries, scala.concurrent.duration.FiniteDuration, Problem) ⇒ Unit] =
       settings.notifiyingParams.map {
         case XRetrySettings.NotifyingParams(importance, Some(contextDesc)) ⇒
-          (nor, nextIn) ⇒ inform(s"""  |$contextDesc
+          (nor, nextIn, lastProblem) ⇒ inform(s"""  |$contextDesc
+                                       |Last problem message: ${lastProblem.message}
+                                       |Last problem type: ${lastProblem.problemType}
                                        |Retries left: $nor
                                        |Next retry in: ${nextIn.defaultUnitString}""".stripMargin, importance)
           case XRetrySettings.NotifyingParams(importance, None) ⇒
-          (nor, nextIn) ⇒ inform(s"Retries left: $nor; Next retry in: ${nextIn.defaultUnitString}", importance)
+          (nor, nextIn, lastProblem) ⇒ inform(s"""|Last problem message: ${lastProblem.message}
+                                       |Last problem type: ${lastProblem.problemType}
+                                       |Retries left: $nor
+                                       |Next retry in: ${nextIn.defaultUnitString}""".stripMargin, importance)
       }
 
     AlmFuture.retryScaffolding(f, retrySettings, executor, this.context.system.scheduler, retryNotification)
@@ -97,7 +102,7 @@ trait AlmActor extends Actor with HasAlmhirtContext with AlmActorSupport {
     }
   }
 
-    private def innerRetryInforming[T](f: ⇒ AlmFuture[T], lastFailure: Problem, promise: Promise[AlmValidation[T]], retriesLeft: Int, originalRetries: Int, retryDelay: FiniteDuration, importance: Importance, executor: ExecutionContext) {
+  private def innerRetryInforming[T](f: ⇒ AlmFuture[T], lastFailure: Problem, promise: Promise[AlmValidation[T]], retriesLeft: Int, originalRetries: Int, retryDelay: FiniteDuration, importance: Importance, executor: ExecutionContext) {
     if (retriesLeft == 0) {
       inform(s"No retries left. Finally failed after $originalRetries retries.", importance)
       promise.success(lastFailure.failure)
@@ -116,6 +121,5 @@ trait AlmActor extends Actor with HasAlmhirtContext with AlmActorSupport {
       }
     }
   }
-
 
 }
