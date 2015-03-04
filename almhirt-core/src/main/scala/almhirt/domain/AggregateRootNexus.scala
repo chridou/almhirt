@@ -90,11 +90,11 @@ private[almhirt] class AggregateRootNexus(
       throw exn
 
     case ActorPublisherMessage.Cancel ⇒
-      logInfo("The fanout publisher cancelled it's subscription. Propagating cancellation.")
+      logWarning("The fanout publisher cancelled it's subscription. Propagating cancellation.")
       cancel()
 
     case Terminated(actor) ⇒
-      logInfo(s"Hive ${actor.path.name} terminated.")
+      logWarning(s"Hive ${actor.path.name} terminated.")
   }
 
   def receive: Receive = receiveInitialize
