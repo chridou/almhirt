@@ -266,7 +266,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
                 context.actorOf(props, aggregateCommand.aggId.value)
               //context watch drone
               case scalaz.Failure(problem) ⇒ {
-                reportCriticalFailure(problem)
+                reportCriticalFailure(problem.withArg("hive", hiveDescriptor.value))
                 throw new Exception(s"Could not create a drone for command ${aggregateCommand.header}:\n$problem")
               }
             }
@@ -276,7 +276,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
       } else {
         numFailedInternal += 1
         val msg = s"Rejecting command because there are ${haveOverdueActions.size} drones which are overdue completing their actions."
-        val prob = ServiceBusyProblem(msg)
+        val prob = ServiceBusyProblem(msg).withArg("hive", hiveDescriptor.value)
         reportRejectedCommand(aggregateCommand, MinorSeverity, prob)
         receivedInvalidCommand()
         enqueueEvent(CommandExecutionFailed(aggregateCommand, prob))
@@ -284,7 +284,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
       }
 
     case ActorSubscriberMessage.OnNext(something) ⇒
-      reportMinorFailure(ArgumentProblem(s"Received something I cannot handle: $something"))
+      reportMinorFailure(ArgumentProblem(s"Received something I cannot handle: $something").withArg("hive", hiveDescriptor.value))
       logWarning(s"Received something I cannot handle: $something")
       receivedInvalidCommand()
       requestCommands()
@@ -300,11 +300,12 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
         case CommandExecuted(command) ⇒
           CommandSuccessfullyExecuted(command)
         case CommandNotExecuted(command, problem) ⇒
-          reportRejectedCommand(command, MinorSeverity, problem)
-          CommandExecutionFailed(command, problem)
+          val newProb = problem.withArg("hive", hiveDescriptor.value)
+          reportRejectedCommand(command, MinorSeverity, newProb)
+          CommandExecutionFailed(command, newProb)
         case Busy(command) ⇒
           val msg = s"Command[${command.getClass.getSimpleName}] with id ${command.commandId.value} on aggregate root ${command.aggId.value} can not be executed since another command is being executed."
-          val prob = CollisionProblem(msg)
+          val prob = CollisionProblem(msg).withArg("hive", hiveDescriptor.value)
           reportRejectedCommand(command, MinorSeverity, prob)
           CommandExecutionFailed(command, prob)
       }

@@ -463,8 +463,9 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
   }
 
   private def handleCommandFailed(persistedState: AggregateRootLifecycle[T], command: AggregateRootCommand, prob: Problem) {
-    sendMessage(AggregateRootHiveInternals.ReportDroneWarning(s"Executing a command(${command.getClass.getSimpleName} with agg id ${command.aggId.value}) failed: ${prob.message}", prob))
-    sendMessage(CommandNotExecuted(command, prob))
+    val newProb =  persistedState.idOption.fold(prob)(id => prob.withArg("aggregate-root-id", id.value))
+    sendMessage(AggregateRootHiveInternals.ReportDroneWarning(s"Executing a command(${command.getClass.getSimpleName} with agg id ${command.aggId.value}) failed: ${prob.message}", newProb))
+    sendMessage(CommandNotExecuted(command, newProb))
     becomeReceiveWaitingForCommand(persistedState)
   }
 
