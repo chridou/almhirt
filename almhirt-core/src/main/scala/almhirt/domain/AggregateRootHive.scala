@@ -215,7 +215,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
   private var throttledSince = almhirtContext.getUtcTimestamp
 
   private var numberOfCommandsThatCanBeRequested: Int = commandBuffersize
-  private var bufferedEvents: Vector[Event] = Vector.empty
+  private var bufferedEvents: Vector[CommandStatusChanged] = Vector.empty
 
   private var throttled = false
   private def requestCommands() {
@@ -244,7 +244,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
     numberOfCommandsThatCanBeRequested = numberOfCommandsThatCanBeRequested + 1
   }
 
-  private def enqueueEvent(event: Event) {
+  private def enqueueEvent(event: CommandStatusChanged) {
     bufferedEvents = bufferedEvents :+ event
     offer(1)
   }
@@ -311,7 +311,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
       } else {
         numFailedInternal += 1
       }
-      val event: Event = rsp match {
+      val event: CommandStatusChanged = rsp match {
         case CommandExecuted(command) ⇒
           CommandSuccessfullyExecuted(command)
         case CommandNotExecuted(command, problem) ⇒
