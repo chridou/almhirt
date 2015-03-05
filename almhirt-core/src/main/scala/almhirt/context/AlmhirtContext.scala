@@ -194,13 +194,13 @@ object AlmhirtContext {
           def receive: Receive = {
             case AlmhirtContextMessages.Start ⇒
               theReceiver = sender()
-              log.info("Create streams")
+              logInfo("Create streams")
               AlmhirtStreams.createInternal(this.context, system.settings.config).onComplete(
                 problem ⇒ self ! AlmhirtContextMessages.StreamsNotCreated(problem),
                 streams ⇒ self ! AlmhirtContextMessages.StreamsCreated(streams))
 
             case AlmhirtContextMessages.StreamsCreated(streams) ⇒
-              log.info("Created streams. Next: Create context")
+              logInfo("Created streams. Next: Create context")
               val ccuad = specificCcuad getOrElse CanCreateUuidsAndDateTimes()
               val ctx = new AlmhirtContext with Stoppable {
                 val config = system.settings.config
@@ -219,7 +219,7 @@ object AlmhirtContext {
                 def tellHerder(what: almhirt.herder.HerderMessages.HerderNotificicationMessage) { tellTheHerder(what) }
 
                 def stop() {
-                  log.info("Stopping.")
+                  logInfo("Stopping.")
                   //streams.stop()
                   context.stop(self)
                 }
@@ -228,7 +228,7 @@ object AlmhirtContext {
               self ! AlmhirtContextMessages.ContextCreated(ctx)
 
             case AlmhirtContextMessages.ContextCreated(ctx) ⇒
-              log.info("Context created. Next: Configure herder")
+              logInfo("Context created. Next: Configure herder")
               (for {
                 herderProps ← almhirt.herder.Herder.props()(ctx)
               } yield herderProps).fold(
