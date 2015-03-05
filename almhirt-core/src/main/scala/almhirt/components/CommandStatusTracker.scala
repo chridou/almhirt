@@ -81,6 +81,10 @@ private[almhirt] class MyCommandStatusTracker(
   if (targetCacheSize < 1) throw new Exception(s"targetCacheSize($targetCacheSize) must be grater than zero.")
   if (shrinkCacheAt < targetCacheSize) throw new Exception(s"shrinkCacheAt($targetCacheSize) must at least targetCacheSize($targetCacheSize).")
 
+  logInfo(s"""|target-cache-size: $targetCacheSize
+              |shrink-cache-at: $shrinkCacheAt
+              |check-timeout-interval: ${checkTimeoutInterval.defaultUnitString}""".stripMargin)
+  
   override val requestStrategy = ZeroRequestStrategy
 
   implicit val executionContext: ExecutionContext = context.dispatcher
