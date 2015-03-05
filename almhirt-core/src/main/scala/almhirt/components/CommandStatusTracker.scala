@@ -35,10 +35,10 @@ object CommandStatusTracker {
       fail ⇒
         fail match {
           case OperationTimedOutProblem(_) ⇒ TrackedTimeout
-          case _ ⇒ TrackedError(fail)
+          case _                           ⇒ TrackedError(fail)
         },
       succ ⇒ succ match {
-        case CommandStatus.Executed ⇒ TrackedExecutued
+        case CommandStatus.Executed           ⇒ TrackedExecutued
         case CommandStatus.NotExecuted(cause) ⇒ TrackedNotExecutued(cause)
       })
 
@@ -102,13 +102,17 @@ private[almhirt] class MyCommandStatusTracker(
   private[this] var cachedStatusLookUp: Map[CommandId, CommandResult] = Map.empty
   private[this] var cachedStatusSeq: Vector[CommandId] = Vector.empty
 
+  private[this] var removedDueToShrinking: Vector[CommandId] = Vector.empty
+
   private[this] val shrinkSize = (shrinkCacheAt - targetCacheSize) + 1
 
   private def addStatusToCache(id: CommandId, status: CommandResult) {
-    if (cachedStatusSeq.size == shrinkCacheAt) {
+    if (cachedStatusSeq.size >= shrinkCacheAt) {
+      logDebug(s"Shrink cache from ${cachedStatusSeq.size} to $shrinkSize.")
       val (remove, keep) = cachedStatusSeq.splitAt(shrinkSize)
       cachedStatusSeq = keep
       cachedStatusLookUp = cachedStatusLookUp -- remove
+      removedDueToShrinking ++= remove
     }
     cachedStatusSeq = cachedStatusSeq :+ id
     cachedStatusLookUp = cachedStatusLookUp + (id → status)
@@ -154,11 +158,18 @@ private[almhirt] class MyCommandStatusTracker(
 
     case CheckTimeouts ⇒
       val currentSubscriptions = trackingSubscriptions
+      val currentRemoveDueToShrinking = removedDueToShrinking.toSet
+
+      removedDueToShrinking = Vector.empty
+
+      if (!currentRemoveDueToShrinking.isEmpty)
+        logDebug(s"${currentRemoveDueToShrinking} commands will be removed due to shrinking. Subscribers will be notified with a timeout.")
+
       AlmFuture.compute {
         val deadline = Deadline.now
         val timedOut = currentSubscriptions.map {
           case (id, entries) ⇒
-            val timedOutEntries = entries.filter { case (entryId, entry) ⇒ entry.due < deadline }.map(x ⇒ x._1)
+            val timedOutEntries = entries.filter { case (entryId, entry) ⇒ entry.due < deadline || currentRemoveDueToShrinking(id) }.map(x ⇒ x._1)
             (id, timedOutEntries.toSet)
         }
         self ! RemoveTimedOut(timedOut)
@@ -166,6 +177,8 @@ private[almhirt] class MyCommandStatusTracker(
 
     case RemoveTimedOut(timedOut) ⇒
       val currentSubscriptions = trackingSubscriptions.toMap
+
+      // Notify timed out
       AlmFuture.compute {
         timedOut.foreach {
           case (commandId, timedOutEntryIds) ⇒
@@ -186,10 +199,19 @@ private[almhirt] class MyCommandStatusTracker(
       }.onFailure { p ⇒
         reportMajorFailure(p)
       }
+
+      //Adjust current subscriptions
       trackingSubscriptions = trackingSubscriptions.map {
         case (commandId, entries) ⇒
           (commandId, entries -- (timedOut.get(commandId).toSeq.flatten))
       }
+
+      logDebug(s"""|Stats after removing timed outs:
+                   |Number of tracked commands: ${trackingSubscriptions.size}
+                   |Number of subscriptions: ${trackingSubscriptions.values.map { _.size }.sum}
+                   |To remove due to shrinking: ${removedDueToShrinking.size}(after removal)
+                   |""".stripMargin)
+
       context.system.scheduler.scheduleOnce(checkTimeoutInterval, self, CheckTimeouts)
 
   }
