@@ -181,6 +181,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
   def numFailed = numFailedInternal
 
   private case object ReportJettisonedCargo
+  private case object ReportThrottlingState
 
   private case object Resolve
   def receiveResolve: Receive = {
@@ -209,6 +210,10 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
       context.become(receiveRunning(aggregateEventLog, snapshotStorage, Set.empty))
   }
 
+  private var totalSuppliesRequested = 0
+  private var suppliesRequestedSinceThrottlingStateChanged = 0
+  private var throttledSince = almhirtContext.getUtcTimestamp
+
   private var numberOfCommandsThatCanBeRequested: Int = commandBuffersize
   private var bufferedEvents: Vector[Event] = Vector.empty
 
@@ -216,8 +221,14 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
   private def requestCommands() {
     if (!throttled) {
       if (bufferedEvents.size > enqueuedEventsThrottlingThreshold) {
-        logWarning(s"Number of buffered events(${bufferedEvents.size}) is getting too large(>=$enqueuedEventsThrottlingThreshold). Can not dispatch the command results fast enough. Throttling.")
+        throttledSince = almhirtContext.getUtcTimestamp
+        suppliesRequestedSinceThrottlingStateChanged = 0
+        logWarning(s"""|Number of buffered events(${bufferedEvents.size}) is getting too large(>=$enqueuedEventsThrottlingThreshold). 
+                       |Can not dispatch the command results fast enough. Throttling.
+                       |Total requested events: $totalSuppliesRequested
+                       |Requested events since throttling state changed: $suppliesRequestedSinceThrottlingStateChanged""".stripMargin)
         throttled = true
+        context.system.scheduler.scheduleOnce(1.minute, self, ReportThrottlingState)
       } else if (numberOfCommandsThatCanBeRequested > 0) {
         request(numberOfCommandsThatCanBeRequested)
         numberOfCommandsThatCanBeRequested = 0
@@ -239,6 +250,8 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
   }
 
   private def deliverEvents(amount: Int) {
+    totalSuppliesRequested += amount
+    suppliesRequestedSinceThrottlingStateChanged += amount
     val toDeliver = bufferedEvents.take(amount)
     val rest = bufferedEvents.drop(toDeliver.size)
     deliver(toDeliver)
@@ -247,6 +260,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
       if (rest.isEmpty) {
         throttled = false
         logInfo("Released throttle.")
+        suppliesRequestedSinceThrottlingStateChanged = 0
       } else {
         logInfo(s"There are still ${rest.size} events that need to be delivered. Can not release the throttle.")
       }
@@ -358,8 +372,18 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
         logInfo(s"$numJettisonedSinceLastReport drones jettisoned their cargo since the last report.")
       this.numJettisonedSinceLastReport = 0
       context.system.scheduler.scheduleOnce(5.minutes, self, ReportJettisonedCargo)
-      
-    case Terminated(actor) =>
+
+    case ReportThrottlingState ⇒
+      if (throttled) {
+        logInfo(s"""|I'm throttling since ${}
+                    |Number of buffered events: ${bufferedEvents.size}
+                    |Throttling threshold: $enqueuedEventsThrottlingThreshold 
+                    |Total requested events: $totalSuppliesRequested
+                    |Requested events since throttling state changed: $suppliesRequestedSinceThrottlingStateChanged""".stripMargin)
+        context.system.scheduler.scheduleOnce(1.minute, self, ReportThrottlingState)
+      }
+
+    case Terminated(actor) ⇒
       logDebug(s"""${actor} terminated.""")
   }
 
