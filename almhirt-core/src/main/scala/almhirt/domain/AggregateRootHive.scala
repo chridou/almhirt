@@ -212,7 +212,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
 
   private var totalSuppliesRequested = 0
   private var suppliesRequestedSinceThrottlingStateChanged = 0
-  private var throttledSince = almhirtContext.getUtcTimestamp
+  private var throttledSince = Deadline.now
 
   private var numberOfCommandsThatCanBeRequested: Int = commandBuffersize
   private var bufferedEvents: Vector[CommandStatusChanged] = Vector.empty
@@ -221,7 +221,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
   private def requestCommands() {
     if (!throttled) {
       if (bufferedEvents.size > enqueuedEventsThrottlingThreshold) {
-        throttledSince = almhirtContext.getUtcTimestamp
+        throttledSince = Deadline.now
         suppliesRequestedSinceThrottlingStateChanged = 0
         logWarning(s"""|Number of buffered events(${bufferedEvents.size}) is getting too large(>=$enqueuedEventsThrottlingThreshold). 
                        |Can not dispatch the command results fast enough. Throttling.
@@ -375,7 +375,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
 
     case ReportThrottlingState ⇒
       if (throttled) {
-        logInfo(s"""|I'm throttling since ${}
+        logInfo(s"""|I'm throttling for ${throttledSince.lap.defaultUnitString}
                     |Number of buffered events: ${bufferedEvents.size}
                     |Throttling threshold: $enqueuedEventsThrottlingThreshold 
                     |Total requested events: $totalSuppliesRequested
