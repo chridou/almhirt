@@ -112,8 +112,8 @@ private[almhirt] class MyCommandStatusTracker(
 
   private def addStatusToCache(id: CommandId, status: CommandResult) {
     if (cachedStatusSeq.size >= shrinkCacheAt) {
-      logDebug(s"Shrink cache from ${cachedStatusSeq.size} to $shrinkSize.")
       val (remove, keep) = cachedStatusSeq.splitAt(shrinkSize)
+      logDebug(s"Shrinked cache from ${cachedStatusSeq.size} to ${keep.size}.")
       cachedStatusSeq = keep
       cachedStatusLookUp = cachedStatusLookUp -- remove
       removedDueToShrinking ++= remove
@@ -167,7 +167,7 @@ private[almhirt] class MyCommandStatusTracker(
       removedDueToShrinking = Vector.empty
 
       if (!currentRemoveDueToShrinking.isEmpty)
-        logDebug(s"${currentRemoveDueToShrinking} commands will be removed due to shrinking. Subscribers will be notified with a timeout.")
+        logDebug(s"${currentRemoveDueToShrinking.size} commands will be removed due to shrinking. Subscribers will be notified with a timeout.")
 
       AlmFuture.compute {
         val deadline = Deadline.now
