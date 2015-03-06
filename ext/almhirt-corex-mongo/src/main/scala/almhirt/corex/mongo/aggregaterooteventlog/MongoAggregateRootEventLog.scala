@@ -368,7 +368,7 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
             case x ⇒ PersistenceProblem(s"""Expected 1 domain event with id "$eventId" but found ${x.size}.""").failure
           }
         }(serializationExecutor)
-      } yield aggregateRootEvent).mapRecoverPipeTo(
+      } yield aggregateRootEvent).mapOrRecoverThenPipeTo(
         eventOpt ⇒ FetchedAggregateRootEvent(eventId, eventOpt),
         problem ⇒ {
           logError(problem.toString())
