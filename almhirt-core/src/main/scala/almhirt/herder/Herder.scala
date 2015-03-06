@@ -57,17 +57,17 @@ private[almhirt] class Pastor(
 
   context.actorSelection(almhirtContext.localActorPaths.almhirt / "streams" / "event-broker") ! almhirt.streaming.InternalBrokerMessages.InternalNotifyOnNoDemand(
     5.minutes,
-    t ⇒ informationHerdingDog ! HerderMessages.InformationMessages.Information(
+    (t, noDemand) ⇒ informationHerdingDog ! HerderMessages.InformationMessages.Information(
       eventBrokerId,
-      s"No demand for ${t.defaultUnitString}",
+      if(noDemand) s"No demand for ${t.defaultUnitString}" else s"First demand after having no demand for ${t.defaultUnitString}",
       Importance.Mentionable,
       almhirtContext.getUtcTimestamp))
 
   context.actorSelection(almhirtContext.localActorPaths.almhirt / "streams" / "command-broker") ! almhirt.streaming.InternalBrokerMessages.InternalNotifyOnNoDemand(
     5.minutes,
-    t ⇒ informationHerdingDog ! HerderMessages.InformationMessages.Information(
+    (t, noDemand) ⇒ informationHerdingDog ! HerderMessages.InformationMessages.Information(
       commandBrokerId,
-      s"No demand for ${t.defaultUnitString}",
+      if(noDemand) s"No demand for ${t.defaultUnitString}" else s"First demand after having no demand for ${t.defaultUnitString}",
       Importance.Mentionable,
       almhirtContext.getUtcTimestamp))
 

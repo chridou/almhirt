@@ -92,7 +92,7 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
   private var totalDemanded = 0L
   private var totalDelivered = 0L
 
-  private var toNotifyOnNoDemand: Option[(FiniteDuration ⇒ Unit, FiniteDuration, Cancellable)] = None
+  private var toNotifyOnNoDemand: Option[((FiniteDuration, Boolean) ⇒ Unit, FiniteDuration, Cancellable)] = None
   private var noDemandSince: Option[Deadline] = Some(Deadline.now)
 
   def receiveCollectingOffers(
@@ -168,8 +168,17 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
       }
 
     case ActorPublisherMessage.Request(amount) ⇒
-      if (totalDemand > 0)
+      if (totalDemand > 0) {
+        noDemandSince
+          .flatMap(since ⇒
+            toNotifyOnNoDemand.map(n ⇒ (since.lap, n._1, n._2)))
+          .filter { case (dur, _, maxDur) ⇒ dur >= maxDur }
+          .foreach {
+            case (dur, action, _) ⇒
+              action(dur, false)
+          }
         noDemandSince = None
+      }
       chooseNextAction(offers, contractors, subscriptions)
 
     case ActorPublisherMessage.Cancel ⇒
@@ -188,7 +197,7 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
         case (since, action, dur) ⇒
           val timeWithNoDemand = since.lap
           if (timeWithNoDemand >= dur)
-            action(timeWithNoDemand)
+            action(timeWithNoDemand, true)
       }
 
     case StopStreaming ⇒
@@ -301,8 +310,17 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
       }
 
     case ActorPublisherMessage.Request(amount) ⇒
-      if (totalDemand > 0)
+      if (totalDemand > 0) {
+        noDemandSince
+          .flatMap(since ⇒
+            toNotifyOnNoDemand.map(n ⇒ (since.lap, n._1, n._2)))
+          .filter { case (dur, _, maxDur) ⇒ dur >= maxDur }
+          .foreach {
+            case (dur, action, _) ⇒
+              action(dur, false)
+          }
         noDemandSince = None
+      }
       if (deliverySchedule.isEmpty)
         chooseNextAction(offers, contractors, subscriptions)
 
@@ -313,7 +331,7 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
       if (log.isDebugEnabled)
         log.debug("Received cancel from downstream. Stopping.")
       stop(Map.empty, offers, contractors, subscriptions, "transporting")
-      
+
     case InternalBrokerMessages.InternalNotifyOnNoDemand(duration, action) ⇒
       if (toNotifyOnNoDemand.isEmpty) {
         val timerCancel = context.system.scheduler.schedule(Duration.Zero, duration, self, CheckForNoDemand)(context.dispatcher)
@@ -325,7 +343,7 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
         case (since, action, dur) ⇒
           val timeWithNoDemand = since.lap
           if (timeWithNoDemand >= dur)
-            action(timeWithNoDemand)
+            action(timeWithNoDemand, true)
       }
   }
 
