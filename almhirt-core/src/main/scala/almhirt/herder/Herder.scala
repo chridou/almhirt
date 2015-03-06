@@ -52,8 +52,8 @@ private[almhirt] class Pastor(
   val informationHerdingDog: ActorRef = context.actorOf(informationHerdingDogProps, InformationHerdingDog.actorname)
   val runtimeHerdingDog: ActorRef = context.actorOf(runtimeHerdingDogProps, RuntimeHerdingDog.actorname)
 
-  val eventBrokerId = ComponentId(AppName("streams"), ComponentName("event-broker"))
-  val commandBrokerId = ComponentId(AppName("streams"), ComponentName("command-broker"))
+  val eventBrokerId = ComponentId(AppName("almhirt-streams"), ComponentName("event-broker"))
+  val commandBrokerId = ComponentId(AppName("almhirt-streams"), ComponentName("command-broker"))
 
   context.actorSelection(almhirtContext.localActorPaths.almhirt / "streams" / "event-broker") ! almhirt.streaming.InternalBrokerMessages.InternalNotifyOnNoDemand(
     5.minutes,
