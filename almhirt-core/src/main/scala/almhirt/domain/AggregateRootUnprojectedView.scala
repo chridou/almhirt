@@ -130,8 +130,8 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
 
     case GetAggregateRootEventsFailed(problem) ⇒
       problem match {
-        case ServiceNotAvailableProblem(p) ⇒
-          val newProb = ServiceNotAvailableProblem("The storage is not available.", cause = Some(p))
+        case ServiceNotReadyProblem(p) ⇒
+          val newProb = ServiceNotReadyProblem("Not yet ready to answer questions..", cause = Some(p))
           context.parent ! AggregateRootViewsInternals.ReportViewError("An error occured", newProb)
           enqueuedRequests.foreach(receiver ⇒ onDispatchFailure(newProb, receiver))
           updateFromEventlog(currentState, Vector.empty, rebuildRetryDelay)
