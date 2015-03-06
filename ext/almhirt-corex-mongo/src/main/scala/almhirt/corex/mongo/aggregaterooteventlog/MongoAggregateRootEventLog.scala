@@ -282,7 +282,7 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
     case m: AggregateRootEventLogMessage ⇒
       val msg = s"""Received domain event log message ${m.getClass().getSimpleName()} while uninitialized."""
       logWarning(msg)
-      val problem = ServiceNotAvailableProblem(msg)
+      val problem = ServiceNotReadyProblem(msg)
       m match {
         case CommitAggregateRootEvent(event) ⇒
           sender ! AggregateRootEventNotCommitted(event.eventId, problem)
@@ -331,7 +331,7 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
     case m: AggregateRootEventLogMessage ⇒
       val msg = s"""Received domain event log message ${m.getClass().getSimpleName()} while uninitialized in read only mode."""
       logWarning(msg)
-      val problem = ServiceNotAvailableProblem(msg)
+      val problem = ServiceNotReadyProblem(msg)
       m match {
         case CommitAggregateRootEvent(event) ⇒
           sender ! AggregateRootEventNotCommitted(event.eventId, problem)

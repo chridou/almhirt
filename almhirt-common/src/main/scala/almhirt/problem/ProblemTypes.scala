@@ -74,7 +74,16 @@ object problemtypes {
       SingleProblem(msg, ServiceShutDownProblem, args, cause)
     def unapply(problem: SingleProblem): Option[SingleProblem] = SingleProblem.unapplyAgainst(problem, ServiceShutDownProblem)
   }
-  
+
+    /**
+   * There is a service, but it is not yet ready to perform its duty
+   */
+  case object ServiceNotReadyProblem extends ProblemType {
+    def apply(msg: String, args: Map[String, Any] = Map.empty, cause: Option[ProblemCause] = None): SingleProblem =
+      SingleProblem(msg, ServiceNotReadyProblem, args, cause)
+    def unapply(problem: SingleProblem): Option[SingleProblem] = SingleProblem.unapplyAgainst(problem, ServiceNotReadyProblem)
+  }
+
   /**
    * A component couldn't find a dependency
    */
