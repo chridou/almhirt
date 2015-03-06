@@ -89,14 +89,14 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
   private var totalDemanded = 0L
   private var totalDelivered = 0L
 
-  def collectingOffers(
+  def receiveCollectingOffers(
     offers: Vector[SuppliesContractor[TElement]],
     contractors: Set[SuppliesContractor[TElement]],
     subscriptions: SubscriptionsState): Receive = {
 
     case InternalOnSubscribe(subscriberId, subscription) ⇒
       subscription.request(buffersizePerSubscriber)
-      context.become(collectingOffers(offers, contractors, subscriptions.addSubscription(subscriberId, subscription)))
+      context.become(receiveCollectingOffers(offers, contractors, subscriptions.addSubscription(subscriberId, subscription)))
 
     case InternalOnNext(subscriberId, untypedElem) ⇒
       if (subscriptions.isSubscribed(subscriberId)) {
@@ -118,16 +118,16 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
       if (log.isDebugEnabled)
         log.debug(s"Publisher to consumer $subscriberId completed.")
       val newSubscriptions = subscriptions.removeSubscription(subscriberId)
-      context.become(collectingOffers(offers, contractors, newSubscriptions))
+      context.become(receiveCollectingOffers(offers, contractors, newSubscriptions))
 
     case InternalOnError(subscriberId, error) ⇒
       log.error(s"Subscriber $subscriberId reported an error. The subscriber will be removed.")
-      context.become(collectingOffers(offers, contractors, subscriptions.removeSubscription(subscriberId)))
+      context.become(receiveCollectingOffers(offers, contractors, subscriptions.removeSubscription(subscriberId)))
 
     case InternalSignContract(contractor: SuppliesContractor[TElement]) ⇒
       if (!contractors(contractor)) {
         contractor.onStockroom(stockroom(contractor))
-        context.become(collectingOffers(
+        context.become(receiveCollectingOffers(
           offers,
           contractors + contractor,
           subscriptions))
@@ -137,7 +137,7 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
 
     case InternalCancelContract(contractor: SuppliesContractor[TElement]) ⇒
       if (contractors(contractor)) {
-        context.become(collectingOffers(
+        context.become(receiveCollectingOffers(
           offers.filterNot(_ == contractor),
           contractors - contractor,
           subscriptions))
@@ -173,7 +173,7 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
       stop(Map.empty, offers, contractors, subscriptions, "collecting offers")
   }
 
-  def transportingSupplies(
+  def receiveTransportingSupplies(
     deliverySchedule: Map[SuppliesContractor[TElement], Int],
     offers: Vector[SuppliesContractor[TElement]],
     contractors: Set[SuppliesContractor[TElement]],
@@ -182,13 +182,13 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
     case InternalOnSubscribe(subscriberId, subscription) ⇒
       if (deliverySchedule.isEmpty) sys.error("This must not happen!InternalOnSubscribe")
       subscription.request(buffersizePerSubscriber)
-      context.become(transportingSupplies(deliverySchedule, offers, contractors, subscriptions.addSubscription(subscriberId, subscription)))
+      context.become(receiveTransportingSupplies(deliverySchedule, offers, contractors, subscriptions.addSubscription(subscriberId, subscription)))
 
     case InternalOnNext(subscriberId, element) ⇒
       if (deliverySchedule.isEmpty) sys.error("This must not happen!InternalOnNext")
       if (subscriptions.isSubscribed(subscriberId)) {
         totalToDispatch += 1
-        context.become(transportingSupplies(deliverySchedule, offers, contractors, subscriptions.addToBuffer(subscriberId, element.asInstanceOf[TElement])))
+        context.become(receiveTransportingSupplies(deliverySchedule, offers, contractors, subscriptions.addToBuffer(subscriberId, element.asInstanceOf[TElement])))
       } else {
         log.warning(s"OnNext from unknown subscription $subscriberId for element $element is ignored")
       }
@@ -197,18 +197,18 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
       if (log.isDebugEnabled)
         log.debug(s"Publisher to consumer $subscriberId completed.")
       if (deliverySchedule.isEmpty) sys.error(s"This must not happen! InternalOnComplete($subscriberId)")
-      context.become(transportingSupplies(deliverySchedule, offers, contractors, subscriptions.removeSubscription(subscriberId)))
+      context.become(receiveTransportingSupplies(deliverySchedule, offers, contractors, subscriptions.removeSubscription(subscriberId)))
 
     case InternalOnError(subscriberId, error) ⇒
       if (deliverySchedule.isEmpty) sys.error("This must not happen!InternalOnError")
       log.error(s"Subscriber $subscriberId reported an error. The subscriber will be removed.")
-      context.become(transportingSupplies(deliverySchedule, offers, contractors, subscriptions.removeSubscription(subscriberId)))
+      context.become(receiveTransportingSupplies(deliverySchedule, offers, contractors, subscriptions.removeSubscription(subscriberId)))
 
     case InternalSignContract(contractor: SuppliesContractor[TElement]) ⇒
       if (deliverySchedule.isEmpty) sys.error("This must not happen!InternalSignContract")
       if (!contractors(contractor)) {
         contractor.onStockroom(stockroom(contractor))
-        context.become(transportingSupplies(
+        context.become(receiveTransportingSupplies(
           deliverySchedule,
           offers,
           contractors + contractor,
@@ -223,13 +223,13 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
         deliverySchedule.get(contractor) match {
           case Some(c) ⇒
             log.warning(s"Contractor $contractor who is scheduled for delivery cancelled his contract!")
-            context.become(transportingSupplies(
+            context.become(receiveTransportingSupplies(
               deliverySchedule - contractor,
               offers.filterNot(_ == contractor),
               contractors - contractor,
               subscriptions))
           case None ⇒
-            context.become(transportingSupplies(
+            context.become(receiveTransportingSupplies(
               deliverySchedule,
               offers,
               contractors,
@@ -245,7 +245,7 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
         totalOffered += amount
         val newOffers = offers ++ Vector.fill(amount)(contractor)
         if (!deliverySchedule.isEmpty) {
-          context.become(transportingSupplies(
+          context.become(receiveTransportingSupplies(
             deliverySchedule,
             newOffers,
             contractors,
@@ -270,7 +270,7 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
           if (newDeliverySchedule.isEmpty) {
             chooseNextAction(offers, contractors, subscriptions)
           } else {
-            context.become(transportingSupplies(newDeliverySchedule, offers, contractors, subscriptions))
+            context.become(receiveTransportingSupplies(newDeliverySchedule, offers, contractors, subscriptions))
           }
 
         case None ⇒
@@ -291,7 +291,7 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
       stop(Map.empty, offers, contractors, subscriptions, "transporting")
   }
 
-  def receive: Receive = collectingOffers(Vector.empty, Set.empty, SubscriptionsState(Map.empty, Vector.empty))
+  def receive: Receive = receiveCollectingOffers(Vector.empty, Set.empty, SubscriptionsState(Map.empty, Vector.empty))
 
   def stop(
     deliverySchedule: Map[SuppliesContractor[TElement], Int],
@@ -335,13 +335,13 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
       } else if (!offers.isEmpty && subscriptions.isAnyBuffered) {
         dispatchAndCallForSupplies(offers, contractors, demand, subscriptions)
       } else {
-        context.become(collectingOffers(
+        context.become(receiveCollectingOffers(
           offers,
           contractors,
           subscriptions))
       }
     } else {
-      context.become(collectingOffers(
+      context.become(receiveCollectingOffers(
         offers,
         contractors,
         subscriptions))
@@ -365,7 +365,7 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
         contractor.onDeliverSuppliesNow(amount)
         totalDemanded += amount
     }
-    context.become(transportingSupplies(deliveryPlan, rest, contractors, subscriptions))
+    context.become(receiveTransportingSupplies(deliveryPlan, rest, contractors, subscriptions))
   }
 
   def dispatchBufferedOnly(
@@ -379,7 +379,7 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
         subscriptions.signalRequestMore(subscriberId, 1)
         totalDispatched += 1
     }
-    context.become(collectingOffers(Vector.empty, contractors, newSubscriptions))
+    context.become(receiveCollectingOffers(Vector.empty, contractors, newSubscriptions))
   }
 
   val rnd = scala.util.Random
@@ -401,7 +401,7 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
           contractor.onDeliverSuppliesNow(amount)
           totalDemanded += amount
       }
-      context.become(transportingSupplies(deliveryPlan, rest, contractors, subscriptions))
+      context.become(receiveTransportingSupplies(deliveryPlan, rest, contractors, subscriptions))
     } else {
       val (toDispatch, newSubscriptions) = subscriptions.takeElements(demand.toInt)
       toDispatch.foreach {
@@ -414,7 +414,7 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
       if (remainingDemand > 0) {
         chooseNextAction(offers, contractors, newSubscriptions)
       } else {
-        context.become(collectingOffers(offers, contractors, newSubscriptions))
+        context.become(receiveCollectingOffers(offers, contractors, newSubscriptions))
       }
     }
   }
