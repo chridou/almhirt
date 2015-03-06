@@ -1,5 +1,6 @@
 package almhirt.streaming
 
+import scala.concurrent.duration._
 import akka.actor._
 import org.reactivestreams.{ Subscriber, Subscription, Publisher }
 import akka.stream.actor._
@@ -47,6 +48,8 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
 
   def this() = this(16)
 
+  private object CheckForNoDemand
+
   def stockroom(forSuppliesContractor: SuppliesContractor[TElement]) = new Stockroom[TElement] {
     def cancelContract() { self ! InternalCancelContract(forSuppliesContractor) }
     def offerSupplies(amount: Int) { self ! InternalOfferSupplies(amount, forSuppliesContractor) }
@@ -88,6 +91,9 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
   private var totalOffered = 0L
   private var totalDemanded = 0L
   private var totalDelivered = 0L
+
+  private var toNotifyOnNoDemand: Option[(FiniteDuration ⇒ Unit, FiniteDuration, Cancellable)] = None
+  private var noDemandSince: Option[Deadline] = Some(Deadline.now)
 
   def receiveCollectingOffers(
     offers: Vector[SuppliesContractor[TElement]],
@@ -162,12 +168,28 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
       }
 
     case ActorPublisherMessage.Request(amount) ⇒
+      if (totalDemand > 0)
+        noDemandSince = None
       chooseNextAction(offers, contractors, subscriptions)
 
     case ActorPublisherMessage.Cancel ⇒
       if (log.isDebugEnabled)
         log.debug("The downstream was cancelled. Stopping.")
       stop(Map.empty, offers, contractors, subscriptions, "collecting offers")
+
+    case InternalBrokerMessages.InternalNotifyOnNoDemand(duration, action) ⇒
+      if (toNotifyOnNoDemand.isEmpty) {
+        val timerCancel = context.system.scheduler.schedule(Duration.Zero, duration, self, CheckForNoDemand)(context.dispatcher)
+        toNotifyOnNoDemand = Some(action, duration, timerCancel)
+      }
+
+    case CheckForNoDemand ⇒
+      noDemandSince.flatMap(since ⇒ toNotifyOnNoDemand.map(n ⇒ (since, n._1, n._2))).foreach {
+        case (since, action, dur) ⇒
+          val timeWithNoDemand = since.lap
+          if (timeWithNoDemand >= dur)
+            action(timeWithNoDemand)
+      }
 
     case StopStreaming ⇒
       stop(Map.empty, offers, contractors, subscriptions, "collecting offers")
@@ -279,6 +301,8 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
       }
 
     case ActorPublisherMessage.Request(amount) ⇒
+      if (totalDemand > 0)
+        noDemandSince = None
       if (deliverySchedule.isEmpty)
         chooseNextAction(offers, contractors, subscriptions)
 
@@ -287,8 +311,22 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
 
     case ActorPublisherMessage.Cancel ⇒
       if (log.isDebugEnabled)
-        log.debug("The downstream was cancelled. Stopping.")
+        log.debug("Received cancel from downstream. Stopping.")
       stop(Map.empty, offers, contractors, subscriptions, "transporting")
+      
+    case InternalBrokerMessages.InternalNotifyOnNoDemand(duration, action) ⇒
+      if (toNotifyOnNoDemand.isEmpty) {
+        val timerCancel = context.system.scheduler.schedule(Duration.Zero, duration, self, CheckForNoDemand)(context.dispatcher)
+        toNotifyOnNoDemand = Some(action, duration, timerCancel)
+      }
+
+    case CheckForNoDemand ⇒
+      noDemandSince.flatMap(since ⇒ toNotifyOnNoDemand.map(n ⇒ (since, n._1, n._2))).foreach {
+        case (since, action, dur) ⇒
+          val timeWithNoDemand = since.lap
+          if (timeWithNoDemand >= dur)
+            action(timeWithNoDemand)
+      }
   }
 
   def receive: Receive = receiveCollectingOffers(Vector.empty, Set.empty, SubscriptionsState(Map.empty, Vector.empty))
@@ -319,6 +357,8 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
     if (subscriptions.isAnyBuffered)
       log.warning(s"There are still ${subscriptions.numBuffered} buffered elements left. I was $stateMessagePart. Remaining demand: $totalDemand.")
 
+    toNotifyOnNoDemand.foreach(_._3.cancel())
+
     context.stop(self)
   }
 
@@ -345,6 +385,9 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
         offers,
         contractors,
         subscriptions))
+    }
+    if (totalDemand == 0 && noDemandSince.isEmpty) {
+      noDemandSince = Some(Deadline.now)
     }
   }
 
