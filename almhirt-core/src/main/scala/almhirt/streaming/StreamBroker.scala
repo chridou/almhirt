@@ -35,5 +35,7 @@ private[almhirt] object InternalBrokerMessages {
   final case class InternalOnNext(subscriberId: String, element: Any)
   final case class InternalOnComplete(subscriberId: String)
   final case class InternalOnError(subscriberId: String, error: Throwable)
+  
+  final case class InternalNotifyOnNoDemand(action: String => Unit, notifyWhenNoDemandFor: scala.concurrent.duration.FiniteDuration)
 }
 
