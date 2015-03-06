@@ -1,5 +1,6 @@
 package almhirt.herder
 
+import scala.concurrent.duration._
 import scalaz.Validation.FlatMap._
 import akka.actor._
 import almhirt.common._
@@ -13,7 +14,7 @@ import almhirt.herder.herdingdogs._
 
 object Herder {
   def propsRaw(failuresHerdingDogProps: Props, rejectedCommandsHerdingDogProps: Props, missedEventsHerdingDogProps: Props, informationHerdingDogProps: Props, runtimeHerdingDogProps: Props)(implicit ctx: AlmhirtContext): Props =
-    Props(new Pastor(failuresHerdingDogProps, rejectedCommandsHerdingDogProps, missedEventsHerdingDogProps, informationHerdingDogProps,runtimeHerdingDogProps))
+    Props(new Pastor(failuresHerdingDogProps, rejectedCommandsHerdingDogProps, missedEventsHerdingDogProps, informationHerdingDogProps, runtimeHerdingDogProps))
 
   def props(address: Address)(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
     import com.typesafe.config.Config
@@ -41,7 +42,7 @@ private[almhirt] class Pastor(
   rejectedCommandsHerdingDogProps: Props,
   missedEventsHerdingDogProps: Props,
   informationHerdingDogProps: Props,
-  runtimeHerdingDogProps: Props)(implicit override val almhirtContext: AlmhirtContext) extends Actor with ActorLogging with HasAlmhirtContext {
+  runtimeHerdingDogProps: Props)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging with ActorLogging with HasAlmhirtContext {
   import almhirt.components.{ EventSinkHub, EventSinkHubMessage }
 
   val circuitsHerdingDog: ActorRef = context.actorOf(Props(new CircuitsHerdingDog()), CircuitsHerdingDog.actorname)
@@ -50,6 +51,25 @@ private[almhirt] class Pastor(
   val missedEventsHerdingDog: ActorRef = context.actorOf(missedEventsHerdingDogProps, MissedEventsHerdingDog.actorname)
   val informationHerdingDog: ActorRef = context.actorOf(informationHerdingDogProps, InformationHerdingDog.actorname)
   val runtimeHerdingDog: ActorRef = context.actorOf(runtimeHerdingDogProps, RuntimeHerdingDog.actorname)
+
+  val eventBrokerId = ComponentId(AppName("streams"), ComponentName("event-broker"))
+  val commandBrokerId = ComponentId(AppName("streams"), ComponentName("command-broker"))
+
+  context.actorSelection(almhirtContext.localActorPaths.almhirt / "streams" / "event-broker") ! almhirt.streaming.InternalBrokerMessages.InternalNotifyOnNoDemand(
+    5.minutes,
+    t ⇒ informationHerdingDog ! HerderMessages.InformationMessages.Information(
+      eventBrokerId,
+      s"No demand for ${t.defaultUnitString}",
+      Importance.Mentionable,
+      almhirtContext.getUtcTimestamp))
+
+  context.actorSelection(almhirtContext.localActorPaths.almhirt / "streams" / "command-broker") ! almhirt.streaming.InternalBrokerMessages.InternalNotifyOnNoDemand(
+    5.minutes,
+    t ⇒ informationHerdingDog ! HerderMessages.InformationMessages.Information(
+      commandBrokerId,
+      s"No demand for ${t.defaultUnitString}",
+      Importance.Mentionable,
+      almhirtContext.getUtcTimestamp))
 
   def receiveRunning: Receive = {
     case m: HerderMessages.CircuitMessages.CircuitMessage         ⇒ circuitsHerdingDog forward m
