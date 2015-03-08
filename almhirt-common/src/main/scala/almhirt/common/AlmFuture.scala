@@ -463,7 +463,7 @@ object AlmFuture {
     settings: almhirt.configuration.RetrySettings2,
     executor: ExecutionContext,
     actionScheduler: S,
-    beforeRetry: Option[(almhirt.configuration.NumberOfRetries, scala.concurrent.duration.FiniteDuration) ⇒ Unit]): AlmFuture[T] = {
+    beforeRetry: Option[(almhirt.configuration.NumberOfRetries, scala.concurrent.duration.FiniteDuration, Problem) ⇒ Unit]): AlmFuture[T] = {
 
     val scheduler = implicitly[almhirt.almfuture.ActionSchedulingMagnet[S]]
 
@@ -481,19 +481,19 @@ object AlmFuture {
 
   private def innerRetry[T](
     f: ⇒ AlmFuture[T],
-    beforeRetry: Option[(almhirt.configuration.NumberOfRetries, scala.concurrent.duration.FiniteDuration) ⇒ Unit],
-    lastFailure: Problem,
+    beforeRetry: Option[(almhirt.configuration.NumberOfRetries, scala.concurrent.duration.FiniteDuration, Problem) ⇒ Unit],
+    lastProblem: Problem,
     promise: Promise[AlmValidation[T]],
     retries: almhirt.configuration.NumberOfRetries,
     delayCalculator: almhirt.configuration.RetryDelayCalculator,
     schedule: (() ⇒ Unit, scala.concurrent.duration.FiniteDuration) ⇒ Unit,
     executor: ExecutionContext) {
     if (!retries.hasRetriesLeft) {
-      promise.success(lastFailure.failure)
+      promise.success(lastProblem.failure)
     } else {
       val (nextDelay, newCalculator) = delayCalculator.next
 
-      beforeRetry.foreach(_(retries, nextDelay))
+      beforeRetry.foreach(_(retries, nextDelay, lastProblem))
 
       if (nextDelay == Duration.Zero) {
         f.onComplete(

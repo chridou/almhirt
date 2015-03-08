@@ -13,6 +13,7 @@ import akka.testkit._
 import org.scalatest._
 import almhirt.context.AlmhirtContext
 import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializer
 
 class CommandStatusTrackerTests(_system: ActorSystem)
   extends TestKit(_system) with fixture.WordSpecLike with Matchers with BeforeAndAfterAll {
@@ -269,7 +270,7 @@ class CommandStatusTrackerTests(_system: ActorSystem)
   case class FixtureParam(
     testId: Int,
     tracker: ActorRef,
-    systemEventSink: Sink[SystemEvent])
+    systemEventSink: Sink[SystemEvent, Unit])
 
   def withFixture(test: OneArgTest) = {
     val testId = nextTestId

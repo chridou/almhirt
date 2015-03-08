@@ -152,6 +152,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
   private var cancelWaitingForDispatchedEventsNotification: Option[Cancellable] = None
   private var cancelWaitingForLoggedEventsNotification: Option[Cancellable] = None
 
+  // My aggregate root id. If Some(id) already received a command and have probalby been initialized...
   private var capturedId: Option[AggregateRootId] = None
 
   private def receiveUninitialized: Receive = {
@@ -208,7 +209,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
       context.become(receiveWaitingForCommandResult(nextCommand, persistedState))
 
     case AggregateRootDroneInternal.ReturnToUninitialized ⇒
-      sendMessage(AggregateRootHiveInternals.ReportDroneDebug(s"Returning to idle state after ${returnToUnitializedAfter.map(_.defaultUnitString)}."))
+      capturedId.foreach { id ⇒ sendMessage(AggregateRootHiveInternals.CargoJettisoned(id)) }
       context.become(receiveUninitialized)
 
     case EventsShouldHaveBeenDispatchedByNow(_) | EventsShouldHaveBeenStoredByNow(_) ⇒
@@ -272,7 +273,8 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
             cancelWaitingForLoggedEventsNotification =
               Some(context.system.scheduler.scheduleOnce(delay * events.size, self, EventsShouldHaveBeenStoredByNow(cid))(context.dispatcher)))
 
-          context.become(receiveCommitEvents(currentCommand, events.head, events.tail, Seq.empty, postnatalis, false, Deadline.now, cid))
+          hiveNotifiedForCommit = false
+          context.become(receiveCommitEvents(currentCommand, events.head, events.tail, Seq.empty, postnatalis, Deadline.now, cid))
 
           aggregateEventLog ! CommitAggregateRootEvent(events.head)
         case Vacat ⇒
@@ -294,21 +296,23 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
       sendMessage(Busy(unexpectedCommand))
   }
 
+  var hiveNotifiedForCommit = false
   private def receiveCommitEvents(
     currentCommand: AggregateRootCommand,
     inFlight: E,
     rest: Seq[E],
     done: Seq[E],
     unpersisted: Postnatalis[T],
-    hiveNotified: Boolean,
     startedStoring: Deadline,
     correlationId: CorrelationId): Receive = {
     case AggregateRootEventCommitted(id) ⇒
       val newDone = done :+ inFlight
       rest match {
         case Seq() ⇒
-          if (hiveNotified)
+          if (hiveNotifiedForCommit) {
             sendMessage(AggregateRootHiveInternals.EventsFinallyLogged(currentCommand.aggId))
+            hiveNotifiedForCommit = false
+          }
 
           cancelWaitingForLoggedEventsNotification.foreach { _.cancel() }
           cancelWaitingForLoggedEventsNotification = None
@@ -319,27 +323,35 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
             cancelWaitingForDispatchedEventsNotification =
               Some(context.system.scheduler.scheduleOnce(delay, self, EventsShouldHaveBeenDispatchedByNow(cid))(context.dispatcher)))
 
+          val startOfferEvents = Deadline.now
+          hiveNotifiedForDispatch = false
           this.offerAndThen(newDone, None) {
-            case EventsShouldHaveBeenDispatchedByNow(_) | EventsShouldHaveBeenStoredByNow(_) ⇒
-              //Do nothing..
+            case EventsShouldHaveBeenDispatchedByNow(incomingCorrelationId) ⇒
+              if (incomingCorrelationId == correlationId) {
+                sendMessage(AggregateRootHiveInternals.DispatchEventsToStreamTakesTooLong(currentCommand.aggId, startOfferEvents.lap))
+                hiveNotifiedForDispatch = true
+              }
+
+            case EventsShouldHaveBeenStoredByNow(_) ⇒
+              // Do nothing...
               ()
 
             case unexpectedCommand: AggregateRootCommand ⇒
               sendMessage(Busy(unexpectedCommand))
-          }(receiveWaitingForEventsDispatched(currentCommand, unpersisted, newDone, false, Deadline.now, cid))
+          }(receiveWaitingForEventsDispatched(currentCommand, unpersisted, newDone, startOfferEvents, cid))
         case next +: newRest ⇒
           aggregateEventLog ! CommitAggregateRootEvent(next)
-          context.become(receiveCommitEvents(currentCommand, next, newRest, newDone, unpersisted, hiveNotified, startedStoring, correlationId))
+          context.become(receiveCommitEvents(currentCommand, next, newRest, newDone, unpersisted, startedStoring, correlationId))
       }
 
     case AggregateRootEventNotCommitted(id, cause) ⇒
       retryEventLogActionDelay match {
-        case Some(delay) =>
+        case Some(delay) ⇒
           sendMessage(AggregateRootHiveInternals.ReportDroneWarning(s"Failed to log event ${inFlight.eventId.value} for AR ${inFlight.aggId.value}(Initiate a retry...).", cause))
           context.system.scheduler.scheduleOnce(delay, self, RetryLogEvent)(context.dispatcher)
-          context.become(receiveRetryLogEventInFlight(currentCommand, inFlight, rest, done, unpersisted, hiveNotified, startedStoring, correlationId))
+          context.become(receiveRetryLogEventInFlight(currentCommand, inFlight, rest, done, unpersisted, startedStoring, correlationId))
 
-        case None =>
+        case None ⇒
           cancelWaitingForLoggedEventsNotification.foreach { _.cancel() }
           cancelWaitingForLoggedEventsNotification = None
           onError(AggregateRootEventStoreFailedWritingException(currentCommand.aggId, s"The aggregate event store failed writing:\n$cause"), currentCommand, done)
@@ -348,7 +360,8 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
     case EventsShouldHaveBeenStoredByNow(incomingCorrelationId) ⇒
       if (incomingCorrelationId == correlationId) {
         sendMessage(AggregateRootHiveInternals.LogEventsTakesTooLong(currentCommand.aggId, startedStoring.lap))
-        context.become(receiveCommitEvents(currentCommand, inFlight, rest, done, unpersisted, hiveNotified = true, startedStoring, correlationId))
+        context.become(receiveCommitEvents(currentCommand, inFlight, rest, done, unpersisted, startedStoring, correlationId))
+        hiveNotifiedForCommit = true
       }
 
     case EventsShouldHaveBeenDispatchedByNow(_) ⇒
@@ -365,35 +378,34 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
     rest: Seq[E],
     done: Seq[E],
     unpersisted: Postnatalis[T],
-    hiveNotified: Boolean,
     startedStoring: Deadline,
     correlationId: CorrelationId): Receive = {
-    case RetryLogEvent =>
+    case RetryLogEvent ⇒
       sendMessage(AggregateRootHiveInternals.ReportDroneDebug(s"Retry to log event ${inFlight.eventId.value} for AR ${inFlight.aggId.value}."))
       aggregateEventLog ! GetAggregateRootEvent(inFlight.eventId)
 
-    case FetchedAggregateRootEvent(_, None) =>
+    case FetchedAggregateRootEvent(_, None) ⇒
       sendMessage(AggregateRootHiveInternals.ReportDroneDebug("Retry to log event in event log."))
       // Not already logged? Store it while we can...
       aggregateEventLog ! CommitAggregateRootEvent(inFlight)
-      context.become(receiveCommitEvents(currentCommand, inFlight, rest, done, unpersisted, hiveNotified, startedStoring, correlationId))
+      context.become(receiveCommitEvents(currentCommand, inFlight, rest, done, unpersisted, startedStoring, correlationId))
 
-    case FetchedAggregateRootEvent(_, Some(e)) =>
+    case FetchedAggregateRootEvent(_, Some(e)) ⇒
       sendMessage(AggregateRootHiveInternals.ReportDroneDebug("Recovered. Event was already stored"))
       // Impersonate the event log....
-      context.become(receiveCommitEvents(currentCommand, inFlight, rest, done, unpersisted, hiveNotified, startedStoring, correlationId))
+      context.become(receiveCommitEvents(currentCommand, inFlight, rest, done, unpersisted, startedStoring, correlationId))
       self ! AggregateRootEventCommitted(e.eventId)
 
-    case GetAggregateRootEventFailed(eventId, cause) =>
+    case GetAggregateRootEventFailed(eventId, cause) ⇒
       sendMessage(AggregateRootHiveInternals.ReportDroneWarning(s"Could not verify whether event ${inFlight.eventId.value} for AR ${inFlight.aggId.value} was logged(retrying to store the event).", cause))
-      retryEventLogActionDelay.foreach { delay =>
+      retryEventLogActionDelay.foreach { delay ⇒
         context.system.scheduler.scheduleOnce(delay, self, RetryLogEvent)(context.dispatcher)
       }
 
     case EventsShouldHaveBeenStoredByNow(incomingCorrelationId) ⇒
       if (incomingCorrelationId == correlationId) {
         sendMessage(AggregateRootHiveInternals.LogEventsTakesTooLong(currentCommand.aggId, startedStoring.lap))
-        context.become(receiveRetryLogEventInFlight(currentCommand, inFlight, rest, done, unpersisted, hiveNotified = true, startedStoring, correlationId))
+        context.become(receiveRetryLogEventInFlight(currentCommand, inFlight, rest, done, unpersisted, startedStoring, correlationId))
       }
 
     case EventsShouldHaveBeenDispatchedByNow(_) ⇒
@@ -405,16 +417,18 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
 
   }
 
+  var hiveNotifiedForDispatch = false
   private def receiveWaitingForEventsDispatched(
     currentCommand: AggregateRootCommand,
     persisted: Postnatalis[T],
     committedEvents: Seq[E],
-    hiveNotified: Boolean,
     startedDispatching: Deadline,
     correlationId: CorrelationId): Receive = {
     case DeliveryResult(d: DeliveryJobDone, payload) ⇒
-      if (hiveNotified)
+      if (hiveNotifiedForDispatch) {
         sendMessage(AggregateRootHiveInternals.EventsFinallyDispatchedToStream(persisted.id))
+        hiveNotifiedForDispatch = false
+      }
       cancelWaitingForDispatchedEventsNotification.foreach { _.cancel() }
       cancelWaitingForDispatchedEventsNotification = None
       handleCommandExecuted(persisted, currentCommand)
@@ -426,7 +440,8 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
     case EventsShouldHaveBeenDispatchedByNow(incomingCorrelationId) ⇒
       if (incomingCorrelationId == correlationId) {
         sendMessage(AggregateRootHiveInternals.DispatchEventsToStreamTakesTooLong(persisted.id, startedDispatching.lap))
-        context.become(receiveWaitingForEventsDispatched(currentCommand, persisted, committedEvents, hiveNotified = true, startedDispatching, correlationId))
+        context.become(receiveWaitingForEventsDispatched(currentCommand, persisted, committedEvents, startedDispatching, correlationId))
+        hiveNotifiedForDispatch = true
       }
 
     case EventsShouldHaveBeenStoredByNow(_) ⇒
@@ -435,7 +450,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
 
     case unexpectedCommand: AggregateRootCommand ⇒
       sendMessage(CommandNotExecuted(unexpectedCommand, UnspecifiedProblem(s"Command ${currentCommand.header} is currently executed.")))
-      context.become(receiveWaitingForEventsDispatched(currentCommand, persisted, committedEvents, hiveNotified, startedDispatching, correlationId))
+      context.become(receiveWaitingForEventsDispatched(currentCommand, persisted, committedEvents, startedDispatching, correlationId))
   }
 
   private def receiveMortuus(state: Mortuus): Receive = {
@@ -462,8 +477,9 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
   }
 
   private def handleCommandFailed(persistedState: AggregateRootLifecycle[T], command: AggregateRootCommand, prob: Problem) {
-    sendMessage(AggregateRootHiveInternals.ReportDroneWarning(s"Executing a command(${command.getClass.getSimpleName} with agg id ${command.aggId.value}) failed: ${prob.message}", prob))
-    sendMessage(CommandNotExecuted(command, prob))
+    val newProb = persistedState.idOption.fold(prob)(id ⇒ prob.withArg("aggregate-root-id", id.value))
+    sendMessage(AggregateRootHiveInternals.ReportDroneDebug(s"Executing a command(${command.getClass.getSimpleName} with agg id ${command.aggId.value}) failed: ${prob.message}"))
+    sendMessage(CommandNotExecuted(command, newProb))
     becomeReceiveWaitingForCommand(persistedState)
   }
 

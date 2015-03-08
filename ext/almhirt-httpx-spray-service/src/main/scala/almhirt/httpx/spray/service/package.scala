@@ -16,6 +16,7 @@ package object service {
       case ServiceBrokenProblem(_) ⇒ StatusCodes.InternalServerError
       case ServiceShutDownProblem(_) ⇒ StatusCodes.ServiceUnavailable
       case ServiceNotAvailableProblem(_) ⇒ StatusCodes.ServiceUnavailable
+      case ServiceNotReadyProblem(_) ⇒ StatusCodes.ServiceUnavailable
       case ServiceBusyProblem(_) ⇒ StatusCodes.TooManyRequests
       case BadDataProblem(_) ⇒ StatusCodes.BadRequest
       case IllegalOperationProblem(_) ⇒ StatusCodes.BadRequest

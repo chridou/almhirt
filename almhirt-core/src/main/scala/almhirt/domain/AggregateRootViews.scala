@@ -78,6 +78,7 @@ private[almhirt] object AggregateRootViewsInternals {
   final case class ReportViewDebug(msg: String)
   final case class ReportViewError(msg: String, cause: ProblemCause)
   final case class ReportViewWarning(msg: String, cause: ProblemCause)
+  final case class CargoJettisoned(aggId: AggregateRootId)
 }
 
 /**
@@ -123,7 +124,11 @@ private[almhirt] trait AggregateRootViewsSkeleton[E <: AggregateRootEvent] exten
 
   final override val requestStrategy = ZeroRequestStrategy
 
+  private case object ReportJettisonedCargo
   private case object Resolve
+
+  private var numJettisonedSinceLastReport = 0
+
   def receiveResolve: Receive = {
     case Resolve ⇒
       val actorsToResolve =
@@ -141,6 +146,7 @@ private[almhirt] trait AggregateRootViewsSkeleton[E <: AggregateRootEvent] exten
           ()
       }
       request(eventBufferSize)
+      context.system.scheduler.scheduleOnce(5.minutes, self, ReportJettisonedCargo)(this.context.dispatcher)
       context.become(receiveRunning(dependencies("aggregateeventlog"), dependencies.get("snapshotstorage")))
 
     case ActorMessages.ManyNotResolved(problem, _) ⇒
@@ -190,16 +196,26 @@ private[almhirt] trait AggregateRootViewsSkeleton[E <: AggregateRootEvent] exten
     case ActorSubscriberMessage.OnComplete ⇒
       context.stop(self)
 
-    case AggregateRootViewsInternals.ReportViewDebug(msg) =>
+    case AggregateRootViewsInternals.ReportViewDebug(msg) ⇒
       logDebug(s"View ${sender().path.name} reported a debug message: $msg")
 
-    case AggregateRootViewsInternals.ReportViewError(msg, cause) =>
+    case AggregateRootViewsInternals.ReportViewError(msg, cause) ⇒
       logError(s"View ${sender().path.name} reported an error: $msg")
       reportMajorFailure(cause)
 
-    case AggregateRootViewsInternals.ReportViewWarning(msg, cause) =>
+    case AggregateRootViewsInternals.ReportViewWarning(msg, cause) ⇒
       logWarning(s"View ${sender().path.name} reported a warning: $msg")
       reportMinorFailure(cause)
+
+    case AggregateRootHiveInternals.CargoJettisoned(id) ⇒
+      this.numJettisonedSinceLastReport += 1
+
+    case ReportJettisonedCargo ⇒
+      if (numJettisonedSinceLastReport > 0)
+        logInfo(s"$numJettisonedSinceLastReport views jettisoned their cargo since the last report.")
+      this.numJettisonedSinceLastReport = 0
+      context.system.scheduler.scheduleOnce(5.minutes, self, ReportJettisonedCargo)(this.context.dispatcher)
+
   }
 
   def receive: Receive = receiveResolve

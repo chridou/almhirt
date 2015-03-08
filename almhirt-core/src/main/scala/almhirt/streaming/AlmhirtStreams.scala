@@ -131,7 +131,7 @@ object AlmhirtStreams {
             val eventShipperActor = context.actorOf(StreamShipper.props(), "event-broker")
             val (eventShipperIn, eventShipperOut, stopEventShipper) = StreamShipper[Event](eventShipperActor)
 
-            val eventsSink = PublisherSink.withFanout[Event](initialFanoutEvents, maxFanoutEvents)
+            val eventsSink =  Sink.fanoutPublisher[Event](initialFanoutEvents, maxFanoutEvents)
             val eventFlow =
               if (eventBufferSize > 0)
                 Flow[Event].buffer(eventBufferSize, OverflowStrategy.backpressure)
@@ -140,13 +140,14 @@ object AlmhirtStreams {
             val (_, eventsPub) = eventFlow.runWith(Source(eventShipperOut), eventsSink)
 
             if (soakEvents)
-              Source(eventsPub).to(BlackholeSink)
+              Source(eventsPub).to(Sink.ignore())
 
             // commands
 
             val commandShipperActor = actorRefFactory.actorOf(StreamShipper.props(), "command-broker")
             val (commandShipperIn, commandShipperOut, stopCommandShipper) = StreamShipper[Command](commandShipperActor)
-            val commandsDrain = PublisherSink.withFanout[Command](initialFanoutCommands, maxFanoutCommands)
+            
+            val commandsDrain = Sink.fanoutPublisher[Command](initialFanoutCommands, maxFanoutCommands)
             val commandFlow =
               if (commandBufferSize > 0)
                 Flow[Command].buffer(commandBufferSize, OverflowStrategy.backpressure)
@@ -155,7 +156,7 @@ object AlmhirtStreams {
             val (_, commandsPub) = commandFlow.runWith(Source(commandShipperOut), commandsDrain)
 
             if (soakCommands)
-              Source(commandsPub).to(BlackholeSink)
+              Source(commandsPub).to(Sink.ignore())
 
             new AlmhirtStreams with Stoppable {
               override val eventBroker = eventShipperIn

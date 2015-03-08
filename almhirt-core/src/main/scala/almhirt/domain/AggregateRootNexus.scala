@@ -61,9 +61,9 @@ private[almhirt] class AggregateRootNexus(
       context.become(receiveRunning(None))
   }
 
-  def receiveRunning(buffered: Option[AggregateRootCommand]): Receive = {
+  def receiveRunning(inFlight: Option[AggregateRootCommand]): Receive = {
     case ActorSubscriberMessage.OnNext(next: AggregateRootCommand) ⇒
-      buffered match {
+      inFlight match {
         case None if totalDemand > 0 ⇒
           onNext(next)
           request(1)
@@ -76,7 +76,7 @@ private[almhirt] class AggregateRootNexus(
       }
 
     case ActorPublisherMessage.Request(amount) ⇒
-      buffered match {
+      inFlight match {
         case Some(buf) if totalDemand > 0 ⇒
           request(1)
           onNext(buf)
@@ -90,16 +90,17 @@ private[almhirt] class AggregateRootNexus(
       throw exn
 
     case ActorPublisherMessage.Cancel ⇒
-      logInfo("The fanout publisher cancelled it's subscription. Propagating cancellation.")
+      logWarning("The fanout publisher cancelled it's subscription. Propagating cancellation.")
       cancel()
 
     case Terminated(actor) ⇒
-      logInfo(s"Hive ${actor.path.name} terminated.")
+      logWarning(s"Hive ${actor.path.name} terminated.")
   }
 
   def receive: Receive = receiveInitialize
 
   private def createInitialHives() {
+    import akka.stream.OverflowStrategy
     val commandsSource = Source(ActorPublisher[AggregateRootCommand](self)).runWith(Sink.fanoutPublisher[AggregateRootCommand](1, AlmMath.nextPowerOf2(hiveSelector.size)))
     hiveSelector.foreach {
       case (descriptor, f) ⇒
@@ -107,7 +108,7 @@ private[almhirt] class AggregateRootNexus(
         val actor = context.actorOf(props, s"hive-${descriptor.value}")
         context watch actor
         val hive = Sink(ActorSubscriber[AggregateRootCommand](actor))
-        Source(commandsSource).filter(cmd ⇒ f(cmd)).to(hive).run()
+        Source(commandsSource).buffer(16, OverflowStrategy.backpressure).filter(cmd ⇒ f(cmd)).to(hive).run()
     }
   }
 

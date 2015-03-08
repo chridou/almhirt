@@ -121,7 +121,7 @@ private[almhirt] class EventLogWriterImpl(
 
         f.onSuccess(rsp ⇒
           if (start.lapExceeds(warningThreshold))
-            logWarning(s"Wrinting event '${event.eventId.value}' took longer than ${warningThreshold.defaultUnitString}: ${start.lap.defaultUnitString}"))
+            logWarning(s"Writing event '${event.eventId.value}' took longer than ${warningThreshold.defaultUnitString}: ${start.lap.defaultUnitString}"))
       } else {
         request(1)
       }
