@@ -47,7 +47,7 @@ object EventLogWriter {
           resolveSettings ← section.v[ResolveSettings]("resolve-settings")
           circuitControlSettings ← section.v[CircuitControlSettings]("circuit-control")
           circuitStateReportingInterval ← section.magicOption[FiniteDuration]("circuit-state-reporting-interval")
-        } yield propsRaw( ResolvePath(eventlogPath), resolveSettings, warningThreshold, circuitControlSettings, circuitStateReportingInterval, autoConnect)
+        } yield propsRaw(ResolvePath(eventlogPath), resolveSettings, warningThreshold, circuitControlSettings, circuitStateReportingInterval, autoConnect)
       } else {
         ActorDevNullSubscriberWithAutoSubscribe.props[Event](1, if (autoConnect) Some(ctx.eventStream) else None).success
       }
@@ -96,8 +96,8 @@ private[almhirt] class EventLogWriterImpl(
       context.become(receiveCircuitClosed(eventlog))
 
     case ActorMessages.SingleNotResolved(problem, _) ⇒
-      logError(s"Could not resolve event log @ ${eventLogToResolve}:\n$problem")
-      sys.error(s"Could not resolve event log @ ${eventLogToResolve}.")
+      logError(s"Could not resolve event log @${eventLogToResolve}:\n$problem")
+      sys.error(s"Could not resolve event log @${eventLogToResolve}.")
       reportCriticalFailure(problem)
   }
 
@@ -110,8 +110,9 @@ private[almhirt] class EventLogWriterImpl(
     case ActorSubscriberMessage.OnNext(event: Event) ⇒
       if (!event.header.noLoggingSuggested) {
         val start = Deadline.now
-        val f = (eventLog ? EventLog.LogEvent(event, true))(circuitControlSettings.callTimeout).mapCastTo[EventLog.LogEventResponse]
-        circuitBreaker.fused(f).onComplete({
+        val f = circuitBreaker.fused {
+          (eventLog ? EventLog.LogEvent(event, true))(circuitControlSettings.callTimeout).mapCastTo[EventLog.LogEventResponse]
+        }.onComplete({
           case scalaz.Failure(problem) ⇒
             self ! EventLog.EventNotLogged(event.eventId, problem)
             reportMissedEvent(event, MajorSeverity, problem)
