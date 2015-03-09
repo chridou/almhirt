@@ -24,6 +24,8 @@ object EventLogWriter {
     warningThreshold: FiniteDuration,
     circuitControlSettings: CircuitControlSettings,
     circuitStateReportingInterval: Option[FiniteDuration],
+    eventlogCallTimeout: FiniteDuration,
+    storeEventRetrySettings: XRetrySettings,
     autoConnect: Boolean = false)(implicit ctx: AlmhirtContext): Props = {
     Props(new EventLogWriterImpl(
       eventLogToResolve,
@@ -31,7 +33,9 @@ object EventLogWriter {
       warningThreshold,
       autoConnect,
       circuitControlSettings,
-      circuitStateReportingInterval))
+      circuitStateReportingInterval,
+      eventlogCallTimeout,
+      storeEventRetrySettings))
   }
 
   def props(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
@@ -47,7 +51,9 @@ object EventLogWriter {
           resolveSettings ← section.v[ResolveSettings]("resolve-settings")
           circuitControlSettings ← section.v[CircuitControlSettings]("circuit-control")
           circuitStateReportingInterval ← section.magicOption[FiniteDuration]("circuit-state-reporting-interval")
-        } yield propsRaw(ResolvePath(eventlogPath), resolveSettings, warningThreshold, circuitControlSettings, circuitStateReportingInterval, autoConnect)
+          storeEventRetrySettings ← section.v[XRetrySettings]("store-event-retry-settings")
+          eventlogCallTimeout ← section.v[FiniteDuration]("event-log-call-timeout")
+        } yield propsRaw(ResolvePath(eventlogPath), resolveSettings, warningThreshold, circuitControlSettings, circuitStateReportingInterval, eventlogCallTimeout, storeEventRetrySettings, autoConnect)
       } else {
         ActorDevNullSubscriberWithAutoSubscribe.props[Event](1, if (autoConnect) Some(ctx.eventStream) else None).success
       }
@@ -67,7 +73,9 @@ private[almhirt] class EventLogWriterImpl(
   warningThreshold: FiniteDuration,
   autoConnect: Boolean,
   circuitControlSettings: CircuitControlSettings,
-  circuitStateReportingInterval: Option[FiniteDuration])(implicit override val almhirtContext: AlmhirtContext) extends ActorSubscriber with AlmActor with AlmActorLogging with ActorLogging with ImplicitFlowMaterializer {
+  circuitStateReportingInterval: Option[FiniteDuration],
+  eventlogCallTimeout: FiniteDuration,
+  storeEventRetrySettings: XRetrySettings)(implicit override val almhirtContext: AlmhirtContext) extends ActorSubscriber with AlmActor with AlmActorLogging with ActorLogging with ImplicitFlowMaterializer {
   import almhirt.eventlog.EventLog
 
   implicit val executor = almhirtContext.futuresContext
@@ -111,7 +119,9 @@ private[almhirt] class EventLogWriterImpl(
       if (!event.header.noLoggingSuggested) {
         val start = Deadline.now
         val f = circuitBreaker.fused {
-          (eventLog ? EventLog.LogEvent(event, true))(circuitControlSettings.callTimeout).mapCastTo[EventLog.LogEventResponse]
+          this.retryFuture(storeEventRetrySettings) {
+            (eventLog ? EventLog.LogEvent(event, true))(eventlogCallTimeout).mapCastTo[EventLog.LogEventResponse]
+          }
         }.onComplete({
           case scalaz.Failure(problem) ⇒
             self ! EventLog.EventNotLogged(event.eventId, problem)

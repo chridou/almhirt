@@ -28,7 +28,7 @@ object MongoEventLog {
     deserializeEvent: BSONDocument ⇒ AlmValidation[Event],
     writeWarnThreshold: FiniteDuration,
     circuitControlSettings: CircuitControlSettings,
-    retrySettings: RetrySettings,
+    initializeRetrySettings: XRetrySettings,
     readOnly: Boolean)(implicit ctx: AlmhirtContext): Props =
     Props(new MongoEventLogImpl(
       db,
@@ -37,7 +37,7 @@ object MongoEventLog {
       deserializeEvent,
       writeWarnThreshold,
       circuitControlSettings,
-      retrySettings,
+      initializeRetrySettings,
       readOnly))
 
   def propsWithDb(
@@ -53,7 +53,7 @@ object MongoEventLog {
       collectionName ← section.v[String]("collection-name")
       writeWarnThreshold ← section.v[FiniteDuration]("write-warn-threshold")
       circuitControlSettings ← section.v[CircuitControlSettings]("circuit-control")
-      retrySettings ← section.v[RetrySettings]("retry-settings")
+      initializeRetrySettings ← section.v[XRetrySettings]("initialize-retry-settings")
       readOnly ← section.v[Boolean]("read-only")
     } yield propsRaw(
       db,
@@ -62,7 +62,7 @@ object MongoEventLog {
       deserializeEvent,
       writeWarnThreshold,
       circuitControlSettings,
-      retrySettings,
+      initializeRetrySettings,
       readOnly)
   }
 
@@ -94,7 +94,7 @@ private[almhirt] class MongoEventLogImpl(
   deserializeEvent: BSONDocument ⇒ AlmValidation[Event],
   writeWarnThreshold: FiniteDuration,
   circuitControlSettings: CircuitControlSettings,
-  retrySettings: RetrySettings,
+  initializeRetrySettings: XRetrySettings,
   readOnly: Boolean)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging {
   import EventLog._
   import almhirt.corex.mongo.BsonConverter._
@@ -127,8 +127,8 @@ private[almhirt] class MongoEventLogImpl(
   def documentToEvent(document: BSONDocument): AlmValidation[Event] = {
     document.get("event") match {
       case Some(d: BSONDocument) ⇒ deserializeEvent(d)
-      case Some(x) ⇒ MappingProblem(s"""Event must be contained as a BSONDocument. It is a "${x.getClass().getName()}".""").failure
-      case None ⇒ NoSuchElementProblem("BSONDocument for payload not found").failure
+      case Some(x)               ⇒ MappingProblem(s"""Event must be contained as a BSONDocument. It is a "${x.getClass().getName()}".""").failure
+      case None                  ⇒ NoSuchElementProblem("BSONDocument for payload not found").failure
     }
   }
 
@@ -251,27 +251,20 @@ private[almhirt] class MongoEventLogImpl(
     case Initialize ⇒
       logInfo("Initializing(read/write)")
 
-      val toTry = () ⇒ {
+      this.retryFuture(initializeRetrySettings) {
         val collection = db(collectionName)
         (for {
           idxRes ← collection.indexesManager.ensure(MIndex(List("timestamp" → IndexType.Ascending), name = Some("idx_timestamp"), unique = false))
         } yield (idxRes)).toAlmFuture
-      }
-
-      context.retryWithLogging[Boolean](
-        retryContext = s"Initialize collection $collectionName",
-        toTry = toTry,
-        onSuccess = idxRes ⇒ {
-          log.info(s"""Index on "timestamp" created: $idxRes""")
-          self ! Initialized
-        },
-        onFinalFailure = (t, n, p) ⇒ {
-          val prob = MandatoryDataProblem(s"Initialize collection '$collectionName' finally failed after $n attempts and ${t.defaultUnitString}.", cause = Some(p))
+      }.onComplete(
+        fail ⇒ {
+          val prob = MandatoryDataProblem(s"Initialize collection '$collectionName' failed.", cause = Some(fail))
           self ! InitializeFailed(PersistenceProblem("Failed to initialize", cause = Some(prob)))
         },
-        log = this.log,
-        settings = retrySettings,
-        actorName = Some("initializes-collection"))
+        idxRes ⇒ {
+          log.info(s"""Index on "timestamp" created: $idxRes""")
+          self ! Initialized
+        })
 
     case Initialized ⇒
       logInfo("Initialized")
@@ -287,33 +280,31 @@ private[almhirt] class MongoEventLogImpl(
       reportMissedEvent(event, MajorSeverity, ServiceNotAvailableProblem("Uninitialized."))
 
     case m: EventLogMessage ⇒
-      log.warning(s"""Received event log message ${m.getClass().getSimpleName()} while uninitialized.""")
+      logWarning(s"""Received event log message ${m.getClass().getSimpleName()} while uninitialized.""")
   }
 
   def uninitializedReadOnly: Receive = {
     case Initialize ⇒
       logInfo("Initializing(read-only)")
-      context.retryWithLogging[Unit](
-        retryContext = s"Find collection $collectionName",
-        toTry = () ⇒ db.collectionNames.toAlmFuture.foldV(
+
+      this.retryFuture(initializeRetrySettings) {
+        db.collectionNames.toAlmFuture.foldV(
           fail ⇒ fail.failure,
           collectionNames ⇒ {
             if (collectionNames.contains(collectionName))
               ().success
             else
               MandatoryDataProblem(s"""Collection "$collectionName" is not among [${collectionNames.mkString(", ")}] in database "${db.name}".""").failure
-          }),
-        onSuccess = _ ⇒ { self ! Initialized },
-        onFinalFailure = (t, n, p) ⇒ {
-          val prob = MandatoryDataProblem(s"Look up collection '$collectionName' finally failed after $n attempts and ${t.defaultUnitString}.", cause = Some(p))
+          })
+      }.onComplete(
+        fail ⇒ {
+          val prob = MandatoryDataProblem(s"Look up collection '$collectionName' failed.", cause = Some(fail))
           self ! InitializeFailed(PersistenceProblem("Failed to initialize", cause = Some(prob)))
         },
-        log = this.log,
-        settings = retrySettings,
-        actorName = Some("looks-for-collection"))
+        idxRes ⇒ { self ! Initialized })
 
     case Initialized ⇒
-      log.info("Initialized")
+      logInfo("Initialized")
       registerCircuitControl(circuitBreaker)
       context.become(receiveEventLogMsg(true))
 
@@ -322,14 +313,18 @@ private[almhirt] class MongoEventLogImpl(
       reportCriticalFailure(prob)
       sys.error(prob.message)
 
-    case LogEvent(event, acknowledge) ⇒
-      if (!acknowledge)
-        logWarning(s"""Received event ${event.getClass().getSimpleName()} while uninitialized.""")
-      else
-        sender() ! EventNotLogged(event.eventId, IllegalOperationProblem("The event log is in read only mode."))
+    case m: LogEvent ⇒
+      logWarning(s"""Received event log message ${m.getClass().getSimpleName()} while uninitialized.""")
+      if (m.acknowledge)
+        sender() ! EventNotLogged(m.event.eventId, ServiceNotReadyProblem("I'm still initializing."))
 
-    case m: EventLogMessage ⇒
-      log.warning(s"""Received event log message ${m.getClass().getSimpleName()} while uninitialized.""")
+    case m: FindEvent ⇒
+      logWarning(s"""Received event log message ${m.getClass().getSimpleName()} while uninitialized.""")
+      sender() ! FindEventFailed(m.eventId, ServiceNotReadyProblem("I'm still initializing."))
+
+    case m: FetchEvents ⇒
+      logWarning(s"""Received event log message ${m.getClass().getSimpleName()} while uninitialized.""")
+      sender() ! FetchEventsFailed(ServiceNotReadyProblem("I'm still initializing."))
   }
 
   def receiveEventLogMsg(readOnly: Boolean): Receive = {
@@ -351,9 +346,9 @@ private[almhirt] class MongoEventLogImpl(
           docs ← collection.find(query).cursor.collect[List](2, true).toAlmFuture
           Event ← AlmFuture {
             docs match {
-              case Nil ⇒ None.success
+              case Nil      ⇒ None.success
               case d :: Nil ⇒ documentToEvent(d).map(Some(_))
-              case x ⇒ PersistenceProblem(s"""Expected 1 event with id "$eventId" but found ${x.size}.""").failure
+              case x        ⇒ PersistenceProblem(s"""Expected 1 event with id "$eventId" but found ${x.size}.""").failure
             }
           }(serializationExecutor)
         } yield Event
