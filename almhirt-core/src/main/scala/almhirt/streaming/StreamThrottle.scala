@@ -19,7 +19,7 @@ object StreamThrottle {
     StreamThrottle(factory.actorOf(props(delayAfterEach)))
 }
 
-private[almhirt] class StreamThrottleImpl[T: ClassTag](delayAfterEach: FiniteDuration) extends ActorSubscriber with ImplicitFlowMaterializer {
+private[almhirt] class StreamThrottleImpl[T: ClassTag](delayAfterEach: FiniteDuration) extends ActorSubscriber {
 
   protected def requestStrategy: RequestStrategy = ZeroRequestStrategy
 
