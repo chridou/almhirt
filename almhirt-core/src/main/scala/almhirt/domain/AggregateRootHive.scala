@@ -72,7 +72,7 @@ private[almhirt] object AggregateRootHiveInternals {
 
   final case class ReportDroneDebug(msg: String) extends AggregateDroneLoggingMessage
   final case class ReportDroneError(msg: String, cause: ProblemCause) extends AggregateDroneLoggingMessage
-  final case class ReportDroneWarning(msg: String, cause: ProblemCause) extends AggregateDroneLoggingMessage
+  final case class ReportDroneWarning(msg: String, cause: Option[ProblemCause]) extends AggregateDroneLoggingMessage
 
   final case class CargoJettisoned(aggId: AggregateRootId) extends AggregateDroneMessage
 
@@ -360,9 +360,9 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
       logError(s"Drone ${sender().path.name} reported an error: $msg")
       reportMajorFailure(cause.mapProblem { _.withArg("hive", hiveDescriptor.value) })
 
-    case ReportDroneWarning(msg, cause) ⇒
+    case ReportDroneWarning(msg, causeOpt) ⇒
       logWarning(s"Drone ${sender().path.name} reported a warning: $msg")
-      reportMinorFailure(cause.mapProblem { _.withArg("hive", hiveDescriptor.value) })
+      causeOpt.foreach(cause => reportMinorFailure(cause.mapProblem { _.withArg("hive", hiveDescriptor.value) }))
 
     case AggregateRootHiveInternals.CargoJettisoned(id) ⇒
       this.numJettisonedSinceLastReport += 1
