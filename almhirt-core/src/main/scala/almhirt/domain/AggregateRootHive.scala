@@ -262,7 +262,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
         logInfo("Released throttle.")
         suppliesRequestedSinceThrottlingStateChanged = 0
       } else {
-        logInfo(s"There are still ${rest.size} events that need to be delivered. Can not release the throttle.")
+        logInfo(s"There are still ${rest.size} command status event(s) that need to be delivered. Can not release the throttle.")
       }
     }
   }
