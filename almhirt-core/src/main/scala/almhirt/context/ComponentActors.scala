@@ -44,7 +44,7 @@ private[almhirt] object componentactors {
   final case class UnfoldFromFactories(factories: ComponentFactories)
 
   /**
-   * This is all a bit hacky since I don't know yet, how I want this to behave...
+   * This is all a bit hacky since I don't know yet, how I want this to behave like...
    */
   class ComponentsSupervisor(
     dedicatedAppsDispatcher: Option[String],
@@ -79,7 +79,7 @@ private[almhirt] object componentactors {
     val apps =
       dedicatedAppsDispatcher match {
         case Some(name) ⇒
-          logInfo("Using dedicated apps dispatcher")
+          logInfo(s"Using dedicated apps dispatcher: $name")
           context.actorOf(appsProps(almhirtContext.withFuturesExecutor(appsFuturesExecutor)).withDispatcher(name), "apps")
         case None ⇒
           logWarning("Using default dispatcher as apps dispatcher.")

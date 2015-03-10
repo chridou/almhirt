@@ -131,7 +131,7 @@ object AlmhirtStreams {
             val eventShipperActor = context.actorOf(StreamShipper.props(), "event-broker")
             val (eventShipperIn, eventShipperOut, stopEventShipper) = StreamShipper[Event](eventShipperActor)
 
-            val eventsSink =  Sink.fanoutPublisher[Event](initialFanoutEvents, maxFanoutEvents)
+            val eventsSink = Sink.fanoutPublisher[Event](initialFanoutEvents, maxFanoutEvents)
             val eventFlow =
               if (eventBufferSize > 0)
                 Flow[Event].buffer(eventBufferSize, OverflowStrategy.backpressure)
@@ -146,7 +146,7 @@ object AlmhirtStreams {
 
             val commandShipperActor = actorRefFactory.actorOf(StreamShipper.props(), "command-broker")
             val (commandShipperIn, commandShipperOut, stopCommandShipper) = StreamShipper[Command](commandShipperActor)
-            
+
             val commandsDrain = Sink.fanoutPublisher[Command](initialFanoutCommands, maxFanoutCommands)
             val commandFlow =
               if (commandBufferSize > 0)
