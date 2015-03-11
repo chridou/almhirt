@@ -467,42 +467,44 @@ object AlmFuture {
 
     val scheduler = implicitly[almhirt.almfuture.ActionSchedulingMagnet[S]]
 
-    def scheduleFun(action: () ⇒ Unit, in: scala.concurrent.duration.FiniteDuration) =
+    def scheduleAction(action: () ⇒ Unit, in: scala.concurrent.duration.FiniteDuration) =
       scheduler.schedule(actionScheduler, action, in, executor)
 
     val p = Promise[AlmValidation[T]]
 
-    f.onComplete(
-      fail ⇒ innerRetry(f, beforeRetry, fail, p, settings.numberOfRetries, settings.delay.calculator, scheduleFun, executor),
-      succ ⇒ p.success(succ.success))(executor)
+    innerRetry(() => f, beforeRetry, None, p, settings.numberOfRetries, settings.delay.calculator, scheduleAction, executor)
 
     new AlmFuture(p.future)
   }
 
   private def innerRetry[T](
-    f: ⇒ AlmFuture[T],
+    f: () ⇒ AlmFuture[T],
     beforeRetry: Option[(almhirt.configuration.NumberOfRetries, scala.concurrent.duration.FiniteDuration, Problem) ⇒ Unit],
-    lastProblem: Problem,
+    lastProblem: Option[Problem],
     promise: Promise[AlmValidation[T]],
     retries: almhirt.configuration.NumberOfRetries,
     delayCalculator: almhirt.configuration.RetryDelayCalculator,
-    schedule: (() ⇒ Unit, scala.concurrent.duration.FiniteDuration) ⇒ Unit,
+    scheduleAction: (() ⇒ Unit, scala.concurrent.duration.FiniteDuration) ⇒ Unit,
     executor: ExecutionContext) {
-    if (!retries.hasRetriesLeft) {
-      promise.success(lastProblem.failure)
+    if (lastProblem.isDefined && !retries.hasRetriesLeft) {
+      promise.complete(scala.util.Success(lastProblem.get.failure))
     } else {
-      val (nextDelay, newCalculator) = delayCalculator.next
+      val (nextDelay, newCalculator) =
+        if (lastProblem.isDefined)
+          delayCalculator.next
+        else
+          (Duration.Zero, delayCalculator)
 
-      beforeRetry.foreach(_(retries, nextDelay, lastProblem))
+      beforeRetry.flatMap(reportAction ⇒ lastProblem.map((reportAction, _))).foreach { case (reportAction, lp) ⇒ reportAction(retries, nextDelay, lp) }
 
       if (nextDelay == Duration.Zero) {
-        f.onComplete(
-          fail ⇒ innerRetry(f, beforeRetry, fail, promise, retries.oneLess, newCalculator, schedule, executor),
-          succ ⇒ promise.success(succ.success))(executor)
+        f().onComplete(
+          fail ⇒ innerRetry(f, beforeRetry, Some(fail), promise, retries.oneLess, newCalculator, scheduleAction, executor),
+          succ ⇒ promise.complete(scala.util.Success(succ.success)))(executor)
       } else {
-        schedule(() ⇒ f.onComplete(
-          fail ⇒ innerRetry(f, beforeRetry, fail, promise, retries.oneLess, newCalculator, schedule, executor),
-          succ ⇒ promise.success(succ.success))(executor), nextDelay)
+        scheduleAction(() ⇒ f().onComplete(
+          fail ⇒ innerRetry(f, beforeRetry, Some(fail), promise, retries.oneLess, newCalculator, scheduleAction, executor),
+          succ ⇒ promise.complete(scala.util.Success(succ.success)))(executor), nextDelay)
       }
     }
   }
