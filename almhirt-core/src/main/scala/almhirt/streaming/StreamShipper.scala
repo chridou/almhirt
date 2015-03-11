@@ -187,12 +187,15 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
       stop(Map.empty, offers, contractors, subscriptions, "collecting offers")
 
     case InternalBrokerMessages.InternalEnableNotifyOnNoDemand(duration) ⇒
+      reporters.reportInfo(s"Notify on no demand enabled. Notify when there is no demand for ${duration.defaultUnitString}")
+
       if (toNotifyOnNoDemand.isEmpty) {
         val timerCancel = context.system.scheduler.schedule(Duration.Zero, duration, self, CheckForNoDemand)(context.dispatcher)
         toNotifyOnNoDemand = Some(duration, timerCancel)
       }
 
     case InternalBrokerMessages.InternalAddReporter(reporter) ⇒
+      reporter.reportDebug("You were added as a new reporter")
       reporters.addReporter(reporter)
 
     case CheckForNoDemand ⇒
@@ -327,6 +330,7 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
         chooseNextAction(offers, contractors, subscriptions)
 
     case InternalBrokerMessages.InternalAddReporter(reporter) ⇒
+      reporter.reportDebug("You were added as a new reporter")
       reporters.addReporter(reporter)
 
     case StopStreaming ⇒
@@ -337,6 +341,7 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
       stop(Map.empty, offers, contractors, subscriptions, "transporting")
 
     case InternalBrokerMessages.InternalEnableNotifyOnNoDemand(duration) ⇒
+      reporters.reportInfo(s"Notify on no demand enabled. Notify when there is no demand for ${duration.defaultUnitString}")
       if (toNotifyOnNoDemand.isEmpty) {
         val timerCancel = context.system.scheduler.schedule(Duration.Zero, duration, self, CheckForNoDemand)(context.dispatcher)
         toNotifyOnNoDemand = Some(duration, timerCancel)
