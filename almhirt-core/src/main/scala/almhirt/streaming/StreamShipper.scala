@@ -163,9 +163,13 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
 
     case InternalDeliverSupplies(elements: Seq[TElement], contractor: SuppliesContractor[TElement]) ⇒
       if (contractors(contractor)) {
+        val prob = UnspecifiedProblem(" You have not been asked to load supplies! Are you too late?")
         contractor.onProblem(UnspecifiedProblem("[LoadSupplies(collecting)]: You have not been asked to load supplies! Are you too late?"))
+        reporters.reportWarning("A contracter delivered supplies even though he was not asked to do so.")
       } else {
-        contractor.onProblem(UnspecifiedProblem("[LoadSupplies(collecting)]: You are not a contractor!"))
+        val prob = UnspecifiedProblem("You are not a contractor!")
+        contractor.onProblem(prob)
+        reporters.reportWarning("Someone who is not a contractor delivered supplies.")
       }
 
     case ActorPublisherMessage.Request(amount) ⇒
@@ -202,11 +206,20 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
       noDemandSince.flatMap(since ⇒ toNotifyOnNoDemand.map(n ⇒ (since, n._1, n._2))).foreach {
         case (since, dur, _) ⇒
           val timeWithNoDemand = since.lap
-          if (timeWithNoDemand >= dur)
-            reporters.reportWarning(s"No demand for ${timeWithNoDemand.defaultUnitString}")
+          if (timeWithNoDemand >= dur) {
+            val msg = s"""|No demand for ${timeWithNoDemand.defaultUnitString}
+                          |Total to dispatch: $totalToDispatch 
+                          |Total dispatched:  $totalDispatched
+                          |Total offered:     $totalOffered
+                          |Total demanded:    $totalDemanded
+                          |Total delivered:   $totalDelivered""".stripMargin
+
+            reporters.reportWarning(msg)
+          }
       }
 
     case StopStreaming ⇒
+      reporters.reportInfo("Stop streaming requested.")
       stop(Map.empty, offers, contractors, subscriptions, "collecting offers")
   }
 
@@ -334,6 +347,7 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
       reporters.addReporter(reporter)
 
     case StopStreaming ⇒
+      reporters.reportInfo("Stop streaming requested.")
       stop(deliverySchedule, offers, contractors, subscriptions, "transporting")
 
     case ActorPublisherMessage.Cancel ⇒
@@ -351,8 +365,16 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
       noDemandSince.flatMap(since ⇒ toNotifyOnNoDemand.map(n ⇒ (since, n._1, n._2))).foreach {
         case (since, dur, _) ⇒
           val timeWithNoDemand = since.lap
-          if (timeWithNoDemand >= dur)
-            reporters.reportWarning(s"No demand for ${timeWithNoDemand.defaultUnitString}")
+          if (timeWithNoDemand >= dur) {
+            val msg = s"""|No demand for ${timeWithNoDemand.defaultUnitString}
+                          |Total to dispatch: $totalToDispatch 
+                          |Total dispatched:  $totalDispatched
+                          |Total offered:     $totalOffered
+                          |Total demanded:    $totalDemanded
+                          |Total delivered:   $totalDelivered""".stripMargin
+
+            reporters.reportWarning(msg)
+          }
       }
   }
 
