@@ -4,14 +4,18 @@ import scala.concurrent.ExecutionContext
 import akka.actor._
 import scalaz.Validation.FlatMap._
 import almhirt.common._
+import almhirt.tooling.Reporter
 import almhirt.streaming.AlmhirtStreams
 import almhirt.akkax.ActorMessages
+import almhirt.akkax.ComponentId
 import com.typesafe.config._
 
 trait AlmhirtContext extends CanCreateUuidsAndDateTimes with AlmhirtStreams with HasExecutionContexts {
   def config: Config
   def localActorPaths: ContextActorPaths
   def tellHerder(what: almhirt.herder.HerderMessages.HerderNotificicationMessage): Unit
+
+  def createReporter(forComponent: ComponentId): Reporter
 
   def withFuturesExecutor(executor: ExecutionContext): AlmhirtContext = {
     new AlmhirtContext {
@@ -31,6 +35,8 @@ trait AlmhirtContext extends CanCreateUuidsAndDateTimes with AlmhirtStreams with
       def tellHerder(what: almhirt.herder.HerderMessages.HerderNotificicationMessage) {
         AlmhirtContext.this.tellHerder(what)
       }
+      def createReporter(forComponent: ComponentId): Reporter = AlmhirtContext.this.createReporter(forComponent)
+
     }
   }
 
@@ -52,6 +58,7 @@ trait AlmhirtContext extends CanCreateUuidsAndDateTimes with AlmhirtStreams with
       def tellHerder(what: almhirt.herder.HerderMessages.HerderNotificicationMessage) {
         AlmhirtContext.this.tellHerder(what)
       }
+      def createReporter(forComponent: ComponentId): Reporter = AlmhirtContext.this.createReporter(forComponent)
     }
   }
 
@@ -73,6 +80,7 @@ trait AlmhirtContext extends CanCreateUuidsAndDateTimes with AlmhirtStreams with
       def tellHerder(what: almhirt.herder.HerderMessages.HerderNotificicationMessage) {
         AlmhirtContext.this.tellHerder(what)
       }
+      def createReporter(forComponent: ComponentId): Reporter = AlmhirtContext.this.createReporter(forComponent)
     }
   }
 
@@ -218,6 +226,7 @@ object AlmhirtContext {
                 val commandStream = streams.commandStream
                 val localActorPaths = ContextActorPaths.local(system)
                 def tellHerder(what: almhirt.herder.HerderMessages.HerderNotificicationMessage) { tellTheHerder(what) }
+                def createReporter(forComponent: ComponentId): Reporter = new TellHerderReporter(this, forComponent)
 
                 def stop() {
                   log.info("Stopping.")
@@ -313,6 +322,7 @@ object AlmhirtContext {
               val commandStream = streams.commandStream
               val localActorPaths = null
               def tellHerder(what: almhirt.herder.HerderMessages.HerderNotificicationMessage) {}
+              def createReporter(forComponent: ComponentId): Reporter = Reporter.DevNull
               def stop() {
                 log.debug("Stopping.")
                 //streams.stop()
@@ -335,5 +345,41 @@ object AlmhirtContext {
         case AlmhirtContextMessages.FailedInitialization(prob)  ⇒ scalaz.Failure(prob)
       }
     }
+  }
+}
+
+private[context] class TellHerderReporter(almhirtContext: AlmhirtContext, componentId: ComponentId) extends Reporter {
+  import almhirt.herder.HerderMessages
+  def report(message: ⇒ String, importance: Importance): Unit = {
+    almhirtContext.tellHerder(HerderMessages.InformationMessages.Information(componentId, message, importance, almhirtContext.getUtcTimestamp))
+  }
+
+  def reportDebug(message: ⇒ String): Unit = {
+    reportNotWorthMentioning(message)
+  }
+
+  def reportError(message: String, cause: almhirt.problem.ProblemCause): Unit = {
+    reportMajorFailure(cause)
+    reportVeryImportant(message)
+  }
+
+  def reportFailure(cause: almhirt.problem.ProblemCause, severity: almhirt.problem.Severity): Unit = {
+    almhirtContext.tellHerder(HerderMessages.FailureMessages.FailureOccured(componentId, cause, severity, almhirtContext.getUtcTimestamp))
+  }
+
+  def reportInfo(message: ⇒ String): Unit = {
+    reportMentionable(message)
+  }
+
+  def reportMissedEvent(event: Event, severity: almhirt.problem.Severity, cause: almhirt.problem.ProblemCause): Unit = {
+    almhirtContext.tellHerder(HerderMessages.EventMessages.MissedEvent(componentId, event, severity, cause, almhirtContext.getUtcTimestamp))
+  }
+
+  def reportRejectedCommand(command: almhirt.tracking.CommandRepresentation, severity: almhirt.problem.Severity, cause: almhirt.problem.ProblemCause): Unit = {
+    almhirtContext.tellHerder(HerderMessages.CommandMessages.RejectedCommand(componentId, command, severity, cause, almhirtContext.getUtcTimestamp))
+  }
+
+  def reportWarning(message: ⇒ String): Unit = {
+    reportImportant(message)
   }
 }
