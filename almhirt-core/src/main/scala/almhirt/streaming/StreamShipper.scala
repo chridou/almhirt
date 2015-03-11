@@ -42,7 +42,7 @@ object StreamShipper {
 }
 
 /** This is a very naive implementation to get started! */
-private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int) extends Actor with ActorPublisher[TElement] with ActorLogging {
+private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int) extends Actor with ActorPublisher[TElement] {
   import ActorPublisher._
   import InternalBrokerMessages._
 
@@ -92,8 +92,10 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
   private var totalDemanded = 0L
   private var totalDelivered = 0L
 
-  private var toNotifyOnNoDemand: Option[((FiniteDuration, Boolean) ⇒ Unit, FiniteDuration, Cancellable)] = None
+  private var toNotifyOnNoDemand: Option[(FiniteDuration, Cancellable)] = None
   private var noDemandSince: Option[Deadline] = Some(Deadline.now)
+
+  private val reporters = almhirt.tooling.CompositeReporter()
 
   def receiveCollectingOffers(
     offers: Vector[SuppliesContractor[TElement]],
@@ -117,17 +119,16 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
           chooseNextAction(offers, contractors, subscriptions.addToBuffer(subscriberId, element))
         }
       } else {
-        log.warning(s"OnNext from unknown subscription $subscriberId for element untypedElem is ignored")
+        reporters.reportWarning(s"OnNext from unknown subscription $subscriberId for element untypedElem is ignored")
       }
 
     case InternalOnComplete(subscriberId) ⇒
-      if (log.isDebugEnabled)
-        log.debug(s"Publisher to consumer $subscriberId completed.")
+      reporters.reportDebug(s"Publisher to consumer $subscriberId completed.")
       val newSubscriptions = subscriptions.removeSubscription(subscriberId)
       context.become(receiveCollectingOffers(offers, contractors, newSubscriptions))
 
     case InternalOnError(subscriberId, error) ⇒
-      log.error(s"Subscriber $subscriberId reported an error. The subscriber will be removed.")
+      reporters.reportError(s"Subscriber $subscriberId reported an error. The subscriber will be removed.", error)
       context.become(receiveCollectingOffers(offers, contractors, subscriptions.removeSubscription(subscriberId)))
 
     case InternalSignContract(contractor: SuppliesContractor[TElement]) ⇒
@@ -172,32 +173,34 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
         noDemandSince
           .flatMap(since ⇒
             toNotifyOnNoDemand.map(n ⇒ (since.lap, n._1, n._2)))
-          .filter { case (dur, _, maxDur) ⇒ dur >= maxDur }
+          .filter { case (dur, maxDur, _) ⇒ dur >= maxDur }
           .foreach {
-            case (dur, action, _) ⇒
-              action(dur, false)
+            case (dur, _, _) ⇒
+              reporters.reportInfo(s"First demand after having no demand for ${dur.defaultUnitString}")
           }
         noDemandSince = None
       }
       chooseNextAction(offers, contractors, subscriptions)
 
     case ActorPublisherMessage.Cancel ⇒
-      if (log.isDebugEnabled)
-        log.debug("The downstream was cancelled. Stopping.")
+      reporters.reportDebug("The downstream was cancelled. Stopping.")
       stop(Map.empty, offers, contractors, subscriptions, "collecting offers")
 
-    case InternalBrokerMessages.InternalNotifyOnNoDemand(duration, action) ⇒
+    case InternalBrokerMessages.InternalEnableNotifyOnNoDemand(duration) ⇒
       if (toNotifyOnNoDemand.isEmpty) {
         val timerCancel = context.system.scheduler.schedule(Duration.Zero, duration, self, CheckForNoDemand)(context.dispatcher)
-        toNotifyOnNoDemand = Some(action, duration, timerCancel)
+        toNotifyOnNoDemand = Some(duration, timerCancel)
       }
+
+    case InternalBrokerMessages.InternalAddReporter(reporter) ⇒
+      reporters.addReporter(reporter)
 
     case CheckForNoDemand ⇒
       noDemandSince.flatMap(since ⇒ toNotifyOnNoDemand.map(n ⇒ (since, n._1, n._2))).foreach {
-        case (since, action, dur) ⇒
+        case (since, dur, _) ⇒
           val timeWithNoDemand = since.lap
           if (timeWithNoDemand >= dur)
-            action(timeWithNoDemand, true)
+            reporters.reportWarning(s"No demand for ${timeWithNoDemand.defaultUnitString}")
       }
 
     case StopStreaming ⇒
@@ -221,18 +224,17 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
         totalToDispatch += 1
         context.become(receiveTransportingSupplies(deliverySchedule, offers, contractors, subscriptions.addToBuffer(subscriberId, element.asInstanceOf[TElement])))
       } else {
-        log.warning(s"OnNext from unknown subscription $subscriberId for element $element is ignored")
+        reporters.reportWarning(s"OnNext from unknown subscription $subscriberId for element $element is ignored")
       }
 
     case InternalOnComplete(subscriberId) ⇒
-      if (log.isDebugEnabled)
-        log.debug(s"Publisher to consumer $subscriberId completed.")
+      reporters.reportDebug(s"Publisher to consumer $subscriberId completed.")
       if (deliverySchedule.isEmpty) sys.error(s"This must not happen! InternalOnComplete($subscriberId)")
       context.become(receiveTransportingSupplies(deliverySchedule, offers, contractors, subscriptions.removeSubscription(subscriberId)))
 
     case InternalOnError(subscriberId, error) ⇒
       if (deliverySchedule.isEmpty) sys.error("This must not happen!InternalOnError")
-      log.error(s"Subscriber $subscriberId reported an error. The subscriber will be removed.")
+      reporters.reportError(s"Subscriber $subscriberId reported an error. The subscriber will be removed.", error)
       context.become(receiveTransportingSupplies(deliverySchedule, offers, contractors, subscriptions.removeSubscription(subscriberId)))
 
     case InternalSignContract(contractor: SuppliesContractor[TElement]) ⇒
@@ -253,7 +255,7 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
       if (contractors(contractor)) {
         deliverySchedule.get(contractor) match {
           case Some(c) ⇒
-            log.warning(s"Contractor $contractor who is scheduled for delivery cancelled his contract!")
+            reporters.reportWarning(s"Contractor $contractor who is scheduled for delivery cancelled his contract!")
             context.become(receiveTransportingSupplies(
               deliverySchedule - contractor,
               offers.filterNot(_ == contractor),
@@ -306,7 +308,7 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
 
         case None ⇒
           contractor.onProblem(UnspecifiedProblem("[LoadSupplies(transporting)]: You are not to send any elements!"))
-          log.warning(s"Got ${elements.size} elements from contractor $contractor who is not in the delivery schedule.")
+          reporters.reportWarning(s"Got ${elements.size} elements from contractor $contractor who is not in the delivery schedule.")
       }
 
     case ActorPublisherMessage.Request(amount) ⇒
@@ -314,36 +316,38 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
         noDemandSince
           .flatMap(since ⇒
             toNotifyOnNoDemand.map(n ⇒ (since.lap, n._1, n._2)))
-          .filter { case (dur, _, maxDur) ⇒ dur >= maxDur }
+          .filter { case (dur, maxDur, _) ⇒ dur >= maxDur }
           .foreach {
-            case (dur, action, _) ⇒
-              action(dur, false)
+            case (dur, _, _) ⇒
+              reporters.reportInfo(s"First demand after having no demand for ${dur.defaultUnitString}")
           }
         noDemandSince = None
       }
       if (deliverySchedule.isEmpty)
         chooseNextAction(offers, contractors, subscriptions)
 
+    case InternalBrokerMessages.InternalAddReporter(reporter) ⇒
+      reporters.addReporter(reporter)
+
     case StopStreaming ⇒
       stop(deliverySchedule, offers, contractors, subscriptions, "transporting")
 
     case ActorPublisherMessage.Cancel ⇒
-      if (log.isDebugEnabled)
-        log.debug("Received cancel from downstream. Stopping.")
+      reporters.reportDebug("Received cancel from downstream. Stopping.")
       stop(Map.empty, offers, contractors, subscriptions, "transporting")
 
-    case InternalBrokerMessages.InternalNotifyOnNoDemand(duration, action) ⇒
+    case InternalBrokerMessages.InternalEnableNotifyOnNoDemand(duration) ⇒
       if (toNotifyOnNoDemand.isEmpty) {
         val timerCancel = context.system.scheduler.schedule(Duration.Zero, duration, self, CheckForNoDemand)(context.dispatcher)
-        toNotifyOnNoDemand = Some(action, duration, timerCancel)
+        toNotifyOnNoDemand = Some(duration, timerCancel)
       }
 
     case CheckForNoDemand ⇒
       noDemandSince.flatMap(since ⇒ toNotifyOnNoDemand.map(n ⇒ (since, n._1, n._2))).foreach {
-        case (since, action, dur) ⇒
+        case (since, dur, _) ⇒
           val timeWithNoDemand = since.lap
           if (timeWithNoDemand >= dur)
-            action(timeWithNoDemand, true)
+            reporters.reportWarning(s"No demand for ${timeWithNoDemand.defaultUnitString}")
       }
   }
 
@@ -357,25 +361,25 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
     stateMessagePart: String) {
 
     if (!subscriptions.subscriptions.isEmpty) {
-      log.warning(s"Cancelling ${subscriptions.subscriptions.size} subscription(s) which were still present on stop.")
+      reporters.reportWarning(s"Cancelling ${subscriptions.subscriptions.size} subscription(s) which were still present on stop.")
       subscriptions.subscriptions.foreach { case (_, s) ⇒ s.cancel() }
     }
 
     if (!deliverySchedule.isEmpty)
-      log.warning(s"There are deliveries pending. I was $stateMessagePart. Remaining demand: $totalDemand.")
+      reporters.reportWarning(s"There are deliveries pending. I was $stateMessagePart. Remaining demand: $totalDemand.")
 
     if (!contractors.isEmpty) {
-      log.warning(s"Cancelling ${contractors.size} contract(s) which were still present on stop.")
+      reporters.reportWarning(s"Cancelling ${contractors.size} contract(s) which were still present on stop.")
       contractors.foreach(_.onContractExpired())
     }
 
     if (!offers.isEmpty)
-      log.warning(s"There are ${offers.size} offers left. I was $stateMessagePart. Remaining demand: $totalDemand. Number of contractors: ${contractors.size}.")
+      reporters.reportWarning(s"There are ${offers.size} offers left. I was $stateMessagePart. Remaining demand: $totalDemand. Number of contractors: ${contractors.size}.")
 
     if (subscriptions.isAnyBuffered)
-      log.warning(s"There are still ${subscriptions.numBuffered} buffered elements left. I was $stateMessagePart. Remaining demand: $totalDemand.")
+      reporters.reportWarning(s"There are still ${subscriptions.numBuffered} buffered elements left. I was $stateMessagePart. Remaining demand: $totalDemand.")
 
-    toNotifyOnNoDemand.foreach(_._3.cancel())
+    toNotifyOnNoDemand.foreach(_._2.cancel())
 
     context.stop(self)
   }
@@ -485,7 +489,7 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
   }
 
   override def postStop() {
-    log.info(s"""	|
+    reporters.reportInfo(s"""	|
     				|Total to dispatch: $totalToDispatch 
     				|Total dispatched:  $totalDispatched
     				|Total offered:     $totalOffered

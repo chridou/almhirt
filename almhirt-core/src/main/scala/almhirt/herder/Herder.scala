@@ -55,21 +55,11 @@ private[almhirt] class Pastor(
   val eventBrokerId = ComponentId(AppName("almhirt-streams"), ComponentName("event-broker"))
   val commandBrokerId = ComponentId(AppName("almhirt-streams"), ComponentName("command-broker"))
 
-  context.actorSelection(almhirtContext.localActorPaths.almhirt / "streams" / "event-broker") ! almhirt.streaming.InternalBrokerMessages.InternalNotifyOnNoDemand(
-    5.minutes,
-    (t, noDemand) ⇒ informationHerdingDog ! HerderMessages.InformationMessages.Information(
-      eventBrokerId,
-      if(noDemand) s"No demand for ${t.defaultUnitString}" else s"First demand after having no demand for ${t.defaultUnitString}",
-      Importance.Mentionable,
-      almhirtContext.getUtcTimestamp))
+  context.actorSelection(almhirtContext.localActorPaths.almhirt / "streams" / "event-broker") ! almhirt.streaming.InternalBrokerMessages.InternalAddReporter(almhirtContext.createReporter(eventBrokerId))
+  context.actorSelection(almhirtContext.localActorPaths.almhirt / "streams" / "event-broker") ! almhirt.streaming.InternalBrokerMessages.InternalEnableNotifyOnNoDemand(5.minutes)
 
-  context.actorSelection(almhirtContext.localActorPaths.almhirt / "streams" / "command-broker") ! almhirt.streaming.InternalBrokerMessages.InternalNotifyOnNoDemand(
-    5.minutes,
-    (t, noDemand) ⇒ informationHerdingDog ! HerderMessages.InformationMessages.Information(
-      commandBrokerId,
-      if(noDemand) s"No demand for ${t.defaultUnitString}" else s"First demand after having no demand for ${t.defaultUnitString}",
-      Importance.Mentionable,
-      almhirtContext.getUtcTimestamp))
+  context.actorSelection(almhirtContext.localActorPaths.almhirt / "streams" / "command-broker") ! almhirt.streaming.InternalBrokerMessages.InternalAddReporter(almhirtContext.createReporter(commandBrokerId))
+  context.actorSelection(almhirtContext.localActorPaths.almhirt / "streams" / "command-broker") ! almhirt.streaming.InternalBrokerMessages.InternalEnableNotifyOnNoDemand(5.minutes)
 
   def receiveRunning: Receive = {
     case m: HerderMessages.CircuitMessages.CircuitMessage         ⇒ circuitsHerdingDog forward m
