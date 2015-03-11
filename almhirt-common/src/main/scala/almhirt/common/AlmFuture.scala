@@ -472,13 +472,13 @@ object AlmFuture {
 
     val p = Promise[AlmValidation[T]]
 
-    innerRetry(() => f, beforeRetry, None, p, settings.numberOfRetries, settings.delay.calculator, scheduleAction, executor)
+    innerRetry(f, beforeRetry, None, p, settings.numberOfRetries, settings.delay.calculator, scheduleAction, executor)
 
     new AlmFuture(p.future)
   }
 
   private def innerRetry[T](
-    f: () ⇒ AlmFuture[T],
+    f: ⇒ AlmFuture[T],
     beforeRetry: Option[(almhirt.configuration.NumberOfRetries, scala.concurrent.duration.FiniteDuration, Problem) ⇒ Unit],
     lastProblem: Option[Problem],
     promise: Promise[AlmValidation[T]],
@@ -496,13 +496,12 @@ object AlmFuture {
           (Duration.Zero, delayCalculator)
 
       beforeRetry.flatMap(reportAction ⇒ lastProblem.map((reportAction, _))).foreach { case (reportAction, lp) ⇒ reportAction(retries, nextDelay, lp) }
-
       if (nextDelay == Duration.Zero) {
-        f().onComplete(
+        f.onComplete(
           fail ⇒ innerRetry(f, beforeRetry, Some(fail), promise, retries.oneLess, newCalculator, scheduleAction, executor),
           succ ⇒ promise.complete(scala.util.Success(succ.success)))(executor)
       } else {
-        scheduleAction(() ⇒ f().onComplete(
+        scheduleAction(() ⇒ f.onComplete(
           fail ⇒ innerRetry(f, beforeRetry, Some(fail), promise, retries.oneLess, newCalculator, scheduleAction, executor),
           succ ⇒ promise.complete(scala.util.Success(succ.success)))(executor), nextDelay)
       }

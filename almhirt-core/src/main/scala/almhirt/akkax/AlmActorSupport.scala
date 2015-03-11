@@ -16,7 +16,7 @@ trait AlmActorSupport { me: Actor ⇒
 
   protected implicit val ContextSchedulerSchedulingMagnet = new almhirt.almfuture.ActionSchedulingMagnet[Scheduler] {
     def schedule(to: Scheduler, action: () ⇒ Unit, in: scala.concurrent.duration.FiniteDuration, executor: scala.concurrent.ExecutionContext): Unit = {
-      to.scheduleOnce(in) { () ⇒ action() }(executor)
+      to.scheduleOnce(in) { action() }(executor)
     }
   }
 
