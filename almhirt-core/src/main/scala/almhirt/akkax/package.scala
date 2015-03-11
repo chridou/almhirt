@@ -245,7 +245,7 @@ package object akkax {
 
   implicit object AkkaPeriodicSchedulingMagnet extends almhirt.tooling.PeriodicSchedulingMagnet[akka.actor.Scheduler] {
     def schedule(to: akka.actor.Scheduler, initialDelay: FiniteDuration, interval: FiniteDuration, action: () ⇒ Unit)(implicit executor: scala.concurrent.ExecutionContext): almhirt.common.Stoppable = {
-      val cancellable = to.schedule(initialDelay, interval)(() => action())
+      val cancellable = to.schedule(initialDelay, interval)(action())
       
       new almhirt.common.Stoppable {
         override def stop() {
