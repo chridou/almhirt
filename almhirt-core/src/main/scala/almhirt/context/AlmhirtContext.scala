@@ -28,7 +28,9 @@ trait AlmhirtContext extends CanCreateUuidsAndDateTimes with AlmhirtStreams with
       val commandBroker = AlmhirtContext.this.commandBroker
       val commandStream = AlmhirtContext.this.commandStream
       val localActorPaths = AlmhirtContext.this.localActorPaths
-      def tellHerder(what: almhirt.herder.HerderMessages.HerderNotificicationMessage) {}
+      def tellHerder(what: almhirt.herder.HerderMessages.HerderNotificicationMessage) {
+        AlmhirtContext.this.tellHerder(what)
+      }
     }
   }
 
@@ -47,7 +49,9 @@ trait AlmhirtContext extends CanCreateUuidsAndDateTimes with AlmhirtStreams with
       val commandBroker = AlmhirtContext.this.commandBroker
       val commandStream = AlmhirtContext.this.commandStream
       val localActorPaths = AlmhirtContext.this.localActorPaths
-      def tellHerder(what: almhirt.herder.HerderMessages.HerderNotificicationMessage) {}
+      def tellHerder(what: almhirt.herder.HerderMessages.HerderNotificicationMessage) {
+        AlmhirtContext.this.tellHerder(what)
+      }
     }
   }
 
@@ -66,7 +70,9 @@ trait AlmhirtContext extends CanCreateUuidsAndDateTimes with AlmhirtStreams with
       val commandBroker = AlmhirtContext.this.commandBroker
       val commandStream = AlmhirtContext.this.commandStream
       val localActorPaths = AlmhirtContext.this.localActorPaths
-      def tellHerder(what: almhirt.herder.HerderMessages.HerderNotificicationMessage) {}
+      def tellHerder(what: almhirt.herder.HerderMessages.HerderNotificicationMessage) {
+        AlmhirtContext.this.tellHerder(what)
+      }
     }
   }
 

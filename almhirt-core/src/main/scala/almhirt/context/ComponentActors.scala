@@ -236,7 +236,7 @@ private[almhirt] object componentactors {
       case UnfoldFactory(ComponentFactoryBuilderEntry(factoryBuilder, severity)) ⇒
         factoryBuilder(almhirtContext).onComplete(
           problem ⇒ {
-            logError(s"Could not create component factory for apps:\n$problem")
+            logError(s"Could not create component factory:\n$problem")
             reportFailure(problem, severity)
           },
           factory ⇒ self ! ActorMessages.CreateChildActor(factory, true, None))(almhirtContext.futuresContext)
@@ -250,7 +250,7 @@ private[almhirt] object componentactors {
             sender() ! ActorMessages.CreateChildActorFailed(problem, correlationId)
           },
           actorRef ⇒ {
-            logInfo(s"Created ${actorRef.path} @ ${actorRef.path} ")
+            logInfo(s"Created ${actorRef.path.name}.")
             if (returnActorRef)
               sender() ! ActorMessages.ChildActorCreated(actorRef, correlationId)
           })
@@ -260,7 +260,6 @@ private[almhirt] object componentactors {
         reportCriticalFailure(problem)
 
       case ActorMessages.ChildActorCreated(created, _) ⇒
-        logInfo(s"Created ${created.path.name}.")
 
       case m: ActorMessages.HerderAppStartupMessage ⇒
         context.parent ! m
