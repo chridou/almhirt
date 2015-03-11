@@ -36,6 +36,22 @@ private[almhirt] class RuntimeHerdingDog(
 
   val runtime = Runtime.getRuntime()
 
+  val classLoadingMXBean: Option[java.lang.management.ClassLoadingMXBean] =
+    try {
+      val bean = java.lang.management.ManagementFactory.getClassLoadingMXBean()
+      if (bean != null)
+        Some(bean)
+      else {
+        this.informMentionable("Could not load the ClassLoadingMXBean")
+        None
+      }
+    } catch {
+      case scala.util.control.NonFatal(x) ⇒
+        this.informImportant("Failed to load the classloader ClassLoadingMXBean")
+        this.reportMinorFailure(x)
+        None
+    }
+
   implicit override val componentNameProvider = new ActorComponentIdProvider {
     val componentId = RuntimeHerdingDog.componentId
   }
@@ -51,7 +67,7 @@ private[almhirt] class RuntimeHerdingDog(
   private object PollRuntime
 
   def receiveRunning: Receive = {
-    case PollRuntime =>
+    case PollRuntime ⇒
       val newEntry = RuntimeHistoryEntry(runtime)
       history.add(newEntry)
       val memPercentage = newEntry.usedMemoryAbsolute * 100.0
@@ -61,6 +77,13 @@ private[almhirt] class RuntimeHerdingDog(
         this.informImportant(newEntry.niceString)
       else
         this.informNotWorthMentioning(newEntry.niceString)
+
+      classLoadingMXBean.foreach { bean ⇒
+        this.informMentionable(s"""|Currently loaded classes: ${bean.getLoadedClassCount}
+                                   |Total classes loaded: ${bean.getTotalLoadedClassCount}
+                                   |Total unloaded classes: ${bean.getUnloadedClassCount}""".stripMargin)
+      }
+
       context.system.scheduler.scheduleOnce(runtimePollingInterval, self, PollRuntime)
   }
 
