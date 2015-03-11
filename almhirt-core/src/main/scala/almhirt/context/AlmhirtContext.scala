@@ -149,14 +149,14 @@ object AlmhirtContext {
         useFuturesCtx ← configSection.v[Boolean]("use-dedicated-futures-dispatcher")
         useBlockersCtx ← configSection.v[Boolean]("use-dedicated-blockers-dispatcher")
         useCrunchersCtx ← configSection.v[Boolean]("use-dedicated-cruncher-dispatcher")
-        dedicatedAppsDispatcher ← configSection.v[Boolean]("use-dedicated-apps-dispatcher").map(useDad ⇒
+        dedicatedAppsDispatcherLookupName ← configSection.v[Boolean]("use-dedicated-apps-dispatcher").map(useDad ⇒
           if (useDad)
             Some("almhirt.context.dispatchers.apps-dispatcher")
           else
             None)
-        dedicatedAppsFuturesExecutor ← configSection.v[Boolean]("use-dedicated-apps-futures-executor").map(useDedAppfFutExeceutor ⇒
+        dedicatedAppsFuturesExecutorLookupName ← configSection.v[Boolean]("use-dedicated-apps-futures-executor").map(useDedAppfFutExeceutor ⇒
           if (useDedAppfFutExeceutor)
-            Some(system.dispatchers.lookup("almhirt.context.dispatchers.apps-futures-dispatcher"))
+            Some("almhirt.context.dispatchers.apps-futures-dispatcher")
           else
             None)
       } yield {
@@ -243,7 +243,7 @@ object AlmhirtContext {
             case AlmhirtContextMessages.HerderCreated(ctx) ⇒
               logInfo("Herder created. Core system configured. Will now go on with the components...")
               theReceiver ! AlmhirtContextMessages.FinishedInitialization(ctx)
-              val components = context.actorOf(componentactors.componentsProps(dedicatedAppsDispatcher, dedicatedAppsFuturesExecutor)(ctx), "components")
+              val components = context.actorOf(componentactors.componentsProps(dedicatedAppsDispatcherLookupName, dedicatedAppsFuturesExecutorLookupName)(ctx), "components")
               components ! componentactors.UnfoldFromFactories(componentFactories)
 
             case AlmhirtContextMessages.StreamsNotCreated(prob) ⇒
