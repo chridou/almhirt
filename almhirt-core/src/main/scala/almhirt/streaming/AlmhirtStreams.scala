@@ -34,7 +34,6 @@ object AlmhirtStreams {
       supervisorName,
       maxDur,
       actorRefFactory,
-      None,
       0,
       1,
       16,
@@ -46,7 +45,6 @@ object AlmhirtStreams {
 
   def apply(
     supervisorName: String,
-    dispatcherName: Option[String],
     eventBufferSize: Int,
     initialFanoutEvents: Int,
     maxFanoutEvents: Int,
@@ -59,7 +57,6 @@ object AlmhirtStreams {
       supervisorName,
       maxDur,
       actorRefFactory,
-      dispatcherName,
       eventBufferSize,
       initialFanoutEvents,
       maxFanoutEvents,
@@ -75,7 +72,6 @@ object AlmhirtStreams {
     AlmFuture.completed {
       for {
         configSection ← config.v[com.typesafe.config.Config]("almhirt.streams")
-        useDedicatedDispatcher ← configSection.v[Boolean]("use-dedicated-dispatcher")
         soakCommands ← configSection.v[Boolean]("soak-commands")
         soakEvents ← configSection.v[Boolean]("soak-events")
         commandBufferSize ← configSection.v[Int]("command-buffer-size")
@@ -91,7 +87,6 @@ object AlmhirtStreams {
         maxFanoutEvents ← configSection.v[Int]("max-events-fanout-buffer-size")
           .constrained(x ⇒ AlmMath.nextPowerOf2(x) == x, x ⇒ s"imax-events-fanout-buffer-size must be a power of 2 and not $x.")
       } yield (
-        useDedicatedDispatcher,
         soakCommands,
         soakEvents,
         commandBufferSize,
@@ -101,9 +96,8 @@ object AlmhirtStreams {
         initialFanoutEvents,
         maxFanoutEvents)
     }.flatMap {
-      case (useDedicatedDispatcher, soakCommands, soakEvents, commandBufferSize, eventBufferSize, initialFanoutCommands, maxFanoutCommands, initialFanoutEvents, maxFanoutEvents) ⇒
-        val dispatcherName = if (useDedicatedDispatcher) Some("almhirt.streams.dedicated-dispatcher") else None
-        create("streams", 2.seconds, actorRefFactory, dispatcherName,
+      case (soakCommands, soakEvents, commandBufferSize, eventBufferSize, initialFanoutCommands, maxFanoutCommands, initialFanoutEvents, maxFanoutEvents) ⇒
+        create("streams", 2.seconds, actorRefFactory,
           eventBufferSize, initialFanoutEvents, maxFanoutEvents,
           commandBufferSize, initialFanoutCommands, maxFanoutCommands,
           soakEvents, soakCommands)
@@ -114,7 +108,6 @@ object AlmhirtStreams {
     supervisorName: String,
     maxDur: FiniteDuration,
     actorRefFactory: ActorRefFactory,
-    dispatcherName: Option[String],
     eventBufferSize: Int,
     initialFanoutEvents: Int,
     maxFanoutEvents: Int,
@@ -171,11 +164,7 @@ object AlmhirtStreams {
           sender() ! streams
       }
     })
-    val props =
-      dispatcherName match {
-        case None         ⇒ supervisorProps
-        case Some(dpname) ⇒ supervisorProps.withDispatcher(dpname)
-      }
+    val props = supervisorProps
     val supervisor = actorRefFactory.actorOf(props, supervisorName)
 
     (supervisor ? "get_streams")(maxDur).mapCastTo[AlmhirtStreams with Stoppable]

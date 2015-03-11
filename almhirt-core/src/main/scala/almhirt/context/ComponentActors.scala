@@ -20,9 +20,8 @@ private[almhirt] object componentactors {
   import almhirt.akkax.{ ActorMessages, ComponentFactory }
 
   def componentsProps(
-    dedicatedAppsDispatcher: Option[String],
     dedicatedAppsFuturesExecutor: Option[String])(implicit ctx: AlmhirtContext): Props =
-    Props(new ComponentsSupervisor(dedicatedAppsDispatcher, dedicatedAppsFuturesExecutor))
+    Props(new ComponentsSupervisor(dedicatedAppsFuturesExecutor))
 
   def viewsProps(implicit ctx: AlmhirtContext): Props =
     Props(new ViewsSupervisor)
@@ -49,7 +48,6 @@ private[almhirt] object componentactors {
    * This is all a bit hacky since I don't know yet, how I want this to behave like...
    */
   class ComponentsSupervisor(
-    dedicatedAppsDispatcher: Option[String],
     dedicatedAppsFuturesExecutor: Option[String])(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging {
     import akka.actor.SupervisorStrategy._
     override val supervisorStrategy = OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1.minute) {
@@ -78,15 +76,8 @@ private[almhirt] object componentactors {
           almhirtContext.futuresContext
       }
 
-    val apps =
-      dedicatedAppsDispatcher match {
-        case Some(name) ⇒
-          logInfo(s"Using dedicated apps dispatcher: $name")
-          context.actorOf(appsProps(almhirtContext.withFuturesExecutor(appsFuturesExecutor)).withDispatcher(name), "apps")
-        case None ⇒
-          logWarning("Using default dispatcher as apps dispatcher.")
-          context.actorOf(appsProps(almhirtContext.withFuturesExecutor(appsFuturesExecutor)), "apps")
-      }
+    val apps = context.actorOf(appsProps(almhirtContext.withFuturesExecutor(appsFuturesExecutor)), "apps")
+
     logInfo(s"Created ${apps.path.name}.")
 
     var factories: ComponentFactories = null
