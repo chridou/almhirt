@@ -15,16 +15,26 @@ trait WantsToBeStimulated {
   def isPaused: Boolean
 }
 
+@deprecated("Use ImpatientCrybaby. Name of this object is false.", since = "0.7.7")
 object UnpatientCrybaby {
   def apply[T: PeriodicSchedulingMagnet](
     interval: FiniteDuration,
     minimumPatience: FiniteDuration,
     noMorePatienceAction: FiniteDuration ⇒ Unit,
     periodicScheduler: T)(implicit executor: ExecutionContext): WantsToBeStimulated with Stoppable =
-    new MyUnpatientCrybaby(interval, minimumPatience, noMorePatienceAction, periodicScheduler)
+    ImpatientCrybaby(interval, minimumPatience, noMorePatienceAction, periodicScheduler)
 }
 
-private[tooling] class MyUnpatientCrybaby[T: PeriodicSchedulingMagnet](
+object ImpatientCrybaby {
+  def apply[T: PeriodicSchedulingMagnet](
+    interval: FiniteDuration,
+    minimumPatience: FiniteDuration,
+    noMorePatienceAction: FiniteDuration ⇒ Unit,
+    periodicScheduler: T)(implicit executor: ExecutionContext): WantsToBeStimulated with Stoppable =
+    new MyImpatientCrybaby(interval, minimumPatience, noMorePatienceAction, periodicScheduler)
+}
+
+private[tooling] class MyImpatientCrybaby[T: PeriodicSchedulingMagnet](
   interval: FiniteDuration,
   minimumPatience: FiniteDuration,
   noMorePatienceAction: FiniteDuration ⇒ Unit,
