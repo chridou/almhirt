@@ -75,5 +75,5 @@ object RetryDelayMode {
     }
 }
 
-final case class RetrySettings2(numberOfRetries: NumberOfRetries, delay: RetryDelayMode)
+final case class RetryPolicy(numberOfRetries: NumberOfRetries, delay: RetryDelayMode)
 

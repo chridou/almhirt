@@ -66,9 +66,9 @@ trait AlmActor extends Actor with HasAlmhirtContext with AlmActorSupport {
     inform(message, Importance.VeryImportant)(cnp)
 
   def retryFuture[T](settings: XRetrySettings)(f: ⇒ AlmFuture[T]): AlmFuture[T] = {
-    import almhirt.configuration.RetrySettings2
+    import almhirt.configuration.RetryPolicy
     val executor = settings.executorSelector.map { selectExecutionContext(_) } getOrElse this.context.dispatcher
-    val retrySettings = RetrySettings2(settings.numberOfRetries, settings.delay)
+    val retrySettings = RetryPolicy(settings.numberOfRetries, settings.delay)
     val retryNotification: Option[(almhirt.configuration.NumberOfRetries, scala.concurrent.duration.FiniteDuration, Problem) ⇒ Unit] =
       settings.notifiyingParams.map {
         case XRetrySettings.NotifyingParams(importance, Some(contextDesc)) ⇒

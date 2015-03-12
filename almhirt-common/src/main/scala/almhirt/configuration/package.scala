@@ -161,8 +161,8 @@ package object configuration {
     }
   }
 
-  implicit object RetrySettings2ConfigExtractor extends ConfigExtractor[RetrySettings2] {
-    def getValue(config: Config, path: String): AlmValidation[RetrySettings2] = {
+  implicit object RetryPolicyConfigExtractor extends ConfigExtractor[RetryPolicy] {
+    def getValue(config: Config, path: String): AlmValidation[RetryPolicy] = {
       for {
         section ← config.v[Config](path)
         numberOfRetries ← section.v[String]("number-of-retries")
@@ -171,13 +171,13 @@ package object configuration {
       } yield res
     }
 
-    def tryGetValue(config: Config, path: String): AlmValidation[Option[RetrySettings2]] =
+    def tryGetValue(config: Config, path: String): AlmValidation[Option[RetryPolicy]] =
       config.opt[Config](path).flatMap {
         case Some(_) ⇒ getValue(config, path).map(Some(_))
         case None    ⇒ scalaz.Success(None)
       }
 
-    private def build(numberOfRetries: String, delayMode: String): AlmValidation[RetrySettings2] = {
+    private def build(numberOfRetries: String, delayMode: String): AlmValidation[RetryPolicy] = {
       import almhirt.almvalidation.kit._
       import scalaz._, Scalaz._
       val norV =
@@ -212,7 +212,7 @@ package object configuration {
               else
                 RetryDelayMode.ConstantDelay(dur).success)
         }
-      (norV.toAgg |@| dmV.toAgg)(RetrySettings2.apply).leftMap { p ⇒ ConfigurationProblem("Could not create RetrySettings.", cause = Some(p)) }
+      (norV.toAgg |@| dmV.toAgg)(RetryPolicy.apply).leftMap { p ⇒ ConfigurationProblem("Could not create RetrySettings.", cause = Some(p)) }
     }
   }
 

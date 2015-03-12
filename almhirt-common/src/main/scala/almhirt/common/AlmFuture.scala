@@ -455,12 +455,12 @@ object AlmFuture {
     delayedResult(duration, scheduler)(result.success)
   }
 
-  def retry[T, S: almhirt.almfuture.ActionSchedulingMagnet](f: ⇒ AlmFuture[T], settings: almhirt.configuration.RetrySettings2, scheduler: S)(implicit executor: ExecutionContext): AlmFuture[T] =
-    retryScaffolding(f, settings, executor, scheduler, None)
+  def retry[T, S: almhirt.almfuture.ActionSchedulingMagnet](policy: almhirt.configuration.RetryPolicy, scheduler: S)(f: ⇒ AlmFuture[T])(implicit executor: ExecutionContext): AlmFuture[T] =
+    retryScaffolding(f, policy, executor, scheduler, None)
 
   def retryScaffolding[T, S: almhirt.almfuture.ActionSchedulingMagnet](
     f: ⇒ AlmFuture[T],
-    settings: almhirt.configuration.RetrySettings2,
+    settings: almhirt.configuration.RetryPolicy,
     executor: ExecutionContext,
     actionScheduler: S,
     beforeRetry: Option[(almhirt.configuration.NumberOfRetries, scala.concurrent.duration.FiniteDuration, Problem) ⇒ Unit]): AlmFuture[T] = {

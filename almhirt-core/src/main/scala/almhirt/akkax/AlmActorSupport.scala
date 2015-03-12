@@ -38,15 +38,15 @@ trait AlmActorSupport { me: Actor ⇒
   @deprecated("Use retryFuture", "0.7.6")
   def retry[T](f: ⇒ AlmFuture[T])(numRetries: Int, retryDelay: FiniteDuration, executor: ExecutionContext = me.context.dispatcher): AlmFuture[T] = {
     implicit val exCtx = executor
-    retryFuture(RetrySettings2(NumberOfRetries(numRetries), RetryDelayMode(retryDelay)), executor)(f)
+    retryFuture(RetryPolicy(NumberOfRetries(numRetries), RetryDelayMode(retryDelay)), executor)(f)
   }
 
-  def retryFuture[T](settings: RetrySettings2, executor: ExecutionContext)(f: ⇒ AlmFuture[T]): AlmFuture[T] = {
-    AlmFuture.retry(f, settings, me.context.system.scheduler)(AlmActorSupport.this.ContextSchedulerSchedulingMagnet, executor)
+  def retryFuture[T](settings: RetryPolicy, executor: ExecutionContext)(f: ⇒ AlmFuture[T]): AlmFuture[T] = {
+    AlmFuture.retry(settings, me.context.system.scheduler)(f)(AlmActorSupport.this.ContextSchedulerSchedulingMagnet, executor)
   }
 
-  def retryFutureOnMyDispatcher[T](settings: RetrySettings2)(f: ⇒ AlmFuture[T]): AlmFuture[T] = {
-    AlmFuture.retry(f, settings, me.context.system.scheduler)(AlmActorSupport.this.ContextSchedulerSchedulingMagnet, me.context.dispatcher)
+  def retryFutureOnMyDispatcher[T](settings: RetryPolicy)(f: ⇒ AlmFuture[T]): AlmFuture[T] = {
+    AlmFuture.retry(settings, me.context.system.scheduler)(f)(AlmActorSupport.this.ContextSchedulerSchedulingMagnet, me.context.dispatcher)
   }
 
   implicit def almFuture2PipeableFuture[T](future: AlmFuture[T]): PipeableAlmFuture[T] = new PipeableAlmFuture(future)

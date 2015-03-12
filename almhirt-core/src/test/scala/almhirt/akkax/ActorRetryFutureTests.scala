@@ -25,97 +25,97 @@ class ActorRetryFutureTests(_system: ActorSystem) extends TestKit(_system) with 
   val defaultProblem = UnspecifiedProblem("Fail!")
 
   test("should succeed on an immediate success with no retries and no delay") {
-    val settings = RetrySettings2(numberOfRetries = NumberOfRetries.NoRetry, delay = RetryDelayMode.NoDelay)
-    val res = AlmFuture.retry(AlmFuture.successful(1), settings, scheduler)
+    val settings = RetryPolicy(numberOfRetries = NumberOfRetries.NoRetry, delay = RetryDelayMode.NoDelay)
+    val res = AlmFuture.retry(settings, scheduler)(AlmFuture.successful(1))
     res.awaitResultOrEscalate(1.second) should equal(1)
   }
 
   test("should fail on an immediate failure with no retries and no delay") {
-    val settings = RetrySettings2(numberOfRetries = NumberOfRetries.NoRetry, delay = RetryDelayMode.NoDelay)
-    val res = AlmFuture.retry(AlmFuture.failed[Int](defaultProblem), settings, scheduler)
+    val settings = RetryPolicy(numberOfRetries = NumberOfRetries.NoRetry, delay = RetryDelayMode.NoDelay)
+    val res = AlmFuture.retry(settings, scheduler)(AlmFuture.failed[Int](defaultProblem))
     res.awaitResult(1.second) should equal(defaultProblem.failure[Int])
   }
 
   test("should fail on an immediate failure with 1 retry and no delay") {
-    val settings = RetrySettings2(numberOfRetries = NumberOfRetries.LimitedRetries(1), delay = RetryDelayMode.NoDelay)
-    val res = AlmFuture.retry(AlmFuture.failed[Int](defaultProblem), settings, scheduler)
+    val settings = RetryPolicy(numberOfRetries = NumberOfRetries.LimitedRetries(1), delay = RetryDelayMode.NoDelay)
+    val res = AlmFuture.retry(settings, scheduler)(AlmFuture.failed[Int](defaultProblem))
     res.awaitResult(1.second) should equal(defaultProblem.failure[Int])
   }
 
   test("should succeed on an immediate success with no retries and a delay of 100 milliseconds") {
-    val settings = RetrySettings2(numberOfRetries = NumberOfRetries.NoRetry, delay = RetryDelayMode.ConstantDelay(100.millis))
-    val res = AlmFuture.retry(AlmFuture.successful(1), settings, scheduler)
+    val settings = RetryPolicy(numberOfRetries = NumberOfRetries.NoRetry, delay = RetryDelayMode.ConstantDelay(100.millis))
+    val res = AlmFuture.retry(settings, scheduler)(AlmFuture.successful(1))
     res.awaitResultOrEscalate(1.second) should equal(1)
   }
 
   test("should fail on an immediate failure with no retries and no delay of 100 milliseconds") {
-    val settings = RetrySettings2(numberOfRetries = NumberOfRetries.NoRetry, delay = RetryDelayMode.ConstantDelay(100.millis))
-    val res = AlmFuture.retry(AlmFuture.failed[Int](defaultProblem), settings, scheduler)
+    val settings = RetryPolicy(numberOfRetries = NumberOfRetries.NoRetry, delay = RetryDelayMode.ConstantDelay(100.millis))
+    val res = AlmFuture.retry(settings, scheduler)(AlmFuture.failed[Int](defaultProblem))
     res.awaitResult(1.second) should equal(defaultProblem.failure[Int])
   }
 
   test("should fail on an immediate failure with 1 retry and no delay of 100 milliseconds") {
-    val settings = RetrySettings2(numberOfRetries = NumberOfRetries.LimitedRetries(1), delay = RetryDelayMode.ConstantDelay(100.millis))
-    val res = AlmFuture.retry(AlmFuture.failed[Int](defaultProblem), settings, scheduler)
+    val settings = RetryPolicy(numberOfRetries = NumberOfRetries.LimitedRetries(1), delay = RetryDelayMode.ConstantDelay(100.millis))
+    val res = AlmFuture.retry(settings, scheduler)(AlmFuture.failed[Int](defaultProblem))
     res.awaitResult(1.second) should equal(defaultProblem.failure[Int])
   }
 
   test("should succeed on future success with no retries and no delay") {
-    val settings = RetrySettings2(numberOfRetries = NumberOfRetries.NoRetry, delay = RetryDelayMode.NoDelay)
-    val res = AlmFuture.retry(AlmFuture.compute(1), settings, scheduler)
+    val settings = RetryPolicy(numberOfRetries = NumberOfRetries.NoRetry, delay = RetryDelayMode.NoDelay)
+    val res = AlmFuture.retry(settings, scheduler)(AlmFuture.compute(1))
     res.awaitResultOrEscalate(1.second) should equal(1)
   }
 
   test("should fail on an future failure with no retries and no delay") {
-    val settings = RetrySettings2(numberOfRetries = NumberOfRetries.NoRetry, delay = RetryDelayMode.NoDelay)
-    val res = AlmFuture.retry(AlmFuture[Int](defaultProblem.failure), settings, scheduler)
+    val settings = RetryPolicy(numberOfRetries = NumberOfRetries.NoRetry, delay = RetryDelayMode.NoDelay)
+    val res = AlmFuture.retry(settings, scheduler)(AlmFuture[Int](defaultProblem.failure))
     res.awaitResult(1.second) should equal(defaultProblem.failure[Int])
   }
 
   test("should fail on an future failure with 1 retry and no delay") {
-    val settings = RetrySettings2(numberOfRetries = NumberOfRetries.LimitedRetries(1), delay = RetryDelayMode.NoDelay)
-    val res = AlmFuture.retry(AlmFuture[Int](defaultProblem.failure), settings, scheduler)
+    val settings = RetryPolicy(numberOfRetries = NumberOfRetries.LimitedRetries(1), delay = RetryDelayMode.NoDelay)
+    val res = AlmFuture.retry(settings, scheduler)(AlmFuture[Int](defaultProblem.failure))
     res.awaitResult(1.second) should equal(defaultProblem.failure[Int])
   }
 
   test("should succeed on an future success with no retries and a delay of 100 milliseconds") {
-    val settings = RetrySettings2(numberOfRetries = NumberOfRetries.NoRetry, delay = RetryDelayMode.ConstantDelay(100.millis))
-    val res = AlmFuture.retry(AlmFuture.compute(1), settings, scheduler)
+    val settings = RetryPolicy(numberOfRetries = NumberOfRetries.NoRetry, delay = RetryDelayMode.ConstantDelay(100.millis))
+    val res = AlmFuture.retry(settings, scheduler)(AlmFuture.compute(1))
     res.awaitResultOrEscalate(1.second) should equal(1)
   }
 
   test("should fail on an future failure with no retries and no delay of 100 milliseconds") {
-    val settings = RetrySettings2(numberOfRetries = NumberOfRetries.NoRetry, delay = RetryDelayMode.ConstantDelay(100.millis))
-    val res = AlmFuture.retry(AlmFuture[Int](defaultProblem.failure), settings, scheduler)
+    val settings = RetryPolicy(numberOfRetries = NumberOfRetries.NoRetry, delay = RetryDelayMode.ConstantDelay(100.millis))
+    val res = AlmFuture.retry(settings, scheduler)(AlmFuture[Int](defaultProblem.failure))
     res.awaitResult(1.second) should equal(defaultProblem.failure[Int])
   }
 
   test("should fail on an future failure with 1 retry and no delay of 100 milliseconds") {
-    val settings = RetrySettings2(numberOfRetries = NumberOfRetries.LimitedRetries(1), delay = RetryDelayMode.ConstantDelay(100.millis))
-    val res = AlmFuture.retry(AlmFuture[Int](defaultProblem.failure), settings, scheduler)
+    val settings = RetryPolicy(numberOfRetries = NumberOfRetries.LimitedRetries(1), delay = RetryDelayMode.ConstantDelay(100.millis))
+    val res = AlmFuture.retry(settings, scheduler)(AlmFuture[Int](defaultProblem.failure))
     res.awaitResult(1.second) should equal(defaultProblem.failure[Int])
   }
 
   test("should retry a future that always fails with 3 retries and no delay 4 times") {
     val timesExecuted = new AtomicInteger(0)
-    val settings = RetrySettings2(numberOfRetries = NumberOfRetries.LimitedRetries(4), delay = RetryDelayMode.NoDelay)
-    val res = AlmFuture.retry(AlmFuture[Int] {
+    val settings = RetryPolicy(numberOfRetries = NumberOfRetries.LimitedRetries(4), delay = RetryDelayMode.NoDelay)
+    val res = AlmFuture.retry(settings, scheduler)(AlmFuture[Int] {
       val v = timesExecuted.incrementAndGet()
       info("times executed: " + v.toString)
       defaultProblem.failure
-    }, settings, scheduler)
+    })
     res.awaitResult(1.second) should equal(defaultProblem.failure[Int])
     timesExecuted.get should equal(4)
   }
 
   test("should retry a future that always fails with 3 retries and a delay 4 times") {
     val timesExecuted = new AtomicInteger(0)
-    val settings = RetrySettings2(numberOfRetries = NumberOfRetries.LimitedRetries(4), delay = RetryDelayMode.ConstantDelay(100.millis))
-    val res = AlmFuture.retry(AlmFuture[Int] {
+    val settings = RetryPolicy(numberOfRetries = NumberOfRetries.LimitedRetries(4), delay = RetryDelayMode.ConstantDelay(100.millis))
+    val res = AlmFuture.retry(settings, scheduler)(AlmFuture[Int] {
       val v = timesExecuted.incrementAndGet()
       info("times executed: " + v.toString)
       defaultProblem.failure
-    }, settings, scheduler)
+    })
     res.awaitResult(1.second) should equal(defaultProblem.failure[Int])
     timesExecuted.get should equal(4)
   }
