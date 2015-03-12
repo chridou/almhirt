@@ -25,8 +25,8 @@ trait AlmFutureInstances {
     new AlmFuture(akkaFuture)
 
   implicit val javaTimerSchedulingMagnet = new ActionSchedulingMagnet[java.util.Timer] {
-    def schedule(to: java.util.Timer, action: () ⇒ Unit, in: scala.concurrent.duration.FiniteDuration, executor: scala.concurrent.ExecutionContext): Unit = {
-      val r = new java.util.TimerTask() { def run() { action() } }
+    def schedule(to: java.util.Timer, actionBlock: ⇒ Unit, in: scala.concurrent.duration.FiniteDuration, executor: scala.concurrent.ExecutionContext): Unit = {
+      val r = new java.util.TimerTask() { def run() { actionBlock } }
       to.schedule(r, in.toMillis)
     }
   }

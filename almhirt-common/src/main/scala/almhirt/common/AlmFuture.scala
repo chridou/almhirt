@@ -468,7 +468,7 @@ object AlmFuture {
     val scheduler = implicitly[almhirt.almfuture.ActionSchedulingMagnet[S]]
 
     def scheduleAction(action: () ⇒ Unit, in: scala.concurrent.duration.FiniteDuration) =
-      scheduler.schedule(actionScheduler, action, in, executor)
+      scheduler.schedule(actionScheduler, action(), in, executor)
 
     val p = Promise[AlmValidation[T]]
 

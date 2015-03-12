@@ -14,10 +14,8 @@ class ActorRetryFutureTests(_system: ActorSystem) extends TestKit(_system) with 
   def this() = this(ActorSystem("ActorRetryFutureTests"))
 
   protected implicit val ContextSchedulerSchedulingMagnet = new almhirt.almfuture.ActionSchedulingMagnet[Scheduler] {
-    def schedule(to: Scheduler, action: () ⇒ Unit, in: scala.concurrent.duration.FiniteDuration, executor: scala.concurrent.ExecutionContext): Unit = {
-      to.scheduleOnce(in) {
-        action()
-      }(executor)
+    def schedule(to: Scheduler, actionBlock: ⇒ Unit, in: scala.concurrent.duration.FiniteDuration, executor: scala.concurrent.ExecutionContext): Unit = {
+      to.scheduleOnce(in) { actionBlock }(executor)
     }
   }
 
