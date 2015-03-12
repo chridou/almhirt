@@ -65,19 +65,19 @@ trait AlmActor extends Actor with HasAlmhirtContext with AlmActorSupport {
   def informVeryImportant(message: String)(implicit cnp: ActorComponentIdProvider): Unit =
     inform(message, Importance.VeryImportant)(cnp)
 
-  def retryFuture[T](settings: XRetrySettings)(f: ⇒ AlmFuture[T]): AlmFuture[T] = {
+  def retryFuture[T](settings: RetryPolicyExt)(f: ⇒ AlmFuture[T]): AlmFuture[T] = {
     import almhirt.configuration.RetryPolicy
     val executor = settings.executorSelector.map { selectExecutionContext(_) } getOrElse this.context.dispatcher
     val retrySettings = RetryPolicy(settings.numberOfRetries, settings.delay)
     val retryNotification: Option[(almhirt.configuration.NumberOfRetries, scala.concurrent.duration.FiniteDuration, Problem) ⇒ Unit] =
       settings.notifiyingParams.map {
-        case XRetrySettings.NotifyingParams(importance, Some(contextDesc)) ⇒
+        case RetryPolicyExt.NotifyingParams(importance, Some(contextDesc)) ⇒
           (nor, nextIn, lastProblem) ⇒ inform(s"""  |$contextDesc
                                        |Last problem message: ${lastProblem.message}
                                        |Last problem type: ${lastProblem.problemType}
                                        |Retries left: $nor
                                        |Next retry in: ${nextIn.defaultUnitString}""".stripMargin, importance)
-          case XRetrySettings.NotifyingParams(importance, None) ⇒
+          case RetryPolicyExt.NotifyingParams(importance, None) ⇒
           (nor, nextIn, lastProblem) ⇒ inform(s"""|Last problem message: ${lastProblem.message}
                                        |Last problem type: ${lastProblem.problemType}
                                        |Retries left: $nor

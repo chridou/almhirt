@@ -212,7 +212,7 @@ package object configuration {
               else
                 RetryDelayMode.ConstantDelay(dur).success)
         }
-      (norV.toAgg |@| dmV.toAgg)(RetryPolicy.apply).leftMap { p ⇒ ConfigurationProblem("Could not create RetrySettings.", cause = Some(p)) }
+      (norV.toAgg |@| dmV.toAgg)(RetryPolicy.apply).leftMap { p ⇒ ConfigurationProblem("Could not create RetryPolicy.", cause = Some(p)) }
     }
   }
 

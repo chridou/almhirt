@@ -28,7 +28,7 @@ object MongoEventLog {
     deserializeEvent: BSONDocument ⇒ AlmValidation[Event],
     writeWarnThreshold: FiniteDuration,
     circuitControlSettings: CircuitControlSettings,
-    initializeRetrySettings: XRetrySettings,
+    initializeRetrySettings: RetryPolicyExt,
     readOnly: Boolean)(implicit ctx: AlmhirtContext): Props =
     Props(new MongoEventLogImpl(
       db,
@@ -53,7 +53,7 @@ object MongoEventLog {
       collectionName ← section.v[String]("collection-name")
       writeWarnThreshold ← section.v[FiniteDuration]("write-warn-threshold")
       circuitControlSettings ← section.v[CircuitControlSettings]("circuit-control")
-      initializeRetrySettings ← section.v[XRetrySettings]("initialize-retry-settings")
+      initializeRetrySettings ← section.v[RetryPolicyExt]("initialize-retry-settings")
       readOnly ← section.v[Boolean]("read-only")
     } yield propsRaw(
       db,
@@ -94,7 +94,7 @@ private[almhirt] class MongoEventLogImpl(
   deserializeEvent: BSONDocument ⇒ AlmValidation[Event],
   writeWarnThreshold: FiniteDuration,
   circuitControlSettings: CircuitControlSettings,
-  initializeRetrySettings: XRetrySettings,
+  initializeRetrySettings: RetryPolicyExt,
   readOnly: Boolean)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging {
   import EventLog._
   import almhirt.corex.mongo.BsonConverter._

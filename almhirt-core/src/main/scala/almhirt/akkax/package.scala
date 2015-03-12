@@ -168,8 +168,8 @@ package object akkax {
       }
   }
 
-  implicit object XRetrySettingsConfigExtractor extends ConfigExtractor[XRetrySettings] {
-    def getValue(config: Config, path: String): AlmValidation[XRetrySettings] = {
+  implicit object RetryPolicyExtConfigExtractor extends ConfigExtractor[RetryPolicyExt] {
+    def getValue(config: Config, path: String): AlmValidation[RetryPolicyExt] = {
       for {
         section ← config.v[Config](path)
         numberOfRetries ← section.v[String]("number-of-retries")
@@ -182,7 +182,7 @@ package object akkax {
       } yield res
     }
 
-    def tryGetValue(config: Config, path: String): AlmValidation[Option[XRetrySettings]] =
+    def tryGetValue(config: Config, path: String): AlmValidation[Option[RetryPolicyExt]] =
       config.opt[Config](path).flatMap {
         case Some(_) ⇒ getValue(config, path).map(Some(_))
         case None    ⇒ scalaz.Success(None)
@@ -193,7 +193,7 @@ package object akkax {
       delayMode: String,
       importanceOpt: Option[Importance],
       contextStrOpt: Option[String],
-      executorSelectorOpt: Option[ExtendedExecutionContextSelector]): AlmValidation[XRetrySettings] = {
+      executorSelectorOpt: Option[ExtendedExecutionContextSelector]): AlmValidation[RetryPolicyExt] = {
       import almhirt.almvalidation.kit._
       import scalaz._, Scalaz._
       val norV =
@@ -232,14 +232,14 @@ package object akkax {
       val npParamsV =
         (importanceOpt, contextStrOpt) match {
           case (None, None)           ⇒ None.success
-          case (Some(imp), None)      ⇒ Some(XRetrySettings.NotifyingParams(imp, None)).success
-          case (Some(imp), Some(ctx)) ⇒ Some(XRetrySettings.NotifyingParams(imp, Some(ctx))).success
+          case (Some(imp), None)      ⇒ Some(RetryPolicyExt.NotifyingParams(imp, None)).success
+          case (Some(imp), Some(ctx)) ⇒ Some(RetryPolicyExt.NotifyingParams(imp, Some(ctx))).success
           case (None, Some(ctx))      ⇒ ConstraintViolatedProblem("""It makes no sense to specify "context-description" when there is no importance.""").failure
         }
 
       val ecs = executorSelectorOpt.success
 
-      (norV.toAgg |@| dmV.toAgg |@| ecs.toAgg |@| npParamsV.toAgg)(XRetrySettings.apply).leftMap { p ⇒ ConfigurationProblem("Could not create XRetrySettings.", cause = Some(p)) }
+      (norV.toAgg |@| dmV.toAgg |@| ecs.toAgg |@| npParamsV.toAgg)(RetryPolicyExt.apply).leftMap { p ⇒ ConfigurationProblem("Could not create RetryPolicyExt.", cause = Some(p)) }
     }
   }
 
