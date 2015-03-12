@@ -5,7 +5,7 @@ import scala.concurrent.duration._
 import almhirt.common.Stoppable
 
 trait PeriodicSchedulingMagnet[T] {
-  def schedule(to: T, initialDelay: FiniteDuration, interval: FiniteDuration, action: () ⇒ Unit)(implicit executor: ExecutionContext): Stoppable
+  def schedule(to: T, initialDelay: FiniteDuration, interval: FiniteDuration, block: ⇒ Unit)(implicit executor: ExecutionContext): Stoppable
 }
 
 trait WantsToBeStimulated {
@@ -17,16 +17,16 @@ trait WantsToBeStimulated {
 
 object ImpatientCrybaby {
   def apply[T: PeriodicSchedulingMagnet](
-    interval: FiniteDuration,
-    minimumPatience: FiniteDuration,
+    checkStimualationEvery: FiniteDuration,
+    startCryingNotBefore: FiniteDuration,
     noMorePatienceAction: FiniteDuration ⇒ Unit,
     periodicScheduler: T)(implicit executor: ExecutionContext): WantsToBeStimulated with Stoppable =
-    new MyImpatientCrybaby(interval, minimumPatience, noMorePatienceAction, periodicScheduler)
+    new MyImpatientCrybaby(checkStimualationEvery, startCryingNotBefore, noMorePatienceAction, periodicScheduler)
 }
 
 private[tooling] class MyImpatientCrybaby[T: PeriodicSchedulingMagnet](
-  interval: FiniteDuration,
-  minimumPatience: FiniteDuration,
+  checkStimualationEvery: FiniteDuration,
+  startCryingNotBefore: FiniteDuration,
   noMorePatienceAction: FiniteDuration ⇒ Unit,
   periodicScheduler: T)(implicit executor: ExecutionContext) extends WantsToBeStimulated with Stoppable {
 
@@ -35,11 +35,11 @@ private[tooling] class MyImpatientCrybaby[T: PeriodicSchedulingMagnet](
   private[this] val lastStimulation = new java.util.concurrent.atomic.AtomicLong(System.nanoTime())
   private[this] val paused = new java.util.concurrent.atomic.AtomicBoolean(false)
 
-  private[this] val stopMe = magnet.schedule(periodicScheduler, minimumPatience, interval, () ⇒ {
+  private[this] val stopMe = magnet.schedule(periodicScheduler, startCryingNotBefore, checkStimualationEvery, {
     if (!paused.get) {
       val currentNanoTime = System.nanoTime()
       val _lastStimulation = lastStimulation.get()
-      val due = _lastStimulation + minimumPatience.toNanos
+      val due = _lastStimulation + startCryingNotBefore.toNanos
 
       if (currentNanoTime > due) {
         noMorePatienceAction(FiniteDuration(currentNanoTime - _lastStimulation, NANOSECONDS))
