@@ -15,6 +15,7 @@
 package almhirt.problem
 
 import scala.language.implicitConversions
+import almhirt.common.EscalatedProblemException
 
 sealed trait ProblemCause
 case class CauseIsProblem(problem: Problem) extends ProblemCause
@@ -54,6 +55,13 @@ object ProblemCause {
         case CauseIsThrowable(d: HasAThrowableDescribed) ⇒ almhirt.common.UnspecifiedProblem(s"There was a description of an exception:\n$d")
       }
 
+    def toThrowable: Throwable =
+      self match {
+        case CauseIsProblem(p)                           ⇒ new EscalatedProblemException(p)
+        case CauseIsThrowable(HasAThrowable(exn))        ⇒ exn
+        case CauseIsThrowable(d: HasAThrowableDescribed) ⇒ new Exception(s"There was a description of an exception:\n$d")
+      }
+    
     def unwrap(recursively: Boolean = false): ProblemCause =
       self match {
         case CauseIsProblem(problemtypes.ExceptionCaughtProblem(ContainsThrowable(throwable))) ⇒
