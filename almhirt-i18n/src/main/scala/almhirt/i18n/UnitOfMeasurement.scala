@@ -1,8 +1,10 @@
 package almhirt.i18n
 
 import scalaz.syntax.validation._
+import scalaz.Validation.FlatMap._
 import almhirt.common._
 import com.ibm.icu.util._
+import almhirt.problem.problemtypes.ArgumentProblem
 
 sealed trait UnitOfMeasurement {
   def icu: AlmValidation[MeasureUnit]
@@ -13,86 +15,158 @@ sealed trait UnitOfMeasurement {
   def measured(v: Double): Measured
 }
 
+sealed trait UomCompanion[T <: UnitOfMeasurement] {
+  def dimension: UnitOfMeasureDimension
+  final def lookup(name: String): AlmValidation[T] =
+    UnitsOfMeasurement.byName(name).flatMap(foundUom =>
+      if (foundUom.dimension == dimension)
+        foundUom.asInstanceOf[T].success
+      else
+        ArgumentProblem(s"""Unit of measurement with name "" is not a ${dimension}. It is a "${foundUom.dimension}".""").failure)
+
+  def siUnit: T = dimension.siUnit.asInstanceOf[T]
+}
+
 sealed trait AccelerationMeasureUnit extends UnitOfMeasurement {
   override val dimension = UnitOfMeasureDimension.AccelerationDimension
   override def measured(v: Double): MeasuredAcceleration = MeasuredAcceleration(v, this)
 
 }
+object AccelerationMeasureUnit extends UomCompanion[AccelerationMeasureUnit] {
+  override val dimension = UnitOfMeasureDimension.AccelerationDimension
+}
 sealed trait AngleMeasureUnit extends UnitOfMeasurement {
   override val dimension = UnitOfMeasureDimension.AngleDimension
   override def measured(v: Double): MeasuredAngle = MeasuredAngle(v, this)
+}
+object AngleMeasureUnit extends UomCompanion[AngleMeasureUnit] {
+  override val dimension = UnitOfMeasureDimension.AngleDimension
 }
 sealed trait AreaMeasureUnit extends UnitOfMeasurement {
   override val dimension = UnitOfMeasureDimension.AreaDimension
   override def measured(v: Double): MeasuredArea = MeasuredArea(v, this)
 }
+object AreaMeasureUnit extends UomCompanion[AreaMeasureUnit] {
+  override val dimension = UnitOfMeasureDimension.AreaDimension
+}
 sealed trait ConsumptionMeasureUnit extends UnitOfMeasurement {
   override val dimension = UnitOfMeasureDimension.ConsumptionDimension
   override def measured(v: Double): MeasuredConsumption = MeasuredConsumption(v, this)
+}
+object ConsumptionMeasureUnit extends UomCompanion[ConsumptionMeasureUnit] {
+  override val dimension = UnitOfMeasureDimension.ConsumptionDimension
 }
 sealed trait DigitalMeasureUnit extends UnitOfMeasurement {
   override val dimension = UnitOfMeasureDimension.DigitalDimension
   override def measured(v: Double): MeasuredDigital = MeasuredDigital(v, this)
 }
+object DigitalMeasureUnit extends UomCompanion[DigitalMeasureUnit] {
+  override val dimension = UnitOfMeasureDimension.DigitalDimension
+}
 sealed trait DurationMeasureUnit extends UnitOfMeasurement {
   override val dimension = UnitOfMeasureDimension.DurationDimension
   override def measured(v: Double): MeasuredDuration = MeasuredDuration(v, this)
+}
+object DurationMeasureUnit extends UomCompanion[DurationMeasureUnit] {
+  override val dimension = UnitOfMeasureDimension.DurationDimension
 }
 sealed trait CurrentMeasureUnit extends UnitOfMeasurement {
   override val dimension = UnitOfMeasureDimension.CurrentDimension
   override def measured(v: Double): MeasuredCurrent = MeasuredCurrent(v, this)
 }
+object CurrentMeasureUnit extends UomCompanion[CurrentMeasureUnit] {
+  override val dimension = UnitOfMeasureDimension.CurrentDimension
+}
 sealed trait VoltageMeasureUnit extends UnitOfMeasurement {
   override val dimension = UnitOfMeasureDimension.VoltageDimension
   override def measured(v: Double): MeasuredVoltage = MeasuredVoltage(v, this)
+}
+object VoltageMeasureUnit extends UomCompanion[VoltageMeasureUnit] {
+  override val dimension = UnitOfMeasureDimension.VoltageDimension
 }
 sealed trait EnergyMeasureUnit extends UnitOfMeasurement {
   override val dimension = UnitOfMeasureDimension.EnergyDimension
   override def measured(v: Double): MeasuredEnergy = MeasuredEnergy(v, this)
 }
+object EnergyMeasureUnit extends UomCompanion[EnergyMeasureUnit] {
+  override val dimension = UnitOfMeasureDimension.EnergyDimension
+}
 sealed trait FrequencyMeasureUnit extends UnitOfMeasurement {
   override val dimension = UnitOfMeasureDimension.FrequencyDimension
   override def measured(v: Double): MeasuredFrequency = MeasuredFrequency(v, this)
+}
+object FrequencyMeasureUnit extends UomCompanion[FrequencyMeasureUnit] {
+  override val dimension = UnitOfMeasureDimension.FrequencyDimension
 }
 sealed trait LengthMeasureUnit extends UnitOfMeasurement {
   override val dimension = UnitOfMeasureDimension.LengthDimension
   override def measured(v: Double): MeasuredLength = MeasuredLength(v, this)
 }
+object LengthMeasureUnit extends UomCompanion[LengthMeasureUnit] {
+  override val dimension = UnitOfMeasureDimension.LengthDimension
+}
 sealed trait LightMeasureUnit extends UnitOfMeasurement {
   override val dimension = UnitOfMeasureDimension.LightDimension
   override def measured(v: Double): MeasuredLight = MeasuredLight(v, this)
+}
+object LightMeasureUnit extends UomCompanion[AccelerationMeasureUnit] {
+  override val dimension = UnitOfMeasureDimension.LightDimension
 }
 sealed trait LightFluxMeasureUnit extends UnitOfMeasurement {
   override val dimension = UnitOfMeasureDimension.LightFluxDimension
   override def measured(v: Double): MeasuredLightFlux = MeasuredLightFlux(v, this)
 }
+object LightFluxMeasureUnit extends UomCompanion[LightFluxMeasureUnit] {
+  override val dimension = UnitOfMeasureDimension.LightFluxDimension
+}
 sealed trait MassMeasureUnit extends UnitOfMeasurement {
   override val dimension = UnitOfMeasureDimension.MassDimension
   override def measured(v: Double): MeasuredMass = MeasuredMass(v, this)
+}
+object MassMeasureUnit extends UomCompanion[MassMeasureUnit] {
+  override val dimension = UnitOfMeasureDimension.MassDimension
 }
 sealed trait PowerMeasureUnit extends UnitOfMeasurement {
   override val dimension = UnitOfMeasureDimension.PowerDimension
   override def measured(v: Double): MeasuredPower = MeasuredPower(v, this)
 }
+object PowerMeasureUnit extends UomCompanion[PowerMeasureUnit] {
+  override val dimension = UnitOfMeasureDimension.PowerDimension
+}
 sealed trait PressureMeasureUnit extends UnitOfMeasurement {
   override val dimension = UnitOfMeasureDimension.PressureDimension
   override def measured(v: Double): MeasuredPressure = MeasuredPressure(v, this)
+}
+object PressureMeasureUnit extends UomCompanion[PressureMeasureUnit] {
+  override val dimension = UnitOfMeasureDimension.PressureDimension
 }
 sealed trait ProportionMeasureUnit extends UnitOfMeasurement {
   override val dimension = UnitOfMeasureDimension.ProportionDimension
   override def measured(v: Double): MeasuredProportion = MeasuredProportion(v, this)
 }
+object ProportionMeasureUnit extends UomCompanion[ProportionMeasureUnit] {
+  override val dimension = UnitOfMeasureDimension.ProportionDimension
+}
 sealed trait SpeedMeasureUnit extends UnitOfMeasurement {
   override val dimension = UnitOfMeasureDimension.SpeedDimension
   override def measured(v: Double): MeasuredSpeed = MeasuredSpeed(v, this)
+}
+object SpeedMeasureUnit extends UomCompanion[SpeedMeasureUnit] {
+  override val dimension = UnitOfMeasureDimension.SpeedDimension
 }
 sealed trait TemperatureMeasureUnit extends UnitOfMeasurement {
   override val dimension = UnitOfMeasureDimension.TemperatureDimension
   override def measured(v: Double): MeasuredTemperature = MeasuredTemperature(v, this)
 }
+object TemperatureMeasureUnit extends UomCompanion[TemperatureMeasureUnit] {
+  override val dimension = UnitOfMeasureDimension.TemperatureDimension
+}
 sealed trait VolumeMeasureUnit extends UnitOfMeasurement {
   override val dimension = UnitOfMeasureDimension.VolumeDimension
   override def measured(v: Double): MeasuredVolume = MeasuredVolume(v, this)
+}
+object VolumeMeasureUnit extends UomCompanion[VolumeMeasureUnit] {
+  override val dimension = UnitOfMeasureDimension.VolumeDimension
 }
 
 object UnitsOfMeasurement {
@@ -979,6 +1053,6 @@ object UnitsOfMeasurement {
   def byName(name: String): AlmValidation[UnitOfMeasurement] =
     unitsByName get name match {
       case Some(uom) ⇒ scalaz.Success(uom)
-      case None      ⇒ scalaz.Failure(NoSuchElementProblem(s"""No unit of measurement with name $name found."""))
+      case None      ⇒ scalaz.Failure(NoSuchElementProblem(s"""No unit of measurement with name "$name" found."""))
     }
 }
