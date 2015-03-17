@@ -12,7 +12,12 @@ import com.ibm.icu.util.{ ULocale, Measure }
 import com.ibm.icu.text.{ MeasureFormat, NumberFormat }
 
 private[almhirt] object MeasuredFormatResourceValue {
-  final case class FormatDefinition(uom: UnitOfMeasurement, minFractionDigits: Option[Int], maxFractionDigits: Option[Int], useDigitsGrouping: Option[Boolean], rangeSeparator: Option[String])
+  final case class FormatDefinition(
+    uom: UnitOfMeasurement,
+    minFractionDigits: Option[Int],
+    maxFractionDigits: Option[Int],
+    useDigitsGrouping: Option[Boolean],
+    rangeSeparator: Option[String])
   final case class CtorParams(
     locale: ULocale,
     argname: String,

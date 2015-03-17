@@ -90,7 +90,7 @@ package object i18n {
       def lumen = MeasuredLightFlux(d, UnitsOfMeasurement.Lumen)
     }
 
-    implicit final class MeasuredLengtsOps(private val measured: MeasuredLength) extends AnyVal {
+    implicit final class MeasuredLengthsOps(private val measured: MeasuredLength) extends AnyVal {
       def asMillimeter = measured.to(UnitsOfMeasurement.Millimeter)
       def asCentimeter = measured.to(UnitsOfMeasurement.Centimeter)
       def asMeter = measured.to(UnitsOfMeasurement.Meter)
