@@ -24,8 +24,8 @@ object Dematerializers {
 
     def dematerializeTyped[T](channel: String, what: WarpPackage, options: Map[String, Any] = Map.empty)(implicit tag: ClassTag[T]): AlmValidation[T] = {
       for {
-        dematerializer <- self.get(channel)
-        typed <- dematerializer(what, options).castTo[T]
+        dematerializer ← self.get(channel)
+        typed ← dematerializer(what, options).castTo[T]
       } yield typed
     }
   }

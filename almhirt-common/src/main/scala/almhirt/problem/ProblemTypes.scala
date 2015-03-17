@@ -74,7 +74,16 @@ object problemtypes {
       SingleProblem(msg, ServiceShutDownProblem, args, cause)
     def unapply(problem: SingleProblem): Option[SingleProblem] = SingleProblem.unapplyAgainst(problem, ServiceShutDownProblem)
   }
-  
+
+    /**
+   * There is a service, but it is not yet ready to perform its duty
+   */
+  case object ServiceNotReadyProblem extends ProblemType {
+    def apply(msg: String, args: Map[String, Any] = Map.empty, cause: Option[ProblemCause] = None): SingleProblem =
+      SingleProblem(msg, ServiceNotReadyProblem, args, cause)
+    def unapply(problem: SingleProblem): Option[SingleProblem] = SingleProblem.unapplyAgainst(problem, ServiceNotReadyProblem)
+  }
+
   /**
    * A component couldn't find a dependency
    */
@@ -234,7 +243,7 @@ object problemtypes {
    */
   case object ParsingProblem extends ProblemType {
     def apply(msg: String, badInput: Option[String] = None, args: Map[String, Any] = Map.empty, cause: Option[ProblemCause] = None): SingleProblem = {
-      val completeArgs = badInput.map(bi ⇒ args + ("bad_input" -> badInput)).getOrElse(args)
+      val completeArgs = badInput.map(bi ⇒ args + ("bad_input" → badInput)).getOrElse(args)
       SingleProblem(msg, ParsingProblem, completeArgs, cause)
     }
     def unapply(problem: SingleProblem): Option[SingleProblem] = SingleProblem.unapplyAgainst(problem, ParsingProblem)
@@ -304,6 +313,12 @@ object problemtypes {
     def apply(msg: String, args: Map[String, Any] = Map.empty, cause: Option[ProblemCause] = None): SingleProblem =
       SingleProblem(msg, LocaleNotSupportedProblem, args, cause)
     def unapply(problem: SingleProblem): Option[SingleProblem] = SingleProblem.unapplyAgainst(problem, LocaleNotSupportedProblem)
+  }
+  
+  case object ResourceNotFoundProblem extends ProblemType {
+    def apply(msg: String, args: Map[String, Any] = Map.empty, cause: Option[ProblemCause] = None): SingleProblem =
+      SingleProblem(msg, ResourceNotFoundProblem, args, cause)
+    def unapply(problem: SingleProblem): Option[SingleProblem] = SingleProblem.unapplyAgainst(problem, ResourceNotFoundProblem)
   }
 
   /**

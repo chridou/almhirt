@@ -3,6 +3,7 @@ package almhirt.aggregates
 /** Represents the states that an aggregate can advance through in its 'lifetime' */
 sealed trait AggregateRootLifecycle[+T <: AggregateRoot] {
   def version: AggregateRootVersion
+  def idOption: Option[AggregateRootId]
 }
 
 /** The aggregate root is either [[Vacat]] or [[Vivus]] */
@@ -10,6 +11,7 @@ sealed trait Antemortem[+T <: AggregateRoot] extends AggregateRootLifecycle[T]
 /** The aggregate root is either [[Vivus]] or [[Mortuus]] */
 sealed trait Postnatalis[+T <: AggregateRoot] extends AggregateRootLifecycle[T] {
   def id: AggregateRootId
+  def idOption = Some(id)
 }
 /** The aggregate root is either [[Vacat]] or [[Mortuus]] */
 sealed trait Transcendentia[+T <: AggregateRoot] extends AggregateRootLifecycle[T]
@@ -17,6 +19,7 @@ sealed trait Transcendentia[+T <: AggregateRoot] extends AggregateRootLifecycle[
 /** The aggregate root does not exist and hasn't died yet. */
 case object Vacat extends Antemortem[Nothing] with Transcendentia[Nothing] {
   val version: AggregateRootVersion = AggregateRootVersion(0L)
+  def idOption = None
 }
 /** The aggregate root exists. */
 final case class Vivus[T <: AggregateRoot](ar: T) extends Postnatalis[T] with Antemortem[T] {

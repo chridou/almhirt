@@ -1,20 +1,22 @@
 package almhirt.domain
 
+import scala.concurrent.duration._
 import akka.actor._
 import org.reactivestreams.Publisher
 import almhirt.common._
+import almhirt.akkax._
 import almhirt.almvalidation.kit._
 import almhirt.context.AlmhirtContext
 import org.reactivestreams.Subscriber
 import akka.stream.actor._
-import akka.stream.scaladsl2._
+import akka.stream.scaladsl._
 import akka.stream.impl.ActorProcessor
 
 object AggregateRootNexus {
   def apply(nexusActor: ActorRef): Subscriber[AggregateRootCommand] =
     ActorSubscriber[AggregateRootCommand](nexusActor)
 
-  def propsRaw(hiveSelector: HiveSelector, hiveFactory: AggregateRootHiveFactory, commandsPublisher: Option[Publisher[Command]]): Props =
+  def propsRaw(hiveSelector: HiveSelector, hiveFactory: AggregateRootHiveFactory, commandsPublisher: Option[Publisher[Command]])(implicit ctx: AlmhirtContext): Props =
     Props(new AggregateRootNexus(commandsPublisher, hiveSelector, hiveFactory))
 
   def propsRaw(hiveSelector: HiveSelector, hiveFactory: AggregateRootHiveFactory)(implicit ctx: AlmhirtContext): Props =
@@ -33,7 +35,17 @@ object AggregateRootNexus {
 private[almhirt] class AggregateRootNexus(
   commandsPublisher: Option[Publisher[Command]],
   hiveSelector: HiveSelector,
-  hiveFactory: AggregateRootHiveFactory) extends Actor with ActorSubscriber with ActorPublisher[AggregateRootCommand] with ActorLogging with ImplicitFlowMaterializer {
+  hiveFactory: AggregateRootHiveFactory)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging with ActorSubscriber with ActorPublisher[AggregateRootCommand] with ActorLogging with ImplicitFlowMaterializer {
+
+  import akka.actor.SupervisorStrategy._
+
+  override val supervisorStrategy =
+    OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1.minute) {
+      case exn: Exception ⇒
+        logError(s"Handling escalated error for ${sender.path.name} with a action Escalate.", exn)
+        reportCriticalFailure(exn)
+        Escalate
+    }
 
   override val requestStrategy = ZeroRequestStrategy
 
@@ -42,16 +54,16 @@ private[almhirt] class AggregateRootNexus(
   def receiveInitialize: Receive = {
     case Start ⇒
       commandsPublisher.foreach(cmdPub ⇒
-        Source[Command](cmdPub).collect { case e: AggregateRootCommand ⇒ e }.connect(Sink(ActorSubscriber[AggregateRootCommand](self))).run())
+        Source[Command](cmdPub).collect { case e: AggregateRootCommand ⇒ e }.to(Sink(ActorSubscriber[AggregateRootCommand](self))).run())
 
       createInitialHives()
       request(1)
       context.become(receiveRunning(None))
   }
 
-  def receiveRunning(buffered: Option[AggregateRootCommand]): Receive = {
+  def receiveRunning(inFlight: Option[AggregateRootCommand]): Receive = {
     case ActorSubscriberMessage.OnNext(next: AggregateRootCommand) ⇒
-      buffered match {
+      inFlight match {
         case None if totalDemand > 0 ⇒
           onNext(next)
           request(1)
@@ -64,7 +76,7 @@ private[almhirt] class AggregateRootNexus(
       }
 
     case ActorPublisherMessage.Request(amount) ⇒
-      buffered match {
+      inFlight match {
         case Some(buf) if totalDemand > 0 ⇒
           request(1)
           onNext(buf)
@@ -74,28 +86,29 @@ private[almhirt] class AggregateRootNexus(
       }
 
     case ActorSubscriberMessage.OnError(exn) ⇒
-      log.error(exn, "Received an error via the stream.")
+      logError("Received an error via the stream.", exn)
+      throw exn
 
     case ActorPublisherMessage.Cancel ⇒
-      log.info("The fanout publisher cancelled it's subscription. Propagating cancellation.")
+      logWarning("The fanout publisher cancelled it's subscription. Propagating cancellation.")
       cancel()
 
     case Terminated(actor) ⇒
-      log.info(s"Hive ${actor.path.name} terminated.")
+      logWarning(s"Hive ${actor.path.name} terminated.")
   }
 
   def receive: Receive = receiveInitialize
 
   private def createInitialHives() {
-    //val fanout = FlowFrom[AggregateRootCommand](ActorPublisher[AggregateRootCommand](self)).toFanoutPublisher(1, AlmMath.nextPowerOf2(hiveSelector.size))
-    val fanout = Source(ActorPublisher[AggregateRootCommand](self)).runWith(PublisherDrain.withFanout[AggregateRootCommand](1, AlmMath.nextPowerOf2(hiveSelector.size)))
+    import akka.stream.OverflowStrategy
+    val commandsSource = Source(ActorPublisher[AggregateRootCommand](self)).runWith(Sink.fanoutPublisher[AggregateRootCommand](1, AlmMath.nextPowerOf2(hiveSelector.size)))
     hiveSelector.foreach {
       case (descriptor, f) ⇒
         val props = hiveFactory.props(descriptor).resultOrEscalate
         val actor = context.actorOf(props, s"hive-${descriptor.value}")
         context watch actor
-        val consumer = ActorSubscriber[AggregateRootCommand](actor)
-        Source(fanout).filter(cmd ⇒ f(cmd)).connect(Sink(consumer)).run()
+        val hive = Sink(ActorSubscriber[AggregateRootCommand](actor))
+        Source(commandsSource).buffer(16, OverflowStrategy.backpressure).filter(cmd ⇒ f(cmd)).to(hive).run()
     }
   }
 

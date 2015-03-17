@@ -21,10 +21,10 @@ trait AggregateRootEventWarpPackagingTemplate[TEvent <: AggregateRootEvent] exte
   override def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[TEvent] =
     withFastLookUp(from) { lookup ⇒
       for {
-        header <- lookup.getWith("header", EventHeaderWarpPackaging)
-        aggId <- lookup.getAs[String]("aggId").flatMap(ValidatedAggregateRootId(_))
-        version <- lookup.getAs[Long]("aggVersion").flatMap(ValidatedAggregateRootVersion(_))
-        cmd <- extractEventParams(lookup, header, aggId, version)
+        header ← lookup.getWith("header", EventHeaderWarpPackaging)
+        aggId ← lookup.getAs[String]("aggId").flatMap(ValidatedAggregateRootId(_))
+        version ← lookup.getAs[Long]("aggVersion").flatMap(ValidatedAggregateRootVersion(_))
+        cmd ← extractEventParams(lookup, header, aggId, version)
       } yield cmd
     }
 

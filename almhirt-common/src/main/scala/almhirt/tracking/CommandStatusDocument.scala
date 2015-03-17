@@ -16,11 +16,11 @@ object CommandRepresentation {
   final case class FullCommand(cmd: Command) extends CommandRepresentation {
     override def toShortString: String =
       cmd match {
-        case c: AggregateRootCommand =>
+        case c: AggregateRootCommand ⇒
           s"""|${cmd.getClass().getName}(${c.commandId.value})
         	|AggregateRootId: ${c.aggId.value}
         	|AggregateRootVersion: ${c.aggVersion.value}""".stripMargin
-        case _ =>
+        case _ ⇒
           s"""${cmd.getClass().getName}(${cmd.commandId.value})"""
       }
 

@@ -16,6 +16,7 @@ object SingleProblemPackaging extends WarpPacker[SingleProblem] with Registerabl
   override def pack(what: SingleProblem)(implicit packers: WarpPackers): AlmValidation[WarpPackage] =
     this.warpDescriptor ~>
       P("message", what.message) ~>
+      POpt("cid", what.correlationId.map(_.value)) ~>
       LookUp("problemType", what.problemType).fold(
         fail ⇒ With("problemType", almhirt.problem.problemtypes.UnknownProblem, ProblemTypes.UnknownProblemTypePackaging),
         succ ⇒ succ.success) ~>
@@ -25,13 +26,18 @@ object SingleProblemPackaging extends WarpPacker[SingleProblem] with Registerabl
   override def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[SingleProblem] =
     withFastLookUp(from) { lu ⇒
       for {
-        message <- lu.getAs[String]("message")
-        args <- lu.getAssocs[String]("args").map(_.toMap)
-        problemType <- lu.getTyped[ProblemType]("problemType", None).recover(almhirt.problem.problemtypes.UnknownProblem)
-        cause <- lu.tryGetWith("cause", ProblemCauseUnpacker)
-      } yield SingleProblem(message, problemType, args, cause)
+        message ← lu.getAs[String]("message")
+        cid ← lu.tryGetAs[String]("cid").map(_.map(almhirt.tracking.CorrelationId(_)))
+        args ← lu.getAssocs[String]("args").map(_.toMap)
+        problemType ← lu.getTyped[ProblemType]("problemType", None).recover(almhirt.problem.problemtypes.UnknownProblem)
+        cause ← lu.tryGetWith("cause", ProblemCauseUnpacker)
+      } yield cid match {
+        case None ⇒
+          SingleProblem(message, problemType, args, cause)
+        case Some(c) ⇒
+          SingleProblem(message, problemType, args, cause).withCorrelationId(c)
+      }
     }
-
 }
 
 object AggregatedProblemPackaging extends WarpPacker[AggregatedProblem] with RegisterableWarpPacker with RegisterableWarpUnpacker[AggregatedProblem] {
@@ -39,15 +45,22 @@ object AggregatedProblemPackaging extends WarpPacker[AggregatedProblem] with Reg
   override val alternativeWarpDescriptors = WarpDescriptor(classOf[AggregatedProblem]) :: WarpDescriptor(classOf[AggregatedProblem.AggregateProblemImpl]) :: Nil
   override def pack(what: AggregatedProblem)(implicit packers: WarpPackers): AlmValidation[WarpPackage] =
     this.warpDescriptor ~>
+      POpt("cid", what.correlationId.map(_.value)) ~>
       MLookUpForgiving[String, Any]("args", what.args) ~>
       CWith("problems", what.problems, ProblemPackaging)
 
   override def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[AggregatedProblem] =
     withFastLookUp(from) { lu ⇒
       for {
-        args <- lu.getAssocs[String]("args").map(_.toMap)
-        problems <- lu.getManyWith("problems", ProblemPackaging)
-      } yield AggregatedProblem(problems, args)
+        cid ← lu.tryGetAs[String]("cid").map(_.map(almhirt.tracking.CorrelationId(_)))
+        args ← lu.getAssocs[String]("args").map(_.toMap)
+        problems ← lu.getManyWith("problems", ProblemPackaging)
+      } yield cid match {
+        case None ⇒
+          AggregatedProblem(problems, args)
+        case Some(c) ⇒
+          AggregatedProblem(problems, args).withCorrelationId(c)
+      }
     }
 }
 
@@ -56,7 +69,7 @@ object ProblemPackaging extends WarpPacker[Problem] with RegisterableWarpPacker 
   override val alternativeWarpDescriptors = WarpDescriptor(classOf[Problem]) :: Nil
   override def pack(what: Problem)(implicit packers: WarpPackers): AlmValidation[WarpPackage] =
     what match {
-      case sp: SingleProblem ⇒ SingleProblemPackaging(sp)
+      case sp: SingleProblem     ⇒ SingleProblemPackaging(sp)
       case ap: AggregatedProblem ⇒ AggregatedProblemPackaging(ap)
     }
 
@@ -84,6 +97,7 @@ object ProblemTypes {
   val RegistrationProblemPackaging = createDefaultPackaging[almhirt.problem.problemtypes.RegistrationProblem.type](almhirt.problem.problemtypes.RegistrationProblem)
   val ServiceNotFoundProblemPackaging = createDefaultPackaging[almhirt.problem.problemtypes.ServiceNotFoundProblem.type](almhirt.problem.problemtypes.ServiceNotFoundProblem)
   val ServiceNotAvailableProblemProblemPackaging = createDefaultPackaging[almhirt.problem.problemtypes.ServiceNotAvailableProblem.type](almhirt.problem.problemtypes.ServiceNotAvailableProblem)
+  val ServiceNotReadyProblemProblemPackaging = createDefaultPackaging[almhirt.problem.problemtypes.ServiceNotReadyProblem.type](almhirt.problem.problemtypes.ServiceNotReadyProblem)
   val ServiceBusyProblemPackaging = createDefaultPackaging[almhirt.problem.problemtypes.ServiceBusyProblem.type](almhirt.problem.problemtypes.ServiceBusyProblem)
   val ServiceBrokenProblemPackaging = createDefaultPackaging[almhirt.problem.problemtypes.ServiceBrokenProblem.type](almhirt.problem.problemtypes.ServiceBrokenProblem)
   val ServiceShutDownProblemPackaging = createDefaultPackaging[almhirt.problem.problemtypes.ServiceShutDownProblem.type](almhirt.problem.problemtypes.ServiceShutDownProblem)
@@ -128,6 +142,7 @@ object ProblemTypes {
     to.addTyped(RegistrationProblemPackaging)
     to.addTyped(ServiceNotFoundProblemPackaging)
     to.addTyped(ServiceNotAvailableProblemProblemPackaging)
+    to.addTyped(ServiceNotReadyProblemProblemPackaging)
     to.addTyped(ServiceBusyProblemPackaging)
     to.addTyped(ServiceBrokenProblemPackaging)
     to.addTyped(ServiceShutDownProblemPackaging)
@@ -173,6 +188,7 @@ object ProblemTypes {
     to.addTyped(RegistrationProblemPackaging)
     to.addTyped(ServiceNotFoundProblemPackaging)
     to.addTyped(ServiceNotAvailableProblemProblemPackaging)
+    to.addTyped(ServiceNotReadyProblemProblemPackaging)
     to.addTyped(ServiceBusyProblemPackaging)
     to.addTyped(ServiceBrokenProblemPackaging)
     to.addTyped(ServiceShutDownProblemPackaging)

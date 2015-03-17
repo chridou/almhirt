@@ -22,10 +22,10 @@ trait CustomHttpSerializerTemplate[T] extends HttpSerializer[T] with HttpDeseria
   
   protected def serializeInternal(what: T, channel: String, pack: T ⇒ AlmValidation[WarpPackage]): AlmValidation[AlmHttpBody] =
     for {
-      theChannel <- WarpChannels.getChannel(channel)
-      dematerializer <- getDematerializer(theChannel)
-      serialized <- pack(what).map(wc ⇒ dematerializer.dematerialize(wc, Map.empty))
-      typedSerialized <- theChannel.httpTransmission match {
+      theChannel ← WarpChannels.getChannel(channel)
+      dematerializer ← getDematerializer(theChannel)
+      serialized ← pack(what).map(wc ⇒ dematerializer.dematerialize(wc, Map.empty))
+      typedSerialized ← theChannel.httpTransmission match {
         case HttpTransmissionAsBinary ⇒ serialized.castTo[Array[Byte]].map(BinaryBody)
         case HttpTransmissionAsText ⇒ serialized.castTo[String].map(TextBody)
         case NoHttpTransmission ⇒ UnspecifiedProblem(s""""$channel" is neither a binary nor a text channel.""").failure
@@ -35,16 +35,16 @@ trait CustomHttpSerializerTemplate[T] extends HttpSerializer[T] with HttpDeseria
 
   protected def deserializeInternal(channel: String)(what: AlmHttpBody, unpack: WarpPackage ⇒ AlmValidation[T]): AlmValidation[T] =
     for {
-      theChannel <- WarpChannels.getChannel(channel)
-      rematerialized <- what match {
+      theChannel ← WarpChannels.getChannel(channel)
+      rematerialized ← what match {
         case BinaryBody(bytes) if theChannel.httpTransmission == HttpTransmissionAsBinary ⇒
           getBinaryRematerializer(theChannel.channelDescriptor).flatMap(_(bytes))
         case TextBody(text) if theChannel.httpTransmission == HttpTransmissionAsText ⇒
           getStringRematerializer(theChannel.channelDescriptor).flatMap(_(text))
         case _ ⇒
-          UnspecifiedProblem(s""""$channel" is neither a binary nor a text channel or the serialized representation do not match("${what.getClass().getSimpleName()}" -> "${theChannel.httpTransmission}").""").failure
+          UnspecifiedProblem(s""""$channel" is neither a binary nor a text channel or the serialized representation do not match("${what.getClass().getSimpleName()}" → "${theChannel.httpTransmission}").""").failure
       }
-      unpacked <- unpack(rematerialized)
+      unpacked ← unpack(rematerialized)
     } yield unpacked
 
     

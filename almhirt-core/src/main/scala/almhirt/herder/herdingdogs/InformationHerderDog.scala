@@ -16,8 +16,8 @@ object InformationHerdingDog {
     import almhirt.configuration._
     val configPath = "almhirt.herder.herding-dogs.information"
     for {
-      section <- ctx.config.v[Config](configPath)
-      historySize <- section.v[Int]("history-size")
+      section ← ctx.config.v[Config](configPath)
+      historySize ← section.v[Int]("history-size")
     } yield Props(new InformationHerdingDog(historySize))
   }
 
@@ -36,15 +36,15 @@ private[almhirt] class InformationHerdingDog(historySize: Int)(implicit override
   val history = new MutableImportantThingsHistories[ComponentId, InformationEntry](historySize)
 
   def receiveRunning: Receive = {
-    case Information(componentId, message, importance, timestamp) =>
+    case Information(componentId, message, importance, timestamp) ⇒
       history.add(componentId, (message, importance, timestamp))
 
-    case ReportInformation =>
-      val ifos = history.all.sorted
+    case ReportInformation ⇒
+      val ifos = history.allReversed.sorted
       sender() ! ReportedInformation(ifos)
       
-    case ReportInformationFor(componentId) =>
-      sender() ! ReportedInformationFor(componentId, history getImmutable componentId)
+    case ReportInformationFor(componentId) ⇒
+      sender() ! ReportedInformationFor(componentId, history getImmutableReversed componentId)
       
   }
 

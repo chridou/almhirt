@@ -1,16 +1,89 @@
 package almhirt.context
 
+import scala.concurrent.ExecutionContext
 import akka.actor._
 import scalaz.Validation.FlatMap._
 import almhirt.common._
+import almhirt.tooling.Reporter
 import almhirt.streaming.AlmhirtStreams
 import almhirt.akkax.ActorMessages
+import almhirt.akkax.ComponentId
 import com.typesafe.config._
 
 trait AlmhirtContext extends CanCreateUuidsAndDateTimes with AlmhirtStreams with HasExecutionContexts {
   def config: Config
   def localActorPaths: ContextActorPaths
   def tellHerder(what: almhirt.herder.HerderMessages.HerderNotificicationMessage): Unit
+
+  def createReporter(forComponent: ComponentId): Reporter
+
+  def withFuturesExecutor(executor: ExecutionContext): AlmhirtContext = {
+    new AlmhirtContext {
+      val config = AlmhirtContext.this.config
+      val futuresContext = executor
+      val crunchersContext = AlmhirtContext.this.crunchersContext
+      val blockersContext = AlmhirtContext.this.blockersContext
+      def getUuid() = AlmhirtContext.this.getUuid
+      def getUniqueString() = AlmhirtContext.this.getUniqueString
+      def getDateTime() = AlmhirtContext.this.getDateTime
+      def getUtcTimestamp() = AlmhirtContext.this.getUtcTimestamp
+      val eventBroker = AlmhirtContext.this.eventBroker
+      val eventStream = AlmhirtContext.this.eventStream
+      val commandBroker = AlmhirtContext.this.commandBroker
+      val commandStream = AlmhirtContext.this.commandStream
+      val localActorPaths = AlmhirtContext.this.localActorPaths
+      def tellHerder(what: almhirt.herder.HerderMessages.HerderNotificicationMessage) {
+        AlmhirtContext.this.tellHerder(what)
+      }
+      def createReporter(forComponent: ComponentId): Reporter = AlmhirtContext.this.createReporter(forComponent)
+
+    }
+  }
+
+  def withBlockingExecutor(executor: ExecutionContext): AlmhirtContext = {
+    new AlmhirtContext {
+      val config = AlmhirtContext.this.config
+      val futuresContext = AlmhirtContext.this.futuresContext
+      val crunchersContext = AlmhirtContext.this.crunchersContext
+      val blockersContext = executor
+      def getUuid() = AlmhirtContext.this.getUuid
+      def getUniqueString() = AlmhirtContext.this.getUniqueString
+      def getDateTime() = AlmhirtContext.this.getDateTime
+      def getUtcTimestamp() = AlmhirtContext.this.getUtcTimestamp
+      val eventBroker = AlmhirtContext.this.eventBroker
+      val eventStream = AlmhirtContext.this.eventStream
+      val commandBroker = AlmhirtContext.this.commandBroker
+      val commandStream = AlmhirtContext.this.commandStream
+      val localActorPaths = AlmhirtContext.this.localActorPaths
+      def tellHerder(what: almhirt.herder.HerderMessages.HerderNotificicationMessage) {
+        AlmhirtContext.this.tellHerder(what)
+      }
+      def createReporter(forComponent: ComponentId): Reporter = AlmhirtContext.this.createReporter(forComponent)
+    }
+  }
+
+  def withCrunchersExecutor(executor: ExecutionContext): AlmhirtContext = {
+    new AlmhirtContext {
+      val config = AlmhirtContext.this.config
+      val futuresContext = AlmhirtContext.this.futuresContext
+      val crunchersContext = executor
+      val blockersContext = AlmhirtContext.this.blockersContext
+      def getUuid() = AlmhirtContext.this.getUuid
+      def getUniqueString() = AlmhirtContext.this.getUniqueString
+      def getDateTime() = AlmhirtContext.this.getDateTime
+      def getUtcTimestamp() = AlmhirtContext.this.getUtcTimestamp
+      val eventBroker = AlmhirtContext.this.eventBroker
+      val eventStream = AlmhirtContext.this.eventStream
+      val commandBroker = AlmhirtContext.this.commandBroker
+      val commandStream = AlmhirtContext.this.commandStream
+      val localActorPaths = AlmhirtContext.this.localActorPaths
+      def tellHerder(what: almhirt.herder.HerderMessages.HerderNotificicationMessage) {
+        AlmhirtContext.this.tellHerder(what)
+      }
+      def createReporter(forComponent: ComponentId): Reporter = AlmhirtContext.this.createReporter(forComponent)
+    }
+  }
+
 }
 
 trait ContextActorPaths {
@@ -22,6 +95,7 @@ trait ContextActorPaths {
   def views: ActorPath
   def misc: ActorPath
   def apps: ActorPath
+  def resources: ActorPath
 }
 
 object ContextActorPaths {
@@ -35,6 +109,7 @@ object ContextActorPaths {
       val views = ContextActorPaths.views(root)
       val misc = ContextActorPaths.misc(root)
       val apps = ContextActorPaths.apps(root)
+      val resources = ContextActorPaths.resources(root)
     }
   }
 
@@ -52,12 +127,15 @@ object ContextActorPaths {
 
   def views(root: RootActorPath): ActorPath =
     components(root) / "views"
-    
+
   def misc(root: RootActorPath): ActorPath =
     components(root) / "misc"
 
   def apps(root: RootActorPath): ActorPath =
     components(root) / "apps"
+
+  def resources(root: RootActorPath): ActorPath =
+    components(root) / _root_.almhirt.components.ResourcesService.actorname
 }
 
 object AlmhirtContextMessages {
@@ -76,15 +154,20 @@ object AlmhirtContextMessages {
 object AlmhirtContext {
   type ComponentFactory = AlmhirtContext ⇒ AlmFuture[Props]
 
-  def apply(system: ActorSystem, actorName: Option[String], componentFactories: ComponentFactories): AlmFuture[AlmhirtContext with Stoppable] = {
+  def apply(system: ActorSystem, actorName: Option[String], componentFactories: ComponentFactories, specificCcuad: Option[CanCreateUuidsAndDateTimes] = None): AlmFuture[AlmhirtContext with Stoppable] = {
     import almhirt.configuration._
 
     val propsV =
       for {
-        configSection <- system.settings.config.v[com.typesafe.config.Config]("almhirt.context")
-        useFuturesCtx <- configSection.v[Boolean]("use-dedicated-futures-dispatcher")
-        useBlockersCtx <- configSection.v[Boolean]("use-dedicated-blockers-dispatcher")
-        useCrunchersCtx <- configSection.v[Boolean]("use-dedicated-cruncher-dispatcher")
+        configSection ← system.settings.config.v[com.typesafe.config.Config]("almhirt.context")
+        useFuturesCtx ← configSection.v[Boolean]("use-dedicated-futures-dispatcher")
+        useBlockersCtx ← configSection.v[Boolean]("use-dedicated-blockers-dispatcher")
+        useCrunchersCtx ← configSection.v[Boolean]("use-dedicated-cruncher-dispatcher")
+        dedicatedAppsFuturesExecutorLookupName ← configSection.v[Boolean]("use-dedicated-apps-futures-executor").map(useDedAppfFutExeceutor ⇒
+          if (useDedAppfFutExeceutor)
+            Some("almhirt.context.dispatchers.apps-futures-dispatcher")
+          else
+            None)
       } yield {
         val futuresExecutor =
           if (useFuturesCtx)
@@ -112,11 +195,11 @@ object AlmhirtContext {
         Props(new AlmActor with AlmActorLogging with ActorLogging {
           implicit val execCtx = futuresExecutor
           var theReceiver: ActorRef = null
-          var tellTheHerder: almhirt.herder.HerderMessages.HerderNotificicationMessage => Unit = x => ()
-          
+          var tellTheHerder: almhirt.herder.HerderMessages.HerderNotificicationMessage ⇒ Unit = x ⇒ ()
+
           var _ctx: AlmhirtContext = null
           override def almhirtContext = _ctx
-          
+
           def receive: Receive = {
             case AlmhirtContextMessages.Start ⇒
               theReceiver = sender()
@@ -127,7 +210,7 @@ object AlmhirtContext {
 
             case AlmhirtContextMessages.StreamsCreated(streams) ⇒
               log.info("Created streams. Next: Create context")
-              val ccuad = CanCreateUuidsAndDateTimes()
+              val ccuad = specificCcuad getOrElse CanCreateUuidsAndDateTimes()
               val ctx = new AlmhirtContext with Stoppable {
                 val config = system.settings.config
                 val futuresContext = futuresExecutor
@@ -143,6 +226,7 @@ object AlmhirtContext {
                 val commandStream = streams.commandStream
                 val localActorPaths = ContextActorPaths.local(system)
                 def tellHerder(what: almhirt.herder.HerderMessages.HerderNotificicationMessage) { tellTheHerder(what) }
+                def createReporter(forComponent: ComponentId): Reporter = new TellHerderReporter(this, forComponent)
 
                 def stop() {
                   log.info("Stopping.")
@@ -156,20 +240,20 @@ object AlmhirtContext {
             case AlmhirtContextMessages.ContextCreated(ctx) ⇒
               log.info("Context created. Next: Configure herder")
               (for {
-                herderProps <- almhirt.herder.Herder.props()(ctx)
+                herderProps ← almhirt.herder.Herder.props()(ctx)
               } yield herderProps).fold(
-                prob => theReceiver ! AlmhirtContextMessages.FailedInitialization(prob),
-                herderProps => {
+                prob ⇒ theReceiver ! AlmhirtContextMessages.FailedInitialization(prob),
+                herderProps ⇒ {
                   val herder = context.actorOf(herderProps, almhirt.herder.Herder.actorname)
-                  this.tellTheHerder = x => herder ! x
+                  this.tellTheHerder = x ⇒ herder ! x
                   self ! AlmhirtContextMessages.HerderCreated(ctx)
                 })
-               theReceiver ! AlmhirtContextMessages.FinishedInitialization(ctx)
+              theReceiver ! AlmhirtContextMessages.FinishedInitialization(ctx)
 
             case AlmhirtContextMessages.HerderCreated(ctx) ⇒
               logInfo("Herder created. Core system configured. Will now go on with the components...")
               theReceiver ! AlmhirtContextMessages.FinishedInitialization(ctx)
-              val components = context.actorOf(componentactors.componentsProps(ctx), "components")
+              val components = context.actorOf(componentactors.componentsProps(dedicatedAppsFuturesExecutorLookupName)(ctx), "components")
               components ! componentactors.UnfoldFromFactories(componentFactories)
 
             case AlmhirtContextMessages.StreamsNotCreated(prob) ⇒
@@ -193,7 +277,7 @@ object AlmhirtContext {
         implicit val execCtx = system.dispatchers.defaultGlobalDispatcher
         (theAlmhirt ? AlmhirtContextMessages.Start)(maxInitDur).mapCastTo[AlmhirtContextMessages.FinishedResponse].mapV {
           case AlmhirtContextMessages.FinishedInitialization(ctx) ⇒ scalaz.Success(ctx)
-          case AlmhirtContextMessages.FailedInitialization(prob) ⇒ scalaz.Failure(prob)
+          case AlmhirtContextMessages.FailedInitialization(prob)  ⇒ scalaz.Failure(prob)
         }
       }))
   }
@@ -238,6 +322,7 @@ object AlmhirtContext {
               val commandStream = streams.commandStream
               val localActorPaths = null
               def tellHerder(what: almhirt.herder.HerderMessages.HerderNotificicationMessage) {}
+              def createReporter(forComponent: ComponentId): Reporter = Reporter.DevNull
               def stop() {
                 log.debug("Stopping.")
                 //streams.stop()
@@ -257,8 +342,44 @@ object AlmhirtContext {
       implicit val execCtx = system.dispatchers.defaultGlobalDispatcher
       (theAlmhirt ? AlmhirtContextMessages.Start)(maxDur).mapCastTo[AlmhirtContextMessages.FinishedResponse].mapV {
         case AlmhirtContextMessages.FinishedInitialization(ctx) ⇒ scalaz.Success(ctx)
-        case AlmhirtContextMessages.FailedInitialization(prob) ⇒ scalaz.Failure(prob)
+        case AlmhirtContextMessages.FailedInitialization(prob)  ⇒ scalaz.Failure(prob)
       }
     }
+  }
+}
+
+private[context] class TellHerderReporter(almhirtContext: AlmhirtContext, componentId: ComponentId) extends Reporter {
+  import almhirt.herder.HerderMessages
+  def report(message: ⇒ String, importance: Importance): Unit = {
+    almhirtContext.tellHerder(HerderMessages.InformationMessages.Information(componentId, message, importance, almhirtContext.getUtcTimestamp))
+  }
+
+  def reportDebug(message: ⇒ String): Unit = {
+    reportNotWorthMentioning(message)
+  }
+
+  def reportError(message: String, cause: almhirt.problem.ProblemCause): Unit = {
+    reportMajorFailure(cause)
+    reportVeryImportant(message)
+  }
+
+  def reportFailure(cause: almhirt.problem.ProblemCause, severity: almhirt.problem.Severity): Unit = {
+    almhirtContext.tellHerder(HerderMessages.FailureMessages.FailureOccured(componentId, cause, severity, almhirtContext.getUtcTimestamp))
+  }
+
+  def reportInfo(message: ⇒ String): Unit = {
+    reportMentionable(message)
+  }
+
+  def reportMissedEvent(event: Event, severity: almhirt.problem.Severity, cause: almhirt.problem.ProblemCause): Unit = {
+    almhirtContext.tellHerder(HerderMessages.EventMessages.MissedEvent(componentId, event, severity, cause, almhirtContext.getUtcTimestamp))
+  }
+
+  def reportRejectedCommand(command: almhirt.tracking.CommandRepresentation, severity: almhirt.problem.Severity, cause: almhirt.problem.ProblemCause): Unit = {
+    almhirtContext.tellHerder(HerderMessages.CommandMessages.RejectedCommand(componentId, command, severity, cause, almhirtContext.getUtcTimestamp))
+  }
+
+  def reportWarning(message: ⇒ String): Unit = {
+    reportImportant(message)
   }
 }

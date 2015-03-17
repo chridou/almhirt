@@ -21,10 +21,10 @@ object EventHeader {
     def withMetadata(metadata: Map[String, String]): EventHeader =
       self.copy(metadata = metadata)
     def suggestDoNotLog =
-      self.copy(metadata = self.metadata + ("do-not-log" -> "true"))
+      self.copy(metadata = self.metadata + ("do-not-log" → "true"))
 
     def localEvent =
-      self.copy(metadata = self.metadata + ("local-event" -> "true"))
+      self.copy(metadata = self.metadata + ("local-event" → "true"))
 
     def noLoggingSuggested: Boolean =
       self.metadata.get("do-not-log").map(_.toLowerCase == "true").getOrElse(false)

@@ -191,7 +191,7 @@ trait AlmValidationParseFunctions {
       val bldr = cbf()
       bldr.result.success
     } else {
-      funs.inTryCatch(toParse.split(sep).map(x ⇒ parse(x))).flatMap(parsedItems ⇒
+      inTryCatch(toParse.split(sep).map(x ⇒ parse(x))).flatMap(parsedItems ⇒
         funs.aggregateProblemsMN[A, Seq, M](parsedItems))
     }
   }

@@ -56,11 +56,11 @@ class CrazyShawn(implicit override val almhirtContext: AlmhirtContext) extends C
   var badSent = 0
 
   def receive: Receive = {
-    case RejectCommand =>
+    case RejectCommand ⇒
       val cmd = CrazyShawnCommand(CommandHeader(), s"$count")
       reportRejectedCommand(cmd, getSeverity, UnspecifiedProblem("Huh?"))
     
-    case DoSomething(event: Event) =>
+    case DoSomething(event: Event) ⇒
       val res = if (mayBeGoodLeft > 0) {
         mayBeGoodLeft -= 1
         badSent = 0
@@ -75,7 +75,7 @@ class CrazyShawn(implicit override val almhirtContext: AlmhirtContext) extends C
           mayBeGoodLeft = 100
         AlmFuture.failed(UnspecifiedProblem(s"Huuh! Failed on: $event"))
       }
-      circuitBreaker.fused(res).onFailure({ problem =>
+      circuitBreaker.fused(res).onFailure({ problem ⇒
         reportMissedEvent(event, getSeverity, problem)
         reportFailure(problem, getSeverity)
         self ! RejectCommand

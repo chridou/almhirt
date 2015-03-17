@@ -18,7 +18,7 @@ import almhirt.http.AlmMediaTypesProvider
 import almhirt.httpx.spray.marshalling.DefaultMarshallingInstances
 import riftwarp.util.WarpHttpSerializer
 import almhirt.httpx.spray.marshalling.MarshallingContentTypesProvider
-import almhirt.corex.spray.service.HttpHerderService
+import almhirt.corex.spray.service.HttpHerderServiceFactory
 import almhirt.context.HasAlmhirtContext
 import com.typesafe.config.Config
 import almhirt.context.ComponentFactoryBuilderEntry
@@ -30,8 +30,8 @@ object Boot {
     system.log.info("Boot context")
 
     for {
-      context <- AlmhirtContext(system = system, actorName = None, componentFactories = createComponentFactories())
-      stopHttp <- openHttpHerderService(ResolvePath(context.localActorPaths.apps / "herder-service"), context)(system)
+      context ← AlmhirtContext(system = system, actorName = None, componentFactories = createComponentFactories())
+      stopHttp ← openHttpHerderService(ResolvePath(context.localActorPaths.apps / "herder-service"), context)(system)
     } yield {
       system.log.info("""	|
     		  				| This is a simple demo for the ugly dashboard.
@@ -55,6 +55,8 @@ object Boot {
 
   private def createComponentFactories(): ComponentFactories = {
     ComponentFactories(
+      None,
+      None,
       Seq.empty,
       Seq.empty,
       Seq.empty,
@@ -69,21 +71,21 @@ object Boot {
     val mctp = MarshallingContentTypesProvider[Problem]()
     val problemMarshaller = ContentTypeBoundMarshallerFactory[Problem](mctp, DefaultMarshallingInstances.ProblemMarshallingInst).marshaller(pSerializer)
 
-    val entry1 = { (ctx: AlmhirtContext) =>
+    val entry1 = { (ctx: AlmhirtContext) ⇒
       {
-        HttpHerderService.paramsFactory(ctx).map(paramsFactory =>
+        HttpHerderServiceFactory.paramsFactory(ctx).map(paramsFactory ⇒
           Props(new {
             override val almhirtContext = ctx
-            override val httpHerderServiceParams = paramsFactory(problemMarshaller)
-          } with SillyHerderService with Actor with ActorLogging with HasAlmhirtContext {
+            override val params = paramsFactory(problemMarshaller)
+          } with SillyHerderService with AlmActor with AlmActorLogging with HasAlmhirtContext {
             def receive = runRoute(route)
             override val actorRefFactory = this.context
-          })).map(props => ComponentFactory(props, s"herder-service"))
+          })).map(props ⇒ ComponentFactory(props, s"herder-service"))
       }
     }.toCriticalEntry
 
-    val crazySheepFactory = { (ctx: AlmhirtContext) => ComponentFactory(Props(new CrazySheepApp()(ctx)), "crazy-sheep") }.toCriticalEntry
-    val freakyDogsFactory = { (ctx: AlmhirtContext) => ComponentFactory(Props(new FreakyDogsApp()(ctx)), "freaky-dogs") }.toCriticalEntry
+    val crazySheepFactory = { (ctx: AlmhirtContext) ⇒ ComponentFactory(Props(new CrazySheepApp()(ctx)), "crazy-sheep") }.toCriticalEntry
+    val freakyDogsFactory = { (ctx: AlmhirtContext) ⇒ ComponentFactory(Props(new FreakyDogsApp()(ctx)), "freaky-dogs") }.toCriticalEntry
 
     Seq(entry1, crazySheepFactory, freakyDogsFactory)
   }
@@ -95,36 +97,36 @@ object Boot {
     implicit val execCtx = system.dispatchers.defaultGlobalDispatcher
     val resolveSettings = ResolveSettings.default
     for {
-      (interface, port) <- AlmFuture.completed {
+      (interface, port) ← AlmFuture.completed {
         for {
-          section <- system.settings.config.v[Config]("silly-app")
-          port <- section.v[Int]("port")
-          interface <- section.v[String]("interface")
+          section ← system.settings.config.v[Config]("silly-app")
+          port ← section.v[Int]("port")
+          interface ← section.v[String]("interface")
         } yield (interface, port)
       }
-      generator <- AlmFuture.successful {
+      generator ← AlmFuture.successful {
         val generatorProps = Props(
           new Actor with ActorLogging {
             var stakeholder: ActorRef = null
             def receive: Receive = {
-              case "resolve" =>
+              case "resolve" ⇒
                 context.resolveSingle(serviceToResolve, resolveSettings, None, Some("herder-service-resolver"))
                 stakeholder = sender()
 
-              case ActorMessages.ResolvedSingle(httpServiceActor, _) =>
+              case ActorMessages.ResolvedSingle(httpServiceActor, _) ⇒
                 log.info("Found http service actor.")
                 stakeholder ! httpServiceActor
                 context.stop(self)
 
-              case ActorMessages.SingleNotResolved(problem, _) =>
+              case ActorMessages.SingleNotResolved(problem, _) ⇒
                 log.error(s"\n\n\nThere will be no herder service!\n\n\n\nCould not find HTTP service @ ${serviceToResolve}:\n$problem")
                 context.stop(self)
             }
           })
         system.actorOf(generatorProps, s"herder-service-generator")
       }
-      serviceActor <- (generator ? "resolve")(30.seconds).mapCastTo[ActorRef]
-      stopHttp <- AlmFuture.successful {
+      serviceActor ← (generator ? "resolve")(30.seconds).mapCastTo[ActorRef]
+      stopHttp ← AlmFuture.successful {
         IO(Http) ! Http.Bind(serviceActor, interface = interface, port = port)
       }
     } yield (new Stoppable { def stop() = { IO(Http) ! Http.Unbind } })

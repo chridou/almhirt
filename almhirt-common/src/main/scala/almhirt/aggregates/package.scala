@@ -1,5 +1,6 @@
 package almhirt
 
+import scala.language.implicitConversions 
 import scalaz.Validation
 import almhirt.common._
 
@@ -7,6 +8,9 @@ package object aggregates {
   type FlatAggregateValidation[+αρ <: AggregateRoot] = Validation[Problem, αρ]
   type AggregateValidation[+αρ <: AggregateRoot] = Validation[Problem, AggregateRootLifecycle[αρ]]
 
+  implicit def aggId2String(self: AggregateRootId): String = self.value 
+  implicit def aggVer2Long(self: AggregateRootVersion): Long = self.value 
+  
   implicit class UpdateRecorderValidationStateSingleOps[AR <: AggregateRoot, E <: AggregateRootEvent](self: AlmValidation[(AggregateRootLifecycle[AR], E)]) {
     /** Make this validation an [[UpdateRecorder]] */
     def record: UpdateRecorder[AR, E] = self.fold(

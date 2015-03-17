@@ -9,7 +9,7 @@ import almhirt.context._
 import almhirt.akkax._
 import almhirt.http._
 import akka.stream.actor._
-import akka.stream.scaladsl2._
+import akka.stream.scaladsl._
 import spray.http.StatusCode
 import spray.http.MediaType
 import spray.http.HttpMethod
@@ -38,8 +38,8 @@ abstract class ActorConsumerHttpPublisher[T](
 
   private case object Start
   def receiveCircuitClosed: Receive = {
-    case Start =>
-      autoConnectTo.foreach(pub => Source[Event](pub).connect(Sink(ActorSubscriber[Event](self))).run())
+    case Start ⇒
+      autoConnectTo.foreach(pub ⇒ Source[Event](pub).to(Sink(ActorSubscriber[Event](self))).run())
       request(1)
 
     case ActorSubscriberMessage.OnNext(element) ⇒
@@ -55,7 +55,7 @@ abstract class ActorConsumerHttpPublisher[T](
                 self ! Processed(Some(problem))
                 onFailure(typedElem, problem)
               },
-              _ => self ! Processed(None))
+              _ ⇒ self ! Processed(None))
           } else {
             self ! Processed(None)
           }
@@ -64,17 +64,17 @@ abstract class ActorConsumerHttpPublisher[T](
     case Processed(currentProblem) ⇒
       handleProcessed(currentProblem)
 
-    case ActorMessages.CircuitOpened =>
+    case ActorMessages.CircuitOpened ⇒
       context.become(receiveCircuitOpen)
       self ! DisplayCircuitState
 
-    case m: ActorMessages.CircuitAllWillFail =>
+    case m: ActorMessages.CircuitAllWillFail ⇒
       context.become(receiveCircuitOpen)
       self ! DisplayCircuitState
 
-    case DisplayCircuitState =>
+    case DisplayCircuitState ⇒
       if (log.isInfoEnabled)
-        circuitBreaker.state.onSuccess(s => log.info(s"Circuit state: $s"))
+        circuitBreaker.state.onSuccess(s ⇒ log.info(s"Circuit state: $s"))
   }
 
   def receiveCircuitOpen: Receive = {
@@ -87,14 +87,14 @@ abstract class ActorConsumerHttpPublisher[T](
     case Processed(currentProblem) ⇒
       handleProcessed(currentProblem)
 
-    case m: ActorMessages.CircuitNotAllWillFail =>
+    case m: ActorMessages.CircuitNotAllWillFail ⇒
       context.become(receiveCircuitClosed)
       self ! DisplayCircuitState
 
-    case DisplayCircuitState =>
+    case DisplayCircuitState ⇒
       if (log.isInfoEnabled) {
-        circuitBreaker.state.onSuccess(s => log.info(s"Circuit state: $s"))
-        circuitStateReportingInterval.foreach(interval =>
+        circuitBreaker.state.onSuccess(s ⇒ log.info(s"Circuit state: $s"))
+        circuitStateReportingInterval.foreach(interval ⇒
           context.system.scheduler.scheduleOnce(interval, self, DisplayCircuitState))
       }
   }
@@ -103,11 +103,11 @@ abstract class ActorConsumerHttpPublisher[T](
 
   private def handleProcessed(currentProblem: Option[Problem]) {
     currentProblem match {
-      case Some(CircuitOpenProblem(_)) =>
+      case Some(CircuitOpenProblem(_)) ⇒
         ()
-      case Some(otherProblem) =>
+      case Some(otherProblem) ⇒
         log.error(s"A request failed:\n$otherProblem")
-      case None =>
+      case None ⇒
         ()
     }
     request(1)
@@ -121,7 +121,7 @@ abstract class ActorConsumerHttpPublisher[T](
   override def preStart() {
     super.preStart()
     circuitBreaker.defaultActorListeners(self)
-      .onWarning((n, max) => log.warning(s"$n failures in a row. $max will cause the circuit to open."))
+      .onWarning((n, max) ⇒ log.warning(s"$n failures in a row. $max will cause the circuit to open."))
 
     registerCircuitControl(circuitBreaker)
 

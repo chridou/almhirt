@@ -53,42 +53,42 @@ class MessagePackSerialization extends FunSuite with Matchers {
   }
 
   test("""A WarpString(31 chars) should dematerialize and rematerialize to an equal instance""") {
-    val sample = WarpString((for (i <- 1 to 31) yield 'x').mkString)
+    val sample = WarpString((for (i ← 1 to 31) yield 'x').mkString)
     val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
     val rematerialized = dematerialized.rematerialize.forceResult
     rematerialized should equal(sample)
   }
 
   test("""A WarpString(32 chars) should dematerialize and rematerialize to an equal instance""") {
-    val sample = WarpString((for (i <- 1 to 32) yield 'x').mkString)
+    val sample = WarpString((for (i ← 1 to 32) yield 'x').mkString)
     val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
     val rematerialized = dematerialized.rematerialize.forceResult
     rematerialized should equal(sample)
   }
 
   test("""A WarpString(255 chars) should dematerialize and rematerialize to an equal instance""") {
-    val sample = WarpString((for (i <- 1 to 255) yield 'x').mkString)
+    val sample = WarpString((for (i ← 1 to 255) yield 'x').mkString)
     val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
     val rematerialized = dematerialized.rematerialize.forceResult
     rematerialized should equal(sample)
   }
   
   test("""A WarpString(256 chars) should dematerialize and rematerialize to an equal instance""") {
-    val sample = WarpString((for (i <- 1 to 256) yield 'x').mkString)
+    val sample = WarpString((for (i ← 1 to 256) yield 'x').mkString)
     val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
     val rematerialized = dematerialized.rematerialize.forceResult
     rematerialized should equal(sample)
   }
   
   test("""A WarpString(1000 chars) should dematerialize and rematerialize to an equal instance""") {
-    val sample = WarpString((for (i <- 1 to 1000) yield 'x').mkString)
+    val sample = WarpString((for (i ← 1 to 1000) yield 'x').mkString)
     val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
     val rematerialized = dematerialized.rematerialize.forceResult
     rematerialized should equal(sample)
   }
 
   test("""A WarpString(100000 chars) should dematerialize and rematerialize to an equal instance""") {
-    val sample = WarpString((for (i <- 1 to 100000) yield 'x').mkString)
+    val sample = WarpString((for (i ← 1 to 100000) yield 'x').mkString)
     val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
     val rematerialized = dematerialized.rematerialize.forceResult
     rematerialized should equal(sample)

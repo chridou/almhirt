@@ -6,6 +6,7 @@ import scala.concurrent.duration._
 import scalaz.Validation.FlatMap._
 import akka.actor._
 import almhirt.common._
+import almhirt.aggregates.AggregateRootId
 import almhirt.tracking._
 import almhirt.akkax._
 import almhirt.context.AlmhirtContext
@@ -24,7 +25,7 @@ object AggregateRootHive {
     commandBuffersize: Int,
     droneFactory: AggregateRootDroneFactory,
     otherThanContextEventBroker: Option[StreamBroker[Event]],
-    enqueudEventsThrottlingThresholdFactor: Int = 2)(implicit ctx: AlmhirtContext): Props =
+    enqueuedEventsThrottlingThreshold: Int)(implicit ctx: AlmhirtContext): Props =
     Props(new AggregateRootHive(
       hiveDescriptor,
       aggregateEventLogToResolve,
@@ -33,7 +34,7 @@ object AggregateRootHive {
       commandBuffersize,
       droneFactory,
       otherThanContextEventBroker.getOrElse(ctx.eventBroker),
-      enqueudEventsThrottlingThresholdFactor))
+      enqueuedEventsThrottlingThreshold))
 
   def props(
     hiveDescriptor: HiveDescriptor,
@@ -41,16 +42,15 @@ object AggregateRootHive {
     hiveConfigName: Option[String] = None)(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
     import almhirt.configuration._
     import almhirt.almvalidation.kit._
+    val aggregateEventLogToResolve = ResolvePath(ctx.localActorPaths.eventLogs / almhirt.eventlog.AggregateRootEventLog.actorname)
     val path = "almhirt.components.aggregates.aggregate-root-hive" + hiveConfigName.map("." + _).getOrElse("")
     for {
-      section <- ctx.config.v[com.typesafe.config.Config](path)
-      aggregateEventLogPath <- section.v[String]("aggregate-event-log-path")
-      aggregateEventLogToResolve <- inTryCatch { ResolvePath(ActorPath.fromString(aggregateEventLogPath)) }
-      snapShotStoragePath <- section.magicOption[String]("snapshot-storage-path")
-      snapShotStorageToResolve <- inTryCatch { snapShotStoragePath.map(path => ResolvePath(ActorPath.fromString(path))) }
-      resolveSettings <- section.v[ResolveSettings]("resolve-settings")
-      commandBuffersize <- section.v[Int]("command-buffer-size")
-      enqueudEventsThrottlingThresholdFactor <- section.v[Int]("enqueud-events-throttling-threshold-factor")
+      section ← ctx.config.v[com.typesafe.config.Config](path)
+      snapShotStoragePath ← section.magicOption[String]("snapshot-storage-path")
+      snapShotStorageToResolve ← inTryCatch { snapShotStoragePath.map(path ⇒ ResolvePath(ActorPath.fromString(path))) }
+      resolveSettings ← section.v[ResolveSettings]("resolve-settings")
+      commandBuffersize ← section.v[Int]("command-buffer-size")
+      enqueuedEventsThrottlingThreshold ← section.v[Int]("enqueued-events-throttling-threshold")
     } yield propsRaw(
       hiveDescriptor,
       aggregateEventLogToResolve,
@@ -59,11 +59,54 @@ object AggregateRootHive {
       commandBuffersize,
       droneFactory,
       Some(ctx.eventBroker),
-      enqueudEventsThrottlingThresholdFactor)
+      enqueuedEventsThrottlingThreshold)
   }
 }
 
 private[almhirt] object AggregateRootHiveInternals {
+  import almhirt.problem.ProblemCause
+
+  sealed trait AggregateDroneMessage
+
+  sealed trait AggregateDroneLoggingMessage extends AggregateDroneMessage
+
+  final case class ReportDroneDebug(msg: String) extends AggregateDroneLoggingMessage
+  final case class ReportDroneError(msg: String, cause: ProblemCause) extends AggregateDroneLoggingMessage
+  final case class ReportDroneWarning(msg: String, cause: Option[ProblemCause]) extends AggregateDroneLoggingMessage
+
+  final case class CargoJettisoned(aggId: AggregateRootId) extends AggregateDroneMessage
+
+  sealed trait ExecuteCommandResponse extends AggregateDroneMessage {
+    def command: Command
+    def isSuccess: Boolean
+  }
+  final case class CommandExecuted(command: AggregateRootCommand) extends ExecuteCommandResponse {
+    def isSuccess = true
+  }
+  final case class CommandNotExecuted(command: AggregateRootCommand, problem: Problem) extends ExecuteCommandResponse {
+    def isSuccess = false
+  }
+
+  final case class Busy(command: AggregateRootCommand) extends ExecuteCommandResponse {
+    def isSuccess = false
+  }
+
+  sealed trait OverdueMessage extends AggregateDroneMessage
+
+  sealed trait SomethingIsOverdue extends OverdueMessage {
+    def aggId: AggregateRootId
+    def elapsed: FiniteDuration
+  }
+
+  sealed trait SomethingOverdueGotDone extends OverdueMessage {
+    def aggId: AggregateRootId
+  }
+
+  final case class DispatchEventsToStreamTakesTooLong(aggId: AggregateRootId, elapsed: FiniteDuration) extends SomethingIsOverdue
+  final case class EventsFinallyDispatchedToStream(aggId: AggregateRootId) extends SomethingOverdueGotDone
+
+  final case class LogEventsTakesTooLong(aggId: AggregateRootId, elapsed: FiniteDuration) extends SomethingIsOverdue
+  final case class EventsFinallyLogged(aggId: AggregateRootId) extends SomethingOverdueGotDone
 }
 
 private[almhirt] class AggregateRootHive(
@@ -74,11 +117,10 @@ private[almhirt] class AggregateRootHive(
   override val commandBuffersize: Int,
   override val droneFactory: AggregateRootDroneFactory,
   override val eventsBroker: StreamBroker[Event],
-  enqueudEventsThrottlingThresholdFactor: Int = 2)(implicit override val almhirtContext: AlmhirtContext)
+  override val enqueuedEventsThrottlingThreshold: Int)(implicit override val almhirtContext: AlmhirtContext)
   extends AlmActor with AlmActorLogging with ActorContractor[Event] with ActorLogging with ActorSubscriber with AggregateRootHiveSkeleton {
 
   override val requestStrategy = ZeroRequestStrategy
-  override val enqueudEventsThrottlingThreshold = commandBuffersize * enqueudEventsThrottlingThresholdFactor
 
 }
 
@@ -91,10 +133,30 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
 
   override val supervisorStrategy =
     OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
-      case _: AggregateRootEventStoreFailedReadingException ⇒ Restart
-      case _: RebuildAggregateRootFailedException ⇒ Restart
-      case _: CouldNotDispatchAllAggregateRootEventsException ⇒ Restart
-      case _: Exception ⇒ Escalate
+      case exn: AggregateRootEventStoreFailedReadingException ⇒
+        reportMajorFailure(exn)
+        informVeryImportant(s"Handling escalated error from ${sender.path.name} with a action Restart.")
+        Restart
+      case exn: RebuildAggregateRootFailedException ⇒
+        reportCriticalFailure(exn)
+        logError(s"Handling escalated error for ${sender.path.name} with a action Escalate.", exn)
+        Escalate
+      case exn: CouldNotDispatchAllAggregateRootEventsException ⇒
+        reportMajorFailure(exn)
+        informVeryImportant(s"Handling escalated error from ${sender.path.name} with a action Resume.")
+        Resume
+      case exn: WrongAggregateRootEventTypeException ⇒
+        reportCriticalFailure(exn)
+        logError(s"Handling escalated error for ${sender.path.name} with a action Escalate.", exn)
+        Escalate
+      case exn: UserInitializationFailedException ⇒
+        reportMajorFailure(exn)
+        informVeryImportant(s"Handling escalated error from ${sender.path.name} with a action Restart.")
+        Restart
+      case exn: Exception ⇒
+        reportCriticalFailure(exn)
+        informVeryImportant(s"Handling escalated error from ${sender.path.name} with a action Escalate.")
+        Escalate
     }
 
   def aggregateEventLogToResolve: ToResolve
@@ -106,22 +168,27 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
   def droneFactory: AggregateRootDroneFactory
   implicit val futuresContext: ExecutionContext = almhirtContext.futuresContext
   def eventsBroker: StreamBroker[Event]
-  def enqueudEventsThrottlingThreshold: Int
+  def enqueuedEventsThrottlingThreshold: Int
 
   private var numReceivedInternal = 0
   private var numSucceededInternal = 0
   private var numFailedInternal = 0
 
+  private var numJettisonedSinceLastReport = 0
+
   def numReceived = numReceivedInternal
   def numSucceeded = numSucceededInternal
   def numFailed = numFailedInternal
+
+  private case object ReportJettisonedCargo
+  private case object ReportThrottlingState
 
   private case object Resolve
   def receiveResolve: Receive = {
     case Resolve ⇒
       val actorsToResolve =
-        Map("aggregateeventlog" -> aggregateEventLogToResolve) ++
-          snapShotStorageToResolve.map(r ⇒ Map("snapshotstorage" -> r)).getOrElse(Map.empty)
+        Map("aggregateeventlog" → aggregateEventLogToResolve) ++
+          snapShotStorageToResolve.map(r ⇒ Map("snapshotstorage" → r)).getOrElse(Map.empty)
       context.resolveMany(actorsToResolve, resolveSettings, None, Some("resolver"))
 
     case ActorMessages.ManyResolved(dependencies, _) ⇒
@@ -139,107 +206,195 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
   def receiveInitialize(aggregateEventLog: ActorRef, snapshotStorage: Option[ActorRef]): Receive = {
     case ReadyForDeliveries ⇒
       requestCommands()
-      context.become(receiveRunning(aggregateEventLog, snapshotStorage))
+      context.system.scheduler.scheduleOnce(5.minutes, self, ReportJettisonedCargo)
+      context.become(receiveRunning(aggregateEventLog, snapshotStorage, Set.empty))
   }
 
-  private var remainingRequestCapacity: Int = commandBuffersize
-  private var bufferedEvents: Vector[Event] = Vector.empty
+  private var totalSuppliesRequested = 0
+  private var suppliesRequestedSinceThrottlingStateChanged = 0
+  private var throttledSince = Deadline.now
 
+  private var numberOfCommandsThatCanBeRequested: Int = commandBuffersize
+  private var bufferedEvents: Vector[CommandStatusChanged] = Vector.empty
+
+  private var throttled = false
   private def requestCommands() {
-    if (bufferedEvents.size > enqueudEventsThrottlingThreshold) {
-      logWarning(s"to many events: ${bufferedEvents.size}")
-    }
-    if (remainingRequestCapacity > 0 && bufferedEvents.size <= enqueudEventsThrottlingThreshold) {
-      request(remainingRequestCapacity)
-      remainingRequestCapacity = 0
+    if (!throttled) {
+      if (bufferedEvents.size > enqueuedEventsThrottlingThreshold) {
+        throttledSince = Deadline.now
+        suppliesRequestedSinceThrottlingStateChanged = 0
+        logWarning(s"""|Number of buffered events(${bufferedEvents.size}) is getting too large(>=$enqueuedEventsThrottlingThreshold). 
+                       |Can not dispatch the command results fast enough. Throttling.
+                       |Total requested events: $totalSuppliesRequested
+                       |Requested events since throttling state changed: $suppliesRequestedSinceThrottlingStateChanged""".stripMargin)
+        throttled = true
+        context.system.scheduler.scheduleOnce(1.minute, self, ReportThrottlingState)
+      } else if (numberOfCommandsThatCanBeRequested > 0) {
+        request(numberOfCommandsThatCanBeRequested)
+        numberOfCommandsThatCanBeRequested = 0
+      }
     }
   }
 
   private def receivedCommandResponse() {
-    remainingRequestCapacity = remainingRequestCapacity + 1
+    numberOfCommandsThatCanBeRequested = numberOfCommandsThatCanBeRequested + 1
   }
 
   private def receivedInvalidCommand() {
-    remainingRequestCapacity = remainingRequestCapacity + 1
+    numberOfCommandsThatCanBeRequested = numberOfCommandsThatCanBeRequested + 1
   }
 
-  private def enqueueEvent(event: Event) {
+  private def enqueueEvent(event: CommandStatusChanged) {
     bufferedEvents = bufferedEvents :+ event
     offer(1)
   }
 
   private def deliverEvents(amount: Int) {
+    totalSuppliesRequested += amount
+    suppliesRequestedSinceThrottlingStateChanged += amount
     val toDeliver = bufferedEvents.take(amount)
     val rest = bufferedEvents.drop(toDeliver.size)
     deliver(toDeliver)
     bufferedEvents = rest
+    if (throttled) {
+      if (rest.isEmpty) {
+        throttled = false
+        logInfo("Released throttle.")
+        suppliesRequestedSinceThrottlingStateChanged = 0
+      } else {
+        logInfo(s"There are still ${rest.size} command status event(s) that need to be delivered. Can not release the throttle.")
+      }
+    }
   }
 
-  def receiveRunning(aggregateEventLog: ActorRef, snapshotStorage: Option[ActorRef]): Receive = {
+  def receiveRunning(aggregateEventLog: ActorRef, snapshotStorage: Option[ActorRef], haveOverdueActions: Set[AggregateRootId]): Receive = {
     case ActorSubscriberMessage.OnNext(aggregateCommand: AggregateRootCommand) ⇒
       numReceivedInternal += 1
-      val drone = context.child(aggregateCommand.aggId.value) match {
-        case Some(drone) ⇒
-          drone
-        case None ⇒
-          droneFactory(aggregateCommand, aggregateEventLog, snapshotStorage) match {
-            case scalaz.Success(props) ⇒
-              context.actorOf(props, aggregateCommand.aggId.value)
-            //context watch drone
-            case scalaz.Failure(problem) ⇒ {
-              reportCriticalFailure(problem)
-              throw new Exception(s"Could not create a drone for command ${aggregateCommand.header}:\n$problem")
+      if (haveOverdueActions.isEmpty) {
+        val drone = context.child(aggregateCommand.aggId.value) match {
+          case Some(drone) ⇒
+            drone
+          case None ⇒
+            droneFactory(aggregateCommand, aggregateEventLog, snapshotStorage) match {
+              case scalaz.Success(props) ⇒
+                val droneActor = context.actorOf(props, aggregateCommand.aggId.value)
+                context watch droneActor
+                droneActor
+              case scalaz.Failure(problem) ⇒ {
+                reportCriticalFailure(problem.withArg("hive", hiveDescriptor.value))
+                throw new Exception(s"Could not create a drone for command ${aggregateCommand.header}:\n$problem")
+              }
             }
-          }
+        }
+        drone ! aggregateCommand
+        enqueueEvent(CommandExecutionInitiated(aggregateCommand))
+      } else {
+        numFailedInternal += 1
+        val msg = s"Rejecting command because there are ${haveOverdueActions.size} drones which are overdue completing their actions."
+        val prob = ServiceBusyProblem(msg).withArg("hive", hiveDescriptor.value)
+        reportRejectedCommand(aggregateCommand, MinorSeverity, prob)
+        receivedInvalidCommand()
+        enqueueEvent(CommandExecutionFailed(aggregateCommand, prob))
+        requestCommands()
       }
-      drone ! aggregateCommand
-      enqueueEvent(CommandExecutionInitiated(aggregateCommand))
 
-    case rsp: AggregateRootDroneInternalMessages.ExecuteCommandResponse ⇒
+    case ActorSubscriberMessage.OnNext(something) ⇒
+      reportMinorFailure(ArgumentProblem(s"Received something I cannot handle: $something").withArg("hive", hiveDescriptor.value))
+      logWarning(s"Received something I cannot handle: $something")
+      receivedInvalidCommand()
+      requestCommands()
+
+    case rsp: ExecuteCommandResponse ⇒
       receivedCommandResponse()
       if (rsp.isSuccess) {
         numSucceededInternal += 1
       } else {
         numFailedInternal += 1
       }
-      val event: Event = rsp match {
-        case AggregateRootDroneInternalMessages.CommandExecuted(command) ⇒
+      val event: CommandStatusChanged = rsp match {
+        case CommandExecuted(command) ⇒
           CommandSuccessfullyExecuted(command)
-        case AggregateRootDroneInternalMessages.CommandNotExecuted(command, problem) ⇒
-          reportRejectedCommand(command, MinorSeverity, problem)
-          CommandExecutionFailed(command, problem)
-        case AggregateRootDroneInternalMessages.Busy(command) ⇒
-          reportRejectedCommand(command, MinorSeverity, CollisionProblem("Command can not be executed since another command is being executed."))
-          CommandExecutionFailed(command, CollisionProblem("Command can not be executed since another command is being executed."))
+        case CommandNotExecuted(command, problem) ⇒
+          val newProb = problem.withArg("hive", hiveDescriptor.value)
+          reportRejectedCommand(command, MinorSeverity, newProb)
+          CommandExecutionFailed(command, newProb)
+        case Busy(command) ⇒
+          val msg = s"Command[${command.getClass.getSimpleName}] with id ${command.commandId.value} on aggregate root ${command.aggId.value} can not be executed since another command is being executed."
+          val prob = CollisionProblem(msg).withArg("hive", hiveDescriptor.value)
+          reportRejectedCommand(command, MinorSeverity, prob)
+          CommandExecutionFailed(command, prob)
       }
       enqueueEvent(event)
       requestCommands()
+
+    case AggregateRootHiveInternals.DispatchEventsToStreamTakesTooLong(aggId, elapsed) ⇒
+      logWarning(s"Drone ${aggId.value} is overdue on dispatching events after ${elapsed.defaultUnitString}.")
+      context.become(receiveRunning(aggregateEventLog, snapshotStorage, haveOverdueActions + aggId))
+
+    case AggregateRootHiveInternals.LogEventsTakesTooLong(aggId, elapsed) ⇒
+      logWarning(s"Drone ${aggId.value} is overdue on logging events after ${elapsed.defaultUnitString}.")
+      context.become(receiveRunning(aggregateEventLog, snapshotStorage, haveOverdueActions + aggId))
+
+    case m: AggregateRootHiveInternals.SomethingOverdueGotDone ⇒
+      logInfo(s"Drone ${m.aggId.value} got it's stuff done.")
+      context.become(receiveRunning(aggregateEventLog, snapshotStorage, haveOverdueActions - m.aggId))
 
     case OnDeliverSuppliesNow(amount) ⇒
       deliverEvents(amount)
       requestCommands()
 
-    case ActorSubscriberMessage.OnNext(something) ⇒
-      reportMinorFailure(ArgumentProblem(s"Received something I cannot handle: $something"))
-      log.warning(s"Received something I cannot handle: $something")
-      receivedInvalidCommand()
-
     case ActorSubscriberMessage.OnComplete ⇒
-      if (log.isDebugEnabled)
-        logDebug(s"Aggregate command stream completed after receiving $numReceived commands. $numSucceeded succeeded, $numFailed failed.")
+      logDebug(s"Aggregate command stream completed after receiving $numReceived commands. $numSucceeded succeeded, $numFailed failed.")
 
     case OnBrokerProblem(problem) ⇒
-      reportCriticalFailure(problem)
+      reportCriticalFailure(problem.withArg("hive", hiveDescriptor.value))
       throw new Exception(s"The broker reported a problem:\n$problem")
 
     case OnContractExpired ⇒
       logInfo(s"Contract with broker expired. There are ${bufferedEvents.size} events still to deliver.")
+
+    case ReportDroneDebug(msg) ⇒
+      logDebug(s"Drone ${sender().path.name} reported a debug message: $msg")
+
+    case ReportDroneError(msg, cause) ⇒
+      logError(s"Drone ${sender().path.name} reported an error: $msg")
+      reportMajorFailure(cause.mapProblem { _.withArg("hive", hiveDescriptor.value) })
+
+    case ReportDroneWarning(msg, causeOpt) ⇒
+      logWarning(s"Drone ${sender().path.name} reported a warning: $msg")
+      causeOpt.foreach(cause => reportMinorFailure(cause.mapProblem { _.withArg("hive", hiveDescriptor.value) }))
+
+    case AggregateRootHiveInternals.CargoJettisoned(id) ⇒
+      this.numJettisonedSinceLastReport += 1
+
+    case ReportJettisonedCargo ⇒
+      if (numJettisonedSinceLastReport > 0)
+        logInfo(s"$numJettisonedSinceLastReport drones jettisoned their cargo since the last report.")
+      this.numJettisonedSinceLastReport = 0
+      context.system.scheduler.scheduleOnce(5.minutes, self, ReportJettisonedCargo)
+
+    case ReportThrottlingState ⇒
+      if (throttled) {
+        logInfo(s"""|I'm throttling for ${throttledSince.lap.defaultUnitString}
+                    |Number of buffered events: ${bufferedEvents.size}
+                    |Throttling threshold: $enqueuedEventsThrottlingThreshold 
+                    |Total requested events: $totalSuppliesRequested
+                    |Requested events since throttling state changed: $suppliesRequestedSinceThrottlingStateChanged""".stripMargin)
+        context.system.scheduler.scheduleOnce(1.minute, self, ReportThrottlingState)
+      }
+
+    case Terminated(actor) ⇒
+      logDebug(s"""${actor} terminated.""")
   }
 
   override def receive: Receive = receiveResolve
 
   override def preStart() {
     super.preStart()
+    logInfo(s""" |Starting...
+                 |
+                 |command-buffer-size: $commandBuffersize
+                 |enqueued-events-throttling-threshold: $enqueuedEventsThrottlingThreshold""".stripMargin)
     self ! Resolve
   }
 
@@ -247,7 +402,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
     super.preRestart(reason, message)
     cancelContract()
     reportCriticalFailure(reason)
-    logInfo(s"[Restart]: Received $numReceived commands. $numSucceeded succeeded, $numFailed failed.")
+    logWarning(s"[Restart]: Received $numReceived commands. $numSucceeded succeeded, $numFailed failed.")
   }
 
   override def postRestart(reason: Throwable) {
@@ -258,7 +413,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
   override def postStop() {
     super.postStop()
     cancelContract()
-    logInfo(s"Received $numReceived commands. $numSucceeded succeeded, $numFailed failed.")
+    logWarning(s"Stopped. Received $numReceived commands. $numSucceeded succeeded, $numFailed failed.")
   }
 
 }

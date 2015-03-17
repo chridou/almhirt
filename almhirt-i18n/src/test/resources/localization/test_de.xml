@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<localized locale="de">
+	<section name="section_1">
+		<group name="group_1">
+			<key name="key_1">
+				<icu>de</icu>
+			</key>
+			<key name="length">
+				<measured-value parameter="length">
+					<format-width>wide</format-width>
+					<default-format>
+						<unit-of-measurement>meter</unit-of-measurement>
+						<min-fraction-digits>0</min-fraction-digits>
+						<max-fraction-digits>0</max-fraction-digits>
+					</default-format>
+					<selective>
+						<format>
+							<system>anglo-american</system>
+							<unit-of-measurement>fathom</unit-of-measurement>
+							<min-fraction-digits>2</min-fraction-digits>
+							<max-fraction-digits>2</max-fraction-digits>
+						</format>
+					</selective>
+				</measured-value>
+			</key>
+		</group>
+	</section>
+</localized>

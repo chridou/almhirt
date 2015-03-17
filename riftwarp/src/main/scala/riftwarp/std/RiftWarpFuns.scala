@@ -72,14 +72,14 @@ trait RiftWarpFuns {
             x
           case WarpTuple2(a, b) ⇒
             for {
-              va <- unpack(a, None, None)
-              vb <- unpack(b, None, None)
+              va ← unpack(a, None, None)
+              vb ← unpack(b, None, None)
             } yield (va, vb)
           case WarpTuple3(a, b, c) ⇒
             for {
-              va <- unpack(a, None, None)
-              vb <- unpack(b, None, None)
-              vc <- unpack(c, None, None)
+              va ← unpack(a, None, None)
+              vb ← unpack(b, None, None)
+              vc ← unpack(c, None, None)
             } yield (va, vb, vc)
           case WarpTree(tree) ⇒
             val x = tree.map(item ⇒ unpack(item, None, None).toAgg).sequence

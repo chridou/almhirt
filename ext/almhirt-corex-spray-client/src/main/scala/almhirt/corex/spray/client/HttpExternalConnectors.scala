@@ -78,7 +78,7 @@ trait RequestsWithEntity { self: HttpExternalConnector ⇒
   def createEntityRequest[T: HttpSerializer](payload: T, settings: EntityRequestSettings): AlmValidation[HttpRequest] = {
     val serializer = implicitly[HttpSerializer[T]]
     for {
-      serialized <- serializer.serialize(payload, settings.contentMediaType.toAlmMediaType)
+      serialized ← serializer.serialize(payload, settings.contentMediaType.toAlmMediaType)
     } yield HttpRequest(
       method = settings.method,
       uri = settings.targetEndpoint,
@@ -95,30 +95,30 @@ trait AwaitingEntityResponse { self: HttpExternalConnector ⇒
   def evaluateEntityResponse[T: HttpDeserializer](response: HttpResponse, acceptAsSuccess: Set[StatusCode])(implicit problemDeserializer: HttpDeserializer[Problem]): AlmValidation[T] = {
     if (acceptAsSuccess(response.status))
       deserializeEntity[T](response).fold(
-        fail1 => {
+        fail1 ⇒ {
           // Try whether there's a problem in the response
           deserializeProblem(response).fold(
-            fail2 => SerializationProblem(s"""	|
+            fail2 ⇒ SerializationProblem(s"""	|
             									|This is a strange failure(client side).
             									|1) This response(${response.status}) WAS accepted as a success.
             									|2) The content was not an entity.
             									|3) The content was not a problem(which would be strange with a success status...): "${fail1.message}"""".stripMargin, cause = Some(fail2)).failure,
-            aProblem => SerializationProblem(s"""	|
+            aProblem ⇒ SerializationProblem(s"""	|
             										|The response was accepted(${response.status}) as a success but couldn't be deserialized to the entity.
             										|so I tried to deserialize to a Problem which succeeded.
             										|The problem received from server side is contained as this problem's cause.""".stripMargin, cause = Some(aProblem)).failure)
         },
-        deserializedEntity => deserializedEntity.success)
+        deserializedEntity ⇒ deserializedEntity.success)
     else
       // In case there is no problem contained, we check whether its the entity...
       deserializeProblem(response).fold(
         fail1 ⇒ deserializeEntity[T](response).fold(
-          fail2 => SerializationProblem(s"""	|
+          fail2 ⇒ SerializationProblem(s"""	|
         		  								|This is a strange failure(client side).
             									|1) This response(${response.status}) WAS NOT accepted as a success.
             									|2) The content was not a problem: "${fail1.message}"
             									|3) The content was not an entity.""".stripMargin, cause = Some(fail2)).failure,
-          succ => succ.success),
+          succ ⇒ succ.success),
         succ ⇒ succ.failure)
   }
 
@@ -159,9 +159,9 @@ trait AwaitingEntityResponse { self: HttpExternalConnector ⇒
 trait HttpExternalPublisher { self: HttpExternalConnector with RequestsWithEntity ⇒
   def publishToExternalEndpoint[T: HttpSerializer](payload: T, settings: EntityRequestSettings)(implicit problemDeserializer: HttpDeserializer[Problem]): AlmFuture[(T, FiniteDuration)] =
     for {
-      request <- AlmFuture(createEntityRequest(payload, settings))(serializationExecutionContext)
-      resonseAndTime <- sendRequest(request)
-      _ <- AlmFuture(evaluateAck(resonseAndTime._1, settings.acceptAsSuccess))(serializationExecutionContext)
+      request ← AlmFuture(createEntityRequest(payload, settings))(serializationExecutionContext)
+      resonseAndTime ← sendRequest(request)
+      _ ← AlmFuture(evaluateAck(resonseAndTime._1, settings.acceptAsSuccess))(serializationExecutionContext)
     } yield (payload, resonseAndTime._2)
 
   def evaluateAck(response: HttpResponse, acceptAsSuccess: Set[StatusCode])(implicit problemDeserializer: HttpDeserializer[Problem]): AlmValidation[HttpResponse] = {
@@ -184,16 +184,16 @@ trait HttpExternalQuery { self: HttpExternalConnector with AwaitingEntityRespons
 
   def externalQuery[U: HttpDeserializer](settings: RequestSettings)(implicit problemDeserializer: HttpDeserializer[Problem]): AlmFuture[(U, FiniteDuration)] =
     for {
-      resonseAndTime <- sendRequest(createSimpleQueryRequest(settings))
-      entity <- AlmFuture(evaluateEntityResponse(resonseAndTime._1, settings.acceptAsSuccess)(implicitly[HttpDeserializer[U]], problemDeserializer))(serializationExecutionContext)
+      resonseAndTime ← sendRequest(createSimpleQueryRequest(settings))
+      entity ← AlmFuture(evaluateEntityResponse(resonseAndTime._1, settings.acceptAsSuccess)(implicitly[HttpDeserializer[U]], problemDeserializer))(serializationExecutionContext)
     } yield (entity, resonseAndTime._2)
 }
 
 trait HttpExternalConversation { self: HttpExternalConnector with RequestsWithEntity with AwaitingEntityResponse ⇒
   def conversationWithExternalEndpoint[T: HttpSerializer, U: HttpDeserializer](payload: T, settings: EntityRequestSettings)(implicit problemDeserializer: HttpDeserializer[Problem]): AlmFuture[(U, FiniteDuration)] =
     for {
-      request <- AlmFuture(createEntityRequest(payload, settings))(serializationExecutionContext)
-      resonseAndTime <- sendRequest(request)
-      entity <- AlmFuture(evaluateEntityResponse(resonseAndTime._1, settings.acceptAsSuccess)(implicitly[HttpDeserializer[U]], problemDeserializer))(serializationExecutionContext)
+      request ← AlmFuture(createEntityRequest(payload, settings))(serializationExecutionContext)
+      resonseAndTime ← sendRequest(request)
+      entity ← AlmFuture(evaluateEntityResponse(resonseAndTime._1, settings.acceptAsSuccess)(implicitly[HttpDeserializer[U]], problemDeserializer))(serializationExecutionContext)
     } yield (entity, resonseAndTime._2)
 }

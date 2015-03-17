@@ -12,6 +12,24 @@ package object herder {
   type RejectedCommandsEntry = (CommandRepresentation, ProblemCause, Severity, LocalDateTime)
   type InformationEntry = (String, Importance, LocalDateTime)
 
+  implicit object FailuresOrdering extends scala.math.Ordering[(ComponentId, BadThingsHistory[FailuresEntry])] {
+    def compare(a: (ComponentId, BadThingsHistory[FailuresEntry]), b: (ComponentId, BadThingsHistory[FailuresEntry])): Int =
+      if (a._1.app == b._1.app) {
+        if (a._2.maxSeverity == b._2.maxSeverity) {
+          if (a._2.occurencesCount == b._2.occurencesCount) {
+            a._1.component compare b._1.component
+          } else {
+            b._2.occurencesCount compare a._2.occurencesCount
+          }
+        } else {
+          b._2.maxSeverity compare a._2.maxSeverity
+        }
+      } else {
+        a._1.app compare b._1.app
+      }
+  }
+
+  
   implicit object MissedEventsOrdering extends scala.math.Ordering[(ComponentId, BadThingsHistory[MissedEventsEntry])] {
     def compare(a: (ComponentId, BadThingsHistory[MissedEventsEntry]), b: (ComponentId, BadThingsHistory[MissedEventsEntry])): Int =
       if (a._1.app == b._1.app) {
@@ -46,6 +64,7 @@ package object herder {
       }
   }
 
+  
   implicit object InformationOrdering extends scala.math.Ordering[(ComponentId, ImportantThingsHistory[InformationEntry])] {
     def compare(a: (ComponentId, ImportantThingsHistory[InformationEntry]), b: (ComponentId, ImportantThingsHistory[InformationEntry])): Int =
       if (a._1.app == b._1.app) {

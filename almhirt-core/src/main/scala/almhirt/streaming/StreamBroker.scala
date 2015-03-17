@@ -3,11 +3,10 @@ package almhirt.streaming
 import org.reactivestreams.{ Subscriber, Subscription }
 import almhirt.common._
 
-trait StreamBroker[TElement]{
+trait StreamBroker[TElement] {
   def signContract(contractor: SuppliesContractor[TElement]): Unit
   def newSubscriber(): Subscriber[TElement]
 }
-
 
 trait SuppliesContractor[TElement] {
   def onProblem(problem: Problem): Unit
@@ -30,10 +29,13 @@ private[almhirt] object InternalBrokerMessages {
   final case class InternalCancelContract(contractor: SuppliesContractor[_])
   final case class InternalOfferSupplies(amount: Int, contractor: SuppliesContractor[_])
   final case class InternalDeliverSupplies(elements: Seq[_], contractor: SuppliesContractor[_])
-  
+
   final case class InternalOnSubscribe(subscriberId: String, subscription: Subscription)
   final case class InternalOnNext(subscriberId: String, element: Any)
   final case class InternalOnComplete(subscriberId: String)
   final case class InternalOnError(subscriberId: String, error: Throwable)
+
+  final case class InternalEnableNotifyOnNoDemand(notifyWhenNoDemandFor: scala.concurrent.duration.FiniteDuration)
+  final case class InternalAddReporter(reporter: almhirt.tooling.Reporter)
 }
 

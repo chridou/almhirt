@@ -52,9 +52,9 @@ trait WarpPackageFuns {
 
   def packAssociativeCollectionByDescriptors[A, B](what: Traversable[(A, B)], descriptorA: WarpDescriptor, descriptorB: WarpDescriptor)(implicit packers: WarpPackers): AlmValidation[WarpAssociativeCollection] =
     for {
-      packerA <- packers(descriptorA)
-      packerB <- packers(descriptorB)
-      res <- what.map {
+      packerA ← packers(descriptorA)
+      packerB ← packers(descriptorB)
+      res ← what.map {
         case (a, b) ⇒
           packerA.packBlind(a).flatMap(pa ⇒
             packerB.packBlind(b).map(pb ⇒
@@ -77,10 +77,10 @@ trait WarpPackageFuns {
     what.map {
       case (a, b) ⇒
         (for {
-          packerA <- packers(a.getClass())
-          packerB <- packers(b.getClass())
-          packedA <- packerA.packBlind(a)
-          packedB <- packerB.packBlind(b)
+          packerA ← packers(a.getClass())
+          packerB ← packers(b.getClass())
+          packedA ← packerA.packBlind(a)
+          packedB ← packerB.packBlind(b)
         } yield (packedA, packedB)).toAgg
     }.toVector.sequence.map(WarpAssociativeCollection(_))
 

@@ -22,11 +22,11 @@ trait DivertingWarpUnpacker[+T] { self: WarpUnpacker[T] ⇒
     std.funs.tryGetWarpDescriptor(from) match {
       case Some(wd) ⇒
         (divert.get(wd)) match {
-          case Some(unpacker) =>
+          case Some(unpacker) ⇒
             unpacker.unpack(from)
-          case None =>
+          case None ⇒
             val fromStr = from.toString.ellipse(100)
-            val wds = divert.map { case (wd, up) => s"$wd -> ${up.getClass.getSimpleName}" }
+            val wds = divert.map { case (wd, up) ⇒ s"$wd → ${up.getClass.getSimpleName}" }
             NoSuchElementProblem(s"""	|[DivertingWarpUnpacker(${this.warpDescriptor})]
             							|Tried to unpack a $fromStr
             							|Could not find an Unpacker for the found descriptor $wd

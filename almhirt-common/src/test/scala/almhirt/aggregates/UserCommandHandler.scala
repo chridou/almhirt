@@ -36,8 +36,8 @@ trait UserCommandHandler extends AggregateRootCommandHandler[User, UserCommand, 
         case (Vivus(agg), ChangeUserAgeForCreditCard(_, _, _, age)) ⇒
           async {
             for {
-              goodForCC <- expensiveServiceCallForCreditCard(age)
-              res <- AlmFuture.compute {
+              goodForCC ← expensiveServiceCallForCreditCard(age)
+              res ← AlmFuture.compute {
                 if (goodForCC) {
                   changeAge(agg, age)
                 } else {

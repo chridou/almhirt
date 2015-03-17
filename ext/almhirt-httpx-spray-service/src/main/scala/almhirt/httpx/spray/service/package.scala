@@ -16,6 +16,7 @@ package object service {
       case ServiceBrokenProblem(_) ⇒ StatusCodes.InternalServerError
       case ServiceShutDownProblem(_) ⇒ StatusCodes.ServiceUnavailable
       case ServiceNotAvailableProblem(_) ⇒ StatusCodes.ServiceUnavailable
+      case ServiceNotReadyProblem(_) ⇒ StatusCodes.ServiceUnavailable
       case ServiceBusyProblem(_) ⇒ StatusCodes.TooManyRequests
       case BadDataProblem(_) ⇒ StatusCodes.BadRequest
       case IllegalOperationProblem(_) ⇒ StatusCodes.BadRequest
@@ -25,16 +26,16 @@ package object service {
       case CircuitOpenProblem(_) ⇒ StatusCodes.ServiceUnavailable
       case ExceptionCaughtProblem(p) ⇒
         p.cause match {
-          case Some(CauseIsThrowable(HasAThrowable(exn: EscalatedProblemException))) =>
+          case Some(CauseIsThrowable(HasAThrowable(exn: EscalatedProblemException))) ⇒
             determineStatusCode(exn.escalatedProblem)
-          case _ => StatusCodes.InternalServerError
+          case _ ⇒ StatusCodes.InternalServerError
         }
       case CommandExecutionFailedProblem(p) ⇒
         p.cause match {
-          case Some(CauseIsProblem(innerProb)) => determineStatusCode(innerProb)
-          case Some(CauseIsThrowable(HasAThrowable(exn: EscalatedProblemException))) =>
+          case Some(CauseIsProblem(innerProb)) ⇒ determineStatusCode(innerProb)
+          case Some(CauseIsThrowable(HasAThrowable(exn: EscalatedProblemException))) ⇒
             determineStatusCode(exn.escalatedProblem)
-          case _ => StatusCodes.InternalServerError
+          case _ ⇒ StatusCodes.InternalServerError
         }
       case _ ⇒ StatusCodes.InternalServerError
     }

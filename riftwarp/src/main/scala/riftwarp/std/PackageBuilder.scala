@@ -42,7 +42,7 @@ trait PackageBuilderFuns {
   def POpt[A: WarpPrimitiveConverter](label: String, what: Option[A]): AlmValidation[WarpElement] =
     what match {
       case Some(v) ⇒ P(label, v)
-      case None ⇒ WarpElement(label).success
+      case None    ⇒ WarpElement(label).success
     }
 
   def With[T](label: String, what: T, packer: WarpPacker[T])(implicit packers: WarpPackers): AlmValidation[WarpElement] =
@@ -51,7 +51,16 @@ trait PackageBuilderFuns {
   def WithOpt[T](label: String, what: Option[T], packer: WarpPacker[T])(implicit packers: WarpPackers): AlmValidation[WarpElement] =
     what match {
       case Some(v) ⇒ packer(v).map(x ⇒ WarpElement(label, Some(x)))
-      case None ⇒ WarpElement(label).success
+      case None    ⇒ WarpElement(label).success
+    }
+
+  def With2[T](label: String, what: T)(implicit packer: WarpPacker[T], packers: WarpPackers): AlmValidation[WarpElement] =
+    packer(what).map(x ⇒ WarpElement(label, Some(x)))
+
+  def WithOpt2[T](label: String, what: Option[T])(implicit packer: WarpPacker[T], packers: WarpPackers): AlmValidation[WarpElement] =
+    what match {
+      case Some(v) ⇒ packer(v).map(x ⇒ WarpElement(label, Some(x)))
+      case None    ⇒ WarpElement(label).success
     }
 
   def LookUp(label: String, what: Any)(implicit packers: WarpPackers): AlmValidation[WarpElement] =
@@ -60,7 +69,7 @@ trait PackageBuilderFuns {
   def LookUpOpt[T](label: String, what: Option[Any])(implicit packers: WarpPackers): AlmValidation[WarpElement] =
     what match {
       case Some(v) ⇒ funs.pack(v).map(x ⇒ WarpElement(label, Some(x)))
-      case None ⇒ WarpElement(label).success
+      case None    ⇒ WarpElement(label).success
     }
 
   def PTup2[A: WarpPrimitiveConverter, B: WarpPrimitiveConverter](label: String, what: (A, B)): AlmValidation[WarpElement] =
@@ -69,7 +78,7 @@ trait PackageBuilderFuns {
   def PTup2Opt[A: WarpPrimitiveConverter, B: WarpPrimitiveConverter](label: String, what: Option[(A, B)]): AlmValidation[WarpElement] =
     what match {
       case Some(v) ⇒ PTup2(label, v)
-      case None ⇒ WarpElement(label).success
+      case None    ⇒ WarpElement(label).success
     }
 
   def PTup3[A: WarpPrimitiveConverter, B: WarpPrimitiveConverter, C: WarpPrimitiveConverter](label: String, what: (A, B, C)): AlmValidation[WarpElement] =
@@ -78,7 +87,7 @@ trait PackageBuilderFuns {
   def PTup3Opt[A: WarpPrimitiveConverter, B: WarpPrimitiveConverter, C: WarpPrimitiveConverter](label: String, what: Option[(A, B, C)]): AlmValidation[WarpElement] =
     what match {
       case Some(v) ⇒ PTup3(label, v)
-      case None ⇒ WarpElement(label).success
+      case None    ⇒ WarpElement(label).success
     }
 
   def CP[A: WarpPrimitiveConverter](label: String, what: Traversable[A]): AlmValidation[WarpElement] =
@@ -87,7 +96,7 @@ trait PackageBuilderFuns {
   def CPOpt[A: WarpPrimitiveConverter](label: String, what: Option[Traversable[A]]): AlmValidation[WarpElement] =
     what match {
       case Some(v) ⇒ WarpElement(label, Some(toWarpPrimitivesCollection(v))).success
-      case None ⇒ WarpElement(label).success
+      case None    ⇒ WarpElement(label).success
     }
 
   def CWith[A](label: String, what: Traversable[A], packer: WarpPacker[A])(implicit packers: WarpPackers): AlmValidation[WarpElement] =
@@ -96,7 +105,16 @@ trait PackageBuilderFuns {
   def CWithOpt[A](label: String, what: Option[Traversable[A]], packer: WarpPacker[A])(implicit packers: WarpPackers): AlmValidation[WarpElement] =
     what match {
       case Some(v) ⇒ toWarpCollectionWith(v, packer).map(x ⇒ WarpElement(label, Some(x)))
-      case None ⇒ WarpElement(label).success
+      case None    ⇒ WarpElement(label).success
+    }
+
+  def CWith2[A](label: String, what: Traversable[A])(implicit packer: WarpPacker[A], packers: WarpPackers): AlmValidation[WarpElement] =
+    toWarpCollectionWith(what, packer).map(x ⇒ WarpElement(label, Some(x)))
+
+  def CWithOpt2[A](label: String, what: Option[Traversable[A]])(implicit packer: WarpPacker[A], packers: WarpPackers): AlmValidation[WarpElement] =
+    what match {
+      case Some(v) ⇒ toWarpCollectionWith(v, packer).map(x ⇒ WarpElement(label, Some(x)))
+      case None    ⇒ WarpElement(label).success
     }
 
   def CLookUp[A](label: String, what: Traversable[A])(implicit packers: WarpPackers): AlmValidation[WarpElement] =
@@ -105,7 +123,7 @@ trait PackageBuilderFuns {
   def CLookUpOpt[A](label: String, what: Option[Traversable[A]])(implicit packers: WarpPackers): AlmValidation[WarpElement] =
     what match {
       case Some(v) ⇒ toWarpCollectionLookUp(v).map(x ⇒ WarpElement(label, Some(x)))
-      case None ⇒ WarpElement(label).success
+      case None    ⇒ WarpElement(label).success
     }
 
   def MP[A, B](label: String, what: Map[A, B])(implicit convA: WarpPrimitiveConverter[A], convB: WarpPrimitiveConverter[B]): AlmValidation[WarpElement] =
@@ -114,7 +132,7 @@ trait PackageBuilderFuns {
   def MPOpt[A: WarpPrimitiveConverter, B: WarpPrimitiveConverter](label: String, what: Option[Map[A, B]]): AlmValidation[WarpElement] =
     what match {
       case Some(v) ⇒ MP[A, B](label, v)
-      case None ⇒ WarpElement(label).success
+      case None    ⇒ WarpElement(label).success
     }
 
   def MWith[A, B](label: String, what: Map[A, B], packerB: WarpPacker[B])(implicit convA: WarpPrimitiveConverter[A], packers: WarpPackers): AlmValidation[WarpElement] =
@@ -124,7 +142,17 @@ trait PackageBuilderFuns {
   def MWithOpt[A: WarpPrimitiveConverter, B](label: String, what: Option[Map[A, B]], packerB: WarpPacker[B])(implicit packers: WarpPackers): AlmValidation[WarpElement] =
     what match {
       case Some(v) ⇒ MWith[A, B](label, v, packerB)
-      case None ⇒ WarpElement(label).success
+      case None    ⇒ WarpElement(label).success
+    }
+
+  def MWith2[A, B](label: String, what: Map[A, B])(implicit convA: WarpPrimitiveConverter[A], packerB: WarpPacker[B], packers: WarpPackers): AlmValidation[WarpElement] =
+    what.map { case (a, b) ⇒ packerB(b).map(wb ⇒ (convA.convertBack(a), wb)).toAgg }.toVector.sequence.map(items ⇒
+      WarpElement(label, Some(WarpAssociativeCollection(items))))
+
+  def MWithOpt2[A: WarpPrimitiveConverter, B](label: String, what: Option[Map[A, B]])(implicit packerB: WarpPacker[B], packers: WarpPackers): AlmValidation[WarpElement] =
+    what match {
+      case Some(v) ⇒ MWith[A, B](label, v, packerB)
+      case None    ⇒ WarpElement(label).success
     }
 
   def MLookUp[A, B](label: String, what: Map[A, B])(implicit convA: WarpPrimitiveConverter[A], packers: WarpPackers): AlmValidation[WarpElement] =
@@ -139,7 +167,7 @@ trait PackageBuilderFuns {
   def MLookUpOpt[A: WarpPrimitiveConverter, B](label: String, what: Option[Map[A, B]])(implicit packers: WarpPackers): AlmValidation[WarpElement] =
     what match {
       case Some(v) ⇒ MLookUp(label, v)
-      case None ⇒ WarpElement(label).success
+      case None    ⇒ WarpElement(label).success
     }
 
   def MLookUpForgiving[A, B](label: String, what: Map[A, B])(implicit convA: WarpPrimitiveConverter[A], packers: WarpPackers): AlmValidation[WarpElement] =
@@ -157,7 +185,7 @@ trait PackageBuilderFuns {
   def MLookUpForgivingOpt[A: WarpPrimitiveConverter, B](label: String, what: Option[Map[A, B]])(implicit packers: WarpPackers): AlmValidation[WarpElement] =
     what match {
       case Some(v) ⇒ MLookUpForgiving(label, v)
-      case None ⇒ WarpElement(label).success
+      case None    ⇒ WarpElement(label).success
     }
 
   def TP[A](label: String, what: Tree[A])(implicit conv: WarpPrimitiveConverter[A]): AlmValidation[WarpElement] =
@@ -166,7 +194,7 @@ trait PackageBuilderFuns {
   def TPOpt[A: WarpPrimitiveConverter](label: String, what: Option[Tree[A]]): AlmValidation[WarpElement] =
     what match {
       case Some(v) ⇒ TP(label, v)
-      case None ⇒ WarpElement(label).success
+      case None    ⇒ WarpElement(label).success
     }
 
   def TWith[A](label: String, what: Tree[A], packer: WarpPacker[A])(implicit packers: WarpPackers): AlmValidation[WarpElement] =
@@ -175,7 +203,7 @@ trait PackageBuilderFuns {
   def TWithOpt[A](label: String, what: Option[Tree[A]], packer: WarpPacker[A])(implicit packers: WarpPackers): AlmValidation[WarpElement] =
     what match {
       case Some(v) ⇒ TWith(label, v, packer)
-      case None ⇒ WarpElement(label).success
+      case None    ⇒ WarpElement(label).success
     }
 
   def TLookUp[A](label: String, what: Tree[A])(implicit packers: WarpPackers): AlmValidation[WarpElement] =
@@ -187,7 +215,7 @@ trait PackageBuilderFuns {
   def TLookUpOpt[A](label: String, what: Option[Tree[A]])(implicit packers: WarpPackers): AlmValidation[WarpElement] =
     what match {
       case Some(v) ⇒ TLookUp(label, v)
-      case None ⇒ WarpElement(label).success
+      case None    ⇒ WarpElement(label).success
     }
 
   def Bytes(label: String, bytes: IndexedSeq[Byte]): AlmValidation[WarpElement] = BytesOpt(label, Some(bytes))
@@ -202,7 +230,7 @@ trait PackageBuilderOps {
 
   implicit def tuple2WarpElement[T](tuple: (String, Option[T]))(implicit packer: WarpPacker[T], packers: WarpPackers): AlmValidation[WarpElement] =
     tuple._2 match {
-      case None ⇒ WarpElement(tuple._1, None).success
+      case None    ⇒ WarpElement(tuple._1, None).success
       case Some(x) ⇒ packer(x).map(x ⇒ WarpElement(tuple._1, Some(x)))
     }
 

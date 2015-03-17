@@ -4,9 +4,10 @@ import scala.language.postfixOps
 import scala.concurrent.duration._
 import akka.actor._
 import almhirt.common._
-import akka.stream.scaladsl2._
+import akka.stream.scaladsl._
 import akka.testkit._
 import org.scalatest._
+import akka.stream.FlowMaterializer
 
 class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixture.WordSpecLike with Matchers with BeforeAndAfterAll {
   def this() = this(ActorSystem("EventStreamTests", almhirt.TestConfigs.logWarningConfig))
@@ -14,7 +15,7 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
   implicit val executionContext = system.dispatchers.defaultGlobalDispatcher
   implicit val ccuad = CanCreateUuidsAndDateTimes()
 
-  implicit val mat = FlowMaterializer()
+  implicit val mat = akka.stream.ActorFlowMaterializer()
 
   case class TestEvent(header: EventHeader) extends Event
   object TestEvent {
@@ -38,7 +39,7 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
         val subscriberProbeEvent = TestProbe()
 
         val event = TestEvent("a")
-        val subscriber = DelegatingEventSubscriber[Event](subscriberProbeEvent.ref)
+        val subscriber = DelegatingEventSubscriber[Event](subscriberProbeEvent.ref, (err: Throwable) => info(s"A ${err.getMessage}"))
         within(1 second) {
           streams.eventStream.subscribe(subscriber)
           Stillage(List[Event](event)).signContract(streams.eventBroker)
@@ -53,7 +54,7 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
 
         val event1 = TestEvent("a")
         val event2 = TestEvent("b")
-        val subscriber = DelegatingEventSubscriber[Event](subscriberProbeEvent.ref)
+        val subscriber = DelegatingEventSubscriber[Event](subscriberProbeEvent.ref, (err: Throwable) => info(s"B ${err.getMessage}"))
         within(1 second) {
           streams.eventStream.subscribe(subscriber)
           Stillage(List[Event](event1)).signContract(streams.eventBroker)
@@ -68,8 +69,8 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
         val subscriberProbeEvent2 = TestProbe()
 
         val event = TestEvent("a")
-        val subscriber1 = DelegatingEventSubscriber[Event](subscriberProbeEvent1.ref)
-        val subscriber2 = DelegatingEventSubscriber[Event](subscriberProbeEvent2.ref)
+        val subscriber1 = DelegatingEventSubscriber[Event](subscriberProbeEvent1.ref, (err: Throwable) => info(s"C1 ${err.getMessage}"))
+        val subscriber2 = DelegatingEventSubscriber[Event](subscriberProbeEvent2.ref, (err: Throwable) => info(s"C2 ${err.getMessage}"))
         within(1 second) {
           streams.eventStream.subscribe(subscriber1)
           streams.eventStream.subscribe(subscriber2)
@@ -84,7 +85,7 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
         val subscriberProbeEvent = TestProbe()
 
         val event = TestDomainEvent("a")
-        val subscriber = DelegatingEventSubscriber[Event](subscriberProbeEvent.ref)
+        val subscriber = DelegatingEventSubscriber[Event](subscriberProbeEvent.ref, (err: Throwable) => info(s"D ${err.getMessage}"))
         within(1 second) {
           streams.eventStream.subscribe(subscriber)
           Stillage(List[Event](event)).signContract(streams.eventBroker)
@@ -98,12 +99,12 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
 
         val n = nMsgBig * 3
         val events = (1 to n).map(i ⇒ TestEvent(i.toString): Event).toVector
-        val subscriber = DelegatingEventSubscriber[Event](probe2.ref)
+        val subscriber = DelegatingEventSubscriber[Event](probe2.ref, (err: Throwable) => info(s"E ${err.getMessage}"))
         val start = Deadline.now
-        within(15 seconds) {
+        within(30 seconds) {
           streams.eventStream.subscribe(subscriber)
           Stillage(events).signContract(streams.eventBroker)
-          val res = probe2.receiveN(n, 15 seconds)
+          val res = probe2.receiveN(n, 30 seconds)
           val time = start.lap
           info(s"Dispatched $n in ${start.lap.defaultUnitString}((${(nMsgBig * 3 * 1000).toDouble / time.toMillis}/s)).")
           res should equal(events)
@@ -116,11 +117,11 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
         val subscriberProbeEvent = TestProbe()
 
         val event = TestEvent("a")
-        val subscriber = DelegatingEventSubscriber[Event](subscriberProbeEvent.ref)
+        val subscriber = DelegatingEventSubscriber[Event](subscriberProbeEvent.ref, (err: Throwable) => info(s"F ${err.getMessage}"))
         val streamSubscriber = streams.eventBroker.newSubscriber
         within(1 second) {
           streams.eventStream.subscribe(streamSubscriber)
-          Source(List[Event](event)).connect(Sink(subscriber)).run()
+          Source(List[Event](event)).to(Sink(subscriber)).run()
           subscriberProbeEvent.expectMsg(100 millis, event)
         }
       }
@@ -131,14 +132,14 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
 
         val event1 = TestEvent("a")
         val event2 = TestEvent("b")
-        val subscriber = DelegatingEventSubscriber[Event](subscriberProbeEvent.ref)
+        val subscriber = DelegatingEventSubscriber[Event](subscriberProbeEvent.ref, (err: Throwable) => info(s"G ${err.getMessage}"))
         val streamSubscriber1 = streams.eventBroker.newSubscriber
         val streamSubscriber2 = streams.eventBroker.newSubscriber
         within(1 second) {
           streams.eventStream.subscribe(subscriber)
-          Source(List[Event](event1)).connect(Sink(streamSubscriber1)).run()
+          Source(List[Event](event1)).to(Sink(streamSubscriber1)).run()
           subscriberProbeEvent.expectMsg(100 millis, event1)
-          Source(List[Event](event2)).connect(Sink(streamSubscriber2)).run()
+          Source(List[Event](event2)).to(Sink(streamSubscriber2)).run()
           subscriberProbeEvent.expectMsg(100 millis, event2)
         }
       }

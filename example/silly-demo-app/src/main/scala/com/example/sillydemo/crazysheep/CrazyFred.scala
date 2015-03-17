@@ -50,7 +50,7 @@ class CrazyFred(implicit override val almhirtContext: AlmhirtContext) extends Cr
   }
 
   def receive: Receive = {
-    case DoSomething =>
+    case DoSomething ⇒
       if (rnd.nextBoolean) {
         reportMissedEvent(
           CrazyFredEvent(EventHeader(), s"määähähähhhääää-$määäh"),

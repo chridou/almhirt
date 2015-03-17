@@ -153,12 +153,12 @@ object MessagePackParser {
 
   def parseCollection(formatByte: Int, reader: BinaryReader): WarpCollection = {
     val numElems = MessagePackTypecodes.parseArrayHeader(formatByte, reader)
-    WarpCollection((for (i <- 0 until numElems) yield parseUnsafe(reader)).toVector)
+    WarpCollection((for (i ← 0 until numElems) yield parseUnsafe(reader)).toVector)
   }
 
   def parseAssociativeCollection(formatByte: Int, reader: BinaryReader): WarpAssociativeCollection = {
     val numElems = MessagePackTypecodes.parseMapHeader(formatByte, reader)
-    WarpAssociativeCollection((for (i <- 0 until numElems) yield (parseUnsafe(reader), parseUnsafe(reader))).toVector)
+    WarpAssociativeCollection((for (i ← 0 until numElems) yield (parseUnsafe(reader), parseUnsafe(reader))).toVector)
   }
 
   def parseTree(size: Int, reader: BinaryReader): WarpTree = {
@@ -245,7 +245,7 @@ object MessagePackParser {
           Some(parseWarpDescriptor(formatByte, reader))
       }
       val numElems = MessagePackTypecodes.parseMapHeader(reader.readUnsignedByte, reader)
-      val elems = (for (n <- 0 until numElems) yield parseElement(reader))
+      val elems = (for (n ← 0 until numElems) yield parseElement(reader))
       WarpObject(wd, elems.toVector)
     } catch {
       case scala.util.control.NonFatal(exn) ⇒ throw new Exception("Could not parse WarpObject", exn)

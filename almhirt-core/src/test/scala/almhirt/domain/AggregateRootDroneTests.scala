@@ -26,7 +26,7 @@ class AggregateRootDroneTests(_system: ActorSystem)
 
   "The AggregateRootDrone" when {
     import almhirt.eventlog.AggregateRootEventLog._
-    import AggregateRootDroneInternalMessages._
+    import AggregateRootHiveInternals._
     import almhirt.aggregates._
     import aggregatesforthelazyones._
     import play.api.libs.iteratee._
@@ -477,12 +477,15 @@ class AggregateRootDroneTests(_system: ActorSystem)
         def aggregateEventLog: ActorRef = eventlogActor
         def snapshotStorage: Option[ActorRef] = None
         val eventsBroker: StreamBroker[Event] = streams.eventBroker
+        val notifyHiveAboutUndispatchedEventsAfter: Option[FiniteDuration] = None
+        val notifyHiveAboutUnstoredEventsAfterPerEvent: Option[FiniteDuration] = None
+        def retryEventLogActionDelay: Option[FiniteDuration] = None
         val returnToUnitializedAfter = None
 
         override val aggregateCommandValidator = AggregateRootCommandValidator.Validated
         override val tag = scala.reflect.ClassTag[UserCommand](classOf[UserCommand])
-        
-        override def sendMessage(msg: AggregateRootDroneInternalMessages.AggregateDroneMessage) {
+
+        override def sendMessage(msg: AggregateRootHiveInternals.AggregateDroneMessage) {
           testProbe.ref ! msg
         }
       })

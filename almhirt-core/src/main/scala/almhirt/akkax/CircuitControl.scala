@@ -8,25 +8,28 @@ import almhirt.common._
 trait CircuitControl {
   def attemptClose(): Unit
   def removeFuse(): Unit
-  def destroyFuse(): Unit
+  def destroy(): Unit
+  def circumvent(): Unit
   def state: AlmFuture[CircuitState]
 
-  def onOpened(listener: () => Unit): CircuitControl
-  def onHalfOpened(listener: () => Unit): CircuitControl
-  def onClosed(listener: () => Unit): CircuitControl
-  def onFuseRemoved(listener: () => Unit): CircuitControl
-  def onFuseDestroyed(listener: () => Unit): CircuitControl
-  def onWarning(listener: (Int, Int) => Unit): CircuitControl
+  def onOpened(listener: () ⇒ Unit): CircuitControl
+  def onHalfOpened(listener: () ⇒ Unit): CircuitControl
+  def onClosed(listener: () ⇒ Unit): CircuitControl
+  def onFuseRemoved(listener: () ⇒ Unit): CircuitControl
+  def onDestroyed(listener: () ⇒ Unit): CircuitControl
+  def onCircumvented(listener: () ⇒ Unit): CircuitControl
+  def onWarning(listener: (Int, Int) ⇒ Unit): CircuitControl
 }
 
 object CircuitControl {
   implicit class CircuitControlOps(self: CircuitControl) {
     def defaultActorListeners(actor: akka.actor.ActorRef): CircuitControl =
-      self.onOpened(() => actor ! ActorMessages.CircuitOpened)
-        .onHalfOpened(() => actor ! ActorMessages.CircuitHalfOpened)
-        .onClosed(() => actor ! ActorMessages.CircuitClosed)
-        .onFuseRemoved(() => actor ! ActorMessages.CircuitFuseRemoved)
-        .onFuseDestroyed(() => actor ! ActorMessages.CircuitFuseDestroyed)
+      self.onOpened(() ⇒ actor ! ActorMessages.CircuitOpened)
+        .onHalfOpened(() ⇒ actor ! ActorMessages.CircuitHalfOpened)
+        .onClosed(() ⇒ actor ! ActorMessages.CircuitClosed)
+        .onFuseRemoved(() ⇒ actor ! ActorMessages.CircuitFuseRemoved)
+        .onDestroyed(() ⇒ actor ! ActorMessages.CircuitDestroyed)
+        .onCircumvented(() ⇒ actor ! ActorMessages.CircuitCircumvented)
   }
 }
 
@@ -37,21 +40,47 @@ trait FusedCircuit {
    *  In case of a fail fast, return the surrogate instead of the standard result defined by the implementation
    */
   def fusedWithSurrogate[T](surrogate: ⇒ AlmFuture[T])(body: ⇒ AlmFuture[T]): AlmFuture[T]
-  
-  def ask[T: ClassTag](actor:ActorRef, message: Any): AlmFuture[T]
-  
-  def askWithSurrogate[T: ClassTag](surrogate: ⇒ AlmFuture[T])(actor:ActorRef, message: Any): AlmFuture[T]
-  
+
+  def ask[T: ClassTag](actor: ActorRef, message: Any): AlmFuture[T]
+
+  def askWithSurrogate[T: ClassTag](surrogate: ⇒ AlmFuture[T])(actor: ActorRef, message: Any): AlmFuture[T]
+
 }
 
+sealed trait CircuitStartState
+
+object CircuitStartState {
+  import scalaz.syntax.validation._
+  object Closed extends CircuitStartState
+  object HalfOpen extends CircuitStartState
+  object Open extends CircuitStartState
+  object FuseRemoved extends CircuitStartState
+  object Destroyed extends CircuitStartState
+  object Circumvented extends CircuitStartState
+
+  def parseString(str: String): AlmValidation[CircuitStartState] =
+    str.toLowerCase() match {
+      case "closed" ⇒ Closed.success
+      case "half-open" ⇒ HalfOpen.success
+      case "open" ⇒ Open.success
+      case "fuse-removed" ⇒ FuseRemoved.success
+      case "destroyed" ⇒ Destroyed.success
+      case "circumvented" ⇒ Circumvented.success
+      case x ⇒ ParsingProblem(s""""$x is not a circuit start state.""").failure
+    }
+}
 
 final case class CircuitControlSettings(
   maxFailures: Int,
   failuresWarnThreshold: Option[Int],
   callTimeout: FiniteDuration,
-  resetTimeout: Option[FiniteDuration])
+  resetTimeout: Option[FiniteDuration],
+  startState: CircuitStartState)
 
 object CircuitControlSettings {
+  def apply(maxFailures: Int, failuresWarnThreshold: Option[Int], callTimeout: FiniteDuration, resetTimeout: Option[FiniteDuration]): CircuitControlSettings =
+    CircuitControlSettings(maxFailures, failuresWarnThreshold, callTimeout, resetTimeout, CircuitStartState.Closed)
+    
   val defaultSettings = CircuitControlSettings(5, Some(3), 10.seconds, Some(5.minutes))
 }
 
@@ -65,8 +94,8 @@ object CircuitState {
         "Closed"
       else
         warningLevel match {
-          case None => s"Closed(failures: $failureCount, maxFailures: $maxFailures)"
-          case Some(wl) => s"Closed(failures: $failureCount, maxFailures: $maxFailures, warn at $wl)"
+          case None ⇒ s"Closed(failures: $failureCount, maxFailures: $maxFailures)"
+          case Some(wl) ⇒ s"Closed(failures: $failureCount, maxFailures: $maxFailures, warn at $wl)"
         }
   }
   final case class HalfOpen(ongoingRecoverAttempt: Boolean) extends NotAllWillFailState {
@@ -83,7 +112,10 @@ object CircuitState {
   final case class FuseRemoved(duration: FiniteDuration) extends AllWillFailState {
     override def toString: String = s"FuseRemoved(${duration.defaultUnitString})"
   }
-  final case class FuseDestroyed(duration: FiniteDuration) extends AllWillFailState {
-    override def toString: String = s"FuseRemoved(${duration.defaultUnitString})"
+  final case class Destroyed(duration: FiniteDuration) extends AllWillFailState {
+    override def toString: String = s"Destroyed(${duration.defaultUnitString})"
+  }
+  final case class Circumvented(duration: FiniteDuration) extends NotAllWillFailState {
+    override def toString: String = s"Circumvented(${duration.defaultUnitString})"
   }
 }

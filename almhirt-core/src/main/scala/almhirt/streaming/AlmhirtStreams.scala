@@ -9,7 +9,6 @@ import org.reactivestreams.{ Subscriber, Subscription, Publisher }
 import akka.stream.actor.{ ActorPublisher, ActorSubscriber }
 import almhirt.common._
 import almhirt.almfuture.all._
-import akka.stream.scaladsl2.PublisherDrain
 
 trait CanDispatchEvents {
   def eventBroker: StreamBroker[Event]
@@ -27,7 +26,7 @@ trait CommandStream {
 trait AlmhirtStreams extends EventStream with CommandStream with CanDispatchEvents with CanDispatchCommands
 
 object AlmhirtStreams {
-  import akka.stream.scaladsl2._
+  import akka.stream.scaladsl._
   import akka.stream.OverflowStrategy
 
   def apply(supervisorName: String)(maxDur: FiniteDuration)(implicit actorRefFactory: ActorRefFactory): AlmFuture[AlmhirtStreams with Stoppable] =
@@ -35,7 +34,6 @@ object AlmhirtStreams {
       supervisorName,
       maxDur,
       actorRefFactory,
-      None,
       0,
       1,
       16,
@@ -47,7 +45,6 @@ object AlmhirtStreams {
 
   def apply(
     supervisorName: String,
-    dispatcherName: Option[String],
     eventBufferSize: Int,
     initialFanoutEvents: Int,
     maxFanoutEvents: Int,
@@ -60,7 +57,6 @@ object AlmhirtStreams {
       supervisorName,
       maxDur,
       actorRefFactory,
-      dispatcherName,
       eventBufferSize,
       initialFanoutEvents,
       maxFanoutEvents,
@@ -75,24 +71,22 @@ object AlmhirtStreams {
     import almhirt.almvalidation.kit._
     AlmFuture.completed {
       for {
-        configSection <- config.v[com.typesafe.config.Config]("almhirt.streams")
-        useDedicatedDispatcher <- configSection.v[Boolean]("use-dedicated-dispatcher")
-        soakCommands <- configSection.v[Boolean]("soak-commands")
-        soakEvents <- configSection.v[Boolean]("soak-events")
-        commandBufferSize <- configSection.v[Int]("command-buffer-size")
+        configSection ← config.v[com.typesafe.config.Config]("almhirt.streams")
+        soakCommands ← configSection.v[Boolean]("soak-commands")
+        soakEvents ← configSection.v[Boolean]("soak-events")
+        commandBufferSize ← configSection.v[Int]("command-buffer-size")
           .constrained(_ >= 0, x ⇒ s"command-buffer-size must be grater or equal 0, not $x.")
-        eventBufferSize <- configSection.v[Int]("event-buffer-size")
+        eventBufferSize ← configSection.v[Int]("event-buffer-size")
           .constrained(_ >= 0, x ⇒ s"event-buffer-size must be grater or equal 0, not $x.")
-        initialFanoutCommands <- configSection.v[Int]("initial-commands-fanout-buffer-size")
+        initialFanoutCommands ← configSection.v[Int]("initial-commands-fanout-buffer-size")
           .constrained(x ⇒ AlmMath.nextPowerOf2(x) == x, x ⇒ s"initial-commands-fanout-buffer-size must be a power of 2 and not $x.")
-        maxFanoutCommands <- configSection.v[Int]("max-commands-fanout-buffer-size")
+        maxFanoutCommands ← configSection.v[Int]("max-commands-fanout-buffer-size")
           .constrained(x ⇒ AlmMath.nextPowerOf2(x) == x, x ⇒ s"max-commands-fanout-buffer-size must be a power of 2 and not $x.")
-        initialFanoutEvents <- configSection.v[Int]("initial-events-fanout-buffer-size")
+        initialFanoutEvents ← configSection.v[Int]("initial-events-fanout-buffer-size")
           .constrained(x ⇒ AlmMath.nextPowerOf2(x) == x, x ⇒ s"initial-events-fanout-buffer-size must be a power of 2 and not $x.")
-        maxFanoutEvents <- configSection.v[Int]("max-events-fanout-buffer-size")
+        maxFanoutEvents ← configSection.v[Int]("max-events-fanout-buffer-size")
           .constrained(x ⇒ AlmMath.nextPowerOf2(x) == x, x ⇒ s"imax-events-fanout-buffer-size must be a power of 2 and not $x.")
       } yield (
-        useDedicatedDispatcher,
         soakCommands,
         soakEvents,
         commandBufferSize,
@@ -102,9 +96,8 @@ object AlmhirtStreams {
         initialFanoutEvents,
         maxFanoutEvents)
     }.flatMap {
-      case (useDedicatedDispatcher, soakCommands, soakEvents, commandBufferSize, eventBufferSize, initialFanoutCommands, maxFanoutCommands, initialFanoutEvents, maxFanoutEvents) ⇒
-        val dispatcherName = if (useDedicatedDispatcher) Some("almhirt.streams.dedicated-dispatcher") else None
-        create("streams", 2.seconds, actorRefFactory, dispatcherName,
+      case (soakCommands, soakEvents, commandBufferSize, eventBufferSize, initialFanoutCommands, maxFanoutCommands, initialFanoutEvents, maxFanoutEvents) ⇒
+        create("streams", 2.seconds, actorRefFactory,
           eventBufferSize, initialFanoutEvents, maxFanoutEvents,
           commandBufferSize, initialFanoutCommands, maxFanoutCommands,
           soakEvents, soakCommands)
@@ -115,7 +108,6 @@ object AlmhirtStreams {
     supervisorName: String,
     maxDur: FiniteDuration,
     actorRefFactory: ActorRefFactory,
-    dispatcherName: Option[String],
     eventBufferSize: Int,
     initialFanoutEvents: Int,
     maxFanoutEvents: Int,
@@ -132,31 +124,32 @@ object AlmhirtStreams {
             val eventShipperActor = context.actorOf(StreamShipper.props(), "event-broker")
             val (eventShipperIn, eventShipperOut, stopEventShipper) = StreamShipper[Event](eventShipperActor)
 
-            val eventsDrain = PublisherDrain.withFanout[Event](initialFanoutEvents, maxFanoutEvents)
+            val eventsSink = Sink.fanoutPublisher[Event](initialFanoutEvents, maxFanoutEvents)
             val eventFlow =
               if (eventBufferSize > 0)
                 Flow[Event].buffer(eventBufferSize, OverflowStrategy.backpressure)
               else
                 Flow[Event]
-            val eventsPub = eventFlow.runWith(PublisherTap(eventShipperOut), eventsDrain)
+            val (_, eventsPub) = eventFlow.runWith(Source(eventShipperOut), eventsSink)
 
             if (soakEvents)
-              PublisherTap(eventsPub).foreach(_ => ())
+              Source(eventsPub).to(Sink.ignore())
 
             // commands
 
             val commandShipperActor = actorRefFactory.actorOf(StreamShipper.props(), "command-broker")
             val (commandShipperIn, commandShipperOut, stopCommandShipper) = StreamShipper[Command](commandShipperActor)
-            val commandsDrain = PublisherDrain.withFanout[Command](initialFanoutCommands, maxFanoutCommands)
+
+            val commandsDrain = Sink.fanoutPublisher[Command](initialFanoutCommands, maxFanoutCommands)
             val commandFlow =
               if (commandBufferSize > 0)
                 Flow[Command].buffer(commandBufferSize, OverflowStrategy.backpressure)
               else
                 Flow[Command]
-            val commandsPub = commandFlow.runWith(PublisherTap(commandShipperOut), commandsDrain)
+            val (_, commandsPub) = commandFlow.runWith(Source(commandShipperOut), commandsDrain)
 
             if (soakCommands)
-              PublisherTap(commandsPub).foreach(_ => ())
+              Source(commandsPub).to(Sink.ignore())
 
             new AlmhirtStreams with Stoppable {
               override val eventBroker = eventShipperIn
@@ -171,11 +164,7 @@ object AlmhirtStreams {
           sender() ! streams
       }
     })
-    val props =
-      dispatcherName match {
-        case None ⇒ supervisorProps
-        case Some(dpname) ⇒ supervisorProps.withDispatcher(dpname)
-      }
+    val props = supervisorProps
     val supervisor = actorRefFactory.actorOf(props, supervisorName)
 
     (supervisor ? "get_streams")(maxDur).mapCastTo[AlmhirtStreams with Stoppable]

@@ -15,6 +15,7 @@
 package almhirt.problem
 
 import scala.language.implicitConversions
+import almhirt.common.EscalatedProblemException
 
 sealed trait ProblemCause
 case class CauseIsProblem(problem: Problem) extends ProblemCause
@@ -46,14 +47,21 @@ object ProblemCause {
   implicit def throwable2ProblemCause(exn: Throwable): ProblemCause = ProblemCause(exn)
   implicit def prob2ProblemCause(problem: Problem): ProblemCause = ProblemCause(problem)
 
-  implicit class ProblemCauseOps(self: ProblemCause) {
+  implicit class ProblemCauseOps(val self: ProblemCause) extends AnyVal {
     def toProblem: Problem =
       self match {
-        case CauseIsProblem(p) => p
-        case CauseIsThrowable(HasAThrowable(exn)) => almhirt.common.ExceptionCaughtProblem(exn)
-        case CauseIsThrowable(d: HasAThrowableDescribed) => almhirt.common.UnspecifiedProblem(s"There was a description of an exception:\n$d")
+        case CauseIsProblem(p)                           ⇒ p
+        case CauseIsThrowable(HasAThrowable(exn))        ⇒ almhirt.common.ExceptionCaughtProblem(exn)
+        case CauseIsThrowable(d: HasAThrowableDescribed) ⇒ almhirt.common.UnspecifiedProblem(s"There was a description of an exception:\n$d")
       }
 
+    def toThrowable: Throwable =
+      self match {
+        case CauseIsProblem(p)                           ⇒ new EscalatedProblemException(p)
+        case CauseIsThrowable(HasAThrowable(exn))        ⇒ exn
+        case CauseIsThrowable(d: HasAThrowableDescribed) ⇒ new Exception(s"There was a description of an exception:\n$d")
+      }
+    
     def unwrap(recursively: Boolean = false): ProblemCause =
       self match {
         case CauseIsProblem(problemtypes.ExceptionCaughtProblem(ContainsThrowable(throwable))) ⇒
@@ -68,7 +76,13 @@ object ProblemCause {
             r.unwrap(recursively)
           else
             r
-        case x => x
+        case x ⇒ x
+      }
+
+    def mapProblem(m: Problem ⇒ Problem): ProblemCause =
+      self match {
+        case CauseIsProblem(p) ⇒ CauseIsProblem(m(p))
+        case x                 ⇒ x
       }
   }
 }

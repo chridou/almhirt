@@ -10,7 +10,7 @@ import almhirt.tracking.{ CommandStatus, CommandStatusChanged, CommandResult }
 import almhirt.context.AlmhirtContext
 import akka.stream.actor._
 import org.reactivestreams.Subscriber
-import akka.stream.scaladsl2._
+import akka.stream.scaladsl._
 import almhirt.akkax.AlmActor
 import almhirt.akkax.AlmActorLogging
 
@@ -35,10 +35,10 @@ object CommandStatusTracker {
       fail ⇒
         fail match {
           case OperationTimedOutProblem(_) ⇒ TrackedTimeout
-          case _ ⇒ TrackedError(fail)
+          case _                           ⇒ TrackedError(fail)
         },
       succ ⇒ succ match {
-        case CommandStatus.Executed ⇒ TrackedExecutued
+        case CommandStatus.Executed           ⇒ TrackedExecutued
         case CommandStatus.NotExecuted(cause) ⇒ TrackedNotExecutued(cause)
       })
 
@@ -53,11 +53,11 @@ object CommandStatusTracker {
     import almhirt.configuration._
     import almhirt.almvalidation.kit._
     for {
-      section <- ctx.config.v[com.typesafe.config.Config]("almhirt.components.misc.command-status-tracker")
-      targetCacheSize <- section.v[Int]("target-cache-size")
-      shrinkCacheAt <- section.v[Int]("shrink-cache-at")
-      checkTimeoutInterval <- section.v[FiniteDuration]("check-timeout-interval")
-      autoConnect <- section.v[Boolean]("auto-connect")
+      section ← ctx.config.v[com.typesafe.config.Config]("almhirt.components.misc.command-status-tracker")
+      targetCacheSize ← section.v[Int]("target-cache-size")
+      shrinkCacheAt ← section.v[Int]("shrink-cache-at")
+      checkTimeoutInterval ← section.v[FiniteDuration]("check-timeout-interval")
+      autoConnect ← section.v[Boolean]("auto-connect")
     } yield propsRaw(targetCacheSize, shrinkCacheAt, checkTimeoutInterval, autoConnect)
   }
 
@@ -81,6 +81,10 @@ private[almhirt] class MyCommandStatusTracker(
   if (targetCacheSize < 1) throw new Exception(s"targetCacheSize($targetCacheSize) must be grater than zero.")
   if (shrinkCacheAt < targetCacheSize) throw new Exception(s"shrinkCacheAt($targetCacheSize) must at least targetCacheSize($targetCacheSize).")
 
+  logInfo(s"""|target-cache-size: $targetCacheSize
+              |shrink-cache-at: $shrinkCacheAt
+              |check-timeout-interval: ${checkTimeoutInterval.defaultUnitString}""".stripMargin)
+  
   override val requestStrategy = ZeroRequestStrategy
 
   implicit val executionContext: ExecutionContext = context.dispatcher
@@ -102,16 +106,20 @@ private[almhirt] class MyCommandStatusTracker(
   private[this] var cachedStatusLookUp: Map[CommandId, CommandResult] = Map.empty
   private[this] var cachedStatusSeq: Vector[CommandId] = Vector.empty
 
+  private[this] var removedDueToShrinking: Vector[CommandId] = Vector.empty
+
   private[this] val shrinkSize = (shrinkCacheAt - targetCacheSize) + 1
 
   private def addStatusToCache(id: CommandId, status: CommandResult) {
-    if (cachedStatusSeq.size == shrinkCacheAt) {
+    if (cachedStatusSeq.size >= shrinkCacheAt) {
       val (remove, keep) = cachedStatusSeq.splitAt(shrinkSize)
+      logDebug(s"Shrunk cache from ${cachedStatusSeq.size} to ${keep.size}.")
       cachedStatusSeq = keep
       cachedStatusLookUp = cachedStatusLookUp -- remove
+      removedDueToShrinking ++= remove
     }
     cachedStatusSeq = cachedStatusSeq :+ id
-    cachedStatusLookUp = cachedStatusLookUp + (id -> status)
+    cachedStatusLookUp = cachedStatusLookUp + (id → status)
   }
 
   private case object AutoConnect
@@ -119,7 +127,7 @@ private[almhirt] class MyCommandStatusTracker(
   def running(): Receive = {
     case AutoConnect ⇒
       logInfo("Subscribing to event stream.")
-      Source(almhirtContext.eventStream).collect { case e: CommandStatusChanged ⇒ e }.connect(SubscriberDrain(CommandStatusTracker(self))).run()
+      Source(almhirtContext.eventStream).collect { case e: CommandStatusChanged ⇒ e }.to(Sink(CommandStatusTracker(self))).run()
       request(1)
 
     case TrackCommand(commandId, callback, deadline) ⇒
@@ -129,9 +137,9 @@ private[almhirt] class MyCommandStatusTracker(
         case None ⇒
           trackingSubscriptions.get(commandId) match {
             case Some(entries) ⇒
-              trackingSubscriptions = trackingSubscriptions + ((commandId, entries + (nextId -> Entry(callback, deadline))))
+              trackingSubscriptions = trackingSubscriptions + ((commandId, entries + (nextId → Entry(callback, deadline))))
             case None ⇒
-              trackingSubscriptions = trackingSubscriptions + (commandId -> Map(nextId -> Entry(callback, deadline)))
+              trackingSubscriptions = trackingSubscriptions + (commandId → Map(nextId → Entry(callback, deadline)))
           }
       }
 
@@ -154,11 +162,18 @@ private[almhirt] class MyCommandStatusTracker(
 
     case CheckTimeouts ⇒
       val currentSubscriptions = trackingSubscriptions
+      val currentRemoveDueToShrinking = removedDueToShrinking.toSet
+
+      removedDueToShrinking = Vector.empty
+
+      if (!currentRemoveDueToShrinking.isEmpty)
+        logDebug(s"${currentRemoveDueToShrinking.size} commands will be removed due to shrinking. Subscribers will be notified with a timeout.")
+
       AlmFuture.compute {
         val deadline = Deadline.now
         val timedOut = currentSubscriptions.map {
           case (id, entries) ⇒
-            val timedOutEntries = entries.filter { case (entryId, entry) ⇒ entry.due < deadline }.map(x ⇒ x._1)
+            val timedOutEntries = entries.filter { case (entryId, entry) ⇒ entry.due < deadline || currentRemoveDueToShrinking(id) }.map(x ⇒ x._1)
             (id, timedOutEntries.toSet)
         }
         self ! RemoveTimedOut(timedOut)
@@ -166,11 +181,13 @@ private[almhirt] class MyCommandStatusTracker(
 
     case RemoveTimedOut(timedOut) ⇒
       val currentSubscriptions = trackingSubscriptions.toMap
+
+      // Notify timed out
       AlmFuture.compute {
         timedOut.foreach {
           case (commandId, timedOutEntryIds) ⇒
             currentSubscriptions.get(commandId) match {
-              case Some(activeSubscriptionsForCommand) =>
+              case Some(activeSubscriptionsForCommand) ⇒
                 activeSubscriptionsForCommand.view
                   .filter { case (id, entry) ⇒ timedOutEntryIds.contains(id) }
                   .foreach {
@@ -179,17 +196,26 @@ private[almhirt] class MyCommandStatusTracker(
                       reportMinorFailure(OperationTimedOutProblem("Tracking timed out."))
                     }
                   }
-              case None =>
+              case None ⇒
                 ()
             }
         }
-      }.onFailure { p =>
+      }.onFailure { p ⇒
         reportMajorFailure(p)
       }
+
+      //Adjust current subscriptions
       trackingSubscriptions = trackingSubscriptions.map {
         case (commandId, entries) ⇒
           (commandId, entries -- (timedOut.get(commandId).toSeq.flatten))
       }
+
+      logDebug(s"""|Stats after removing timed outs:
+                   |Number of tracked commands: ${trackingSubscriptions.size}
+                   |Number of subscriptions: ${trackingSubscriptions.values.map { _.size }.sum}
+                   |To remove due to shrinking: ${removedDueToShrinking.size}(after removal)
+                   |""".stripMargin)
+
       context.system.scheduler.scheduleOnce(checkTimeoutInterval, self, CheckTimeouts)
 
   }

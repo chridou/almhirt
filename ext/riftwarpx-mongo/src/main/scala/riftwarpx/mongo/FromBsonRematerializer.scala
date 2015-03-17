@@ -27,7 +27,7 @@ object FromBsonRematerializer extends Rematerializer[BSONValue] {
   private def extractObject(what: BSONDocument, path: List[String]): AlmValidation[WarpObject] = {
     val elements = scala.collection.mutable.HashMap(what.elements: _*)
     for {
-      warpdescriptor <- elements.get(WarpDescriptor.defaultKey) match {
+      warpdescriptor ← elements.get(WarpDescriptor.defaultKey) match {
         case Some(BSONString(str)) ⇒
           elements.remove(WarpDescriptor.defaultKey)
           WarpDescriptor.parse(str).map(Some(_))
@@ -36,7 +36,7 @@ object FromBsonRematerializer extends Rematerializer[BSONValue] {
         case None ⇒
           None.success
       }
-      warpElements <- mapWarpElements(elements, path)
+      warpElements ← mapWarpElements(elements, path)
 
     } yield WarpObject(warpdescriptor, warpElements)
   }
@@ -62,7 +62,7 @@ object FromBsonRematerializer extends Rematerializer[BSONValue] {
       case BSONBinary(value, Subtype.UuidSubtype) ⇒ WarpUuid(BinaryConverter.bytesToUuid(value.readArray(16))).success
       case BSONBinary(value, Subtype.OldUuidSubtype) ⇒ WarpUuid(BinaryConverter.bytesBigEndianToUuid(value.readArray(16))).success
       case BSONBinary(value, st) ⇒
-        Failure(SerializationProblem(s"A BSONBinary with subtype ${st.toString()} is not a primitive type. The path is ${path.reverse.mkString("[", "->", "]")}."))
+        Failure(SerializationProblem(s"A BSONBinary with subtype ${st.toString()} is not a primitive type. The path is ${path.reverse.mkString("[", "→", "]")}."))
       case x ⇒
         Failure(SerializationProblem(s"""No primitive rematerialization found for "${what.getClass.getName()}""""))
     }

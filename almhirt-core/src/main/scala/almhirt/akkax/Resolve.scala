@@ -58,15 +58,15 @@ private[almhirt] class SingleResolverImpl(toResolve: ToResolve, resolveWait: Fin
   }
 
   def receiveResolve(started: Deadline, attempt: Int): Receive = {
-    case Resolve =>
+    case Resolve ⇒
       resolve(started, attempt)
       context.become(receiveResolve(started, attempt + 1))
 
-    case Resolved(actorRef: ActorRef) =>
+    case Resolved(actorRef: ActorRef) ⇒
       context.parent ! ActorMessages.ResolvedSingle(actorRef, correlationId)
       context.stop(self)
 
-    case NotResolved(ex: Throwable) =>
+    case NotResolved(ex: Throwable) ⇒
       context.parent ! ActorMessages.SingleNotResolved(DependencyNotFoundProblem(s"$toResolve", cause = Some(ex)), correlationId)
       context.stop(self)
   }
@@ -75,17 +75,17 @@ private[almhirt] class SingleResolverImpl(toResolve: ToResolve, resolveWait: Fin
   def handleFailedAttempt(started: Deadline, attempt: Int, exn: Throwable) {
     val isLoopFinalFailure =
       retrySettings match {
-        case TimeLimitedRetrySettings(_, limit, _) =>
+        case TimeLimitedRetrySettings(_, limit, _) ⇒
           started.lapExceeds(limit)
-        case AttemptLimitedRetrySettings(_, limit, _) =>
+        case AttemptLimitedRetrySettings(_, limit, _) ⇒
           attempt >= limit
       }
 
     if (isLoopFinalFailure) {
       retrySettings.infiniteLoopPause match {
-        case None =>
+        case None ⇒
           self ! NotResolved(exn)
-        case Some(pause) =>
+        case Some(pause) ⇒
           if (log.isWarningEnabled)
             log.warning(s"""	|Resolve $toResolve:
 								|Failed after $attempt attempts and ${started.lap.defaultUnitString}
@@ -119,7 +119,7 @@ private[almhirt] class MultiResolverImpl(toResolve: Map[String, ToResolve], sett
       }
 
     case ActorMessages.ResolvedSingle(resolved, correlationIdOpt) ⇒
-      resolvedActors = resolvedActors + (correlationIdOpt.get.value -> resolved)
+      resolvedActors = resolvedActors + (correlationIdOpt.get.value → resolved)
       if (resolvedActors.size == toResolve.size) {
         context.parent ! ActorMessages.ManyResolved(resolvedActors, correlationId)
         context.stop(self)

@@ -50,3 +50,5 @@ object WrongAggregateRootEventTypeException {
     new WrongAggregateRootEventTypeException(event.aggId, event.eventId, msg, ex)
   }
 }
+
+final case class UserInitializationFailedException(message: String, cause: almhirt.problem.ProblemCause) extends Exception(message)

@@ -50,7 +50,7 @@ class CrazyLilly(implicit override val almhirtContext: AlmhirtContext) extends C
   }
 
   def receive: Receive = {
-    case DoSomething =>
+    case DoSomething ⇒
       if (rnd.nextBoolean) {
         reportMissedEvent(
           CrazyLillyEvent(EventHeader(), s"määähöhöhääähähhhääää-$määäh"),

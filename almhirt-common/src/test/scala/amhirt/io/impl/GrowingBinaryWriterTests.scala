@@ -317,56 +317,56 @@ class GrowingBinaryWriterTests extends FunSuite with Matchers {
 
   test("""A GrowingBinaryWriter(initialCapacity = 2048, maxSize = 2048, maxIncrement = 0) must store an Array of 2048 bytes""") {
     val writer = new GrowingBinaryWriter(initialCapacity = 2048, maxSize = 2048, maxIncrement = 0)
-    val sample = (for (i <- 0 until 2048) yield ((i % Byte.MaxValue).toByte)).toArray
+    val sample = (for (i ← 0 until 2048) yield ((i % Byte.MaxValue).toByte)).toArray
     writer.writeByteArray(sample)
     writer.toArray should equal(sample)
   }
 
   test("""A GrowingBinaryWriter(initialCapacity = 0, maxSize = 2048, maxIncrement = 1) must store an Array of 2048 bytes""") {
     val writer = new GrowingBinaryWriter(initialCapacity = 0, maxSize = 2048, maxIncrement = 1)
-    val sample = (for (i <- 0 until 2048) yield ((i % Byte.MaxValue).toByte)).toArray
+    val sample = (for (i ← 0 until 2048) yield ((i % Byte.MaxValue).toByte)).toArray
     writer.writeByteArray(sample)
     writer.toArray should equal(sample)
   }
 
   test("""A GrowingBinaryWriter(initialCapacity = 1, maxSize = 2048, maxIncrement = 1) must store an Array of 2048 bytes""") {
     val writer = new GrowingBinaryWriter(initialCapacity = 1, maxSize = 2048, maxIncrement = 1)
-    val sample = (for (i <- 0 until 2048) yield ((i % Byte.MaxValue).toByte)).toArray
+    val sample = (for (i ← 0 until 2048) yield ((i % Byte.MaxValue).toByte)).toArray
     writer.writeByteArray(sample)
     writer.toArray should equal(sample)
   }
 
   test("""A GrowingBinaryWriter(initialCapacity = 16, maxSize = 2048, maxIncrement = 16) must store an Array of 2048 bytes""") {
     val writer = new GrowingBinaryWriter(initialCapacity = 16, maxSize = 2048, maxIncrement = 16)
-    val sample = (for (i <- 0 until 2048) yield ((i % Byte.MaxValue).toByte)).toArray
+    val sample = (for (i ← 0 until 2048) yield ((i % Byte.MaxValue).toByte)).toArray
     writer.writeByteArray(sample)
     writer.toArray should equal(sample)
   }
 
   test("""A GrowingBinaryWriter(initialCapacity = 1024, maxSize = 2048, maxIncrement = 1024) must store an Array of 2048 bytes""") {
     val writer = new GrowingBinaryWriter(initialCapacity = 1024, maxSize = 2048, maxIncrement = 1024)
-    val sample = (for (i <- 0 until 2048) yield ((i % Byte.MaxValue).toByte)).toArray
+    val sample = (for (i ← 0 until 2048) yield ((i % Byte.MaxValue).toByte)).toArray
     writer.writeByteArray(sample)
     writer.toArray should equal(sample)
   }
   
   test("""A GrowingBinaryWriter(initialCapacity = 2048, maxSize = 2047, maxIncrement = 2048) must store an Array of 2048 bytes""") {
     val writer = new GrowingBinaryWriter(initialCapacity = 2048, maxSize = 2048, maxIncrement = 2048)
-    val sample = (for (i <- 0 until 2048) yield ((i % Byte.MaxValue).toByte)).toArray
+    val sample = (for (i ← 0 until 2048) yield ((i % Byte.MaxValue).toByte)).toArray
     writer.writeByteArray(sample)
     writer.toArray should equal(sample)
   }
 
   test("""A GrowingBinaryWriter(initialCapacity = 1024, maxSize = 2047, maxIncrement = 2048) must store an Array of 2048 bytes""") {
     val writer = new GrowingBinaryWriter(initialCapacity = 1024, maxSize = 2048, maxIncrement = 2048)
-    val sample = (for (i <- 0 until 2048) yield ((i % Byte.MaxValue).toByte)).toArray
+    val sample = (for (i ← 0 until 2048) yield ((i % Byte.MaxValue).toByte)).toArray
     writer.writeByteArray(sample)
     writer.toArray should equal(sample)
   }
   
   test("""A GrowingBinaryWriter(initialCapacity = 0, maxSize = 2047, maxIncrement = 2048) must fail to store an Array of 2048 bytes""") {
     val writer = new GrowingBinaryWriter(initialCapacity = 1, maxSize = 2047, maxIncrement = 2048)
-    val sample = (for (i <- 0 until 2048) yield ((i % Byte.MaxValue).toByte)).toArray
+    val sample = (for (i ← 0 until 2048) yield ((i % Byte.MaxValue).toByte)).toArray
     intercept[Exception] {
       writer.writeByteArray(sample)
     }
@@ -374,7 +374,7 @@ class GrowingBinaryWriterTests extends FunSuite with Matchers {
 
   test("""A GrowingBinaryWriter(initialCapacity = 0, maxSize = 2047, maxIncrement = 1) must fail to store an Array of 2048 bytes""") {
     val writer = new GrowingBinaryWriter(initialCapacity = 1, maxSize = 2047, maxIncrement = 1)
-    val sample = (for (i <- 0 until 2048) yield ((i % Byte.MaxValue).toByte)).toArray
+    val sample = (for (i ← 0 until 2048) yield ((i % Byte.MaxValue).toByte)).toArray
     intercept[Exception] {
       writer.writeByteArray(sample)
     }

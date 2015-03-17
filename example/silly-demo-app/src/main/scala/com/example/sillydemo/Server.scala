@@ -18,7 +18,7 @@ object Server extends App {
   
   {
     import almhirt.httpx.spray._
-    almhirt.http.AlmMediaTypes.iterator.filterNot(_.ianaRegistered).foreach(amt => _root_.spray.http.MediaTypes.register(amt.toSprayMediaType))
+    almhirt.http.AlmMediaTypes.iterator.filterNot(_.ianaRegistered).foreach(amt ⇒ _root_.spray.http.MediaTypes.register(amt.toSprayMediaType))
   }
   
   try {

@@ -22,7 +22,8 @@ object HerderMessages {
     sealed trait CircuitControlMessage extends CircuitMessage
     final case class AttemptCloseCircuit(id: ComponentId) extends CircuitControlMessage
     final case class RemoveFuseFromCircuit(id: ComponentId) extends CircuitControlMessage
-    final case class DestroyFuseInCircuit(id: ComponentId) extends CircuitControlMessage
+    final case class DestroyCircuit(id: ComponentId) extends CircuitControlMessage
+    final case class CircumventCircuit(id: ComponentId) extends CircuitControlMessage
   }
 
   object EventMessages {

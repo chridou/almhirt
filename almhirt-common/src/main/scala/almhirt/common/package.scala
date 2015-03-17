@@ -16,7 +16,7 @@ package almhirt
 
 import language.implicitConversions
 import scala.util.control.NonFatal
-import scalaz.syntax.validation
+import scalaz.syntax.validation._
 import scala.concurrent._
 import almhirt.problem._
 
@@ -60,6 +60,62 @@ package object common extends ops.DeadlineExt with ops.FiniteDurationExt {
       }
     }
   }
+  
+  /** Evaluate an unsafe expression in a safe way */
+  def inTryCatch[T](a: ⇒ T): AlmValidation[T] = {
+    try {
+      a.success[Problem]
+    } catch {
+      case scala.util.control.NonFatal(exn) ⇒ launderException(exn).failure
+    }
+  }
+
+  /** Evaluate an unsafe expression in a safe way */
+  def inTryCatchM[T](a: ⇒ T)(message: String): AlmValidation[T] = {
+    try {
+      a.success[Problem]
+    } catch {
+      case scala.util.control.NonFatal(exn) ⇒ launderException(exn).withMessage(message).failure
+    }
+  }
+
+  /** Evaluate an unsafe expression in a safe way */
+  def inTryCatchMM[T](a: ⇒ T)(createMessage: Throwable ⇒ String): AlmValidation[T] = {
+    try {
+      a.success[Problem]
+    } catch {
+      case scala.util.control.NonFatal(exn) ⇒ launderException(exn).withMessage(createMessage(exn)).failure
+    }
+  }
+
+  /** Evaluate an unsafe expression that looks safe but might escalate or which you just don't trust */
+  def unsafe[T](a: ⇒ AlmValidation[T]): AlmValidation[T] = {
+    try {
+      a
+    } catch {
+      case scala.util.control.NonFatal(exn) ⇒ launderException(exn).failure
+    }
+  }
+
+ 
+  /** Evaluate an unsafe expression that looks safe but might escalate or which you just don't trust */
+  def unsafeM[T](a: ⇒ AlmValidation[T])(message: String): AlmValidation[T] = {
+    try {
+      a
+    } catch {
+      case scala.util.control.NonFatal(exn) ⇒ launderException(exn).withMessage(message).failure
+    }
+  }
+
+  /** Evaluate an unsafe expression that looks safe but might escalate or which you just don't trust */
+  def unsafeMM[T](a: ⇒ AlmValidation[T])(createMessage: Throwable ⇒ String): AlmValidation[T] = {
+    try {
+      a
+    } catch {
+      case scala.util.control.NonFatal(exn) ⇒ launderException(exn).withMessage(createMessage(exn)).failure
+    }
+  }
+  
 
   val skip = TraverseWindow.skipStart
 
@@ -76,6 +132,7 @@ package object common extends ops.DeadlineExt with ops.FiniteDurationExt {
   val ServiceBusyProblem = almhirt.problem.problemtypes.ServiceBusyProblem
   val ServiceBrokenProblem = almhirt.problem.problemtypes.ServiceBrokenProblem
   val ServiceShutDownProblem = almhirt.problem.problemtypes.ServiceShutDownProblem
+  val ServiceNotReadyProblem = almhirt.problem.problemtypes.ServiceNotReadyProblem
   val DependencyNotFoundProblem = almhirt.problem.problemtypes.DependencyNotFoundProblem
   val NoConnectionProblem = almhirt.problem.problemtypes.NoConnectionProblem
   val OperationTimedOutProblem = almhirt.problem.problemtypes.OperationTimedOutProblem
@@ -102,6 +159,7 @@ package object common extends ops.DeadlineExt with ops.FiniteDurationExt {
   val OperationCancelledProblem = almhirt.problem.problemtypes.OperationCancelledProblem
   val BusinessRuleViolatedProblem = almhirt.problem.problemtypes.BusinessRuleViolatedProblem
   val LocaleNotSupportedProblem = almhirt.problem.problemtypes.LocaleNotSupportedProblem
+  val ResourceNotFoundProblem = almhirt.problem.problemtypes.ResourceNotFoundProblem
   val NoSuchElementProblem = almhirt.problem.problemtypes.NoSuchElementProblem
   val CommandExecutionFailedProblem = almhirt.problem.problemtypes.CommandExecutionFailedProblem
   val CircuitOpenProblem = almhirt.problem.problemtypes.CircuitOpenProblem

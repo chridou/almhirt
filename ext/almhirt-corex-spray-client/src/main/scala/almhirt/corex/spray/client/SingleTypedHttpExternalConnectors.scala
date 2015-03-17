@@ -76,10 +76,10 @@ abstract class SingleTypeHttpConversationWithParametrizedQuery[T, U](implicit se
           ""
         else {
           val items = params.map {
-            case (name, value) =>
+            case (name, value) ⇒
               value match {
-                case Some(v) => s"$name=$v"
-                case None => s"$name"
+                case Some(v) ⇒ s"$name=$v"
+                case None ⇒ s"$name"
               }
           }.mkString("&")
           s"?$items"

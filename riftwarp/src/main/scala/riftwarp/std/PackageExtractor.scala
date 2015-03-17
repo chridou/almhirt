@@ -149,6 +149,12 @@ trait WarpObjectLookUp {
   def getWith[T](label: String, unpacker: WarpUnpacker[T])(implicit unpackers: WarpUnpackers): AlmValidation[T] =
     getWarpPackage(label).flatMap(unpacker(_))
 
+  def tryGetWith2[T](label: String)(implicit unpacker: WarpUnpacker[T], unpackers: WarpUnpackers): AlmValidation[Option[T]] =
+    tryGetWarpPackage(label).map(unpacker(_)).validationOut
+
+  def getWith2[T](label: String)(implicit unpacker: WarpUnpacker[T], unpackers: WarpUnpackers): AlmValidation[T] =
+    getWarpPackage(label).flatMap(unpacker(_))
+    
   def tryGet(label: String, overrideDescriptor: Option[WarpDescriptor] = None, backUpDescriptor: Option[WarpDescriptor] = None)(implicit unpackers: WarpUnpackers): AlmValidation[Option[Any]] =
     tryGetWarpPackage(label).map(wp ⇒ getMapping(label, wp, overrideDescriptor, backUpDescriptor)).validationOut
 
@@ -188,6 +194,12 @@ trait WarpObjectLookUp {
   def getManyWith[T](label: String, unpacker: WarpUnpacker[T])(implicit unpackers: WarpUnpackers): AlmValidation[Vector[T]] =
     getWarpPackage(label).flatMap(wp ⇒ getManyWithMapping[T](label, wp, unpacker))
 
+  def tryGetManyWith2[T](label: String)(implicit unpacker: WarpUnpacker[T], unpackers: WarpUnpackers): AlmValidation[Option[Vector[T]]] =
+    tryGetWarpPackage(label).map(wp ⇒ getManyWithMapping[T](label, wp, unpacker)).validationOut
+
+  def getManyWith2[T](label: String)(implicit unpacker: WarpUnpacker[T], unpackers: WarpUnpackers): AlmValidation[Vector[T]] =
+    getWarpPackage(label).flatMap(wp ⇒ getManyWithMapping[T](label, wp, unpacker))
+    
   @inline
   private def getManyWithMapping[T](label: String, warpPackage: WarpPackage, unpacker: WarpUnpacker[T])(implicit unpackers: WarpUnpackers): AlmValidation[Vector[T]] =
     warpPackage match {
@@ -261,6 +273,12 @@ trait WarpObjectLookUp {
   def getAssocsWith[A: WarpPrimitiveConverter, B](label: String, unpackerB: WarpUnpacker[B])(implicit unpackers: WarpUnpackers): AlmValidation[Vector[(A, B)]] =
     getWarpPackage(label).flatMap(wp ⇒ getAssocsWithMapping[A, B](label, wp, unpackerB))
 
+ def tryGetAssocsWith2[A, B](label: String)(implicit convA: WarpPrimitiveConverter[A], unpackerB: WarpUnpacker[B], unpackers: WarpUnpackers): AlmValidation[Option[Vector[(A, B)]]] =
+    tryGetWarpPackage(label).map(wp ⇒ getAssocsWithMapping[A, B](label, wp, unpackerB)).validationOut
+
+  def getAssocsWith2[A: WarpPrimitiveConverter, B](label: String)(implicit unpackers: WarpUnpackers, unpackerB: WarpUnpacker[B]): AlmValidation[Vector[(A, B)]] =
+    getWarpPackage(label).flatMap(wp ⇒ getAssocsWithMapping[A, B](label, wp, unpackerB))
+    
   @inline
   private def getAssocsWithMapping[A, B](label: String, warpPackage: WarpPackage, unpackerB: WarpUnpacker[B])(implicit convA: WarpPrimitiveConverter[A], unpackers: WarpUnpackers): AlmValidation[Vector[(A, B)]] = {
     @inline
@@ -413,14 +431,14 @@ trait WarpObjectLookUp {
             x
           case WarpTuple2(a, b) ⇒
             for {
-              va <- unpack(a, None, None)
-              vb <- unpack(b, None, None)
+              va ← unpack(a, None, None)
+              vb ← unpack(b, None, None)
             } yield (va, vb)
           case WarpTuple3(a, b, c) ⇒
             for {
-              va <- unpack(a, None, None)
-              vb <- unpack(b, None, None)
-              vc <- unpack(c, None, None)
+              va ← unpack(a, None, None)
+              vb ← unpack(b, None, None)
+              vc ← unpack(c, None, None)
             } yield (va, vb, vc)
         }
     }

@@ -1,3 +1,3 @@
 package almhirt.tracking
 
-final case class TrackingTicket(id: String) extends AnyVal
+final case class TrackingTicket(value: String) extends AnyVal

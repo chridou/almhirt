@@ -28,7 +28,7 @@ object MongoEventLog {
     deserializeEvent: BSONDocument ⇒ AlmValidation[Event],
     writeWarnThreshold: FiniteDuration,
     circuitControlSettings: CircuitControlSettings,
-    retrySettings: RetrySettings,
+    initializeRetrySettings: RetryPolicyExt,
     readOnly: Boolean)(implicit ctx: AlmhirtContext): Props =
     Props(new MongoEventLogImpl(
       db,
@@ -37,7 +37,7 @@ object MongoEventLog {
       deserializeEvent,
       writeWarnThreshold,
       circuitControlSettings,
-      retrySettings,
+      initializeRetrySettings,
       readOnly))
 
   def propsWithDb(
@@ -49,12 +49,12 @@ object MongoEventLog {
     import almhirt.almvalidation.kit._
     val path = "almhirt.components.event-logs.event-log" + configName.map("." + _).getOrElse("")
     for {
-      section <- ctx.config.v[com.typesafe.config.Config](path)
-      collectionName <- section.v[String]("collection-name")
-      writeWarnThreshold <- section.v[FiniteDuration]("write-warn-threshold")
-      circuitControlSettings <- section.v[CircuitControlSettings]("circuit-control")
-      retrySettings <- section.v[RetrySettings]("retry-settings")
-      readOnly <- section.v[Boolean]("read-only")
+      section ← ctx.config.v[com.typesafe.config.Config](path)
+      collectionName ← section.v[String]("collection-name")
+      writeWarnThreshold ← section.v[FiniteDuration]("write-warn-threshold")
+      circuitControlSettings ← section.v[CircuitControlSettings]("circuit-control")
+      initializeRetrySettings ← section.v[RetryPolicyExt]("initialize-retry-settings")
+      readOnly ← section.v[Boolean]("read-only")
     } yield propsRaw(
       db,
       collectionName,
@@ -62,7 +62,7 @@ object MongoEventLog {
       deserializeEvent,
       writeWarnThreshold,
       circuitControlSettings,
-      retrySettings,
+      initializeRetrySettings,
       readOnly)
   }
 
@@ -75,10 +75,10 @@ object MongoEventLog {
     import almhirt.almvalidation.kit._
     val path = "almhirt.components.event-logs.event-log" + configName.map("." + _).getOrElse("")
     for {
-      section <- ctx.config.v[com.typesafe.config.Config](path)
-      dbName <- section.v[String]("db-name")
-      db <- inTryCatch { connection(dbName)(ctx.futuresContext) }
-      props <- propsWithDb(
+      section ← ctx.config.v[com.typesafe.config.Config](path)
+      dbName ← section.v[String]("db-name")
+      db ← inTryCatch { connection(dbName)(ctx.futuresContext) }
+      props ← propsWithDb(
         db,
         serializeEvent,
         deserializeEvent,
@@ -94,8 +94,8 @@ private[almhirt] class MongoEventLogImpl(
   deserializeEvent: BSONDocument ⇒ AlmValidation[Event],
   writeWarnThreshold: FiniteDuration,
   circuitControlSettings: CircuitControlSettings,
-  retrySettings: RetrySettings,
-  readOnly: Boolean)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with ActorLogging {
+  initializeRetrySettings: RetryPolicyExt,
+  readOnly: Boolean)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging {
   import EventLog._
   import almhirt.corex.mongo.BsonConverter._
 
@@ -104,31 +104,31 @@ private[almhirt] class MongoEventLogImpl(
 
   val circuitBreaker = AlmCircuitBreaker(circuitControlSettings, almhirtContext.futuresContext, context.system.scheduler)
 
-  val projectionFilter = BSONDocument("event" -> 1)
+  val projectionFilter = BSONDocument("event" → 1)
 
   val noSorting = BSONDocument()
-  val sortByTimestamp = BSONDocument("timestamp" -> 1)
+  val sortByTimestamp = BSONDocument("timestamp" → 1)
 
   private val fromBsonDocToEvent: Enumeratee[BSONDocument, Event] =
     Enumeratee.mapM[BSONDocument] { doc ⇒ scala.concurrent.Future { documentToEvent(doc).resultOrEscalate }(serializationExecutor) }
 
   def eventToDocument(event: Event): AlmValidation[BSONDocument] = {
     (for {
-      serialized <- serializeEvent(event)
+      serialized ← serializeEvent(event)
     } yield {
       BSONDocument(
-        ("_id" -> BSONString(event.eventId.value)),
-        ("timestamp" -> localDateTimeToBsonDateTime(event.timestamp)),
-        ("type" -> BSONString(event.getClass().getSimpleName())),
-        ("event" -> serialized))
+        ("_id" → BSONString(event.eventId.value)),
+        ("timestamp" → localDateTimeToBsonDateTime(event.timestamp)),
+        ("type" → BSONString(event.getClass().getSimpleName())),
+        ("event" → serialized))
     }).leftMap(p ⇒ SerializationProblem(s"""Could not serialize a "${event.getClass().getName()}".""", cause = Some(p)))
   }
 
   def documentToEvent(document: BSONDocument): AlmValidation[Event] = {
     document.get("event") match {
       case Some(d: BSONDocument) ⇒ deserializeEvent(d)
-      case Some(x) ⇒ MappingProblem(s"""Event must be contained as a BSONDocument. It is a "${x.getClass().getName()}".""").failure
-      case None ⇒ NoSuchElementProblem("BSONDocument for payload not found").failure
+      case Some(x)               ⇒ MappingProblem(s"""Event must be contained as a BSONDocument. It is a "${x.getClass().getName()}".""").failure
+      case None                  ⇒ NoSuchElementProblem("BSONDocument for payload not found").failure
     }
   }
 
@@ -136,8 +136,8 @@ private[almhirt] class MongoEventLogImpl(
     val collection = db(collectionName)
     val start = Deadline.now
     for {
-      lastError <- collection.insert(document).toAlmFuture
-      _ <- if (lastError.ok)
+      lastError ← collection.insert(document).toAlmFuture
+      _ ← if (lastError.ok)
         AlmFuture.successful(())
       else {
         val msg = lastError.errMsg.getOrElse("unknown error")
@@ -148,8 +148,8 @@ private[almhirt] class MongoEventLogImpl(
 
   def storeEvent(event: Event): AlmFuture[Deadline] =
     for {
-      serialized <- AlmFuture { eventToDocument(event: Event) }(serializationExecutor)
-      start <- insertDocument(serialized)
+      serialized ← AlmFuture { eventToDocument(event: Event) }(serializationExecutor)
+      start ← insertDocument(serialized)
     } yield start
 
   def commitEvent(event: Event, respondTo: Option[ActorRef]) {
@@ -161,73 +161,73 @@ private[almhirt] class MongoEventLogImpl(
         reportMajorFailure(fail)
 
         respondTo match {
-          case Some(r) =>
-            log.warning(msg)
+          case Some(r) ⇒
+            logWarning(msg)
             r ! EventNotLogged(event.eventId, PersistenceProblem(msg, cause = Some(fail)))
-          case None =>
-            log.error(msg)
+          case None ⇒
+            logError(msg)
         }
       },
       start ⇒ {
         val lap = start.lap
         if (lap > writeWarnThreshold)
-          log.warning(s"""Storing event "${event.getClass().getSimpleName()}(${event.eventId})" took longer than ${writeWarnThreshold.defaultUnitString}(${lap.defaultUnitString}).""")
+          logWarning(s"""Storing event "${event.getClass().getSimpleName()}(${event.eventId})" took longer than ${writeWarnThreshold.defaultUnitString}(${lap.defaultUnitString}).""")
         respondTo.foreach(_ ! EventLogged(event.eventId))
       })
   }
 
   def createQuery(dateRange: LocalDateTimeRange): BSONDocument = {
     dateRange match {
-      case LocalDateTimeRange(BeginningOfTime, EndOfTime) =>
+      case LocalDateTimeRange(BeginningOfTime, EndOfTime) ⇒
         BSONDocument()
 
-      case LocalDateTimeRange(From(from), EndOfTime) =>
+      case LocalDateTimeRange(From(from), EndOfTime) ⇒
         BSONDocument(
-          "timestamp" -> BSONDocument("$gte" -> localDateTimeToBsonDateTime(from)))
+          "timestamp" → BSONDocument("$gte" → localDateTimeToBsonDateTime(from)))
 
-      case LocalDateTimeRange(After(after), EndOfTime) =>
+      case LocalDateTimeRange(After(after), EndOfTime) ⇒
         BSONDocument(
-          "timestamp" -> BSONDocument("$gt" -> localDateTimeToBsonDateTime(after)))
+          "timestamp" → BSONDocument("$gt" → localDateTimeToBsonDateTime(after)))
 
-      case LocalDateTimeRange(BeginningOfTime, To(to)) =>
+      case LocalDateTimeRange(BeginningOfTime, To(to)) ⇒
         BSONDocument(
-          "timestamp" -> BSONDocument("$lte" -> localDateTimeToBsonDateTime(to)))
+          "timestamp" → BSONDocument("$lte" → localDateTimeToBsonDateTime(to)))
 
-      case LocalDateTimeRange(BeginningOfTime, Until(until)) =>
+      case LocalDateTimeRange(BeginningOfTime, Until(until)) ⇒
         BSONDocument(
-          "timestamp" -> BSONDocument("$lt" -> localDateTimeToBsonDateTime(until)))
+          "timestamp" → BSONDocument("$lt" → localDateTimeToBsonDateTime(until)))
 
-      case LocalDateTimeRange(From(from), To(to)) =>
+      case LocalDateTimeRange(From(from), To(to)) ⇒
         BSONDocument(
-          "$and" -> BSONDocument(
-            "timestamp" -> BSONDocument(
-              "$gte" -> localDateTimeToBsonDateTime(from)),
-            "timestamp" -> BSONDocument(
-              "$lte" -> localDateTimeToBsonDateTime(to))))
+          "$and" → BSONDocument(
+            "timestamp" → BSONDocument(
+              "$gte" → localDateTimeToBsonDateTime(from)),
+            "timestamp" → BSONDocument(
+              "$lte" → localDateTimeToBsonDateTime(to))))
 
-      case LocalDateTimeRange(From(from), Until(until)) =>
+      case LocalDateTimeRange(From(from), Until(until)) ⇒
         BSONDocument(
-          "$and" -> BSONDocument(
-            "timestamp" -> BSONDocument(
-              "$gte" -> localDateTimeToBsonDateTime(from)),
-            "timestamp" -> BSONDocument(
-              "$lt" -> localDateTimeToBsonDateTime(until))))
+          "$and" → BSONDocument(
+            "timestamp" → BSONDocument(
+              "$gte" → localDateTimeToBsonDateTime(from)),
+            "timestamp" → BSONDocument(
+              "$lt" → localDateTimeToBsonDateTime(until))))
 
-      case LocalDateTimeRange(After(after), To(to)) =>
+      case LocalDateTimeRange(After(after), To(to)) ⇒
         BSONDocument(
-          "$and" -> BSONDocument(
-            "timestamp" -> BSONDocument(
-              "$gt" -> localDateTimeToBsonDateTime(after)),
-            "timestamp" -> BSONDocument(
-              "$lte" -> localDateTimeToBsonDateTime(to))))
+          "$and" → BSONDocument(
+            "timestamp" → BSONDocument(
+              "$gt" → localDateTimeToBsonDateTime(after)),
+            "timestamp" → BSONDocument(
+              "$lte" → localDateTimeToBsonDateTime(to))))
 
-      case LocalDateTimeRange(After(after), Until(until)) =>
+      case LocalDateTimeRange(After(after), Until(until)) ⇒
         BSONDocument(
-          "$and" -> BSONDocument(
-            "timestamp" -> BSONDocument(
-              "$gt" -> localDateTimeToBsonDateTime(after)),
-            "timestamp" -> BSONDocument(
-              "$lt" -> localDateTimeToBsonDateTime(until))))
+          "$and" → BSONDocument(
+            "timestamp" → BSONDocument(
+              "$gt" → localDateTimeToBsonDateTime(after)),
+            "timestamp" → BSONDocument(
+              "$lt" → localDateTimeToBsonDateTime(until))))
     }
   }
 
@@ -249,37 +249,30 @@ private[almhirt] class MongoEventLogImpl(
 
   def uninitializedReadWrite: Receive = {
     case Initialize ⇒
-      log.info("Initializing(read/write)")
+      logInfo("Initializing(read/write)")
 
-      val toTry = () => {
+      this.retryFuture(initializeRetrySettings) {
         val collection = db(collectionName)
         (for {
-          idxRes <- collection.indexesManager.ensure(MIndex(List("timestamp" -> IndexType.Ascending), name = Some("idx_timestamp"), unique = false))
+          idxRes ← collection.indexesManager.ensure(MIndex(List("timestamp" → IndexType.Ascending), name = Some("idx_timestamp"), unique = false))
         } yield (idxRes)).toAlmFuture
-      }
-
-      context.retryWithLogging[Boolean](
-        retryContext = s"Initialize collection $collectionName",
-        toTry = toTry,
-        onSuccess = idxRes => {
-          log.info(s"""Index on "timestamp" created: $idxRes""")
-          self ! Initialized
-        },
-        onFinalFailure = (t, n, p) => {
-          val prob = MandatoryDataProblem(s"Initialize collection '$collectionName' finally failed after $n attempts and ${t.defaultUnitString}.", cause = Some(p))
+      }.onComplete(
+        fail ⇒ {
+          val prob = MandatoryDataProblem(s"Initialize collection '$collectionName' failed.", cause = Some(fail))
           self ! InitializeFailed(PersistenceProblem("Failed to initialize", cause = Some(prob)))
         },
-        log = this.log,
-        settings = retrySettings,
-        actorName = Some("initializes-collection"))
+        idxRes ⇒ {
+          log.info(s"""Index on "timestamp" created: $idxRes""")
+          self ! Initialized
+        })
 
     case Initialized ⇒
-      log.info("Initialized")
+      logInfo("Initialized")
       registerCircuitControl(circuitBreaker)
       context.become(receiveEventLogMsg(false))
 
     case InitializeFailed(prob) ⇒
-      log.error(s"Initialize failed:\n$prob")
+      logError(s"Initialize failed:\n$prob")
       reportCriticalFailure(prob)
       sys.error(prob.message)
 
@@ -287,56 +280,58 @@ private[almhirt] class MongoEventLogImpl(
       reportMissedEvent(event, MajorSeverity, ServiceNotAvailableProblem("Uninitialized."))
 
     case m: EventLogMessage ⇒
-      log.warning(s"""Received event log message ${m.getClass().getSimpleName()} while uninitialized.""")
+      logWarning(s"""Received event log message ${m.getClass().getSimpleName()} while uninitialized.""")
   }
 
   def uninitializedReadOnly: Receive = {
     case Initialize ⇒
-      log.info("Initializing(read-only)")
-      context.retryWithLogging[Unit](
-        retryContext = s"Find collection $collectionName",
-        toTry = () => db.collectionNames.toAlmFuture.foldV(
-          fail => fail.failure,
-          collectionNames => {
+      logInfo("Initializing(read-only)")
+
+      this.retryFuture(initializeRetrySettings) {
+        db.collectionNames.toAlmFuture.foldV(
+          fail ⇒ fail.failure,
+          collectionNames ⇒ {
             if (collectionNames.contains(collectionName))
               ().success
             else
               MandatoryDataProblem(s"""Collection "$collectionName" is not among [${collectionNames.mkString(", ")}] in database "${db.name}".""").failure
-          }),
-        onSuccess = _ => { self ! Initialized },
-        onFinalFailure = (t, n, p) => {
-          val prob = MandatoryDataProblem(s"Look up collection '$collectionName' finally failed after $n attempts and ${t.defaultUnitString}.", cause = Some(p))
+          })
+      }.onComplete(
+        fail ⇒ {
+          val prob = MandatoryDataProblem(s"Look up collection '$collectionName' failed.", cause = Some(fail))
           self ! InitializeFailed(PersistenceProblem("Failed to initialize", cause = Some(prob)))
         },
-        log = this.log,
-        settings = retrySettings,
-        actorName = Some("looks-for-collection"))
+        idxRes ⇒ { self ! Initialized })
 
     case Initialized ⇒
-      log.info("Initialized")
+      logInfo("Initialized")
       registerCircuitControl(circuitBreaker)
       context.become(receiveEventLogMsg(true))
 
     case InitializeFailed(prob) ⇒
-      log.error(s"Initialize failed:\n$prob")
+      logError(s"Initialize failed:\n$prob")
       reportCriticalFailure(prob)
       sys.error(prob.message)
 
-    case LogEvent(event, acknowledge) ⇒
-      if (!acknowledge)
-        log.warning(s"""Received event ${event.getClass().getSimpleName()} while uninitialized.""")
-      else
-        sender() ! EventNotLogged(event.eventId, IllegalOperationProblem("The event log is in read only mode."))
+    case m: LogEvent ⇒
+      logWarning(s"""Received event log message ${m.getClass().getSimpleName()} while uninitialized.""")
+      if (m.acknowledge)
+        sender() ! EventNotLogged(m.event.eventId, ServiceNotReadyProblem("I'm still initializing."))
 
-    case m: EventLogMessage ⇒
-      log.warning(s"""Received event log message ${m.getClass().getSimpleName()} while uninitialized.""")
+    case m: FindEvent ⇒
+      logWarning(s"""Received event log message ${m.getClass().getSimpleName()} while uninitialized.""")
+      sender() ! FindEventFailed(m.eventId, ServiceNotReadyProblem("I'm still initializing."))
+
+    case m: FetchEvents ⇒
+      logWarning(s"""Received event log message ${m.getClass().getSimpleName()} while uninitialized.""")
+      sender() ! FetchEventsFailed(ServiceNotReadyProblem("I'm still initializing."))
   }
 
   def receiveEventLogMsg(readOnly: Boolean): Receive = {
     case LogEvent(event, acknowledge) ⇒
       if (readOnly)
         if (!acknowledge)
-          log.warning("Received log")
+          logWarning("Received log message even though I am in read only mode")
         else
           sender() ! EventNotLogged(event.eventId, IllegalOperationProblem("The event log is in read only mode."))
       else
@@ -345,27 +340,27 @@ private[almhirt] class MongoEventLogImpl(
     case FindEvent(eventId) ⇒
       val pinnedSender = sender
       val collection = db(collectionName)
-      val query = BSONDocument("_id" -> BSONString(eventId.value))
+      val query = BSONDocument("_id" → BSONString(eventId.value))
       val res =
         for {
-          docs <- collection.find(query).cursor.collect[List](2, true).toAlmFuture
-          Event <- AlmFuture {
+          docs ← collection.find(query).cursor.collect[List](2, true).toAlmFuture
+          Event ← AlmFuture {
             docs match {
-              case Nil ⇒ None.success
+              case Nil      ⇒ None.success
               case d :: Nil ⇒ documentToEvent(d).map(Some(_))
-              case x ⇒ PersistenceProblem(s"""Expected 1 event with id "$eventId" but found ${x.size}.""").failure
+              case x        ⇒ PersistenceProblem(s"""Expected 1 event with id "$eventId" but found ${x.size}.""").failure
             }
           }(serializationExecutor)
         } yield Event
       res.onComplete(
         problem ⇒ {
           pinnedSender ! FindEventFailed(eventId, problem)
-          log.error(problem.toString())
+          logError(problem.toString())
           reportMajorFailure(problem)
         },
         eventOpt ⇒ pinnedSender ! FoundEvent(eventId, eventOpt))
 
-    case m: FetchEvents =>
+    case m: FetchEvents ⇒
       fetchAndDispatchEvents(m, sender())
 
   }

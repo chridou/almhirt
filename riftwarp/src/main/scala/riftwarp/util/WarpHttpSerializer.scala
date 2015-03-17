@@ -19,9 +19,9 @@ class WarpHttpSerializer[T](riftWarp: RiftWarp)(implicit tag: ClassTag[T]) exten
      
   private def serializeInternal(what: T, channel: String, options: Map[String, Any]): AlmValidation[AlmHttpBody] =
     for {
-      theChannel <- WarpChannels.getChannel(channel)
-      serialized <- riftWarp.departure(theChannel.channelDescriptor, what, options)
-      typedSerialized <- theChannel.httpTransmission match {
+      theChannel ← WarpChannels.getChannel(channel)
+      serialized ← riftWarp.departure(theChannel.channelDescriptor, what, options)
+      typedSerialized ← theChannel.httpTransmission match {
         case HttpTransmissionAsBinary ⇒ serialized._1.castTo[Array[Byte]].map(BinaryBody)
         case HttpTransmissionAsText ⇒ serialized._1.castTo[String].map(TextBody)
         case NoHttpTransmission ⇒ UnspecifiedProblem(s""""$channel" is neither a binary nor a text channel.""").failure
@@ -31,14 +31,14 @@ class WarpHttpSerializer[T](riftWarp: RiftWarp)(implicit tag: ClassTag[T]) exten
  
   private def deserializeInternal(channel: String, what: AlmHttpBody, options: Map[String, Any] = Map.empty): AlmValidation[T] =
     for {
-      theChannel <- WarpChannels.getChannel(channel)
-      result <- what match {
+      theChannel ← WarpChannels.getChannel(channel)
+      result ← what match {
         case BinaryBody(bytes) if theChannel.httpTransmission == HttpTransmissionAsBinary ⇒
           riftWarp.arrival(channel, bytes, options).flatMap(_.castTo[T])
         case TextBody(text) if theChannel.httpTransmission == HttpTransmissionAsText ⇒
           riftWarp.arrival(channel, text, options).flatMap(_.castTo[T])
         case _ ⇒
-          UnspecifiedProblem(s""""$channel" is neither a binary nor a text channel or the serialized representations do not match("${what.getClass().getSimpleName()}" -> "${theChannel.httpTransmission}").""").failure
+          UnspecifiedProblem(s""""$channel" is neither a binary nor a text channel or the serialized representations do not match("${what.getClass().getSimpleName()}" → "${theChannel.httpTransmission}").""").failure
       }
     } yield result
 }

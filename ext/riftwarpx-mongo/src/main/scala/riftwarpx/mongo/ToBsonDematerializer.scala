@@ -42,7 +42,7 @@ object ToBsonDematerializer extends DematerializerTemplate[BSONValue] {
 
   protected override def getObjectRepr(warpObject: WarpObject): BSONDocument = {
     val head: Vector[(String, BSONValue)] =
-      warpObject.warpDescriptor.map(rd ⇒ (WarpDescriptor.defaultKey -> BSONString(rd.toParsableString()))).toVector
+      warpObject.warpDescriptor.map(rd ⇒ (WarpDescriptor.defaultKey → BSONString(rd.toParsableString()))).toVector
 
     val elements =
       head ++ (
@@ -77,5 +77,5 @@ object ToBsonDematerializer extends DematerializerTemplate[BSONValue] {
     foldByteArrayRepr(bytes)
 
   private def createElemRepr(elem: WarpElement): Option[(String, BSONValue)] =
-    elem.value map (v ⇒ elem.label -> transform(v))
+    elem.value map (v ⇒ elem.label → transform(v))
 }

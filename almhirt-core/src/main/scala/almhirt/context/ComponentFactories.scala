@@ -4,16 +4,19 @@ import almhirt.common._
 import almhirt.problem.Severity
 import almhirt.akkax.ComponentFactory
 
-final case class ComponentFactoryBuilderEntry(buildFactory: AlmhirtContext => AlmFuture[ComponentFactory], failureSeverity: Severity) {
+final case class ComponentFactoryBuilderEntry(buildFactory: AlmhirtContext ⇒ AlmFuture[ComponentFactory], failureSeverity: Severity) {
   def toSeq = Seq(this)
 }
 
 object ComponentFactoryBuilderEntry {
-  def apply(buildFactory: AlmhirtContext => AlmFuture[ComponentFactory]): ComponentFactoryBuilderEntry = 
+  def apply(buildFactory: AlmhirtContext ⇒ AlmFuture[ComponentFactory]): ComponentFactoryBuilderEntry =
     ComponentFactoryBuilderEntry(buildFactory, CriticalSeverity)
 }
 
 final case class ComponentFactories(
+  createResourceServiceProps: Option[AlmhirtContext ⇒ AlmFuture[akka.actor.Props]],
+  /** These are the event logs. They will be placed under "/user/{almhirt}/components/event-logs". */
+  buildHerderService: Option[ComponentFactoryBuilderEntry],
   /** These are the event logs. They will be placed under "/user/{almhirt}/components/event-logs". */
   buildEventLogs: Seq[ComponentFactoryBuilderEntry],
   /** These are the views. They will be placed under "/user/{almhirt}/components/views". */
@@ -27,6 +30,8 @@ final case class ComponentFactories(
 
 object ComponentFactories {
   val empty = ComponentFactories(
+    None,
+    None,
     Seq.empty,
     Seq.empty,
     Seq.empty,

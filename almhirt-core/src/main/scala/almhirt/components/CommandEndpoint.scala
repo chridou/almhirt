@@ -10,40 +10,30 @@ import almhirt.akkax._
 import almhirt.context.AlmhirtContext
 import almhirt.context.HasAlmhirtContext
 import akka.stream.actor._
-import akka.stream.scaladsl2._
+import akka.stream.scaladsl._
 
 object CommandEndpoint {
   def propsRaw(
     commandStatusTrackerToResolve: ToResolve,
     resolveSettings: ResolveSettings,
     maxTrackingDuration: FiniteDuration,
-    circuitControlSettings: CircuitControlSettings,
-    circuitStateReportingInterval: Option[FiniteDuration],
-    circuitControlCallbackExecutor: ExtendedExecutionContextSelector,
     autoConnect: Boolean = false)(implicit ctx: AlmhirtContext): Props =
     Props(new CommandEndpointImpl(
       commandStatusTrackerToResolve,
       resolveSettings,
       maxTrackingDuration,
-      circuitControlSettings,
-      circuitStateReportingInterval,
-      circuitControlCallbackExecutor,
       autoConnect))
 
   def props(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
     import almhirt.configuration._
     import almhirt.almvalidation.kit._
+    val commandStatusTrackerToResolve = ResolvePath(ctx.localActorPaths.misc / CommandStatusTracker.actorname)
     for {
-      section <- ctx.config.v[com.typesafe.config.Config]("almhirt.components.misc.command-endpoint")
-      commandStatusTrackerPathStr <- section.v[String]("command-status-tracker-path")
-      commandStatusTrackerToResolve <- inTryCatch { ResolvePath(ActorPath.fromString(commandStatusTrackerPathStr)) }
-      maxTrackingDuration <- section.v[FiniteDuration]("max-tracking-duration")
-      resolveSettings <- section.v[ResolveSettings]("resolve-settings")
-      circuitControlSettings <- section.v[CircuitControlSettings]("circuit-control")
-      circuitControlCallbackExecutor <- section.v[ExtendedExecutionContextSelector]("circuit-control.callback-executor")
-      circuitStateReportingInterval <- section.magicOption[FiniteDuration]("circuit-state-reporting-interval")
-      autoConnect <- section.v[Boolean]("auto-connect")
-    } yield propsRaw(commandStatusTrackerToResolve, resolveSettings, maxTrackingDuration, circuitControlSettings, circuitStateReportingInterval, circuitControlCallbackExecutor, autoConnect)
+      section ← ctx.config.v[com.typesafe.config.Config]("almhirt.components.misc.command-endpoint")
+      maxTrackingDuration ← section.v[FiniteDuration]("max-tracking-duration")
+      resolveSettings ← section.v[ResolveSettings]("resolve-settings")
+      autoConnect ← section.v[Boolean]("auto-connect")
+    } yield propsRaw(commandStatusTrackerToResolve, resolveSettings, maxTrackingDuration, autoConnect)
   }
 
   def apply(commandEndpoint: ActorRef): org.reactivestreams.Publisher[Command] =
@@ -57,14 +47,8 @@ private[almhirt] class CommandEndpointImpl(
   commandStatusTrackerToResolve: ToResolve,
   resolveSettings: ResolveSettings,
   maxTrackingDuration: FiniteDuration,
-  override val circuitControlSettings: CircuitControlSettings,
-  override val circuitStateReportingInterval: Option[FiniteDuration],
-  override val circuitControlCallbackExecutorSelector: ExtendedExecutionContextSelector,
-  autoConnect: Boolean)(implicit override val almhirtContext: AlmhirtContext) extends ActorPublisher[Command] with AlmActor with AlmActorLogging with SyncFusedActor with ActorLogging with ImplicitFlowMaterializer {
+  autoConnect: Boolean)(implicit override val almhirtContext: AlmhirtContext) extends ActorPublisher[Command] with AlmActor with AlmActorLogging with ActorLogging with ImplicitFlowMaterializer {
   import CommandStatusTracker._
-
-  override def circuitControlLoggingAdapter = Some(this.log)
-  override val sendStateChangedEvents = true
 
   private case object AutoConnect
   private case object Resolve
@@ -76,8 +60,7 @@ private[almhirt] class CommandEndpointImpl(
     case ActorMessages.ResolvedSingle(commandStatusTracker, _) ⇒
       logInfo("Found command status tracker.")
       if (autoConnect) self ! AutoConnect
-      registerCircuitControl()
-      context.becomeFused(receiveRunningWithClosedCircuit(commandStatusTracker))
+      context.become(receiveRunning(commandStatusTracker))
 
     case ActorMessages.SingleNotResolved(problem, _) ⇒
       logError(s"Could not resolve command status tracker @ ${commandStatusTrackerToResolve}:\n$problem")
@@ -88,7 +71,7 @@ private[almhirt] class CommandEndpointImpl(
       sender() ! CommandNotAccepted(cmd.commandId, ServiceNotAvailableProblem("Command endpoint not ready! Try again later."))
   }
 
-  def receiveRunningWithClosedCircuit(commandStatusTracker: ActorRef): Receive = {
+  def receiveRunning(commandStatusTracker: ActorRef): Receive = {
     case AutoConnect ⇒
       logInfo("Connecting to command consumer.")
       CommandEndpoint(self).subscribe(almhirtContext.commandBroker.newSubscriber)
@@ -96,22 +79,9 @@ private[almhirt] class CommandEndpointImpl(
     case cmd: Command ⇒
       dispatchCommandResult(
         cmd,
-        fused(checkCommandDispatchable(cmd)),
+        checkCommandDispatchable(cmd),
         sender(),
         commandStatusTracker)
-
-    case m: ActorMessages.CircuitAllWillFail =>
-      logWarning("The circuit was opened!")
-      context.becomeFused(receiveRunningWithOpenCircuit(commandStatusTracker))
-  }
-
-  def receiveRunningWithOpenCircuit(commandStatusTracker: ActorRef): Receive = {
-    case cmd: Command ⇒
-      sender() ! CommandNotAccepted(cmd.commandId, ServiceBrokenProblem("Command processing is currently broken. Try again later."))
-
-    case m: ActorMessages.CircuitNotAllWillFail =>
-      logInfo("The circuit was closed!")
-      context.becomeFused(receiveRunningWithClosedCircuit(commandStatusTracker))
 
   }
 
@@ -122,14 +92,16 @@ private[almhirt] class CommandEndpointImpl(
       cmd.success
     } else {
       val reason =
-        if (!isCanceled) {
-          ServiceShutDownProblem("Command processing was shut down.")
+        if (isCanceled) {
+          ServiceShutDownProblem("Command processing was shut down. The stream subscriber cancelled the stream.")
         } else if (isErrorEmitted) {
-          ServiceBrokenProblem("Command processing is broken.")
+          ServiceBrokenProblem("Command processing is broken. An error was already emitted.")
         } else if (!isActive) {
           ServiceNotAvailableProblem("Command processing is not yet ready.")
+        } else if (isCompleted) {
+          ServiceNotAvailableProblem("The service is not available any more. The commad stream was closed.")
         } else if (totalDemand == 0) {
-          ServiceBusyProblem("No demand. Try again later.")
+          ServiceBusyProblem("Currently there is no demand for commands. Try again later.")
         } else {
           UnspecifiedProblem("Unknown cause.")
         }
@@ -138,9 +110,8 @@ private[almhirt] class CommandEndpointImpl(
 
   private def dispatchCommandResult(cmd: Command, result: AlmValidation[Command], receiver: ActorRef, commandStatusTracker: ActorRef) {
     result.fold(
-      problem => {
-        logWarning(s"""	|
-        					|Rejecting command with id "${cmd.commandId.value}".
+      problem ⇒ {
+        logWarning(s"""|Rejecting command with id "${cmd.commandId.value}".
         					|Current demand is $totalDemand commands.
         					|Reason:
         					|$problem""".stripMargin)
@@ -148,7 +119,7 @@ private[almhirt] class CommandEndpointImpl(
         reportMinorFailure(problem)
         reportRejectedCommand(cmd, MinorSeverity, problem)
       },
-      dispatchableCmd => {
+      dispatchableCmd ⇒ {
         if (dispatchableCmd.isTrackable) {
           commandStatusTracker ! TrackCommand(
             commandId = dispatchableCmd.commandId,
@@ -156,7 +127,7 @@ private[almhirt] class CommandEndpointImpl(
               fail ⇒ {
                 fail match {
                   case OperationTimedOutProblem(p) ⇒ receiver ! TrackingFailed(dispatchableCmd.commandId, p)
-                  case _ ⇒ receiver ! TrackingFailed(dispatchableCmd.commandId, fail)
+                  case _                           ⇒ receiver ! TrackingFailed(dispatchableCmd.commandId, fail)
                 }
                 reportMinorFailure(fail)
                 reportRejectedCommand(cmd, MinorSeverity, fail)
@@ -171,11 +142,12 @@ private[almhirt] class CommandEndpointImpl(
   }
 
   override def preStart() {
+    logInfo("Starting...")
     self ! Resolve
   }
 
   override def postStop() {
-    deregisterCircuitControl()
+    logInfo("Stopped")
   }
 
 }

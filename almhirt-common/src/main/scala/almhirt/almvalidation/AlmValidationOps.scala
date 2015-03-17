@@ -137,6 +137,9 @@ trait AlmValidationOps5[P <: Problem, T] extends Ops[Validation[P, T]] {
   def recover(v: ⇒ T): Validation[P, T] =
     self.fold(prob ⇒ v.success[P], _ ⇒ self)
 
+  def getOrElse(v: ⇒ T): T =
+    self fold (_ ⇒ v, x ⇒ x)
+
   def andThen(failEffect: Problem ⇒ Unit, sucessEffect: T ⇒ Unit): AlmValidation[T] = {
     self fold (failEffect, sucessEffect)
     self
@@ -183,7 +186,7 @@ trait AlmValidationOps5[P <: Problem, T] extends Ops[Validation[P, T]] {
       succ ⇒ if (cond(succ)) succ.success else ConstraintViolatedProblem(msg(succ)).failure)
 
   def failureDidNotConfigure(component: String): AlmValidation[T] =
-    self.leftMap(implicit p => ConfigurationProblem.in(component))
+    self.leftMap(implicit p ⇒ ConfigurationProblem.in(component))
 
 }
 
@@ -289,7 +292,7 @@ trait AlmValidationOps14 extends Ops[AlmValidation[Boolean]] {
 trait AlmValidationOps15[T] extends Ops[scala.util.Try[T]] {
   def toValidation(): AlmValidation[T] =
     self match {
-      case scala.util.Success(x) ⇒ x.success
+      case scala.util.Success(x)   ⇒ x.success
       case scala.util.Failure(exn) ⇒ ExceptionCaughtProblem(exn).failure[T]
     }
 }

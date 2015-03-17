@@ -4,11 +4,11 @@ import org.scalatest._
 import scalaz.Success
 
 class ArgsFunsTests extends FunSuite with Matchers {
-  val innerBC = Map("A" -> "peter", "B" -> 1L)
+  val innerBC = Map("A" → "peter", "B" → 1L)
 
-  val innerB = Map("A" -> "mary", "B" -> 3.0, "C" -> innerBC)
+  val innerB = Map("A" → "mary", "B" → 3.0, "C" → innerBC)
 
-  val testMap = Map("A" -> "heinz", "B" -> innerB, "C" -> Vector(1, 2, 3))
+  val testMap = Map("A" → "heinz", "B" → innerB, "C" → Vector(1, 2, 3))
 
   test("""getValue[String] must return a Success("heinz") for key "A"""") {
     funs.getValue[String]("A", testMap) should equal(Success("heinz"))

@@ -14,10 +14,10 @@ trait ExceptionToProblem extends PartialFunction[Throwable, SingleProblem] {
 
 object CommonExceptionToProblem extends ExceptionToProblem {
   private val exnMappers = Map[Class[_ <: Throwable], Throwable ⇒ SingleProblem](
-    (classOf[NoSuchElementException] -> (exn ⇒ problemtypes.NoSuchElementProblem(exn.getMessage, cause = Some(exn)))),
-    (classOf[IndexOutOfBoundsException] -> (exn ⇒ problemtypes.IndexOutOfBoundsProblem(exn.getMessage, cause = Some(exn)))),
-    (classOf[ClassCastException] -> (exn ⇒ problemtypes.InvalidCastProblem(exn.getMessage, cause = Some(exn)))),
-    (classOf[java.util.concurrent.TimeoutException] -> (exn ⇒ problemtypes.OperationTimedOutProblem(exn.getMessage, cause = Some(exn)))))
+    (classOf[NoSuchElementException] → (exn ⇒ problemtypes.NoSuchElementProblem(exn.getMessage, cause = Some(exn)))),
+    (classOf[IndexOutOfBoundsException] → (exn ⇒ problemtypes.IndexOutOfBoundsProblem(exn.getMessage, cause = Some(exn)))),
+    (classOf[ClassCastException] → (exn ⇒ problemtypes.InvalidCastProblem(exn.getMessage, cause = Some(exn)))),
+    (classOf[java.util.concurrent.TimeoutException] → (exn ⇒ problemtypes.OperationTimedOutProblem(exn.getMessage, cause = Some(exn)))))
 
   override def apply(exn: Throwable) = exnMappers(exn.getClass())(exn)
 

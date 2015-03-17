@@ -70,13 +70,13 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
       case scala.util.Failure(exn) ⇒
         handleThrowable(exn) match {
           case OperationTimedOutProblem(prob) ⇒ p complete (scala.util.Success(withTimeout(prob).failure))
-          case prob ⇒ p failure (exn)
+          case prob                           ⇒ p failure (exn)
         }
       case scala.util.Success(validation) ⇒
         validation fold (
           fail ⇒ fail match {
             case OperationTimedOutProblem(prob) ⇒ p complete (scala.util.Success(withTimeout(prob).failure))
-            case prob ⇒ p complete scala.util.Success(prob.failure)
+            case prob                           ⇒ p complete scala.util.Success(prob.failure)
           },
           succ ⇒ p complete scala.util.Success(succ.success))
     }
@@ -169,67 +169,118 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
   }
 
   /** Act on completion */
-  def onComplete(handler: AlmValidation[R] ⇒ Unit)(implicit executionContext: ExecutionContext): Unit = {
+  def onComplete(handler: AlmValidation[R] ⇒ Unit)(implicit executionContext: ExecutionContext): AlmFuture[R] = {
     underlying.onComplete {
       case scala.util.Success(validation) ⇒ handler(validation)
-      case scala.util.Failure(err) ⇒ handler(handleThrowable(err).failure)
+      case scala.util.Failure(err)        ⇒ handler(handleThrowable(err).failure)
     }
+    this
   }
 
   /** Act on completion */
-  def onComplete(fail: Problem ⇒ Unit, succ: R ⇒ Unit)(implicit executionContext: ExecutionContext): Unit = {
+  def onComplete(fail: Problem ⇒ Unit, succ: R ⇒ Unit)(implicit executionContext: ExecutionContext): AlmFuture[R] = {
     underlying.onComplete {
       case scala.util.Success(validation) ⇒ validation fold (fail, succ)
-      case scala.util.Failure(err) ⇒ fail(handleThrowable(err))
+      case scala.util.Failure(err)        ⇒ fail(handleThrowable(err))
     }
+    this
   }
 
   /** Use when only interested in a success and a failure result doesn't matter */
-  def onSuccess(onSucc: R ⇒ Unit)(implicit executionContext: ExecutionContext): Unit =
+  def onSuccess(onSucc: R ⇒ Unit)(implicit executionContext: ExecutionContext): AlmFuture[R] = {
     onComplete(_ fold (_ ⇒ (), onSucc))
+    this
+  }
 
   /** As soon as a success is known, schedule the effect */
+  @deprecated(message = "Use onSuccess", since = "0.7.6")
   def successEffect(effect: R ⇒ Unit)(implicit executionContext: ExecutionContext): AlmFuture[R] =
     andThen { _.fold(_ ⇒ (), succ ⇒ effect(succ)) }
 
-  /** Use when only interested in a success and a failure can be converted to a success to rejoin with the happy path */
+  @deprecated(message = "Use onSuccessWithRecoveredFailure", since = "0.7.1")
   def onSuccessWithRejoinedFailure[U >: R](rejoin: Problem ⇒ U, onRes: U ⇒ Unit)(implicit executionContext: ExecutionContext): Unit =
-    this.rejoinFailure(rejoin).onSuccess(onRes)
+    this.recover(rejoin).onSuccess(onRes)
+
+  /** Use when only interested in a success and a failure can be converted to a success to rejoin with the happy path */
+  def onSuccessWithRecoveredFailure[U >: R](rejoin: Problem ⇒ U, onRes: U ⇒ Unit)(implicit executionContext: ExecutionContext): Unit =
+    this.recover(rejoin).onSuccess(onRes)
 
   /** Use when only interested in a failure and a successful result doesn't matter */
-  def onFailure(onProb: Problem ⇒ Unit)(implicit executionContext: ExecutionContext): Unit =
+  def onFailure(onProb: Problem ⇒ Unit)(implicit executionContext: ExecutionContext): AlmFuture[R] = {
     onComplete(_ fold (onProb, _ ⇒ ()))
+    this
+  }
 
+  @deprecated(message = "Use onComplete", since = "0.7.6")
   def andThen(effect: AlmValidation[R] ⇒ Unit)(implicit executionContext: ExecutionContext): AlmFuture[R] = {
     new AlmFuture(underlying.andThen {
-      case scala.util.Success(r) ⇒ effect(r)
+      case scala.util.Success(r)   ⇒ effect(r)
       case scala.util.Failure(err) ⇒ effect(handleThrowable(err).failure)
     })
   }
 
+  @deprecated(message = "Use onComplete", since = "0.7.6")
   def andThen(fail: Problem ⇒ Unit, succ: R ⇒ Unit)(implicit executionContext: ExecutionContext): AlmFuture[R] = {
     new AlmFuture(underlying.andThen {
-      case scala.util.Success(r) ⇒ r.fold(fail, succ)
+      case scala.util.Success(r)   ⇒ r.fold(fail, succ)
       case scala.util.Failure(err) ⇒ fail(handleThrowable(err))
     })
   }
 
-  @deprecated(message = "Use failureEffect", since = "0.5.210")
+  @deprecated(message = "Use onFailure", since = "0.5.210")
   def withFailure(effect: Problem ⇒ Unit)(implicit executionContext: ExecutionContext): AlmFuture[R] =
     failureEffect(effect)
 
   /** As soon as a failure is known, schedule the effect */
+  @deprecated(message = "Use onFailure", since = "0.5.210")
   def failureEffect(effect: Problem ⇒ Unit)(implicit executionContext: ExecutionContext): AlmFuture[R] =
     andThen { _.fold(effect, succ ⇒ ()) }
 
-  /** In case of a failure, rejoin with the happy path */
+  @deprecated(message = "Use recover", since = "0.7.1")
   def rejoinFailure[U >: R](rejoin: Problem ⇒ U)(implicit executionContext: ExecutionContext): AlmFuture[U] = {
     this.fold[U](
       rejoin,
       succ ⇒ succ)
   }
 
-  /** A some successes can become a failure */
+  /** In case of a failure, rejoin with the happy path */
+  def recover[U >: R](recover: Problem ⇒ U)(implicit executionContext: ExecutionContext): AlmFuture[U] = {
+    this.fold[U](
+      recover,
+      succ ⇒ succ)
+  }
+
+  /** In case of a failure, rejoin with the happy path */
+  @deprecated(message = "Use mapOrRecover", since = "0.7.6")
+  def mapRecover[U](map: R ⇒ U, recover: Problem ⇒ U)(implicit executionContext: ExecutionContext): AlmFuture[U] = {
+    this.fold[U](
+      recover,
+      succ ⇒ map(succ))
+  }
+
+  /** In case of a failure, rejoin with the happy path */
+  def mapOrRecover[U](map: R ⇒ U, recover: Problem ⇒ U)(implicit executionContext: ExecutionContext): AlmFuture[U] = {
+    this.fold[U](
+      recover,
+      succ ⇒ map(succ))
+  }
+
+  /** extract an U from the success. In case of a failure, rejoin with the happy path */
+  @deprecated(message = "Use collectOrRecover", since = "0.7.6")
+  def collectRecover[U](collect: PartialFunction[R, U], recover: Problem ⇒ U)(implicit executionContext: ExecutionContext): AlmFuture[U] = {
+    this.fold[U](
+      recover,
+      succ ⇒ collect(succ))
+  }
+
+  /** extract an U from the success. In case of a failure, rejoin with the happy path */
+  def collectOrRecover[U](collect: PartialFunction[R, U], recover: Problem ⇒ U)(implicit executionContext: ExecutionContext): AlmFuture[U] = {
+    this.fold[U](
+      recover,
+      succ ⇒ collect(succ))
+  }
+
+  /** A success becomes a failure */
   def divertToFailure(divert: PartialFunction[R, Problem])(implicit executionContext: ExecutionContext): AlmFuture[R] = {
     this.foldV(
       fail ⇒ fail.failure,
@@ -339,13 +390,13 @@ object AlmFuture {
   }
 
   /** Start a computation that is not expected to fail */
-  def compute[T](computation: ⇒ T)(implicit executionContext: ExecutionContext) = new AlmFuture[T](Future { almhirt.almvalidation.funs.inTryCatch(computation) })
+  def compute[T](computation: ⇒ T)(implicit executionContext: ExecutionContext) = new AlmFuture[T](Future { inTryCatch(computation) })
 
   /** Return a future where the result is already known */
-  def completed[T](what: ⇒ AlmValidation[T]) = new AlmFuture[T](Future.successful { almhirt.almvalidation.funs.unsafe(what) })
+  def completed[T](what: ⇒ AlmValidation[T]) = new AlmFuture[T](Future.successful { unsafe(what) })
 
-  /** Return a future where the succesful result is already known */
-  def successful[T](result: ⇒ T) = new AlmFuture[T](Future.successful { almhirt.almvalidation.funs.inTryCatch(result) })
+  /** Return a future where the successful result is already known */
+  def successful[T](result: ⇒ T) = new AlmFuture[T](Future.successful { inTryCatch(result) })
 
   /** Return a future where a failure is already known */
   def failed[T](prob: ⇒ Problem) = new AlmFuture[T](Future.successful {
@@ -357,6 +408,7 @@ object AlmFuture {
   })
 
   /** Returns the result after the given duration */
+  @deprecated("Use delayedComputation.", since = "0.7.6")
   def delayed[T](duration: scala.concurrent.duration.FiniteDuration)(result: ⇒ AlmValidation[T]): AlmFuture[T] = {
     val p = Promise[AlmValidation[T]]
     val timer = new java.util.Timer()
@@ -366,13 +418,94 @@ object AlmFuture {
   }
 
   /** Returns the value after the given duration */
+  @deprecated("Use the other delayedSuccess.", since = "0.7.6")
   def delayedSuccess[T](duration: scala.concurrent.duration.FiniteDuration)(result: ⇒ T): AlmFuture[T] = {
     delayed(duration)(result.success)
   }
 
   /** Returns the failure with the given Problem after the given duration */
+  @deprecated("Use the other delayedFailure.", since = "0.7.6")
   def delayedFailure[T](duration: scala.concurrent.duration.FiniteDuration)(problem: ⇒ Problem): AlmFuture[Nothing] = {
     delayed(duration)(problem.failure)
+  }
+
+  /** Returns the result after the given duration */
+  def delayedResult[T, S: almhirt.almfuture.ActionSchedulingMagnet](duration: scala.concurrent.duration.FiniteDuration, scheduler: S)(result: AlmValidation[T])(implicit executor: ExecutionContext): AlmFuture[T] = {
+    implicit val schedulerMagnet = implicitly[almhirt.almfuture.ActionSchedulingMagnet[S]]
+    val p = Promise[AlmValidation[T]]
+    schedulerMagnet.schedule(scheduler, () ⇒ p.complete(scala.util.Success(result)), duration, executor)
+    new AlmFuture(p.future)
+  }
+
+  /** Starts computing the result after the given duration */
+  def delayedComputation[T, S: almhirt.almfuture.ActionSchedulingMagnet](duration: scala.concurrent.duration.FiniteDuration, scheduler: S)(result: ⇒ AlmValidation[T])(implicit executor: ExecutionContext): AlmFuture[T] = {
+    implicit val schedulerMagnet = implicitly[almhirt.almfuture.ActionSchedulingMagnet[S]]
+    val p = Promise[AlmValidation[T]]
+    schedulerMagnet.schedule(scheduler, () ⇒ p.complete(scala.util.Success(result)), duration, executor)
+    new AlmFuture(p.future)
+  }
+
+  /** Returns the failure with the given Problem after the given duration */
+  def delayedFailure[T, S: almhirt.almfuture.ActionSchedulingMagnet](duration: scala.concurrent.duration.FiniteDuration, scheduler: S)(problem: Problem)(implicit executor: ExecutionContext): AlmFuture[T] = {
+    delayedResult(duration, scheduler)(problem.failure)
+  }
+
+  /** Returns the value after the given duration */
+  def delayedSuccess[T, S: almhirt.almfuture.ActionSchedulingMagnet](duration: scala.concurrent.duration.FiniteDuration, scheduler: S)(result: T)(implicit executor: ExecutionContext): AlmFuture[T] = {
+    delayedResult(duration, scheduler)(result.success)
+  }
+
+  def retry[T, S: almhirt.almfuture.ActionSchedulingMagnet](policy: almhirt.configuration.RetryPolicy, scheduler: S)(f: ⇒ AlmFuture[T])(implicit executor: ExecutionContext): AlmFuture[T] =
+    retryScaffolding(f, policy, executor, scheduler, None)
+
+  def retryScaffolding[T, S: almhirt.almfuture.ActionSchedulingMagnet](
+    f: ⇒ AlmFuture[T],
+    settings: almhirt.configuration.RetryPolicy,
+    executor: ExecutionContext,
+    actionScheduler: S,
+    beforeRetry: Option[(almhirt.configuration.NumberOfRetries, scala.concurrent.duration.FiniteDuration, Problem) ⇒ Unit]): AlmFuture[T] = {
+
+    val scheduler = implicitly[almhirt.almfuture.ActionSchedulingMagnet[S]]
+
+    def scheduleAction(action: () ⇒ Unit, in: scala.concurrent.duration.FiniteDuration) =
+      scheduler.schedule(actionScheduler, action(), in, executor)
+
+    val p = Promise[AlmValidation[T]]
+
+    innerRetry(f, beforeRetry, None, p, settings.numberOfRetries, settings.delay.calculator, scheduleAction, executor)
+
+    new AlmFuture(p.future)
+  }
+
+  private def innerRetry[T](
+    f: ⇒ AlmFuture[T],
+    beforeRetry: Option[(almhirt.configuration.NumberOfRetries, scala.concurrent.duration.FiniteDuration, Problem) ⇒ Unit],
+    lastProblem: Option[Problem],
+    promise: Promise[AlmValidation[T]],
+    retries: almhirt.configuration.NumberOfRetries,
+    delayCalculator: almhirt.configuration.RetryDelayCalculator,
+    scheduleAction: (() ⇒ Unit, scala.concurrent.duration.FiniteDuration) ⇒ Unit,
+    executor: ExecutionContext) {
+    if (lastProblem.isDefined && !retries.hasRetriesLeft) {
+      promise.complete(scala.util.Success(lastProblem.get.failure))
+    } else {
+      val (nextDelay, newCalculator) =
+        if (lastProblem.isDefined)
+          delayCalculator.next
+        else
+          (Duration.Zero, delayCalculator)
+
+      beforeRetry.flatMap(reportAction ⇒ lastProblem.map((reportAction, _))).foreach { case (reportAction, lp) ⇒ reportAction(retries, nextDelay, lp) }
+      if (nextDelay == Duration.Zero) {
+        f.onComplete(
+          fail ⇒ innerRetry(f, beforeRetry, Some(fail), promise, retries.oneLess, newCalculator, scheduleAction, executor),
+          succ ⇒ promise.complete(scala.util.Success(succ.success)))(executor)
+      } else {
+        scheduleAction(() ⇒ f.onComplete(
+          fail ⇒ innerRetry(f, beforeRetry, Some(fail), promise, retries.oneLess, newCalculator, scheduleAction, executor),
+          succ ⇒ promise.complete(scala.util.Success(succ.success)))(executor), nextDelay)
+      }
+    }
   }
 
 }

@@ -73,10 +73,10 @@ object HasAThrowableDescribedUnpacker extends RegisterableWarpUnpacker[HasAThrow
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[HasAThrowableDescribed] = {
     withFastLookUp(from) { lookup ⇒
       for {
-        classname <- lookup.getAs[String]("classname")
-        message <- lookup.getAs[String]("message")
-        stacktrace <- lookup.getAs[String]("stacktrace")
-        cause <- lookup.tryGetWith("cause", HasAThrowableDescribedUnpacker)
+        classname ← lookup.getAs[String]("classname")
+        message ← lookup.getAs[String]("message")
+        stacktrace ← lookup.getAs[String]("stacktrace")
+        cause ← lookup.tryGetWith("cause", HasAThrowableDescribedUnpacker)
       } yield HasAThrowableDescribed(classname, message, stacktrace, cause)
     }
   }

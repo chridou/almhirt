@@ -120,14 +120,8 @@ trait AlmFutureOps2[T] extends Ops[AlmValidation[T]] {
 trait AlmFutureOps3[T] extends Ops[Future[T]] {
   /**
    * Make the result a success for the returned [[almhirt.common.AlmFuture]]
-   *
-   * @param compute The computation which eventually returns a result
    */
   def toAlmFuture(implicit executionContext: ExecutionContext): AlmFuture[T] =
-    new AlmFuture[T](self.map(_.success)(executionContext))
-
-  @deprecated("Use toAlmFuture", "0.7.0")
-  def toSuccessfulAlmFuture(implicit executionContext: ExecutionContext): AlmFuture[T] =
     new AlmFuture[T](self.map(_.success)(executionContext))
 }
 

@@ -30,8 +30,8 @@ object FromStdLibXmlRematerializer extends Rematerializer[XmlElem] {
 
   private def extractObject(what: XmlElem): AlmValidation[WarpObject] =
     for {
-      td <- (what \@? "type").map(tstr ⇒ WarpDescriptor.parse(tstr)).validationOut
-      elems <- what.elems.map(elem ⇒
+      td ← (what \@? "type").map(tstr ⇒ WarpDescriptor.parse(tstr)).validationOut
+      elems ← what.elems.map(elem ⇒
         (elem.elems.headOption match {
           case Some(v) ⇒ extract(v).map(x ⇒ (elem.label, Some(x)))
           case None ⇒ (elem.label, None).success
@@ -40,25 +40,25 @@ object FromStdLibXmlRematerializer extends Rematerializer[XmlElem] {
 
   private def extractTuple2(from: XmlElem): AlmValidation[(WarpPackage, WarpPackage)] =
     for {
-      elemA <- from \! "a"
-      elemB <- from \! "b"
-      va <- elemA.firstChildNode
-      vb <- elemB.firstChildNode
-      a <- extract(va)
-      b <- extract(vb)
+      elemA ← from \! "a"
+      elemB ← from \! "b"
+      va ← elemA.firstChildNode
+      vb ← elemB.firstChildNode
+      a ← extract(va)
+      b ← extract(vb)
     } yield (a, b)
 
   private def extractTuple3(from: XmlElem): AlmValidation[(WarpPackage, WarpPackage, WarpPackage)] =
     for {
-      elemA <- from \! "a"
-      elemB <- from \! "b"
-      elemC <- from \! "c"
-      va <- elemA.firstChildNode
-      vb <- elemB.firstChildNode
-      vc <- elemC.firstChildNode
-      a <- extract(va)
-      b <- extract(vb)
-      c <- extract(vc)
+      elemA ← from \! "a"
+      elemB ← from \! "b"
+      elemC ← from \! "c"
+      va ← elemA.firstChildNode
+      vb ← elemB.firstChildNode
+      vc ← elemC.firstChildNode
+      a ← extract(va)
+      b ← extract(vb)
+      c ← extract(vc)
     } yield (a, b, c)
     
   private def extractCollection(what: XmlElem): AlmValidation[WarpCollection] =
@@ -75,11 +75,11 @@ object FromStdLibXmlRematerializer extends Rematerializer[XmlElem] {
       case "leaf" ⇒ from.firstChildNode.flatMap(x ⇒ extract(x).map(Tree(_)))
       case "node" ⇒ 
         for {
-          labelElem <- from \! ("label")
-          vLabel <- labelElem.firstChildNode
-          subforestElem <- from \! ("subforest")
-          label <- extract(vLabel)
-          subforest <- subforestElem.elems.map(x ⇒ extractTreeNodes(x).toAgg).toList.sequence
+          labelElem ← from \! ("label")
+          vLabel ← labelElem.firstChildNode
+          subforestElem ← from \! ("subforest")
+          label ← extract(vLabel)
+          subforest ← subforestElem.elems.map(x ⇒ extractTreeNodes(x).toAgg).toList.sequence
         } yield label.node(subforest: _*)
       case x ⇒ ParsingProblem(s"$x is not a label for a tree node item").failure
     }

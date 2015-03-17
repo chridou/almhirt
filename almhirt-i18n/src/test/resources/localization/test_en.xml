@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<localized locale="en" root="true">
+	<comment>UpmostComment</comment>
+	<section name="section_1">
+		<comment>SectionComment</comment>
+		<key-section>
+			<comment>key-section Comment</comment>
+		</key-section>
+		<group name="group_1">
+			<comment>GroupComment</comment>
+			<key name="key_1">
+				<comment>Comment key_1</comment>
+				<plain>en</plain>
+			</key>
+			<key name="key_2">
+				<comment>Comment key_2</comment>
+				<icu>en: {1}</icu>
+			</key>
+			<key name="key_3_formatted_number">
+				<comment>Comment key_3_formatted_number</comment>
+				<icu>en: {1}</icu>
+			</key>
+			<key name="yesno">
+				<comment>Comment yesno</comment>
+				<boolean-value parameter="yesno">
+					<true-text>Yes!</true-text>
+					<false-text>No!</false-text>
+				</boolean-value>
+			</key>
+			<key name="select">
+				<comment>A Comment</comment>
+				<select-text parameter="selector">
+					<select selector="a">Selected A</select>
+					<select selector="b">Selected B</select>
+					<defaut>Selected something else</defaut>
+				</select-text>
+			</key>
+			<key name="number">
+				<comment>A Comment</comment>
+				<number parameter="number">
+				</number>
+			</key>
+			<key name="number-nostyle">
+				<number parameter="number">
+					<style>nostyle</style>
+					<use-digit-groups>false</use-digit-groups>
+				</number>
+			</key>
+			<key name="number-percentage">
+				<comment>A Comment</comment>
+				<number parameter="number">
+					<style>percentage</style>
+				</number>
+			</key>
+			<key name="number-scientific">
+				<number parameter="number">
+					<style>scientific</style>
+				</number>
+			</key>
+			<key name="number-integer">
+				<comment>A Comment</comment>
+				<number parameter="number">
+					<style>integer</style>
+				</number>
+			</key>
+			<key name="plural_number_no_decimal_separator">
+				<icu>{amount, plural,
+					=0{None}
+					=1{One}
+					other{{amount, number, } items}}
+				</icu>
+			</key>
+			<key name="length">
+				<comment>A Comment</comment>
+				<measured-value parameter="length">
+					<parameter-name>length</parameter-name>
+					<default-format>
+						<unit-of-measurement>millimeter</unit-of-measurement>
+						<min-fraction-digits>4</min-fraction-digits>
+						<max-fraction-digits>8</max-fraction-digits>
+						<use-digit-groups>false</use-digit-groups>
+					</default-format>
+					<selective>
+						<format>
+							<system>anglo-american</system>
+							<unit-of-measurement>inch</unit-of-measurement>
+							<min-fraction-digits>2</min-fraction-digits>
+							<max-fraction-digits>2</max-fraction-digits>
+						</format>
+					</selective>
+				</measured-value>
+			</key>
+		</group>
+	</section>
+</localized>

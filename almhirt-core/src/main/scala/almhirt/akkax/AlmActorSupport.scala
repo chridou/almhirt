@@ -1,27 +1,60 @@
 package almhirt.akkax
 
+import scala.language.implicitConversions
+
+import scala.concurrent._
+import scala.concurrent.duration._
+import scalaz.syntax.validation._
 import almhirt.common._
+import almhirt.almfuture.all._
+import almhirt.problem.CauseIsThrowable
+import almhirt.configuration._
 import akka.actor._
 import scala.concurrent.ExecutionContext
-import almhirt.problem.CauseIsThrowable
 
 trait AlmActorSupport { me: Actor ⇒
-  def pipeTo[T](what: ⇒ AlmFuture[T])(receiver: ActorRef, unwrapProblem: Boolean = true)(implicit executionContext: ExecutionContext) {
+
+  protected implicit val ContextSchedulerSchedulingMagnet = new almhirt.almfuture.ActionSchedulingMagnet[Scheduler] {
+    def schedule(to: Scheduler, actionBlock:  ⇒ Unit, in: scala.concurrent.duration.FiniteDuration, executor: scala.concurrent.ExecutionContext): Unit = {
+      to.scheduleOnce(in) { actionBlock }(executor)
+    }
+  }
+
+  @deprecated("Do not use. Will be removed", "0.7.4")
+  def pipeTo[T](what: AlmFuture[T])(receiver: ActorRef, unwrapProblem: Boolean = true)(implicit executionContext: ExecutionContext): AlmFuture[T] = {
     what.pipeTo(receiver, unwrapProblem)
   }
 
-  def recoverPipeTo[T](what: ⇒ AlmFuture[T], recover: Problem ⇒ Any)(receiver: ActorRef)(implicit executionContext: ExecutionContext) {
-    what.pipeTo(receiver)
+  @deprecated("Do not use. Will be removed", "0.7.4")
+  def recoverPipeTo[T](what: AlmFuture[T], recover: Problem ⇒ Any)(receiver: ActorRef)(implicit executionContext: ExecutionContext): AlmFuture[T] = {
+    what.recoverPipeTo(recover)(receiver)
   }
 
-  def mapRecoverPipeTo[T](what: ⇒ AlmFuture[T], map: T ⇒ Any, recover: Problem ⇒ Any)(receiver: ActorRef)(implicit executionContext: ExecutionContext) {
+  @deprecated("Do not use. Will be removed", "0.7.4")
+  def mapRecoverPipeTo[T](what: AlmFuture[T], map: T ⇒ Any, recover: Problem ⇒ Any)(receiver: ActorRef)(implicit executionContext: ExecutionContext): AlmFuture[T] = {
     what.mapRecoverPipeTo(map, recover)(receiver)
   }
 
-  implicit class AlmFuturePipeTo[T](self: AlmFuture[T]) {
-    def pipeTo(receiver: ActorRef, unwrapProblem: Boolean = true)(implicit executionContext: ExecutionContext) {
+  @deprecated("Use retryFuture", "0.7.6")
+  def retry[T](f: ⇒ AlmFuture[T])(numRetries: Int, retryDelay: FiniteDuration, executor: ExecutionContext = me.context.dispatcher): AlmFuture[T] = {
+    implicit val exCtx = executor
+    retryFuture(RetryPolicy(NumberOfRetries(numRetries), RetryDelayMode(retryDelay)), executor)(f)
+  }
+
+  def retryFuture[T](settings: RetryPolicy, executor: ExecutionContext)(f: ⇒ AlmFuture[T]): AlmFuture[T] = {
+    AlmFuture.retry(settings, me.context.system.scheduler)(f)(AlmActorSupport.this.ContextSchedulerSchedulingMagnet, executor)
+  }
+
+  def retryFutureOnMyDispatcher[T](settings: RetryPolicy)(f: ⇒ AlmFuture[T]): AlmFuture[T] = {
+    AlmFuture.retry(settings, me.context.system.scheduler)(f)(AlmActorSupport.this.ContextSchedulerSchedulingMagnet, me.context.dispatcher)
+  }
+
+  implicit def almFuture2PipeableFuture[T](future: AlmFuture[T]): PipeableAlmFuture[T] = new PipeableAlmFuture(future)
+
+  class PipeableAlmFuture[T](future: AlmFuture[T]) extends AnyRef {
+    def pipeTo(receiver: ActorRef, unwrapProblem: Boolean = true)(implicit executionContext: ExecutionContext): AlmFuture[T] = {
       import almhirt.problem._
-      self.onComplete(
+      future.onComplete(
         problem ⇒
           problem match {
             case ExceptionCaughtProblem(ContainsThrowable(throwable)) ⇒
@@ -32,20 +65,31 @@ trait AlmActorSupport { me: Actor ⇒
               receiver ! Status.Failure(new EscalatedProblemException(problem))
           },
         succ ⇒ receiver ! succ)
+      future
     }
 
-    def recoverPipeTo(recover: Problem ⇒ Any)(receiver: ActorRef)(implicit executionContext: ExecutionContext) {
+    @deprecated("Use recoverThenPipeTo", since = "0.7.6")
+    def recoverPipeTo(recover: Problem ⇒ Any)(receiver: ActorRef)(implicit executionContext: ExecutionContext): AlmFuture[T] =
+      recoverThenPipeTo(recover)(receiver)
+
+    def recoverThenPipeTo(recover: Problem ⇒ Any)(receiver: ActorRef)(implicit executionContext: ExecutionContext): AlmFuture[T] = {
       import almhirt.problem._
-      self.onComplete(
+      future.onComplete(
         problem ⇒ receiver ! recover(problem),
         succ ⇒ receiver ! succ)
+      future
     }
 
-    def mapRecoverPipeTo(map: T ⇒ Any, recover: Problem ⇒ Any)(receiver: ActorRef)(implicit executionContext: ExecutionContext) {
+    @deprecated("Use mapOrRecoverThenPipeTo", since = "0.7.6")
+    def mapRecoverPipeTo(map: T ⇒ Any, recover: Problem ⇒ Any)(receiver: ActorRef)(implicit executionContext: ExecutionContext): AlmFuture[T] =
+      mapOrRecoverThenPipeTo(map, recover)(receiver)
+
+    def mapOrRecoverThenPipeTo(map: T ⇒ Any, recover: Problem ⇒ Any)(receiver: ActorRef)(implicit executionContext: ExecutionContext): AlmFuture[T] = {
       import almhirt.problem._
-      self.onComplete(
+      future.onComplete(
         problem ⇒ receiver ! recover(problem),
         succ ⇒ receiver ! map(succ))
+      future
     }
   }
 }

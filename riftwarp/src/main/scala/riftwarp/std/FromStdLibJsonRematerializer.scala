@@ -33,18 +33,18 @@ object FromStdLibJsonRematerializer extends Rematerializer[Any @@ WarpTags.JsonS
   private def extractObject(what: JSONObject): AlmValidation[WarpObject] = {
     val elements = what.obj
     for {
-      descriptorAndRest <- if (elements.contains(WarpDescriptor.defaultKey))
+      descriptorAndRest ← if (elements.contains(WarpDescriptor.defaultKey))
         for {
-          rdElem <- extractPrimitive(elements(WarpDescriptor.defaultKey))
-          rdStr <- rdElem match {
+          rdElem ← extractPrimitive(elements(WarpDescriptor.defaultKey))
+          rdStr ← rdElem match {
             case WarpString(rd) ⇒ rd.success
             case x ⇒ UnspecifiedProblem(s"${x.toString()} is not valid as a riftdescriptor").failure
           }
-          rd <- WarpDescriptor.parse(rdStr)
+          rd ← WarpDescriptor.parse(rdStr)
         } yield (Some(rd), elements - WarpDescriptor.defaultKey)
       else
         (None, elements).success
-      objElems <- mapJsonMapToWarpElement(descriptorAndRest._2)
+      objElems ← mapJsonMapToWarpElement(descriptorAndRest._2)
     } yield WarpObject(descriptorAndRest._1, objElems)
   }
 
