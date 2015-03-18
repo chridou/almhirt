@@ -60,11 +60,11 @@ private[almhirt] object componentactors {
     implicit val executor = almhirtContext.futuresContext
 
     val eventLogs = context.actorOf(eventLogsProps(almhirtContext), "event-logs")
-    logInfo(s"Created ${eventLogs.path.name}.")
+    logInfo(s"Created event logs supervisor as ${eventLogs.path.name}.")
     val views = context.actorOf(viewsProps(almhirtContext), "views")
-    logInfo(s"Created ${views.path.name}.")
+    logInfo(s"Created views supervisor as ${views.path.name}.")
     val misc = context.actorOf(miscProps(almhirtContext), "misc")
-    logInfo(s"Created ${misc.path.name}.")
+    logInfo(s"Created misc supervisor as ${misc.path.name}.")
 
     val appsFuturesExecutor: ExecutionContext =
       dedicatedAppsFuturesExecutor match {
@@ -78,7 +78,7 @@ private[almhirt] object componentactors {
 
     val apps = context.actorOf(appsProps(almhirtContext.withFuturesExecutor(appsFuturesExecutor)), "apps")
 
-    logInfo(s"Created ${apps.path.name}.")
+    logInfo(s"Created apps supervisor as ${apps.path.name}.")
 
     var factories: ComponentFactories = null
 
@@ -157,7 +157,7 @@ private[almhirt] object componentactors {
           case None ⇒
             logInfo("No herder app.")
             context.become(receiveBuildComponents())
-            self ! "early"
+            self ! "make_components"
         }
 
       case ActorMessages.HerderServiceAppFailedToStart(problem) ⇒
