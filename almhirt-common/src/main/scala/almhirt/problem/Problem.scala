@@ -47,8 +47,7 @@ sealed trait AggregatedProblem extends Problem {
   override private[problem] def baseInfo(indentLevel: Int): StringBuilder = {
     val indentation = (0 until (indentLevel * 2)).map(_ ⇒ " ").mkString
     val builder = new StringBuilder()
-    builder.append(indentation + "Problem:\n")
-    builder.append(indentation + "Type: %s\n".format(problemType))
+    builder.append(indentation + "Multiple Problems:\n")
     builder.append(indentation + s"CorrelationId: $correlationId\n")
     builder.append(indentation + "Message: %s\n".format(message))
     builder.append(indentation + "Arguments: %s\n".format(args))
@@ -163,6 +162,11 @@ object AggregatedProblem {
     def withArg(name: String, value: Any): AggregatedProblem = AggregatedProblem.withArg(self, name: String, value: Any)
     def withCorrelationId(cid: CorrelationId): AggregatedProblem = AggregatedProblem.withCorrelationId(self, cid)
     def add(problem: Problem): AggregatedProblem = AggregatedProblem.add(self, problem: Problem)
+    def singleProblemIfApplicable: Problem =
+      self.problems match {
+        case Seq(x) ⇒ x
+        case _      ⇒ self
+      }
   }
 
 }
