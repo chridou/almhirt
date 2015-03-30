@@ -83,7 +83,7 @@ object WarpPackers {
     packers.addTyped(ProblemCausePacker)
 
     packers.addTyped(WarpDescriptorPacker)
- 
+
     packers.addTyped(SingleProblemPackaging)
     packers.addTyped(AggregatedProblemPackaging)
     packers.addTyped(ProblemPackaging)
@@ -95,10 +95,12 @@ object WarpPackers {
     packers.addTyped(TrackedCommandResponseWarpPackaging)
     packers.addTyped(CommandResponseWarpPackaging)
     packers.addTyped(CommandStatusChangedWarpPackaging)
- 
+
+    packers.addTyped(ParamsWarpPackaging)
+
     packers.addPredicated(x ⇒ x.isInstanceOf[SingleProblem], SingleProblemPackaging)
     packers.addPredicated(x ⇒ x.isInstanceOf[AggregatedProblem], AggregatedProblemPackaging)
-    
+
     serialization.common.ProblemTypes.registerPackers(packers)
     packers
   }

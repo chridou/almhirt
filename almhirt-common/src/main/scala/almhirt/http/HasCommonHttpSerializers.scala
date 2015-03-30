@@ -49,4 +49,7 @@ trait HasCommonHttpSerializers {
   implicit def aggregateRootEventsHttpSerializer: HttpSerializer[Seq[almhirt.common.AggregateRootEvent]] with HttpDeserializer[Seq[almhirt.common.AggregateRootEvent]]
   implicit def commandsHttpSerializer: HttpSerializer[Seq[almhirt.common.Command]] with HttpDeserializer[Seq[almhirt.common.Command]]
   implicit def problemsHttpSerializer: HttpSerializer[Seq[almhirt.common.Problem]] with HttpDeserializer[Seq[almhirt.common.Problem]]
+
+  implicit def paramsHttpSerializer: HttpSerializer[almhirt.configuration.Params] with HttpDeserializer[almhirt.configuration.Params]
+
 }

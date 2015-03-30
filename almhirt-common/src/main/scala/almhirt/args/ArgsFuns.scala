@@ -66,6 +66,4 @@ def isBooleanNotFalse(ident: String, theMap: Map[String, Any]): Boolean =
     case None ⇒ 
       true
   }  
-  
-  
 }

@@ -80,7 +80,9 @@ object WarpUnpackers {
     unpackers.addTyped(CommandResponseWarpPackaging)
     unpackers.addTyped(CommandStatusChangedWarpPackaging)
     unpackers.addTyped(CommandStatusChangedWarpPackaging)
-    
+
+    unpackers.addTyped(ParamsWarpPackaging)
+
     serialization.common.ProblemTypes.registerUnpackers(unpackers)
 
     unpackers

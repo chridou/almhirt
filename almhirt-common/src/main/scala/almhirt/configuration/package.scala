@@ -58,6 +58,8 @@ package object configuration {
 
   }
 
+  object paramsImplicits extends DefaultParamsConverters
+
   implicit val ConfigStringExtractorInst = new ConfigStringExtractor {}
   implicit val ConfigBooleanExtractorInst = new ConfigBooleanExtractor {}
   implicit val ConfigIntExtractorInst = new ConfigIntExtractor {}

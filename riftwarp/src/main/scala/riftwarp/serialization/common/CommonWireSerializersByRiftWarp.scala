@@ -54,4 +54,7 @@ trait CommonHttpSerializersByRiftWarp extends HasCommonHttpSerializers { self: H
   override lazy val aggregateRootEventsHttpSerializer = WarpHttpSerializer.collection[AggregateRootEvent](myRiftWarp)
   override lazy val commandsHttpSerializer = WarpHttpSerializer.collection[Command](myRiftWarp)
   override lazy val problemsHttpSerializer = WarpHttpSerializer.collection[almhirt.common.Problem](myRiftWarp)
+
+  override lazy val paramsHttpSerializer = WarpHttpSerializer.direct[almhirt.configuration.Params](myRiftWarp)(ParamsWarpPackaging, ParamsWarpPackaging)
+
 }
