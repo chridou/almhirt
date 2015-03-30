@@ -19,6 +19,8 @@ object Params {
 
   def fromMap(v: Map[String, Any]): Params =
     ParamsImpl(v)
+    
+  val empty: Params = Params.fromMap(Map.empty)
 
   private case class ParamsImpl(v: Map[String, Any]) extends Params {
     def getRaw(path: String): AlmValidation[Any] = findRaw(path) match { case Some(v) ⇒ v.success case None ⇒ NoSuchElementProblem(s"""Path "$path" not found.""").failure }
