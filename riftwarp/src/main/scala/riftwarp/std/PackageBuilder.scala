@@ -218,6 +218,24 @@ trait PackageBuilderFuns {
       case None    ⇒ WarpElement(label).success
     }
 
+  def VWith[T](label: String, what: AlmValidation[T], packer: WarpPacker[T])(implicit packers: WarpPackers): AlmValidation[WarpElement] = {
+    what match {
+      case scalaz.Success(v) =>
+        packer.pack(v).map(inner => WarpElement(label,
+          Some(WarpObject(
+            None,
+            Vector(WarpElement("success", Some(inner)))))))
+      case scalaz.Failure(p) =>
+        riftwarp.serialization.common.ProblemPackaging.pack(p).map(inner => WarpElement(label,
+          Some(WarpObject(
+            None,
+            Vector(WarpElement("problem", Some(inner)))))))
+    }
+  }
+
+  def VWith2[T](label: String, what: AlmValidation[T])(implicit packer: WarpPacker[T], packers: WarpPackers): AlmValidation[WarpElement] =
+    VWith(label, what, packer)
+
   def Bytes(label: String, bytes: IndexedSeq[Byte]): AlmValidation[WarpElement] = BytesOpt(label, Some(bytes))
   def BytesOpt(label: String, bytes: Option[IndexedSeq[Byte]]): AlmValidation[WarpElement] = WarpElement(label, bytes.map(WarpBytes(_))).success
 
