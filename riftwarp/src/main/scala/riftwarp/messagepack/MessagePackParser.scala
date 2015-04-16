@@ -46,6 +46,14 @@ object MessagePackParser {
       WarpFloat(reader.readFloat)
     } else if (formatByte == MessagePackTypecodes.Double) {
       WarpDouble(reader.readDouble)
+    } else if (formatByte == MessagePackTypecodes.UInt8) {
+      throw new Exception("UInt8 is not supported.")
+    } else if (formatByte == MessagePackTypecodes.UInt16) {
+      throw new Exception("UInt16 is not supported.")
+    } else if (formatByte == MessagePackTypecodes.UInt32) {
+      throw new Exception("UInt32 is not supported.")
+    } else if (formatByte == MessagePackTypecodes.UInt64) {
+      throw new Exception("UInt64 is not supported.")
     } else if (MessagePackTypecodes.isExt(formatByte)) {
       parseSpecialType(formatByte, reader)
     } else if (MessagePackTypecodes.isArray(formatByte)) {
@@ -70,6 +78,14 @@ object MessagePackParser {
       WarpInt(reader.readInt)
     } else if (formatByte == MessagePackTypecodes.Int64) {
       WarpLong(reader.readLong)
+    } else if (formatByte == MessagePackTypecodes.UInt8) {
+      throw new Exception("UInt8 is not supported.")
+    } else if (formatByte == MessagePackTypecodes.UInt16) {
+      throw new Exception("UInt16 is not supported.")
+    } else if (formatByte == MessagePackTypecodes.UInt32) {
+      throw new Exception("UInt32 is not supported.")
+    } else if (formatByte == MessagePackTypecodes.UInt64) {
+      throw new Exception("UInt64 is not supported.")
     } else {
       throw new Exception(s"$formatByte is not a format byte for any integer number")
     }

@@ -20,6 +20,7 @@ object MessagePackTypecodes {
   val UInt8 = 0xcc
   val UInt16 = 0xcd
   val UInt32 = 0xce
+  val UInt64 = 0xcf
   
   val Float = 0xca
   val Double = 0xcb
