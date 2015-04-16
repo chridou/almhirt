@@ -17,6 +17,8 @@ class MessagePackSerialization extends FunSuite with Matchers {
   implicit val packers = Serialization.addPackers(WarpPackers())
   implicit val unpackers = Serialization.addUnpackers(WarpUnpackers())
 
+  private def byteToStr(b: Byte): String = String.format("%8s", Integer.toBinaryString(b & 0xFF)).replace(' ', '0')
+
   test("A WarpBoolean(false) should dematerialize and rematerialize to an equal instance") {
     val sample = WarpBoolean(false)
     val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
@@ -72,14 +74,14 @@ class MessagePackSerialization extends FunSuite with Matchers {
     val rematerialized = dematerialized.rematerialize.forceResult
     rematerialized should equal(sample)
   }
-  
+
   test("""A WarpString(256 chars) should dematerialize and rematerialize to an equal instance""") {
     val sample = WarpString((for (i ← 1 to 256) yield 'x').mkString)
     val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
     val rematerialized = dematerialized.rematerialize.forceResult
     rematerialized should equal(sample)
   }
-  
+
   test("""A WarpString(1000 chars) should dematerialize and rematerialize to an equal instance""") {
     val sample = WarpString((for (i ← 1 to 1000) yield 'x').mkString)
     val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
@@ -190,6 +192,21 @@ class MessagePackSerialization extends FunSuite with Matchers {
     val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
     val rematerialized = dematerialized.rematerialize.forceResult
     rematerialized should equal(WarpByte(0))
+  }
+
+  test("A WarpInt(213) should dematerialize to the correct bytes") {
+    val sample = WarpInt(213)
+    val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack].asInstanceOf[Array[Byte]]
+    byteToStr(dematerialized(0)) should equal("11010001")
+    byteToStr(dematerialized(1)) should equal("00000000")
+    byteToStr(dematerialized(2)) should equal("11010101")
+  }
+
+  test("A WarpInt(213) should dematerialize and rematerialize to a WarpShort(213)") {
+    val sample = WarpInt(213)
+    val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
+    val rematerialized = dematerialized.rematerialize.forceResult
+    rematerialized should equal(WarpShort(213))
   }
 
   test("A WarpInt(Byte.MinValue) should dematerialize and rematerialize to a WarpByte(Byte.MinValue)") {
@@ -520,15 +537,14 @@ class MessagePackSerialization extends FunSuite with Matchers {
     val rematerialized = dematerialized.rematerialize.forceResult
     rematerialized should equal(sample)
   }
-  
+
   test("""A WarpCollection(256 x WarpString("a")) should dematerialize and rematerialize to an equal instance""") {
     val sample = WarpCollection(Vector.fill(256)(WarpString("a")))
     val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
     val rematerialized = dematerialized.rematerialize.forceResult
     rematerialized should equal(sample)
   }
-  
-  
+
   test("""A WarpCollection(256*256-1 x WarpString("a")) should dematerialize and rematerialize to an equal instance""") {
     val sample = WarpCollection(Vector.fill(256 * 256 - 1)(WarpString("a")))
     val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
