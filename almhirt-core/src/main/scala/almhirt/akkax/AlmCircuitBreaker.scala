@@ -32,14 +32,14 @@ private[almhirt] class AlmCircuitBreakerImpl(settings: CircuitControlSettings, e
   @volatile
   private[this] var _currentStateDoNotCallMeDirectly: InternalState =
     startState match {
-      case CircuitStartState.Closed ⇒ InternalClosed
-      case CircuitStartState.HalfOpen ⇒ InternalHalfOpen
-      case CircuitStartState.Open ⇒ InternalOpen
-      case CircuitStartState.FuseRemoved ⇒ InternalFuseRemoved
-      case CircuitStartState.Destroyed ⇒ InternalDestroyed
+      case CircuitStartState.Closed       ⇒ InternalClosed
+      case CircuitStartState.HalfOpen     ⇒ InternalHalfOpen
+      case CircuitStartState.Open         ⇒ InternalOpen
+      case CircuitStartState.FuseRemoved  ⇒ InternalFuseRemoved
+      case CircuitStartState.Destroyed    ⇒ InternalDestroyed
       case CircuitStartState.Circumvented ⇒ InternalCircumvented
     }
-  
+
   currentState.enter()
 
   /**
