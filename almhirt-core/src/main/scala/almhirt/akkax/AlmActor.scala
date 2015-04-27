@@ -1,10 +1,11 @@
 package almhirt.akkax
 
 import scala.language.implicitConversions
+import scala.reflect.ClassTag
 import scala.concurrent._
 import scala.concurrent.duration._
 import scalaz.syntax.validation._
-import akka.actor.Actor
+import akka.actor._
 import almhirt.common._
 import almhirt.context.HasAlmhirtContext
 import almhirt.herder.HerderMessages
@@ -65,12 +66,12 @@ trait AlmActor extends Actor with HasAlmhirtContext with AlmActorSupport {
   def informVeryImportant(message: String)(implicit cnp: ActorComponentIdProvider): Unit =
     inform(message, Importance.VeryImportant)(cnp)
 
-  def retryFuture[T](settings: RetryPolicyExt)(f: ⇒ AlmFuture[T]): AlmFuture[T] = {
+  def retryFuture[T](policy: RetryPolicyExt)(f: ⇒ AlmFuture[T]): AlmFuture[T] = {
     import almhirt.configuration.RetryPolicy
-    val executor = settings.executorSelector.map { selectExecutionContext(_) } getOrElse this.context.dispatcher
-    val retrySettings = RetryPolicy(settings.numberOfRetries, settings.delay)
+    val executor = policy.executorSelector.map { selectExecutionContext(_) } getOrElse this.context.dispatcher
+    val retrySettings = RetryPolicy(policy.numberOfRetries, policy.delay)
     val retryNotification: Option[(almhirt.configuration.NumberOfRetries, scala.concurrent.duration.FiniteDuration, Problem) ⇒ Unit] =
-      settings.notifiyingParams.map {
+      policy.notifiyingParams.map {
         case RetryPolicyExt.NotifyingParams(importance, Some(contextDesc)) ⇒
           (nor, nextIn, lastProblem) ⇒ inform(s"""  |$contextDesc
                                        |Last problem message: ${lastProblem.message}
@@ -85,6 +86,20 @@ trait AlmActor extends Actor with HasAlmhirtContext with AlmActorSupport {
       }
 
     AlmFuture.retryScaffolding(f, retrySettings, executor, this.context.system.scheduler, retryNotification)
+  }
+
+  def retryAsk[T](policy: RetryPolicyExt)(failPf: PartialFunction[T, Problem])(actor: ActorRef, m: Any, atMost: FiniteDuration)(implicit classTag: ClassTag[T]): AlmFuture[T] = {
+    import akka.pattern._
+    import almhirt.almfuture.all._
+    implicit val executor = policy.executorSelector.map { selectExecutionContext(_) } getOrElse this.context.dispatcher
+    retryFuture(policy) {
+      (actor ? m)(atMost).mapCastTo[T].mapV { res ⇒
+        if (failPf.isDefinedAt(res))
+          failPf(res).failure
+        else
+          res.success
+      }
+    }
   }
 
   @deprecated(message = "Use retryFuture", since = "0.7.6")
