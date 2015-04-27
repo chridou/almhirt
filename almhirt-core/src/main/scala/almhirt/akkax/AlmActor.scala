@@ -88,7 +88,16 @@ trait AlmActor extends Actor with HasAlmhirtContext with AlmActorSupport {
     AlmFuture.retryScaffolding(f, retrySettings, executor, this.context.system.scheduler, retryNotification)
   }
 
-  def retryAsk[T](policy: RetryPolicyExt)(failPf: PartialFunction[T, Problem])(actor: ActorRef, m: Any, atMost: FiniteDuration)(implicit classTag: ClassTag[T]): AlmFuture[T] = {
+  def retryAsk[T](policy: RetryPolicyExt)(actor: ActorRef, m: Any, atMost: FiniteDuration)(implicit classTag: ClassTag[T]): AlmFuture[T] = {
+    import akka.pattern._
+    import almhirt.almfuture.all._
+    implicit val executor = policy.executorSelector.map { selectExecutionContext(_) } getOrElse this.context.dispatcher
+    retryFuture(policy) {
+      (actor ? m)(atMost).mapCastTo[T]
+    }
+  }
+  
+  def retryAskEvalForFailure[T](policy: RetryPolicyExt)(failPf: PartialFunction[T, Problem])(actor: ActorRef, m: Any, atMost: FiniteDuration)(implicit classTag: ClassTag[T]): AlmFuture[T] = {
     import akka.pattern._
     import almhirt.almfuture.all._
     implicit val executor = policy.executorSelector.map { selectExecutionContext(_) } getOrElse this.context.dispatcher
