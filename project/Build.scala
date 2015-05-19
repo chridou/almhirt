@@ -62,7 +62,7 @@ object Dependencies {
 
 	lazy val apache_codecs = "commons-codec" % "commons-codec" % "1.+" 
 	lazy val apache_commons_io = "commons-io" % "commons-io" % "2.+" 
-	lazy val icu4j = "com.ibm.icu" % "icu4j" % "54.1.1" 
+	lazy val icu4j = "com.ibm.icu" % "icu4j" % "55.1" 
 
 	lazy val spray_routing = "io.spray" %% "spray-routing" % BuildSettings.sprayVersion % "provided"
 	lazy val spray_testkit =  "io.spray" %% "spray-testkit" % BuildSettings.sprayVersion % "test"

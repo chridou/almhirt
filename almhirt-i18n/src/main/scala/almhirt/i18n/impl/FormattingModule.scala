@@ -24,4 +24,8 @@ private[almhirt] trait MeasuredArgFormattingModule {
   def defaultUnitOfMeasure: UnitOfMeasurement
   def formatIntoBuffer(appendTo: StringBuffer, pos: FieldPosition, arg: Measured, uomSys: Option[UnitsOfMeasurementSystem]): AlmValidation[StringBuffer]
   def formatRangeIntoBuffer(appendTo: StringBuffer, pos: FieldPosition, arg1: Measured, arg2: Measured, uomSys: Option[UnitsOfMeasurementSystem]): AlmValidation[StringBuffer]
+
+  def valueWithUnitOfMeasurement(arg: Measured, uomSys: Option[UnitsOfMeasurementSystem]): AlmValidation[(Double, String)]
+  def rangeWithUnitOfMeasurement(arg1: Measured, arg2: Measured, uomSys: Option[UnitsOfMeasurementSystem]): AlmValidation[(Double, Double, String)]
+
 }

@@ -109,4 +109,12 @@ private[almhirt] final class MeasuredArgFormatter(formatter: MeasuredArgFormatti
       appendTo,
       pos,
       None)
+
+  def valueWithUnitOfMeasurement(v: Measured, uomSys: Option[UnitsOfMeasurementSystem]): AlmValidation[(Double, String)] = {
+    formatter.valueWithUnitOfMeasurement(v, uomSys)
+  }
+
+  def rangeWithUnitOfMeasurement(lower: Measured, upper: Measured, uomSys: Option[UnitsOfMeasurementSystem]): AlmValidation[(Double, Double, String)] = {
+    formatter.rangeWithUnitOfMeasurement(lower, upper, uomSys)
+  }
 }

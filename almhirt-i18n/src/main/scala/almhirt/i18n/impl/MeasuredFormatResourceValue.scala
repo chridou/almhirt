@@ -10,6 +10,7 @@ import almhirt.almvalidation.kit._
 import almhirt.i18n._
 import com.ibm.icu.util.{ ULocale, Measure }
 import com.ibm.icu.text.{ MeasureFormat, NumberFormat }
+import almhirt.i18n.util.DontCareFieldPosition
 
 private[almhirt] object MeasuredFormatResourceValue {
   final case class FormatDefinition(
@@ -137,6 +138,52 @@ private[almhirt] class MeasuredFormatResourceValue(
       argRendered ← inTryCatch { format.getNumberFormat.format(arg1.calcDirectTo(uom), into, pos).append(separator) }
       buffer ← renderMeasureInto(arg2, uom, format, argRendered, pos)
     } yield buffer).leftMap { p ⇒ ArgumentProblem("Error formatting the value.", cause = Some(p)) }
+
+  def valueWithUnitOfMeasurement(arg: Measured, uomSys: Option[UnitsOfMeasurementSystem]): AlmValidation[(Double, String)] = {
+    if (arg.uom.dimension != defaultUnitOfMeasure.dimension)
+      ArgumentProblem(s"Dimensions do not match: !${arg.uom.dimension}! <> ${defaultUnitOfMeasure.dimension}.").failure
+    else {
+      val builder = new StringBuffer()
+      for {
+        res ← uomSys match {
+          case None ⇒
+            renderMeasureInto(arg, defaultUnitOfMeasure, defaultMeasureFormat, builder, DontCareFieldPosition).map((arg.calcDirectTo(defaultUnitOfMeasure), _))
+          case Some(ts) ⇒
+            specific get ts match {
+              case None ⇒
+                renderMeasureInto(arg, defaultUnitOfMeasure, defaultMeasureFormat, builder, DontCareFieldPosition).map((arg.calcDirectTo(defaultUnitOfMeasure), _))
+              case Some((uom, format, _)) ⇒
+                renderMeasureInto(arg, uom, format, builder, DontCareFieldPosition).map((arg.calcDirectTo(uom), _))
+            }
+
+        }
+      } yield (res._1, res._2.toString().dropWhile(ch ⇒ ch.isDigit || ch.isWhitespace || ch == '.' || ch == ','))
+    }
+  }
+
+  def rangeWithUnitOfMeasurement(arg1: Measured, arg2: Measured, uomSys: Option[UnitsOfMeasurementSystem]): AlmValidation[(Double, Double, String)] = {
+    if (arg1.uom.dimension != defaultUnitOfMeasure.dimension)
+      ArgumentProblem(s"Dimensions do not match: !${arg1.uom.dimension}! <> ${defaultUnitOfMeasure.dimension}.").failure
+    else if (arg2.uom.dimension != defaultUnitOfMeasure.dimension)
+      ArgumentProblem(s"Dimensions do not match: !${arg2.uom.dimension}! <> ${defaultUnitOfMeasure.dimension}.").failure
+    else {
+      val builder = new StringBuffer()
+      for {
+        res ← uomSys match {
+          case None ⇒
+            renderMeasureInto(arg1, defaultUnitOfMeasure, defaultMeasureFormat, builder, DontCareFieldPosition).map((arg1.calcDirectTo(defaultUnitOfMeasure), arg2.calcDirectTo(defaultUnitOfMeasure), _))
+          case Some(ts) ⇒
+            specific get ts match {
+              case None ⇒
+                renderMeasureInto(arg1, defaultUnitOfMeasure, defaultMeasureFormat, builder, DontCareFieldPosition).map((arg1.calcDirectTo(defaultUnitOfMeasure), arg2.calcDirectTo(defaultUnitOfMeasure), _))
+              case Some((uom, format, _)) ⇒
+                renderMeasureInto(arg1, uom, format, builder, DontCareFieldPosition).map((arg1.calcDirectTo(uom), arg2.calcDirectTo(uom), _))
+            }
+
+        }
+      } yield (res._1, res._2, res._3.toString().dropWhile(ch ⇒ ch.isDigit || ch.isWhitespace || ch == '.' || ch == ','))
+    }
+  }
 }
 
 //Temp hack... because there are no translations for lumen....
@@ -212,5 +259,57 @@ private[almhirt] class LightFluxMeasuredFormatResourceValue(
       argRendered ← inTryCatch { format.getNumberFormat.format(arg1.calcDirectTo(uom), into, pos).append(separator) }
       buffer ← renderMeasureInto(arg2, uom, format, argRendered, pos)
     } yield buffer).leftMap { p ⇒ ArgumentProblem("Error formatting the value.", cause = Some(p)) }
+
+  def valueWithUnitOfMeasurement(arg: Measured, uomSys: Option[UnitsOfMeasurementSystem]): AlmValidation[(Double, String)] = {
+    if (arg.uom.dimension != defaultUnitOfMeasure.dimension)
+      ArgumentProblem(s"Dimensions do not match: !${arg.uom.dimension}! <> ${defaultUnitOfMeasure.dimension}.").failure
+    else if (arg.uom == UnitsOfMeasurement.Lumen) {
+      (arg.value, "lm").success
+    } else {
+      val builder = new StringBuffer()
+      for {
+        res ← uomSys match {
+          case None ⇒
+            renderMeasureInto(arg, defaultUnitOfMeasure, defaultMeasureFormat, builder, DontCareFieldPosition).map((arg.calcDirectTo(defaultUnitOfMeasure), _))
+          case Some(ts) ⇒
+            specific get ts match {
+              case None ⇒
+                renderMeasureInto(arg, defaultUnitOfMeasure, defaultMeasureFormat, builder, DontCareFieldPosition).map((arg.calcDirectTo(defaultUnitOfMeasure), _))
+              case Some((uom, format, _)) ⇒
+                renderMeasureInto(arg, uom, format, builder, DontCareFieldPosition).map((arg.calcDirectTo(uom), _))
+            }
+        }
+      } yield (res._1, res._2.toString().dropWhile(ch ⇒ ch.isDigit || ch.isWhitespace || ch == '.' || ch == ','))
+
+    }
+  }
+
+  def rangeWithUnitOfMeasurement(arg1: Measured, arg2: Measured, uomSys: Option[UnitsOfMeasurementSystem]): AlmValidation[(Double, Double, String)] = {
+    if (arg1.uom.dimension != defaultUnitOfMeasure.dimension)
+      ArgumentProblem(s"Dimensions do not match: !${arg1.uom.dimension}! <> ${defaultUnitOfMeasure.dimension}.").failure
+    else if (arg2.uom.dimension != defaultUnitOfMeasure.dimension)
+      ArgumentProblem(s"Dimensions do not match: !${arg2.uom.dimension}! <> ${defaultUnitOfMeasure.dimension}.").failure
+    else if (arg1.uom == UnitsOfMeasurement.Lumen && arg2.uom == UnitsOfMeasurement.Lumen) {
+      (arg1.value, arg2.value, "lm").success
+    } else if (arg1.uom == UnitsOfMeasurement.Lumen || arg2.uom == UnitsOfMeasurement.Lumen) {
+      ArgumentProblem(s"When lumen is the target unit of measure, both have to be lumen.").failure
+    } else {
+      val builder = new StringBuffer()
+      for {
+        res ← uomSys match {
+          case None ⇒
+            renderMeasureInto(arg1, defaultUnitOfMeasure, defaultMeasureFormat, builder, DontCareFieldPosition).map((arg1.calcDirectTo(defaultUnitOfMeasure), arg2.calcDirectTo(defaultUnitOfMeasure), _))
+          case Some(ts) ⇒
+            specific get ts match {
+              case None ⇒
+                renderMeasureInto(arg1, defaultUnitOfMeasure, defaultMeasureFormat, builder, DontCareFieldPosition).map((arg1.calcDirectTo(defaultUnitOfMeasure), arg2.calcDirectTo(defaultUnitOfMeasure), _))
+              case Some((uom, format, _)) ⇒
+                renderMeasureInto(arg1, uom, format, builder, DontCareFieldPosition).map((arg1.calcDirectTo(uom), arg2.calcDirectTo(uom), _))
+            }
+
+        }
+      } yield (res._1, res._2, res._3.toString().dropWhile(ch ⇒ ch.isDigit || ch.isWhitespace || ch == '.' || ch == ','))
+    }
+  }
 }
 

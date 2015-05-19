@@ -44,7 +44,7 @@ class ResourcesAndKeysTests extends FunSuite with Matchers {
 
   test("""render the length measured value 100000.0m in "en" with anglo american units.""") {
     val formatable = resourcesWithoutFallback.getMeasureFormatter(group.withKey("length"), "en").forceResult
-    info(formatable.formatMeasure(100000.0.meter, Some(UnitsOfMeasurementSystem.AngloAmerican)).forceResult)
+    info(formatable.formatMeasure(100000.0.meter, Some(UnitsOfMeasurementSystem.US)).forceResult)
   }
 
   test("""render the length measured value 1.0m in "de".""") {
@@ -59,12 +59,12 @@ class ResourcesAndKeysTests extends FunSuite with Matchers {
 
   test("""render the length measured value 1000.0m in "de" with anglo american units.""") {
     val formatable = resourcesWithoutFallback.getMeasureFormatter(group.withKey("length"), "de").forceResult
-    info(formatable.formatMeasure(1000.0.meter, Some(UnitsOfMeasurementSystem.AngloAmerican)).forceResult)
+    info(formatable.formatMeasure(1000.0.meter, Some(UnitsOfMeasurementSystem.US)).forceResult)
   }
 
   test("""render the length measured range 1000.0m - 2km in "de" with anglo american units.""") {
     val formatable = resourcesWithoutFallback.getMeasureFormatter(group.withKey("length"), "de").forceResult
-    info(formatable.formatMeasureRange(1000.0.meter, 2.0.kilometer, Some(UnitsOfMeasurementSystem.AngloAmerican)).forceResult)
+    info(formatable.formatMeasureRange(1000.0.meter, 2.0.kilometer, Some(UnitsOfMeasurementSystem.US)).forceResult)
   }
 
   test("""render a number without a style in en.""") {

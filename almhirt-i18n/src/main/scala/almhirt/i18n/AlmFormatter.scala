@@ -58,6 +58,7 @@ trait AlmNumericFormatter extends AlmFormatter {
     formatNumericRangeIntoAt(lower, upper, appendTo, util.DontCareFieldPosition)
   def formatNumericRange[T: Numeric](lower: T, upper: T): AlmValidation[String] =
     formatNumericRangeIntoAt(lower, upper, new StringBuffer(), util.DontCareFieldPosition).map(_.toString())
+
 }
 
 trait AlmMeasureFormatter extends AlmNumericFormatter {
@@ -67,11 +68,15 @@ trait AlmMeasureFormatter extends AlmNumericFormatter {
   def formatMeasure(v: Measured, uomSys: Option[UnitsOfMeasurementSystem]): AlmValidation[String] =
     formatMeasureIntoAt(v, new StringBuffer(), util.DontCareFieldPosition, uomSys).map(_.toString())
 
+  def valueWithUnitOfMeasurement(v: Measured, uomSys: Option[UnitsOfMeasurementSystem]): AlmValidation[(Double, String)]
+
   def formatMeasureRangeIntoAt(lower: Measured, upper: Measured, appendTo: StringBuffer, pos: FieldPosition, uomSys: Option[UnitsOfMeasurementSystem]): AlmValidation[StringBuffer]
   def formatMeasureRangeInto(lower: Measured, upper: Measured, appendTo: StringBuffer, uomSys: Option[UnitsOfMeasurementSystem]): AlmValidation[StringBuffer] =
     formatMeasureRangeIntoAt(lower, upper, appendTo, util.DontCareFieldPosition, uomSys)
   def formatMeasureRange(lower: Measured, upper: Measured, uomSys: Option[UnitsOfMeasurementSystem]): AlmValidation[String] =
     formatMeasureRangeIntoAt(lower, upper, new StringBuffer(), util.DontCareFieldPosition, uomSys).map(_.toString())
+
+  def rangeWithUnitOfMeasurement(lower: Measured, upper: Measured, uomSys: Option[UnitsOfMeasurementSystem]): AlmValidation[(Double, Double, String)]
 }
 
 final class IcuFormatter(msgFormat: MessageFormat) extends AlmFormatter {
@@ -222,6 +227,16 @@ object AlmMeasureFormatter {
     def forceFormatMeasureRange(lower: Measured, upper: Measured, uomSys: Option[UnitsOfMeasurementSystem]): String =
       self.formatMeasureRangeIntoAt(lower, upper, new StringBuffer(), util.DontCareFieldPosition, uomSys).map(_.toString()) fold (
         fail ⇒ s"{${fail.message}}",
+        succ ⇒ succ)
+
+    def forceValueWithUnitOfMeasurement(v: Measured, uomSys: Option[UnitsOfMeasurementSystem]): (Double, String) =
+      self.valueWithUnitOfMeasurement(v, uomSys) fold (
+        fail ⇒ (v.value, s"{${fail.message}}"),
+        succ ⇒ succ)
+
+    def forceRangeWithUnitOfMeasurement(lower: Measured, upper: Measured, uomSys: Option[UnitsOfMeasurementSystem]): (Double, Double, String) =
+      self.rangeWithUnitOfMeasurement(lower, upper, uomSys) fold (
+        fail ⇒ (lower.value, upper.value, s"{${fail.message}}"),
         succ ⇒ succ)
   }
 }
