@@ -241,5 +241,34 @@ object AlmMeasureFormatter {
   }
 }
 
+private[i18n] class DoesNotFormatFormatter(val locale: ULocale, key: ResourceKey) extends AlmMeasureFormatter {
+  import scalaz.syntax.validation._
+  def formatArgsIntoAt(appendTo: StringBuffer, pos: FieldPosition, args: Map[String, Any]): AlmValidation[StringBuffer] = {
+    IllegalOperationProblem(s"{This formatter does not format anything. My resource key is ${key.section}/${key.group}/${key.key}}").failure
+  }
 
+  def formatMeasureIntoAt(v: Measured, appendTo: StringBuffer, pos: FieldPosition, uomSys: Option[UnitsOfMeasurementSystem]): AlmValidation[StringBuffer] = {
+    IllegalOperationProblem(s"{This formatter does not format anything. My resource key is ${key.section}/${key.group}/${key.key}}").failure
+  }
+
+  def formatMeasureRangeIntoAt(lower: Measured, upper: Measured, appendTo: StringBuffer, pos: FieldPosition, uomSys: Option[UnitsOfMeasurementSystem]): AlmValidation[StringBuffer] = {
+    IllegalOperationProblem(s"{This formatter does not format anything. My resource key is ${key.section}/${key.group}/${key.key}}").failure
+  }
+
+  def formatNumericIntoAt[T: Numeric](num: T, appendTo: StringBuffer, pos: FieldPosition): AlmValidation[StringBuffer] = {
+    IllegalOperationProblem(s"{This formatter does not format anything. My resource key is ${key.section}/${key.group}/${key.key}}").failure
+  }
+
+  def formatNumericRangeIntoAt[T: Numeric](lower: T, upper: T, appendTo: StringBuffer, pos: FieldPosition): AlmValidation[StringBuffer] = {
+    IllegalOperationProblem(s"{This formatter does not format anything. My resource key is ${key.section}/${key.group}/${key.key}}").failure
+  }
+
+  def rangeWithUnitOfMeasurement(lower: Measured, upper: Measured, uomSys: Option[UnitsOfMeasurementSystem]): AlmValidation[(Double, Double, String)] = {
+    IllegalOperationProblem(s"{This formatter does not format anything. My resource key is ${key.section}/${key.group}/${key.key}}").failure
+  }
+
+  def valueWithUnitOfMeasurement(v: Measured, uomSys: Option[UnitsOfMeasurementSystem]): AlmValidation[(Double, String)] = {
+    IllegalOperationProblem(s"{This formatter does not format anything. My resource key is ${key.section}/${key.group}/${key.key}}").failure
+  }
+}
 

@@ -163,9 +163,6 @@ object ResourceLookup {
     def findTextResource[L: LocaleMagnet](key: ResourceKey, locale: L): Option[TextResourceValue] = self.getTextResource(key, locale).toOption
     def findTextResourceWithLocale[L: LocaleMagnet](key: ResourceKey, locale: L): Option[(ULocale, TextResourceValue)] = self.getTextResourceWithLocale(key, locale).toOption
 
-    def forceFormatter[T, L: LocaleMagnet](key: ResourceKey, locale: L): AlmFormatter =
-      self.getFormatter(key, locale).resultOrEscalate
-
     def rawText[L: LocaleMagnet](key: ResourceKey, locale: L): String =
       self.getRawText(key, locale) fold (
         fail ⇒ s"{$key: ${fail.message}}",
@@ -199,6 +196,15 @@ object ResourceLookup {
     def selectOneItemFrom2[L, LL, T](locale: L, from: Map[LL, T])(implicit magnet: LocaleMagnet[L], magnet2: LocaleMagnet[LL]): Option[T] = {
       selectOneItemFrom2(locale, from, false)
     }
+
+    def forceFormatter[L: LocaleMagnet](key: ResourceKey, locale: L): AlmFormatter =
+      self.getFormatter(key, locale) getOrElse (new DoesNotFormatFormatter(implicitly[LocaleMagnet[L]].toULocale(locale), key))
+
+    def forceNumericFormatter[L: LocaleMagnet](key: ResourceKey, locale: L): AlmNumericFormatter =
+      self.getNumericFormatter(key, locale) getOrElse (new DoesNotFormatFormatter(implicitly[LocaleMagnet[L]].toULocale(locale), key))
+
+    def forceMeasureFormatter[L: LocaleMagnet](key: ResourceKey, locale: L): AlmMeasureFormatter =
+      self.getMeasureFormatter(key, locale) getOrElse (new DoesNotFormatFormatter(implicitly[LocaleMagnet[L]].toULocale(locale), key))
   }
 
   implicit class ResourceLookupItemOps(val self: ResourceLookup) extends AnyVal {
