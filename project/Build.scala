@@ -10,7 +10,7 @@ object BuildSettings {
   val buildOrganization = "org.almhirt"
   val buildScalaVersion = "2.11.6"
 
-  val akkaVersion = "2.3.+"
+  val akkaVersion = "2.4-M1"
   val akkaStreamsVersion = "1.0-RC3"
   val scalatestVersion = "2.2.+"
   val sprayVersion = "1.3.+"
