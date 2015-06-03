@@ -23,6 +23,15 @@ trait DefaultParamsConverters {
     override def convertValue(v: Any) = v.toString().success
   }
 
+  implicit val BooleanParamsConverter = new ParamsConverter[Boolean] {
+    override def convertValue(v: Any) =
+      v match {
+        case x: Boolean ⇒ x.success
+        case x: String  ⇒ x.toBooleanAlm
+        case x          ⇒ InvalidCastProblem(s""""${x.getClass().getName}"" can not be a "Boolean".""").failure
+      }
+  }
+
   implicit val IntParamsConverter = new ParamsConverter[Int] {
     override def convertValue(v: Any) =
       v match {
