@@ -34,6 +34,11 @@ trait ConfirmationContext[E <: AggregateRootEvent] {
   def unhandled()
 }
 
+sealed trait PreStoreEventAction
+object PreStoreEventAction {
+  case object NoAction extends PreStoreEventAction
+  final case class PreStoreAction(action: () ⇒ AlmFuture[Unit]) extends PreStoreEventAction
+}
 object AggregateRootDrone {
   def propsRawMaker(returnToUnitializedAfter: Option[FiniteDuration], maker: Option[FiniteDuration] ⇒ Props): Props = {
     maker(returnToUnitializedAfter)
@@ -78,23 +83,23 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
   def returnToUnitializedAfter: Option[FiniteDuration]
   def notifyHiveAboutUndispatchedEventsAfter: Option[FiniteDuration]
   def notifyHiveAboutUnstoredEventsAfterPerEvent: Option[FiniteDuration]
-  
-  def logDebug(msg: => String) {
+
+  def logDebug(msg: ⇒ String): Unit = {
     sendMessage(AggregateRootHiveInternals.ReportDroneDebug(msg))
   }
 
-  def logWarning(msg: => String, cause: Option[almhirt.problem.ProblemCause]) {
-     sendMessage(AggregateRootHiveInternals.ReportDroneWarning(msg, cause))
+  def logWarning(msg: ⇒ String, cause: Option[almhirt.problem.ProblemCause]): Unit = {
+    sendMessage(AggregateRootHiveInternals.ReportDroneWarning(msg, cause))
   }
 
-  def logWarning(msg: => String) {
-     sendMessage(AggregateRootHiveInternals.ReportDroneWarning(msg, None))
+  def logWarning(msg: ⇒ String): Unit = {
+    sendMessage(AggregateRootHiveInternals.ReportDroneWarning(msg, None))
   }
-  
-  def logError(msg: => String, cause: almhirt.problem.ProblemCause) {
-     sendMessage(AggregateRootHiveInternals.ReportDroneError(msg, cause))
+
+  def logError(msg: ⇒ String, cause: almhirt.problem.ProblemCause): Unit = {
+    sendMessage(AggregateRootHiveInternals.ReportDroneError(msg, cause))
   }
-  
+
   /**
    * None means fail instead of another attempt....
    */
@@ -102,6 +107,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
   implicit def ccuad: CanCreateUuidsAndDateTimes
 
   def handleAggregateCommand: ConfirmationContext[E] ⇒ (AggregateRootCommand, AggregateRootLifecycle[T]) ⇒ Unit
+  def preStoreActionFor: E ⇒ PreStoreEventAction
 
   /**
    * Override to perform your own initialization(like resolving dependencies).
@@ -142,6 +148,10 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
     def reject(problem: Problem) { self ! Rejected(problem) }
     def unhandled() { self ! Unhandled }
   }
+
+  private trait PreStoreEventActionRes
+  private case object PreStoreEventActionSucceeded extends PreStoreEventActionRes
+  private case class PreStoreEventActionFailed(cause: Problem) extends PreStoreEventActionRes
 
   /**
    *  Send a message to a stakeholder.
@@ -277,6 +287,17 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
       sendMessage(Busy(unexpectedCommand))
   }
 
+  private def executePreStoreAction(event: E): Unit = {
+    preStoreActionFor(event) match {
+      case PreStoreEventAction.NoAction ⇒
+        self ! PreStoreEventActionSucceeded
+      case PreStoreEventAction.PreStoreAction(actionFut) ⇒
+        actionFut().onComplete(
+          fail ⇒ self ! PreStoreEventActionFailed(fail),
+          succ ⇒ self ! PreStoreEventActionSucceeded)(futuresContext)
+    }
+  }
+
   private def receiveWaitingForCommandResult(currentCommand: AggregateRootCommand, persistedState: AggregateRootLifecycle[T]): Receive = {
     case Commit(events) if events.isEmpty ⇒
       handleCommandExecuted(persistedState, currentCommand)
@@ -293,7 +314,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
           hiveNotifiedForCommit = false
           context.become(receiveCommitEvents(currentCommand, events.head, events.tail, Seq.empty, postnatalis, Deadline.now, cid))
 
-          aggregateEventLog ! CommitAggregateRootEvent(events.head)
+          executePreStoreAction(events.head)
         case Vacat ⇒
           val problem = ConstraintViolatedProblem(s"""Command with events did not result in Postnatalis. This might be an error in your command handler.""")
           handleCommandFailed(persistedState, currentCommand, problem)
@@ -322,6 +343,12 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
     unpersisted: Postnatalis[T],
     startedStoring: Deadline,
     correlationId: CorrelationId): Receive = {
+    case PreStoreEventActionSucceeded ⇒
+      aggregateEventLog ! CommitAggregateRootEvent(inFlight)
+
+    case PreStoreEventActionFailed(cause) ⇒
+      onError(AggregateRootEventStoreFailedWritingException(currentCommand.aggId, s"Failed to execute PreStoreAction:\n$cause"), currentCommand, done)
+
     case AggregateRootEventCommitted(id) ⇒
       val newDone = done :+ inFlight
       rest match {
@@ -357,7 +384,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
               sendMessage(Busy(unexpectedCommand))
           }(receiveWaitingForEventsDispatched(currentCommand, unpersisted, newDone, startOfferEvents, cid))
         case next +: newRest ⇒
-          aggregateEventLog ! CommitAggregateRootEvent(next)
+          executePreStoreAction(next)
           context.become(receiveCommitEvents(currentCommand, next, newRest, newDone, unpersisted, startedStoring, correlationId))
       }
 

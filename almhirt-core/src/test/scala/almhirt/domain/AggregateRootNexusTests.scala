@@ -15,7 +15,7 @@ import almhirt.context.AlmhirtContext
 import akka.stream.FlowMaterializer
 
 class AggregateRootNexusTests(_system: ActorSystem)
-  extends TestKit(_system) with fixture.WordSpecLike with Matchers with BeforeAndAfterAll {
+    extends TestKit(_system) with fixture.WordSpecLike with Matchers with BeforeAndAfterAll {
   def this() = this(ActorSystem("AggregateRootNexusTests", almhirt.TestConfigs.logWarningConfig))
 
   implicit val executionContext = system.dispatchers.defaultGlobalDispatcher
@@ -184,6 +184,7 @@ class AggregateRootNexusTests(_system: ActorSystem)
         val notifyHiveAboutUndispatchedEventsAfter: Option[FiniteDuration] = None
         val notifyHiveAboutUnstoredEventsAfterPerEvent: Option[FiniteDuration] = None
         def retryEventLogActionDelay: Option[FiniteDuration] = None
+        val preStoreActionFor = (e: UserEvent) ⇒ PreStoreEventAction.NoAction
         val returnToUnitializedAfter = None
 
         override val aggregateCommandValidator = AggregateRootCommandValidator.Validated

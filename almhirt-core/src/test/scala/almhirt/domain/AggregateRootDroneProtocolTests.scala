@@ -28,7 +28,7 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
       override def getUtcTimestamp(): LocalDateTime = dt
     }
   }
-
+  
   "The AggregateRootDrone" when {
     import almhirt.eventlog.AggregateRootEventLog._
     import AggregateRootHiveInternals._
@@ -170,6 +170,7 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
         def retryEventLogActionDelay: Option[FiniteDuration] = None
         val eventsBroker: StreamBroker[Event] = streams.eventBroker
         val returnToUnitializedAfter = None
+        val preStoreActionFor = (e: UserEvent) => PreStoreEventAction.NoAction
 
         override val aggregateCommandValidator = AggregateRootCommandValidator.Validated
         override val tag = scala.reflect.ClassTag[UserCommand](classOf[UserCommand])

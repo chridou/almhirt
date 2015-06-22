@@ -10,7 +10,7 @@ import akka.testkit._
 import org.scalatest._
 
 class AggregateRootDroneTests(_system: ActorSystem)
-  extends TestKit(_system) with fixture.WordSpecLike with Matchers with BeforeAndAfterAll {
+    extends TestKit(_system) with fixture.WordSpecLike with Matchers with BeforeAndAfterAll {
   def this() = this(ActorSystem("AggregateRootDroneTests", almhirt.TestConfigs.logWarningConfig))
 
   implicit val executionContext = system.dispatchers.defaultGlobalDispatcher
@@ -480,6 +480,7 @@ class AggregateRootDroneTests(_system: ActorSystem)
         val notifyHiveAboutUndispatchedEventsAfter: Option[FiniteDuration] = None
         val notifyHiveAboutUnstoredEventsAfterPerEvent: Option[FiniteDuration] = None
         def retryEventLogActionDelay: Option[FiniteDuration] = None
+        val preStoreActionFor = (e: UserEvent) ⇒ PreStoreEventAction.NoAction
         val returnToUnitializedAfter = None
 
         override val aggregateCommandValidator = AggregateRootCommandValidator.Validated
