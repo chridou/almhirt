@@ -88,7 +88,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
 
   }
 
-  def onAfterExecutingCommand(cmd: AggregateRootCommand, rsp: ExecuteCommandResponse, state: Option[AggregateRootLifecycle[T]]): Unit = {
+  def onAfterExecutingCommand(cmd: AggregateRootCommand, problem: Option[Problem], state: Option[AggregateRootLifecycle[T]]): Unit = {
 
   }
 
@@ -523,7 +523,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
     logError(s"Escalating! Something terrible happened executing a command(${currentCommand.getClass.getSimpleName} with agg id ${currentCommand.aggId.value})", exn)
     val rsp = CommandNotExecuted(currentCommand, UnspecifiedProblem(s"""Something really bad happened: "${exn.getMessage}". Escalating.""", cause = Some(exn)))
     sendMessage(rsp)
-    onAfterExecutingCommand(currentCommand, rsp, None)
+    onAfterExecutingCommand(currentCommand, Some(rsp.problem), None)
     throw exn
   }
 
@@ -537,14 +537,14 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
     logDebug(s"Executing a command(${command.getClass.getSimpleName} with agg id ${command.aggId.value}) failed: ${prob.message}")
     val rsp = CommandNotExecuted(command, newProb)
     sendMessage(rsp)
-    onAfterExecutingCommand(command, rsp, Some(persistedState))
+    onAfterExecutingCommand(command, Some(rsp.problem), Some(persistedState))
     becomeReceiveWaitingForCommand(persistedState)
   }
 
   private def handleCommandExecuted(persistedState: AggregateRootLifecycle[T], command: AggregateRootCommand) {
     val rsp = CommandExecuted(command)
     sendMessage(rsp)
-    onAfterExecutingCommand(command, rsp, Some(persistedState))
+    onAfterExecutingCommand(command, None, Some(persistedState))
     becomeReceiveWaitingForCommand(persistedState)
   }
 
