@@ -84,6 +84,14 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
   def notifyHiveAboutUndispatchedEventsAfter: Option[FiniteDuration]
   def notifyHiveAboutUnstoredEventsAfterPerEvent: Option[FiniteDuration]
 
+  def onBeforeExecutingCommand(cmd: AggregateRootCommand, state: AggregateRootLifecycle[T]): Unit = {
+
+  }
+
+  def onAfterExecutingCommand(cmd: AggregateRootCommand, rsp: ExecuteCommandResponse, state: Option[AggregateRootLifecycle[T]]): Unit = {
+
+  }
+
   def logDebug(msg: ⇒ String): Unit = {
     sendMessage(AggregateRootHiveInternals.ReportDroneDebug(msg))
   }
@@ -232,6 +240,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
 
   private def receiveAcceptingCommand(persistedState: AggregateRootLifecycle[T]): Receive = {
     case nextCommand: AggregateRootCommand ⇒
+      onBeforeExecutingCommand(nextCommand, persistedState)
       handleAggregateCommand(DefaultConfirmationContext)(nextCommand, persistedState)
       context.become(receiveWaitingForCommandResult(nextCommand, persistedState))
 
@@ -278,6 +287,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
   private def receiveEvaluateRebuildResult(currentCommand: AggregateRootCommand): Receive = {
     case InternalArBuildResult(arState) ⇒
       context.become(receiveWaitingForCommandResult(currentCommand, arState))
+      onBeforeExecutingCommand(currentCommand, arState)
       handleAggregateCommand(DefaultConfirmationContext)(currentCommand, arState)
 
     case InternalBuildArFailed(error: Throwable) ⇒
@@ -511,7 +521,9 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
   /** Ends with termination */
   private def onError(exn: AggregateRootDomainException, currentCommand: AggregateRootCommand, commitedEvents: Seq[E]) {
     logError(s"Escalating! Something terrible happened executing a command(${currentCommand.getClass.getSimpleName} with agg id ${currentCommand.aggId.value})", exn)
-    sendMessage(CommandNotExecuted(currentCommand, UnspecifiedProblem(s"""Something really bad happened: "${exn.getMessage}". Escalating.""", cause = Some(exn))))
+    val rsp = CommandNotExecuted(currentCommand, UnspecifiedProblem(s"""Something really bad happened: "${exn.getMessage}". Escalating.""", cause = Some(exn)))
+    sendMessage(rsp)
+    onAfterExecutingCommand(currentCommand, rsp, None)
     throw exn
   }
 
@@ -523,12 +535,16 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
   private def handleCommandFailed(persistedState: AggregateRootLifecycle[T], command: AggregateRootCommand, prob: Problem) {
     val newProb = persistedState.idOption.fold(prob)(id ⇒ prob.withArg("aggregate-root-id", id.value))
     logDebug(s"Executing a command(${command.getClass.getSimpleName} with agg id ${command.aggId.value}) failed: ${prob.message}")
-    sendMessage(CommandNotExecuted(command, newProb))
+    val rsp = CommandNotExecuted(command, newProb)
+    sendMessage(rsp)
+    onAfterExecutingCommand(command, rsp, Some(persistedState))
     becomeReceiveWaitingForCommand(persistedState)
   }
 
   private def handleCommandExecuted(persistedState: AggregateRootLifecycle[T], command: AggregateRootCommand) {
-    sendMessage(CommandExecuted(command))
+    val rsp = CommandExecuted(command)
+    sendMessage(rsp)
+    onAfterExecutingCommand(command, rsp, Some(persistedState))
     becomeReceiveWaitingForCommand(persistedState)
   }
 
