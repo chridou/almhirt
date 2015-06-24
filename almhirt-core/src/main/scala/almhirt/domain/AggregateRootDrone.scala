@@ -37,7 +37,8 @@ trait ConfirmationContext[E <: AggregateRootEvent] {
 sealed trait PreStoreEventAction
 object PreStoreEventAction {
   case object NoAction extends PreStoreEventAction
-  final case class PreStoreAction(action: () ⇒ AlmFuture[Unit]) extends PreStoreEventAction
+  final case class AsyncPreStoreAction(action: () ⇒ AlmFuture[Unit]) extends PreStoreEventAction
+  final case class PreStoreAction(action: () ⇒ AlmValidation[Unit]) extends PreStoreEventAction
 }
 object AggregateRootDrone {
   def propsRawMaker(returnToUnitializedAfter: Option[FiniteDuration], maker: Option[FiniteDuration] ⇒ Props): Props = {
@@ -91,6 +92,10 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
   def onAfterExecutingCommand(cmd: AggregateRootCommand, problem: Option[Problem], state: Option[AggregateRootLifecycle[T]]): Unit = {
 
   }
+
+  def asyncInitializeForCommand(cmd: AggregateRootCommand, state: AggregateRootLifecycle[T]): Option[AlmFuture[Unit]] = None
+
+  def asyncCleanupAfterCommand(cmd: AggregateRootCommand, problem: Option[Problem], state: Option[AggregateRootLifecycle[T]]): Option[AlmFuture[Unit]] = None
 
   def logDebug(msg: ⇒ String): Unit = {
     sendMessage(AggregateRootHiveInternals.ReportDroneDebug(msg))
@@ -151,6 +156,13 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
   //*************
   //   Internal 
   //*************
+
+  private case class AsyncInitializedForCommand(cmd: AggregateRootCommand, state: AggregateRootLifecycle[T])
+  private case class AsyncInitializeForCommandFailed(cmd: AggregateRootCommand, state: AggregateRootLifecycle[T], problem: Problem)
+
+  private case class AsyncCleanedUpAfterCommand(cmd: AggregateRootCommand, state: AggregateRootLifecycle[T])
+  private case class AsyncCleanUpAfterCommandFailed(cmd: AggregateRootCommand, problem: Problem)
+
   private object DefaultConfirmationContext extends ConfirmationContext[E] {
     def commit(events: Seq[E]) { self ! Commit(events) }
     def reject(problem: Problem) { self ! Rejected(problem) }
@@ -238,15 +250,37 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
       sendMessage(Busy(unexpectedCommand))
   }
 
-  private def receiveAcceptingCommand(persistedState: AggregateRootLifecycle[T]): Receive = {
+  private def receiveAcceptingCommand(persistedState: AggregateRootLifecycle[T], canAccept: Boolean): Receive = {
     case nextCommand: AggregateRootCommand ⇒
-      onBeforeExecutingCommand(nextCommand, persistedState)
-      handleAggregateCommand(DefaultConfirmationContext)(nextCommand, persistedState)
-      context.become(receiveWaitingForCommandResult(nextCommand, persistedState))
+      if (canAccept) {
+        asyncInitializeForCommand(nextCommand, persistedState) match {
+          case None ⇒
+            onBeforeExecutingCommand(nextCommand, persistedState)
+            handleAggregateCommand(DefaultConfirmationContext)(nextCommand, persistedState)
+            context.become(receiveWaitingForCommandResult(nextCommand, persistedState))
+          case Some(fut) ⇒
+            context.become(receiveAcceptingCommand(persistedState, false))
+            fut.onComplete(
+              fail ⇒ self ! AsyncInitializeForCommandFailed(nextCommand, persistedState, fail),
+              succ ⇒ self ! AsyncInitializedForCommand(nextCommand, persistedState))(futuresContext)
+        }
+      } else {
+        sendMessage(Busy(nextCommand))
+      }
+
+    case AsyncInitializedForCommand(cmd, persistedState) ⇒
+      onBeforeExecutingCommand(cmd, persistedState)
+      handleAggregateCommand(DefaultConfirmationContext)(cmd, persistedState)
+      context.become(receiveWaitingForCommandResult(cmd, persistedState))
+
+    case AsyncInitializeForCommandFailed(cmd, persistedState, problem) ⇒
+      handleCommandFailedAfterCleanup(persistedState, cmd, problem)
 
     case AggregateRootDroneInternal.ReturnToUninitialized ⇒
-      capturedId.foreach { id ⇒ sendMessage(AggregateRootHiveInternals.CargoJettisoned(id)) }
-      context.become(receiveUninitialized)
+      if (canAccept) {
+        capturedId.foreach { id ⇒ sendMessage(AggregateRootHiveInternals.CargoJettisoned(id)) }
+        context.become(receiveUninitialized)
+      }
 
     case EventsShouldHaveBeenDispatchedByNow(_) | EventsShouldHaveBeenStoredByNow(_) ⇒
       //Do nothing..
@@ -286,9 +320,24 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
 
   private def receiveEvaluateRebuildResult(currentCommand: AggregateRootCommand): Receive = {
     case InternalArBuildResult(arState) ⇒
-      context.become(receiveWaitingForCommandResult(currentCommand, arState))
-      onBeforeExecutingCommand(currentCommand, arState)
-      handleAggregateCommand(DefaultConfirmationContext)(currentCommand, arState)
+      asyncInitializeForCommand(currentCommand, arState) match {
+        case None ⇒
+          context.become(receiveWaitingForCommandResult(currentCommand, arState))
+          onBeforeExecutingCommand(currentCommand, arState)
+          handleAggregateCommand(DefaultConfirmationContext)(currentCommand, arState)
+        case Some(fut) ⇒
+          fut.onComplete(
+            fail ⇒ self ! AsyncInitializeForCommandFailed(currentCommand, arState, fail),
+            succ ⇒ self ! AsyncInitializedForCommand(currentCommand, arState))(futuresContext)
+      }
+
+    case AsyncInitializedForCommand(cmd, persistedState) ⇒
+      context.become(receiveWaitingForCommandResult(currentCommand, persistedState))
+      onBeforeExecutingCommand(currentCommand, persistedState)
+      handleAggregateCommand(DefaultConfirmationContext)(currentCommand, persistedState)
+
+    case AsyncInitializeForCommandFailed(cmd, persistedState, problem) ⇒
+      handleCommandFailedAfterCleanup(persistedState, cmd, problem)
 
     case InternalBuildArFailed(error: Throwable) ⇒
       onError(RebuildAggregateRootFailedException(currentCommand.aggId, "An error has occured rebuilding the aggregate root.", error), currentCommand, Seq.empty)
@@ -301,7 +350,11 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
     preStoreActionFor(event) match {
       case PreStoreEventAction.NoAction ⇒
         self ! PreStoreEventActionSucceeded
-      case PreStoreEventAction.PreStoreAction(actionFut) ⇒
+      case PreStoreEventAction.PreStoreAction(action) ⇒
+        action().fold(
+          fail ⇒ self ! PreStoreEventActionFailed(fail),
+          succ ⇒ self ! PreStoreEventActionSucceeded)
+      case PreStoreEventAction.AsyncPreStoreAction(actionFut) ⇒
         actionFut().onComplete(
           fail ⇒ self ! PreStoreEventActionFailed(fail),
           succ ⇒ self ! PreStoreEventActionSucceeded)(futuresContext)
@@ -310,7 +363,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
 
   private def receiveWaitingForCommandResult(currentCommand: AggregateRootCommand, persistedState: AggregateRootLifecycle[T]): Receive = {
     case Commit(events) if events.isEmpty ⇒
-      handleCommandExecuted(persistedState, currentCommand)
+      handleCommandExecutedWithCleanup(persistedState, currentCommand)
 
     case Commit(events) ⇒
       events.foldLeft[AggregateRootLifecycle[T]](persistedState) { case (acc, cur) ⇒ applyEventLifecycleAgnostic(acc, cur) } match {
@@ -327,14 +380,15 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
           executePreStoreAction(events.head)
         case Vacat ⇒
           val problem = ConstraintViolatedProblem(s"""Command with events did not result in Postnatalis. This might be an error in your command handler.""")
-          handleCommandFailed(persistedState, currentCommand, problem)
+          handleCommandFailedWithCleanup(persistedState, currentCommand, problem)
       }
 
     case Rejected(problem) ⇒
-      handleCommandFailed(persistedState, currentCommand, problem)
+      handleCommandFailedWithCleanup(persistedState, currentCommand, problem)
 
     case Unhandled ⇒
-      handleCommandFailed(persistedState, currentCommand, UnspecifiedProblem(s"""Could not handle command of type "${currentCommand.getClass().getName()}"."""))
+      val problem = UnspecifiedProblem(s"""Could not handle command of type "${currentCommand.getClass().getName()}".""")
+      handleCommandFailedWithCleanup(persistedState, currentCommand, problem)
 
     case EventsShouldHaveBeenDispatchedByNow(_) | EventsShouldHaveBeenStoredByNow(_) ⇒
       //Do nothing..
@@ -426,6 +480,38 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
       sendMessage(Busy(unexpectedCommand))
   }
 
+  def receiveWaitForCleanUpAfterExecutedCommand(persistedState: AggregateRootLifecycle[T]): Receive = {
+    case AsyncCleanedUpAfterCommand(cmd, persistedState) ⇒
+      handleCommandExecutedAfterCleanup(persistedState, cmd)
+
+    case AsyncCleanUpAfterCommandFailed(cmd, problem) ⇒
+      logError(s"Cleanup Action after execution a command failed", problem)
+      handleCommandExecutedAfterCleanup(persistedState, cmd)
+
+    case EventsShouldHaveBeenDispatchedByNow(_) ⇒
+      // Do nothing....
+      ()
+
+    case unexpectedCommand: AggregateRootCommand ⇒
+      sendMessage(Busy(unexpectedCommand))
+  }
+
+  def receiveWaitForCleanUpAfterFailedCommand(persistedState: AggregateRootLifecycle[T], commandProblem: Problem): Receive = {
+    case AsyncCleanedUpAfterCommand(cmd, persistedState) ⇒
+      handleCommandFailedAfterCleanup(persistedState, cmd, commandProblem)
+
+    case AsyncCleanUpAfterCommandFailed(cmd, problem) ⇒
+      logError(s"Cleanup Action after a failed command failed", problem)
+      handleCommandFailedAfterCleanup(persistedState, cmd, commandProblem)
+
+    case EventsShouldHaveBeenDispatchedByNow(_) ⇒
+      // Do nothing....
+      ()
+
+    case unexpectedCommand: AggregateRootCommand ⇒
+      sendMessage(Busy(unexpectedCommand))
+  }
+
   private def receiveRetryLogEventInFlight(
     currentCommand: AggregateRootCommand,
     inFlight: E,
@@ -485,7 +571,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
       }
       cancelWaitingForDispatchedEventsNotification.foreach { _.cancel() }
       cancelWaitingForDispatchedEventsNotification = None
-      handleCommandExecuted(persisted, currentCommand)
+      handleCommandExecutedWithCleanup(persisted, currentCommand)
 
     case DeliveryResult(DeliveryJobFailed(problem, _), payload) ⇒
       cancelWaitingForDispatchedEventsNotification.foreach { _.cancel() }
@@ -509,7 +595,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
 
   private def receiveMortuus(state: Mortuus): Receive = {
     case commandNotToExecute: AggregateRootCommand ⇒
-      handleCommandFailed(state, commandNotToExecute, AggregateRootDeletedProblem(commandNotToExecute.aggId))
+      handleCommandFailedAfterCleanup(state, commandNotToExecute, AggregateRootDeletedProblem(commandNotToExecute.aggId))
 
     case EventsShouldHaveBeenDispatchedByNow(_) | EventsShouldHaveBeenStoredByNow(_) ⇒
       //Do nothing..
@@ -532,7 +618,19 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
     CommandExecutionFailed(commandNotToExecute, CollisionProblem(msg))
   }
 
-  private def handleCommandFailed(persistedState: AggregateRootLifecycle[T], command: AggregateRootCommand, prob: Problem) {
+  private def handleCommandFailedWithCleanup(persistedState: AggregateRootLifecycle[T], command: AggregateRootCommand, problem: Problem): Unit = {
+    asyncCleanupAfterCommand(command, None, Some(persistedState)) match {
+      case None ⇒
+        handleCommandFailedAfterCleanup(persistedState, command, problem)
+      case Some(fut) ⇒
+        context.become(receiveWaitForCleanUpAfterFailedCommand(persistedState, problem))
+        fut.onComplete(
+          fail ⇒ self ! AsyncCleanUpAfterCommandFailed(command, fail),
+          succ ⇒ self ! AsyncCleanedUpAfterCommand(command, persistedState))(futuresContext)
+    }
+  }
+
+  private def handleCommandFailedAfterCleanup(persistedState: AggregateRootLifecycle[T], command: AggregateRootCommand, prob: Problem): Unit = {
     val newProb = persistedState.idOption.fold(prob)(id ⇒ prob.withArg("aggregate-root-id", id.value))
     logDebug(s"Executing a command(${command.getClass.getSimpleName} with agg id ${command.aggId.value}) failed: ${prob.message}")
     val rsp = CommandNotExecuted(command, newProb)
@@ -541,7 +639,19 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
     becomeReceiveWaitingForCommand(persistedState)
   }
 
-  private def handleCommandExecuted(persistedState: AggregateRootLifecycle[T], command: AggregateRootCommand) {
+  private def handleCommandExecutedWithCleanup(persistedState: AggregateRootLifecycle[T], command: AggregateRootCommand) {
+    asyncCleanupAfterCommand(command, None, Some(persistedState)) match {
+      case None ⇒
+        handleCommandExecutedAfterCleanup(persistedState, command)
+      case Some(fut) ⇒
+        context.become(receiveWaitForCleanUpAfterExecutedCommand(persistedState))
+        fut.onComplete(
+          fail ⇒ self ! AsyncCleanUpAfterCommandFailed(command, fail),
+          succ ⇒ self ! AsyncCleanedUpAfterCommand(command, persistedState))(futuresContext)
+    }
+  }
+
+  private def handleCommandExecutedAfterCleanup(persistedState: AggregateRootLifecycle[T], command: AggregateRootCommand) {
     val rsp = CommandExecuted(command)
     sendMessage(rsp)
     onAfterExecutingCommand(command, None, Some(persistedState))
@@ -551,7 +661,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
   private def becomeReceiveWaitingForCommand(persistedState: AggregateRootLifecycle[T]) {
     returnToUnitializedAfter.foreach(dur ⇒
       context.system.scheduler.scheduleOnce(dur, self, AggregateRootDroneInternal.ReturnToUninitialized)(context.dispatcher))
-    context.become(receiveAcceptingCommand(persistedState))
+    context.become(receiveAcceptingCommand(persistedState, true))
   }
 
   override def preRestart(reason: Throwable, message: Option[Any]) {

@@ -174,16 +174,20 @@ class AggregateRootDronePreStoreEventActionTests(_system: ActorSystem)
         val notifyHiveAboutUnstoredEventsAfterPerEvent: Option[FiniteDuration] = None
         def retryEventLogActionDelay: Option[FiniteDuration] = None
         val preStoreActionFor = (e: UserEvent) ⇒ e match {
-          case _: UserSurnameChanged ⇒ PreStoreEventAction.PreStoreAction(() ⇒ AlmFuture.successful {
+          case _: UserSurnameChanged ⇒ PreStoreEventAction.AsyncPreStoreAction(() ⇒ AlmFuture.successful {
             val c = counter.incrementAndGet()
             info(s"Num executed: $c")
             ()
           })
-          case _: UserLastnameChanged ⇒ PreStoreEventAction.PreStoreAction(() ⇒ AlmFuture.failed {
+          case _: UserLastnameChanged ⇒ PreStoreEventAction.AsyncPreStoreAction(() ⇒ AlmFuture.failed {
             UnspecifiedProblem("The pre store action for UserLastnameChanged causes this failure")
           })
           case _ ⇒ PreStoreEventAction.NoAction
         }
+
+        override def asyncInitializeForCommand(cmd: AggregateRootCommand, state: AggregateRootLifecycle[User]): Option[AlmFuture[Unit]] = Some(AlmFuture.successful(info(s"Init: $cmd")))
+
+        override def asyncCleanupAfterCommand(cmd: AggregateRootCommand, problem: Option[Problem], state: Option[AggregateRootLifecycle[User]]): Option[AlmFuture[Unit]] = Some(AlmFuture.successful(info(s"Cleanup: $cmd")))
 
         val returnToUnitializedAfter = None
 
