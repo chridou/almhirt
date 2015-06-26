@@ -24,6 +24,6 @@ object SnapshotRepository {
   sealed trait FindSnapshotResponse
   final case class FoundSnapshot(snapshoot: AggregateRoot) extends FindSnapshotResponse
   final case class SnapshotNotFound(id: AggregateRootId) extends FindSnapshotResponse
-  final case class AggregateRootDeleted(id: AggregateRootId) extends FindSnapshotResponse
+  final case class AggregateRootWasDeleted(id: AggregateRootId) extends FindSnapshotResponse
   final case class FindSnapshotFailed(id: AggregateRootId, problem: Problem) extends FindSnapshotResponse
 }
