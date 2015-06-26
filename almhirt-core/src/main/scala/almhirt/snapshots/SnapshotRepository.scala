@@ -5,12 +5,14 @@ import almhirt.aggregates._
 
 
 object SnapshotRepository {
-  final case class StoreSnapshot(snapshoot: AggregateRoot)
+  sealed trait SnapshottingAction
+  
+  final case class StoreSnapshot(snapshoot: AggregateRoot) extends SnapshottingAction
   sealed trait StoreSnapshotResponse
   final case class SnapshotStored(id: AggregateRootId) extends StoreSnapshotResponse
   final case class StoreSnapshotFailed(id: AggregateRootId, problem: Problem) extends StoreSnapshotResponse
  
-  final case class MarkAggregateRootAsDeleted(id: AggregateRootId)
+  final case class MarkAggregateRootAsDeleted(id: AggregateRootId) extends SnapshottingAction
   sealed trait MarkAggregateRootAsDeletedResponse
   final case class AggregateRootMarkedAsDeleted(id: AggregateRootId) extends MarkAggregateRootAsDeletedResponse
   final case class MarkAggregateRootAsDeletedFailed(id: AggregateRootId, problem: Problem) extends MarkAggregateRootAsDeletedResponse
