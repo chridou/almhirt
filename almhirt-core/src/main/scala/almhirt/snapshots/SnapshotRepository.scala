@@ -12,10 +12,10 @@ object SnapshotRepository {
   final case class SnapshotStored(id: AggregateRootId) extends StoreSnapshotResponse
   final case class StoreSnapshotFailed(id: AggregateRootId, problem: Problem) extends StoreSnapshotResponse
  
-  final case class MarkAggregateRootAsDeleted(id: AggregateRootId) extends SnapshottingAction
-  sealed trait MarkAggregateRootAsDeletedResponse
-  final case class AggregateRootMarkedAsDeleted(id: AggregateRootId) extends MarkAggregateRootAsDeletedResponse
-  final case class MarkAggregateRootAsDeletedFailed(id: AggregateRootId, problem: Problem) extends MarkAggregateRootAsDeletedResponse
+  final case class MarkAggregateRootMortuus(id: AggregateRootId, version: AggregateRootVersion) extends SnapshottingAction
+  sealed trait MarkAggregateRootMortuusResponse
+  final case class AggregateRootMarkedMortuus(id: AggregateRootId) extends MarkAggregateRootMortuusResponse
+  final case class MarkAggregateRootMortuusFailed(id: AggregateRootId, problem: Problem) extends MarkAggregateRootMortuusResponse
   
   final case class DeleteSnapshot(id: AggregateRootId)
   sealed trait DeleteSnapshotResponse

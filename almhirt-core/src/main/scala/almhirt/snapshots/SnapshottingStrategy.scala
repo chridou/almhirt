@@ -47,9 +47,9 @@ object SnapshottingStrategy {
         case (SnapshotState.SnapshotVivus(snapshotVersion), Vivus(newAr)) if (newAr.version > snapshotVersion) ⇒
           Some(SnapshotRepository.StoreSnapshot(newAr))
         case (SnapshotState.SnapshotVivus(snapshotVersion), Mortuus(id, version)) ⇒
-          Some(SnapshotRepository.MarkAggregateRootAsDeleted(id))
+          Some(SnapshotRepository.MarkAggregateRootMortuus(id, version))
         case (SnapshotState.SnapshotVacat, Mortuus(id, version)) ⇒
-          Some(SnapshotRepository.MarkAggregateRootAsDeleted(id))
+          Some(SnapshotRepository.MarkAggregateRootMortuus(id, version))
         case _ ⇒
           None
       }
@@ -68,9 +68,9 @@ object SnapshottingStrategy {
               Some(SnapshotRepository.StoreSnapshot(newAr))
             else None
           case (SnapshotState.SnapshotVivus(snapshotVersion), Mortuus(id, version)) ⇒
-            Some(SnapshotRepository.MarkAggregateRootAsDeleted(id))
+            Some(SnapshotRepository.MarkAggregateRootMortuus(id, version))
           case (SnapshotState.SnapshotVacat, Mortuus(id, version)) ⇒
-            Some(SnapshotRepository.MarkAggregateRootAsDeleted(id))
+            Some(SnapshotRepository.MarkAggregateRootMortuus(id, version))
           case _ ⇒
             None
         }
@@ -89,9 +89,9 @@ object SnapshottingStrategy {
               Some(SnapshotRepository.StoreSnapshot(newAr))
             else None
           case (SnapshotState.SnapshotVivus(snapshotVersion), Mortuus(id, version)) ⇒
-            Some(SnapshotRepository.MarkAggregateRootAsDeleted(id))
+            Some(SnapshotRepository.MarkAggregateRootMortuus(id, version))
           case (SnapshotState.SnapshotVacat, Mortuus(id, version)) ⇒
-            Some(SnapshotRepository.MarkAggregateRootAsDeleted(id))
+            Some(SnapshotRepository.MarkAggregateRootMortuus(id, version))
           case _ ⇒
             None
         }
@@ -110,9 +110,9 @@ object SnapshottingStrategy {
               Some(SnapshotRepository.StoreSnapshot(newAr))
             else None
           case (SnapshotState.SnapshotVivus(snapshotVersion), Mortuus(id, version)) ⇒
-            Some(SnapshotRepository.MarkAggregateRootAsDeleted(id))
+            Some(SnapshotRepository.MarkAggregateRootMortuus(id, version))
           case (SnapshotState.SnapshotVacat, Mortuus(id, version)) ⇒
-            Some(SnapshotRepository.MarkAggregateRootAsDeleted(id))
+            Some(SnapshotRepository.MarkAggregateRootMortuus(id, version))
           case _ ⇒
             None
         }
@@ -125,7 +125,7 @@ object SnapshottingStrategy {
       for {
         section ← config.v[Config](path)
         storeEvery ← section.magicDefault[Int]("never", 0)("every")
-        startAt ← section.magicOption[Long]("every")
+        startAt ← section.magicOption[Long]("start-at")
       } yield {
         val sa = AggregateRootVersion(startAt getOrElse 0L)
         SnapshottingStrategy(storeEvery, sa)
