@@ -51,7 +51,7 @@ object BinarySnapshotRepository {
     configName: Option[String] = None)(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
     import almhirt.configuration._
     import almhirt.almvalidation.kit._
-    val path = "almhirt.components.snapshots.storage" + configName.map("." + _).getOrElse("")
+    val path = "almhirt.components.snapshots.repository" + configName.map("." + _).getOrElse("")
     for {
       section ← ctx.config.v[com.typesafe.config.Config](path)
       collectionName ← section.v[String]("collection-name")
@@ -85,7 +85,7 @@ object BinarySnapshotRepository {
     configName: Option[String] = None)(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
     import almhirt.configuration._
     import almhirt.almvalidation.kit._
-    val path = "almhirt.components.snapshots.storage" + configName.map("." + _).getOrElse("")
+    val path = "almhirt.components.snapshots.repository" + configName.map("." + _).getOrElse("")
     for {
       section ← ctx.config.v[com.typesafe.config.Config](path)
       dbName ← section.v[String]("db-name")
