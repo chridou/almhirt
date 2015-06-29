@@ -28,4 +28,6 @@ object SnapshotRepository {
   final case class SnapshotNotFound(id: AggregateRootId) extends FindSnapshotResponse
   final case class AggregateRootWasDeleted(id: AggregateRootId) extends FindSnapshotResponse
   final case class FindSnapshotFailed(id: AggregateRootId, problem: Problem) extends FindSnapshotResponse
+  
+  val actorname = "snapshot-repository"
 }

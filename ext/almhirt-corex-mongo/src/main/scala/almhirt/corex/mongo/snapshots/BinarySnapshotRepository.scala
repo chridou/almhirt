@@ -1,7 +1,8 @@
 package almhirt.corex.mongo.snapshots
 
 import scala.concurrent.Future
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration._
+import scalaz.Validation.FlatMap._
 import akka.actor._
 import almhirt.common._
 import almhirt.aggregates.AggregateRootId
@@ -16,12 +17,100 @@ import reactivemongo.api.indexes.IndexType
 import reactivemongo.core.commands.GetLastError
 
 object BinarySnapshotRepository {
+  def propsRaw(
+    db: DB with DBMetaCommands,
+    collectionName: String,
+    getLastError: GetLastError,
+    marshaller: SnapshotMarshaller[Array[Byte]],
+    readWarningThreshold: FiniteDuration,
+    writeWarningThreshold: FiniteDuration,
+    readOnly: Boolean,
+    initializeRetryPolicy: RetryPolicyExt,
+    storageRetryPolicy: RetryPolicyExt,
+    circuitControlSettings: CircuitControlSettings,
+    futuresExecutionContextSelector: ExtendedExecutionContextSelector,
+    marshallingExecutionContextSelector: ExtendedExecutionContextSelector)(implicit almhirtContext: AlmhirtContext): Props =
+    Props(new BinarySnapshotRepositoryActor(
+      db,
+      collectionName,
+      getLastError,
+      marshaller,
+      readWarningThreshold,
+      writeWarningThreshold,
+      readOnly,
+      initializeRetryPolicy,
+      storageRetryPolicy,
+      circuitControlSettings,
+      futuresExecutionContextSelector,
+      marshallingExecutionContextSelector))
+
+  def propsWithDb(
+    db: DB with DBMetaCommands,
+    getLastError: GetLastError,
+    marshaller: SnapshotMarshaller[Array[Byte]],
+    configName: Option[String] = None)(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
+    import almhirt.configuration._
+    import almhirt.almvalidation.kit._
+    val path = "almhirt.components.snapshots.storage" + configName.map("." + _).getOrElse("")
+    for {
+      section ← ctx.config.v[com.typesafe.config.Config](path)
+      collectionName ← section.v[String]("collection-name")
+      writeWarningThreshold ← section.v[FiniteDuration]("write-warn-threshold")
+      readWarningThreshold ← section.v[FiniteDuration]("read-warn-threshold")
+      circuitControlSettings ← section.v[CircuitControlSettings]("circuit-control")
+      initializeRetryPolicy ← section.v[RetryPolicyExt]("initialize-retry-policy")
+      storageRetryPolicy ← section.v[RetryPolicyExt]("storage-retry-policy")
+      futuresExecutionContextSelector ← section.v[ExtendedExecutionContextSelector]("futures-context")
+      marshallingExecutionContextSelector ← section.v[ExtendedExecutionContextSelector]("marshalling-context")
+      readOnly ← section.v[Boolean]("read-only")
+    } yield propsRaw(
+      db,
+      collectionName,
+      getLastError,
+      marshaller,
+      readWarningThreshold,
+      writeWarningThreshold,
+      readOnly,
+      initializeRetryPolicy,
+      storageRetryPolicy,
+      circuitControlSettings,
+      futuresExecutionContextSelector,
+      marshallingExecutionContextSelector)
+  }
+
+  def propsWithConnection(
+    connection: MongoConnection,
+    getLastError: GetLastError,
+    marshaller: SnapshotMarshaller[Array[Byte]],
+    configName: Option[String] = None)(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
+    import almhirt.configuration._
+    import almhirt.almvalidation.kit._
+    val path = "almhirt.components.snapshots.storage" + configName.map("." + _).getOrElse("")
+    for {
+      section ← ctx.config.v[com.typesafe.config.Config](path)
+      dbName ← section.v[String]("db-name")
+      db ← inTryCatch { connection(dbName)(ctx.futuresContext) }
+      props ← propsWithDb(
+        db,
+        getLastError,
+        marshaller,
+        configName)
+    } yield props
+  }
+
+  def componentFactory(
+    connection: MongoConnection,
+    getLastError: GetLastError,
+    marshaller: SnapshotMarshaller[Array[Byte]],
+    configName: Option[String] = None)(implicit ctx: AlmhirtContext): AlmValidation[ComponentFactory] =
+    propsWithConnection(connection, getLastError, marshaller, configName).map(props ⇒ ComponentFactory(props, almhirt.snapshots.SnapshotRepository.actorname))
 
 }
 
 private[snapshots] class BinarySnapshotRepositoryActor(
     db: DB with DBMetaCommands,
     collectionName: String,
+    getLastError: GetLastError,
     marshaller: SnapshotMarshaller[Array[Byte]],
     readWarningThreshold: FiniteDuration,
     writeWarningThreshold: FiniteDuration,
@@ -135,57 +224,81 @@ private[snapshots] class BinarySnapshotRepositoryActor(
   def receiveRunning: Receive = {
 
     case SnapshotRepository.StoreSnapshot(ar) ⇒
-      val f = for {
+      val f = measureWrite(for {
         arBytes ← AlmFuture(marshaller.marshal(ar))(marshallingContext)
         storedAggId ← circuitBreaker.fused(storeBinarySnapshot(PersistableBinaryVivusSnapshotState(ar.id, ar.version, arBytes)))
-      } yield SnapshotRepository.SnapshotStored(storedAggId)
+      } yield SnapshotRepository.SnapshotStored(storedAggId))
       f.recoverThenPipeTo(fail ⇒ SnapshotRepository.StoreSnapshotFailed(ar.id, fail))(sender())
 
     case SnapshotRepository.MarkAggregateRootMortuus(id, version) ⇒
-      val f = circuitBreaker.fused(markSnapshotMortuus(PersistableMortuusSnapshotState(id, version))).map(SnapshotRepository.AggregateRootMarkedMortuus(_))
+      val f = measureWrite(circuitBreaker.fused(markSnapshotMortuus(PersistableMortuusSnapshotState(id, version))).map(SnapshotRepository.AggregateRootMarkedMortuus(_)))
       f.recoverThenPipeTo(fail ⇒ SnapshotRepository.MarkAggregateRootMortuusFailed(id, fail))(sender())
 
     case SnapshotRepository.DeleteSnapshot(id) ⇒
-      val f = circuitBreaker.fused(deleteSnapshot(id)).map(SnapshotRepository.SnapshotDeleted(_))
+      val f = measureWrite(circuitBreaker.fused(deleteSnapshot(id)).map(SnapshotRepository.SnapshotDeleted(_)))
       f.recoverThenPipeTo(fail ⇒ SnapshotRepository.DeleteSnapshotFailed(id, fail))(sender())
 
     case SnapshotRepository.FindSnapshot(id) ⇒
-      val f = circuitBreaker.fused(findSnapshot(id))
+      val f = measureRead(circuitBreaker.fused(findSnapshot(id)))
       f.recoverThenPipeTo(fail ⇒ SnapshotRepository.FindSnapshotFailed(id, fail))(sender())
   }
 
   override def receive: Receive = Actor.emptyBehavior
 
+  private def measureRead[T](f: AlmFuture[T]): AlmFuture[T] = {
+    val start = Deadline.now
+    f.onComplete { res ⇒
+      val lap = start.lap
+      if (lap > readWarningThreshold)
+        logWarning(s"Read operationen took longer than ${readWarningThreshold.defaultUnitString}(${lap.defaultUnitString}).")
+    }
+  }
+
+  private def measureWrite[T](f: AlmFuture[T]): AlmFuture[T] = {
+    val start = Deadline.now
+    f.onComplete { res ⇒
+      val lap = start.lap
+      if (lap > writeWarningThreshold)
+        logWarning(s"Write operationen took longer than ${writeWarningThreshold.defaultUnitString}(${lap.defaultUnitString}).")
+    }
+  }
+
   private def storeBinarySnapshot(snapshot: PersistableBinaryVivusSnapshotState): AlmFuture[AggregateRootId] = {
     val collection = db(collectionName)
     retryFuture(storageRetryPolicy)(
-      collection.update(BSONDocument("_id" -> snapshot.aggId.value), snapshot: PersistableSnapshotState, writeConcern = GetLastError(), upsert = true, multi = false).toAlmFuture.mapV(res ⇒
+      collection.update(BSONDocument("_id" -> snapshot.aggId.value), snapshot: PersistableSnapshotState, writeConcern = getLastError, upsert = true, multi = false).toAlmFuture.mapV(res ⇒
         if (res.ok) {
           scalaz.Success(snapshot.aggId)
         } else {
-          scalaz.Failure(PersistenceProblem(s"""Failed to upsert snapshot for ${snapshot.aggId.value} with version ${snapshot.version.value}: ${res.message}"""))
+          val prob = PersistenceProblem(s"""Failed to upsert snapshot for ${snapshot.aggId.value} with version ${snapshot.version.value}: ${res.message}""")
+          reportMajorFailure(prob)
+          scalaz.Failure(prob)
         }))
   }
 
   private def markSnapshotMortuus(snapshot: PersistableMortuusSnapshotState): AlmFuture[AggregateRootId] = {
     val collection = db(collectionName)
     retryFuture(storageRetryPolicy)(
-      collection.update(BSONDocument("_id" -> snapshot.aggId.value), snapshot: PersistableSnapshotState, writeConcern = GetLastError(), upsert = true, multi = false).toAlmFuture.mapV(res ⇒
+      collection.update(BSONDocument("_id" -> snapshot.aggId.value), snapshot: PersistableSnapshotState, writeConcern = getLastError, upsert = true, multi = false).toAlmFuture.mapV(res ⇒
         if (res.ok) {
           scalaz.Success(snapshot.aggId)
         } else {
-          scalaz.Failure(PersistenceProblem(s"""Failed to mark snapshot for ${snapshot.aggId.value} with version ${snapshot.version.value} as mortuus: ${res.message}"""))
+          val prob = PersistenceProblem(s"""Failed to mark snapshot for ${snapshot.aggId.value} with version ${snapshot.version.value} as mortuus: ${res.message}""")
+          reportMajorFailure(prob)
+          scalaz.Failure(prob)
         }))
   }
 
   private def deleteSnapshot(id: AggregateRootId): AlmFuture[AggregateRootId] = {
     val collection = db(collectionName)
     retryFuture(storageRetryPolicy)(
-      collection.remove(BSONDocument("_id" -> id.value), writeConcern = GetLastError(), firstMatchOnly = true).toAlmFuture.mapV(res ⇒
+      collection.remove(BSONDocument("_id" -> id.value), writeConcern = getLastError, firstMatchOnly = true).toAlmFuture.mapV(res ⇒
         if (res.ok) {
           scalaz.Success(id)
         } else {
-          scalaz.Failure(PersistenceProblem(s"""Failed to delete snapshot for ${id.value}: ${res.message}"""))
+          val prob = PersistenceProblem(s"""Failed to delete snapshot for ${id.value}: ${res.message}""")
+          reportMajorFailure(prob)
+          scalaz.Failure(prob)
         }))
   }
 
@@ -196,16 +309,27 @@ private[snapshots] class BinarySnapshotRepositoryActor(
         docs ← collection.find(BSONDocument("_id" -> id.value)).cursor[PersistableSnapshotState].collect[List](2, true).toAlmFuture
         snapshotFromStorage ← AlmFuture {
           docs match {
-            case Nil                        ⇒ scalaz.Success(None)
-            case (x: PersistableSnapshotState) :: Nil ⇒ scalaz.Success(Some(x))
-            case x                          ⇒ scalaz.Failure(PersistenceProblem(s"""Expected 0..1 snapshots of type PersistableSnapshotState with id "${id.value}". Found ${x.size}."""))
+            case Nil ⇒
+              scalaz.Success(None)
+            case (x: PersistableSnapshotState) :: Nil ⇒
+              scalaz.Success(Some(x))
+            case x ⇒
+              val prob = PersistenceProblem(s"""Expected 0..1 snapshots of type PersistableSnapshotState with id "${id.value}". Found ${x.size}.""")
+              reportMajorFailure(prob)
+              scalaz.Failure(prob)
           }
         }
         rsp ← snapshotFromStorage match {
-          case Some(PersistableBinaryVivusSnapshotState(_, _, bin)) ⇒ AlmFuture(marshaller.unmarshal(bin).map(SnapshotRepository.FoundSnapshot(_)))(marshallingContext)
-          case Some(PersistableBsonVivusSnapshotState(_, _, _))     ⇒ AlmFuture.successful(SnapshotRepository.FindSnapshotFailed(id, UnspecifiedProblem("This storage does not support a BSON representation of an aggregate root.")))
-          case Some(PersistableMortuusSnapshotState(id, _))         ⇒ AlmFuture.successful(SnapshotRepository.AggregateRootWasDeleted(id))
-          case None                                       ⇒ AlmFuture.successful(SnapshotRepository.SnapshotNotFound(id))
+          case Some(PersistableBinaryVivusSnapshotState(_, _, bin)) ⇒
+            AlmFuture(marshaller.unmarshal(bin).map(SnapshotRepository.FoundSnapshot(_)))(marshallingContext)
+          case Some(PersistableBsonVivusSnapshotState(_, _, _)) ⇒
+            val prob = UnspecifiedProblem("This storage does not support a BSON representation of an aggregate root.")
+            reportMajorFailure(prob)
+            AlmFuture.successful(SnapshotRepository.FindSnapshotFailed(id, prob))
+          case Some(PersistableMortuusSnapshotState(id, _)) ⇒
+            AlmFuture.successful(SnapshotRepository.AggregateRootWasDeleted(id))
+          case None ⇒
+            AlmFuture.successful(SnapshotRepository.SnapshotNotFound(id))
         }
 
       } yield rsp))
