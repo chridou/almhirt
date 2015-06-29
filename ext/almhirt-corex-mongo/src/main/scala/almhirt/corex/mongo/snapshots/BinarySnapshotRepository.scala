@@ -137,12 +137,12 @@ private[snapshots] class BinarySnapshotRepositoryActor(
     case SnapshotRepository.StoreSnapshot(ar) ⇒
       val f = for {
         arBytes ← AlmFuture(marshaller.marshal(ar))(marshallingContext)
-        storedAggId ← circuitBreaker.fused(storeBinarySnapshot(StoredBinaryVivusSnapshot(ar.id, ar.version, arBytes)))
+        storedAggId ← circuitBreaker.fused(storeBinarySnapshot(PersistableBinaryVivusSnapshotState(ar.id, ar.version, arBytes)))
       } yield SnapshotRepository.SnapshotStored(storedAggId)
       f.recoverThenPipeTo(fail ⇒ SnapshotRepository.StoreSnapshotFailed(ar.id, fail))(sender())
 
     case SnapshotRepository.MarkAggregateRootMortuus(id, version) ⇒
-      val f = circuitBreaker.fused(markSnapshotMortuus(StoredMortuusSnapshot(id, version))).map(SnapshotRepository.AggregateRootMarkedMortuus(_))
+      val f = circuitBreaker.fused(markSnapshotMortuus(PersistableMortuusSnapshotState(id, version))).map(SnapshotRepository.AggregateRootMarkedMortuus(_))
       f.recoverThenPipeTo(fail ⇒ SnapshotRepository.MarkAggregateRootMortuusFailed(id, fail))(sender())
 
     case SnapshotRepository.DeleteSnapshot(id) ⇒
@@ -156,10 +156,10 @@ private[snapshots] class BinarySnapshotRepositoryActor(
 
   override def receive: Receive = Actor.emptyBehavior
 
-  private def storeBinarySnapshot(snapshot: StoredBinaryVivusSnapshot): AlmFuture[AggregateRootId] = {
+  private def storeBinarySnapshot(snapshot: PersistableBinaryVivusSnapshotState): AlmFuture[AggregateRootId] = {
     val collection = db(collectionName)
     retryFuture(storageRetryPolicy)(
-      collection.update(BSONDocument("_id" -> snapshot.aggId.value), snapshot: StoredSnapshot, writeConcern = GetLastError(), upsert = true, multi = false).toAlmFuture.mapV(res ⇒
+      collection.update(BSONDocument("_id" -> snapshot.aggId.value), snapshot: PersistableSnapshotState, writeConcern = GetLastError(), upsert = true, multi = false).toAlmFuture.mapV(res ⇒
         if (res.ok) {
           scalaz.Success(snapshot.aggId)
         } else {
@@ -167,10 +167,10 @@ private[snapshots] class BinarySnapshotRepositoryActor(
         }))
   }
 
-  private def markSnapshotMortuus(snapshot: StoredMortuusSnapshot): AlmFuture[AggregateRootId] = {
+  private def markSnapshotMortuus(snapshot: PersistableMortuusSnapshotState): AlmFuture[AggregateRootId] = {
     val collection = db(collectionName)
     retryFuture(storageRetryPolicy)(
-      collection.update(BSONDocument("_id" -> snapshot.aggId.value), snapshot: StoredSnapshot, writeConcern = GetLastError(), upsert = true, multi = false).toAlmFuture.mapV(res ⇒
+      collection.update(BSONDocument("_id" -> snapshot.aggId.value), snapshot: PersistableSnapshotState, writeConcern = GetLastError(), upsert = true, multi = false).toAlmFuture.mapV(res ⇒
         if (res.ok) {
           scalaz.Success(snapshot.aggId)
         } else {
@@ -193,18 +193,18 @@ private[snapshots] class BinarySnapshotRepositoryActor(
     val collection = db(collectionName)
     retryFuture(storageRetryPolicy)(
       (for {
-        docs ← collection.find(BSONDocument("_id" -> id.value)).cursor[StoredSnapshot].collect[List](2, true).toAlmFuture
+        docs ← collection.find(BSONDocument("_id" -> id.value)).cursor[PersistableSnapshotState].collect[List](2, true).toAlmFuture
         snapshotFromStorage ← AlmFuture {
           docs match {
             case Nil                        ⇒ scalaz.Success(None)
-            case (x: StoredSnapshot) :: Nil ⇒ scalaz.Success(Some(x))
-            case x                          ⇒ scalaz.Failure(PersistenceProblem(s"""Expected 0..1 snapshots of type StoredSnapshot with id "${id.value}". Found ${x.size}."""))
+            case (x: PersistableSnapshotState) :: Nil ⇒ scalaz.Success(Some(x))
+            case x                          ⇒ scalaz.Failure(PersistenceProblem(s"""Expected 0..1 snapshots of type PersistableSnapshotState with id "${id.value}". Found ${x.size}."""))
           }
         }
         rsp ← snapshotFromStorage match {
-          case Some(StoredBinaryVivusSnapshot(_, _, bin)) ⇒ AlmFuture(marshaller.unmarshal(bin).map(SnapshotRepository.FoundSnapshot(_)))(marshallingContext)
-          case Some(StoredBsonVivusSnapshot(_, _, _))     ⇒ AlmFuture.successful(SnapshotRepository.FindSnapshotFailed(id, UnspecifiedProblem("This storage does not support a BSON representation of an aggregate root.")))
-          case Some(StoredMortuusSnapshot(id, _))         ⇒ AlmFuture.successful(SnapshotRepository.AggregateRootWasDeleted(id))
+          case Some(PersistableBinaryVivusSnapshotState(_, _, bin)) ⇒ AlmFuture(marshaller.unmarshal(bin).map(SnapshotRepository.FoundSnapshot(_)))(marshallingContext)
+          case Some(PersistableBsonVivusSnapshotState(_, _, _))     ⇒ AlmFuture.successful(SnapshotRepository.FindSnapshotFailed(id, UnspecifiedProblem("This storage does not support a BSON representation of an aggregate root.")))
+          case Some(PersistableMortuusSnapshotState(id, _))         ⇒ AlmFuture.successful(SnapshotRepository.AggregateRootWasDeleted(id))
           case None                                       ⇒ AlmFuture.successful(SnapshotRepository.SnapshotNotFound(id))
         }
 
