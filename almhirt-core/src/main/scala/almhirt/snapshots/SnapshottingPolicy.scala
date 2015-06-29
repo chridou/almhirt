@@ -4,7 +4,7 @@ import scalaz.Validation.FlatMap._
 import almhirt.common._
 import almhirt.aggregates._
 
-trait SnapshottingStrategy extends Function2[AggregateRootLifecycle[_ <: AggregateRoot], SnapshotState, Option[SnapshotRepository.SnapshottingAction]] {
+trait SnapshottingPolicy extends Function2[AggregateRootLifecycle[_ <: AggregateRoot], SnapshotState, Option[SnapshotRepository.SnapshottingAction]] {
   final def apply(newState: AggregateRootLifecycle[_ <: AggregateRoot], lastSnapshotState: SnapshotState): Option[SnapshotRepository.SnapshottingAction] =
     requiredActionFor(newState, lastSnapshotState)
 
@@ -14,8 +14,8 @@ trait SnapshottingStrategy extends Function2[AggregateRootLifecycle[_ <: Aggrega
     requiredActionFor(newState, SnapshotState.snapshotStatefromLifecycle(oldState))
 }
 
-object SnapshottingStrategy {
-  def apply(atLeastEveryN: Int, startAt: AggregateRootVersion): SnapshottingStrategy = {
+object SnapshottingPolicy {
+  def apply(atLeastEveryN: Int, startAt: AggregateRootVersion): SnapshottingPolicy = {
     val AggregateRootVersion(v) = startAt
     if (atLeastEveryN <= 0) {
       NeverSnapshoot
@@ -34,12 +34,12 @@ object SnapshottingStrategy {
     }
   }
 
-  object NeverSnapshoot extends SnapshottingStrategy {
+  object NeverSnapshoot extends SnapshottingPolicy {
     def requiredActionFor(newState: AggregateRootLifecycle[_ <: AggregateRoot], lastSnapshotState: SnapshotState): Option[SnapshotRepository.SnapshottingAction] =
       None
   }
 
-  object AlwaysSnapshoot extends SnapshottingStrategy {
+  object AlwaysSnapshoot extends SnapshottingPolicy {
     def requiredActionFor(newState: AggregateRootLifecycle[_ <: AggregateRoot], lastSnapshotState: SnapshotState): Option[SnapshotRepository.SnapshottingAction] =
       (lastSnapshotState, newState) match {
         case (SnapshotState.SnapshotVacat, Vivus(ar)) ⇒
@@ -55,8 +55,8 @@ object SnapshottingStrategy {
       }
   }
 
-  def snapshootAlwaysStartAt(startAt: AggregateRootVersion): SnapshottingStrategy =
-    new SnapshottingStrategy {
+  def snapshootAlwaysStartAt(startAt: AggregateRootVersion): SnapshottingPolicy =
+    new SnapshottingPolicy {
       def requiredActionFor(newState: AggregateRootLifecycle[_ <: AggregateRoot], lastSnapshotState: SnapshotState): Option[SnapshotRepository.SnapshottingAction] =
         (lastSnapshotState, newState) match {
           case (SnapshotState.SnapshotVacat, Vivus(ar)) ⇒
@@ -76,8 +76,8 @@ object SnapshottingStrategy {
         }
     }
 
-  def snapshootAtLeastEveryN(n: Int): SnapshottingStrategy =
-    new SnapshottingStrategy {
+  def snapshootAtLeastEveryN(n: Int): SnapshottingPolicy =
+    new SnapshottingPolicy {
       def requiredActionFor(newState: AggregateRootLifecycle[_ <: AggregateRoot], lastSnapshotState: SnapshotState): Option[SnapshotRepository.SnapshottingAction] =
         (lastSnapshotState, newState) match {
           case (SnapshotState.SnapshotVacat, Vivus(ar)) ⇒
@@ -97,8 +97,8 @@ object SnapshottingStrategy {
         }
     }
 
-  def snapshootAtLeastEveryNStartAtVersion(n: Int, startAt: AggregateRootVersion): SnapshottingStrategy =
-    new SnapshottingStrategy {
+  def snapshootAtLeastEveryNStartAtVersion(n: Int, startAt: AggregateRootVersion): SnapshottingPolicy =
+    new SnapshottingPolicy {
       def requiredActionFor(newState: AggregateRootLifecycle[_ <: AggregateRoot], lastSnapshotState: SnapshotState): Option[SnapshotRepository.SnapshottingAction] =
         (lastSnapshotState, newState) match {
           case (SnapshotState.SnapshotVacat, Vivus(ar)) ⇒
@@ -120,18 +120,18 @@ object SnapshottingStrategy {
 
   import almhirt.configuration._
   import com.typesafe.config.Config
-  implicit object SnapshottingStrategyConfigExtractor extends ConfigExtractor[SnapshottingStrategy] {
-    def getValue(config: Config, path: String): AlmValidation[SnapshottingStrategy] =
+  implicit object SnapshottingPolicyConfigExtractor extends ConfigExtractor[SnapshottingPolicy] {
+    def getValue(config: Config, path: String): AlmValidation[SnapshottingPolicy] =
       for {
         section ← config.v[Config](path)
         storeEvery ← section.magicDefault[Int]("never", 0)("every")
         startAt ← section.magicOption[Long]("start-at")
       } yield {
         val sa = AggregateRootVersion(startAt getOrElse 0L)
-        SnapshottingStrategy(storeEvery, sa)
+        SnapshottingPolicy(storeEvery, sa)
       }
 
-    def tryGetValue(config: Config, path: String): AlmValidation[Option[SnapshottingStrategy]] =
+    def tryGetValue(config: Config, path: String): AlmValidation[Option[SnapshottingPolicy]] =
       config.opt[Config](path).flatMap {
         case Some(_) ⇒ getValue(config, path).map(Some(_))
         case None    ⇒ scalaz.Success(None)
