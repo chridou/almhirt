@@ -174,12 +174,13 @@ class AggregateRootNexusTests(_system: ActorSystem)
     val eventlogActor: ActorRef = system.actorOf(eventlogProps, s"eventlog-$testId")
 
     implicit val almhirtContext = AlmhirtContext.TestContext.noComponentsDefaultGlobalDispatcher(s"almhirt-context-$testId", AggregateRootNexusTests.this.ccuad, 5.seconds.dilated).awaitResultOrEscalate(5.seconds.dilated)
-    def droneProps(ars: ActorRef, ss: Option[ActorRef]): Props = Props(
+    def droneProps(ars: ActorRef, ss: Option[SnapshottingForDrone]): Props = Props(
       new AggregateRootDrone[User, UserEvent] with ActorLogging with UserEventHandler with UserCommandHandler with UserUpdater with AggregateRootDroneCommandHandlerAdaptor[User, UserCommand, UserEvent] {
         def ccuad = AggregateRootNexusTests.this.ccuad
+        val arClass = scala.reflect.ClassTag[User](classOf[User])
+        val snapshotting = ss
         def futuresContext: ExecutionContext = executionContext
         def aggregateEventLog: ActorRef = ars
-        def snapshotStorage: Option[ActorRef] = ss
         val eventsBroker: StreamBroker[Event] = almhirtContext.eventBroker
         val notifyHiveAboutUndispatchedEventsAfter: Option[FiniteDuration] = None
         val notifyHiveAboutUnstoredEventsAfterPerEvent: Option[FiniteDuration] = None
@@ -196,7 +197,7 @@ class AggregateRootNexusTests(_system: ActorSystem)
       import scalaz._, Scalaz._
       def propsForCommand(command: AggregateRootCommand, ars: ActorRef, ss: Option[ActorRef]): AlmValidation[Props] = {
         command match {
-          case c: UserCommand ⇒ droneProps(ars, ss).success
+          case c: UserCommand ⇒ droneProps(ars, None).success
           case x              ⇒ NoSuchElementProblem(s"I don't have props for command $x").failure
         }
       }

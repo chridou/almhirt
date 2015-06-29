@@ -179,9 +179,10 @@ class AggregateRootHiveTests(_system: ActorSystem)
     def droneProps(ars: ActorRef, ss: Option[ActorRef]): Props = Props(
       new AggregateRootDrone[User, UserEvent] with ActorLogging with UserEventHandler with UserCommandHandler with UserUpdater with AggregateRootDroneCommandHandlerAdaptor[User, UserCommand, UserEvent] {
         def ccuad = AggregateRootHiveTests.this.ccuad
+        val arClass = scala.reflect.ClassTag[User](classOf[User])
+        val snapshotting = None
         def futuresContext: ExecutionContext = executionContext
         def aggregateEventLog: ActorRef = ars
-        def snapshotStorage: Option[ActorRef] = ss
         val eventsBroker: StreamBroker[Event] = almhirtContext.eventBroker
         val notifyHiveAboutUndispatchedEventsAfter: Option[FiniteDuration] = None
         val notifyHiveAboutUnstoredEventsAfterPerEvent: Option[FiniteDuration] = None

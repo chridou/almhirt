@@ -6,14 +6,18 @@ import scala.concurrent.ExecutionContext
 import scalaz.Validation.FlatMap._
 import akka.actor._
 import almhirt.common._
+import almhirt.snapshots._
 import almhirt.aggregates._
 import almhirt.tracking._
 import almhirt.problem.{ CauseIsThrowable, CauseIsProblem, HasAThrowable }
+import almhirt.almvalidation.kit._
 import almhirt.context.AlmhirtContext
 import almhirt.streaming._
 import play.api.libs.iteratee.{ Enumerator, Iteratee }
 import scala.util.Success
 import almhirt.domain.AggregateRootHiveInternals._
+
+final case class SnapshottingForDrone(storage: ActorRef, policy: SnapshottingPolicy)
 
 /** Used to commit or reject the events resulting from a command */
 trait ConfirmationContext[E <: AggregateRootEvent] {
@@ -71,6 +75,8 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
   me: AggregateRootEventHandler[T, E] ⇒
   import almhirt.eventlog.AggregateRootEventLog._
 
+  implicit protected def arClass: scala.reflect.ClassTag[T]
+
   type TPayload = Any
 
   //*************
@@ -79,7 +85,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
 
   def futuresContext: ExecutionContext
   def aggregateEventLog: ActorRef
-  def snapshotStorage: Option[ActorRef]
+  def snapshotting: Option[SnapshottingForDrone]
   def eventsBroker: StreamBroker[Event]
   def returnToUnitializedAfter: Option[FiniteDuration]
   def notifyHiveAboutUndispatchedEventsAfter: Option[FiniteDuration]
@@ -207,12 +213,13 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
       capturedId match {
         case Some(id) ⇒
           if (firstCommand.aggId == id) {
-            snapshotStorage match {
+            snapshotting match {
               case None ⇒
-                context.become(receiveRebuildFromScratch(firstCommand))
+                context.become(receiveRebuildFrom(firstCommand, Vacat))
                 aggregateEventLog ! GetAggregateRootEventsFor(firstCommand.aggId, FromStart, ToEnd, skip.none takeAll)
-              case Some(snaphots) ⇒
-                ???
+              case Some(SnapshottingForDrone(snapshotstorage, _)) ⇒
+                context.become(receiveRebuildFromSnapshot(firstCommand))
+                snapshotstorage ! SnapshotRepository.FindSnapshot(firstCommand.aggId)
             }
           } else {
             sendMessage(CommandNotExecuted(
@@ -239,12 +246,13 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
 
   private def receiveWaitForContract(currentCommand: AggregateRootCommand): Receive = {
     case ReadyForDeliveries(_) ⇒
-      snapshotStorage match {
+      snapshotting match {
         case None ⇒
-          context.become(receiveRebuildFromScratch(currentCommand))
+          context.become(receiveRebuildFrom(currentCommand, Vacat))
           aggregateEventLog ! GetAggregateRootEventsFor(currentCommand.aggId, FromStart, ToEnd, skip.none takeAll)
-        case Some(snaphots) ⇒
-          ???
+        case Some(SnapshottingForDrone(snapshotstorage, _)) ⇒
+          context.become(receiveRebuildFromSnapshot(currentCommand))
+          snapshotstorage ! SnapshotRepository.FindSnapshot(currentCommand.aggId)
       }
     case unexpectedCommand: AggregateRootCommand ⇒
       sendMessage(Busy(unexpectedCommand))
@@ -287,9 +295,9 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
       ()
   }
 
-  private def receiveRebuildFromScratch(currentCommand: AggregateRootCommand): Receive = {
+  private def receiveRebuildFrom(currentCommand: AggregateRootCommand, state: AggregateRootLifecycle[T]): Receive = {
     case FetchedAggregateRootEvents(eventsEnumerator) ⇒
-      val iteratee: Iteratee[AggregateRootEvent, AggregateRootLifecycle[T]] = Iteratee.fold[AggregateRootEvent, AggregateRootLifecycle[T]](Vacat) {
+      val iteratee: Iteratee[AggregateRootEvent, AggregateRootLifecycle[T]] = Iteratee.fold[AggregateRootEvent, AggregateRootLifecycle[T]](state) {
         case (acc, event) ⇒
           applyEventLifecycleAgnostic(acc, event.asInstanceOf[E])
       }(futuresContext)
@@ -315,7 +323,32 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
   }
 
   private def receiveRebuildFromSnapshot(currentCommand: AggregateRootCommand): Receive = {
-    case _ ⇒ ???
+    case SnapshotRepository.FoundSnapshot(untypedAr) ⇒
+      untypedAr.castTo[T].fold(
+        fail ⇒ {
+          logWarning(s"Failed to cast snapshot for ${untypedAr.id.value}. Rebuild all from log.")
+          context.become(receiveRebuildFrom(currentCommand, Vacat))
+          aggregateEventLog ! GetAggregateRootEventsFor(currentCommand.aggId, FromStart, ToEnd, skip.none takeAll)
+
+        },
+        ar ⇒ {
+          context.become(receiveRebuildFrom(currentCommand, Vivus(ar)))
+          aggregateEventLog ! GetAggregateRootEventsFor(ar.id, FromVersion(ar.version), ToEnd, skip.none takeAll)
+
+        })
+
+    case SnapshotRepository.SnapshotNotFound(id) ⇒
+      logDebug(s"Snapshot for ${id.value} not found. Rebuild all from log.")
+      context.become(receiveRebuildFrom(currentCommand, Vacat))
+      aggregateEventLog ! GetAggregateRootEventsFor(currentCommand.aggId, FromStart, ToEnd, skip.none takeAll)
+
+    case SnapshotRepository.AggregateRootWasDeleted(id) ⇒
+      ???
+
+    case SnapshotRepository.FindSnapshotFailed(id, prob) ⇒
+      logWarning(s"Failed to load snapshot for ${id.value}. Rebuild all from log.", Some(prob))
+      context.become(receiveRebuildFrom(currentCommand, Vacat))
+      aggregateEventLog ! GetAggregateRootEventsFor(currentCommand.aggId, FromStart, ToEnd, skip.none takeAll)
   }
 
   private def receiveEvaluateRebuildResult(currentCommand: AggregateRootCommand): Receive = {

@@ -162,9 +162,10 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
     val droneProps: Props = Props(
       new AggregateRootDrone[User, UserEvent] with ActorLogging with UserEventHandler with UserCommandHandler with UserUpdater with AggregateRootDroneCommandHandlerAdaptor[User, UserCommand, UserEvent] {
         def ccuad = AggregateRootDroneProtocolTests.this.ccuad
+        val arClass = scala.reflect.ClassTag[User](classOf[User])
+        val snapshotting = None
         def futuresContext: ExecutionContext = executionContext
         def aggregateEventLog: ActorRef = eventlogActor
-        def snapshotStorage: Option[ActorRef] = None
         val notifyHiveAboutUndispatchedEventsAfter: Option[FiniteDuration] = None
         val notifyHiveAboutUnstoredEventsAfterPerEvent: Option[FiniteDuration] = None
         def retryEventLogActionDelay: Option[FiniteDuration] = None
