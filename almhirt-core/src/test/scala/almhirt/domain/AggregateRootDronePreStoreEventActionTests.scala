@@ -165,7 +165,7 @@ class AggregateRootDronePreStoreEventActionTests(_system: ActorSystem)
 
     val droneProps: Props = Props(
       new AggregateRootDrone[User, UserEvent] with ActorLogging with UserEventHandler with UserCommandHandler with UserUpdater with AggregateRootDroneCommandHandlerAdaptor[User, UserCommand, UserEvent] {
-        val arClass = scala.reflect.ClassTag[User](classOf[User])
+        val arTag = scala.reflect.ClassTag[User](classOf[User])
         val snapshotting = None
         def ccuad = AggregateRootDronePreStoreEventActionTests.this.ccuad
         def futuresContext: ExecutionContext = executionContext

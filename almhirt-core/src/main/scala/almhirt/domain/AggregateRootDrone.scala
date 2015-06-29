@@ -17,7 +17,10 @@ import play.api.libs.iteratee.{ Enumerator, Iteratee }
 import scala.util.Success
 import almhirt.domain.AggregateRootHiveInternals._
 
-final case class SnapshottingForDrone(storage: ActorRef, policy: SnapshottingPolicy)
+final case class SnapshottingForDrone(storage: ActorRef, policy: SnapshottingPolicy) {
+  def requiredActionFor(newState: AggregateRootLifecycle[_ <: AggregateRoot], lastSnapshotState: SnapshotState): Option[SnapshotRepository.SnapshottingAction] =
+    policy.requiredActionFor(newState, lastSnapshotState)
+}
 
 /** Used to commit or reject the events resulting from a command */
 trait ConfirmationContext[E <: AggregateRootEvent] {
@@ -75,7 +78,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
   me: AggregateRootEventHandler[T, E] ⇒
   import almhirt.eventlog.AggregateRootEventLog._
 
-  implicit protected def arClass: scala.reflect.ClassTag[T]
+  implicit protected def arTag: scala.reflect.ClassTag[T]
 
   type TPayload = Any
 
@@ -342,13 +345,21 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
       context.become(receiveRebuildFrom(currentCommand, Vacat))
       aggregateEventLog ! GetAggregateRootEventsFor(currentCommand.aggId, FromStart, ToEnd, skip.none takeAll)
 
-    case SnapshotRepository.AggregateRootWasDeleted(id) ⇒
-      ???
+    case SnapshotRepository.AggregateRootWasDeleted(id, version) ⇒
+      context.become(receiveEvaluateRebuildResult(currentCommand))
+      self ! InternalArBuildResult(Mortuus(id, version))
 
     case SnapshotRepository.FindSnapshotFailed(id, prob) ⇒
       logWarning(s"Failed to load snapshot for ${id.value}. Rebuild all from log.", Some(prob))
       context.become(receiveRebuildFrom(currentCommand, Vacat))
       aggregateEventLog ! GetAggregateRootEventsFor(currentCommand.aggId, FromStart, ToEnd, skip.none takeAll)
+
+    case EventsShouldHaveBeenDispatchedByNow(_) | EventsShouldHaveBeenStoredByNow(_) ⇒
+      //Do nothing..
+      ()
+
+    case unexpectedCommand: AggregateRootCommand ⇒
+      sendMessage(Busy(unexpectedCommand))
   }
 
   private def receiveEvaluateRebuildResult(currentCommand: AggregateRootCommand): Receive = {

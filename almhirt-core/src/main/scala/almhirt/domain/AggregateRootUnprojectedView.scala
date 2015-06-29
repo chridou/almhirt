@@ -73,6 +73,7 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
   def rebuildTimeout: Option[FiniteDuration]
   def rebuildRetryDelay: Option[FiniteDuration]
   implicit def eventTag: ClassTag[E]
+  implicit def arTag: ClassTag[T]
 
   def confirmAggregateRootEventHandled()
 

@@ -326,8 +326,8 @@ private[snapshots] class BinarySnapshotRepositoryActor(
             val prob = UnspecifiedProblem("This storage does not support a BSON representation of an aggregate root.")
             reportMajorFailure(prob)
             AlmFuture.successful(SnapshotRepository.FindSnapshotFailed(id, prob))
-          case Some(PersistableMortuusSnapshotState(id, _)) ⇒
-            AlmFuture.successful(SnapshotRepository.AggregateRootWasDeleted(id))
+          case Some(PersistableMortuusSnapshotState(id, version)) ⇒
+            AlmFuture.successful(SnapshotRepository.AggregateRootWasDeleted(id, version))
           case None ⇒
             AlmFuture.successful(SnapshotRepository.SnapshotNotFound(id))
         }
