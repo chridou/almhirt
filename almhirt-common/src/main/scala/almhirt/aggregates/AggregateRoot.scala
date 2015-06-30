@@ -21,3 +21,11 @@ trait AggregateRoot {
   def version: AggregateRootVersion
 }
 
+object AggregateRoot {
+  def apply(id: AggregateRootId, version: AggregateRootVersion): AggregateRoot = AggregateRootRawImpl(id, version)
+
+  private case class AggregateRootRawImpl(id: AggregateRootId, version: AggregateRootVersion) extends AggregateRoot
+  
+  def fromUntyped(id: String, version: Long): AggregateRoot = AggregateRoot(AggregateRootId(id), AggregateRootVersion(version))
+}
+

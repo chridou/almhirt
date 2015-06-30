@@ -8,7 +8,6 @@ import akka.stream.scaladsl._
 import almhirt.common._
 import akka.testkit._
 import org.scalatest._
-import akka.stream.FlowMaterializer
 
 class UnboundedSinkTests(_system: ActorSystem) extends TestKit(_system) with FunSuiteLike with Matchers with BeforeAndAfterAll {
   def this() = this(ActorSystem("UnboundedSinkTests", almhirt.TestConfigs.logInfoConfig))
@@ -16,7 +15,7 @@ class UnboundedSinkTests(_system: ActorSystem) extends TestKit(_system) with Fun
   implicit val executionContext = system.dispatchers.defaultGlobalDispatcher
   implicit val ccuad = CanCreateUuidsAndDateTimes()
 
-  implicit val mat = akka.stream.ActorFlowMaterializer()
+  implicit def implicitFlowMaterializer = akka.stream.ActorMaterializer()(_system)
 
   private val currentTestId = new java.util.concurrent.atomic.AtomicInteger(1)
   def nextTestId = currentTestId.getAndIncrement()

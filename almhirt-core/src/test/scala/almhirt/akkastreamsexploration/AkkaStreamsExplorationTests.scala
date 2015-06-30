@@ -9,15 +9,15 @@ import org.reactivestreams.{ Subscriber, Publisher }
 
 class AkkaStreamsExplorationTests(_system: ActorSystem) extends TestKit(_system) with FunSuiteLike with Matchers with BeforeAndAfterAll {
   def this() = this(ActorSystem("AkkaStreamsExplorationTests"))
-  implicit val mat = akka.stream.ActorFlowMaterializer()
+  implicit def implicitFlowMaterializer = akka.stream.ActorMaterializer()(_system)
 
-//  test("Connect via faked flow throws IllegalArgumentException") {
-//    val faked = Flow(Sink.ignore(), Source(List(1, 2, 3, 4, 5)))
-//    val exn = intercept[java.lang.IllegalArgumentException] {
-//      val runnableFlow = Source(List(11, 22, 33, 44, 55)).via(faked).to(BlackholeSink)
-//    }
-//    assert(true)
-//  }
+  //  test("Connect via faked flow throws IllegalArgumentException") {
+  //    val faked = Flow(Sink.ignore(), Source(List(1, 2, 3, 4, 5)))
+  //    val exn = intercept[java.lang.IllegalArgumentException] {
+  //      val runnableFlow = Source(List(11, 22, 33, 44, 55)).via(faked).to(BlackholeSink)
+  //    }
+  //    assert(true)
+  //  }
 
   override def beforeAll() {
 

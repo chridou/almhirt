@@ -10,13 +10,12 @@ import almhirt.streaming._
 import akka.stream.scaladsl._
 import akka.testkit._
 import org.scalatest._
-import akka.stream.FlowMaterializer
 
 class AggregateRootDroneProtocolTests(_system: ActorSystem)
   extends TestKit(_system) with fixture.WordSpecLike with Matchers with BeforeAndAfterAll {
   def this() = this(ActorSystem("AggregateRootDroneProtocolTests", almhirt.TestConfigs.logWarningConfig))
 
-  implicit val mat = akka.stream.ActorFlowMaterializer()
+  implicit def implicitFlowMaterializer = akka.stream.ActorMaterializer()(_system)
 
   implicit val executionContext = system.dispatchers.defaultGlobalDispatcher
   implicit val ccuad = {

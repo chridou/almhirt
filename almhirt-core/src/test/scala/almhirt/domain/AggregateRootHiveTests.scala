@@ -12,13 +12,12 @@ import akka.stream.scaladsl._
 import akka.testkit._
 import org.scalatest._
 import almhirt.context.AlmhirtContext
-import akka.stream.FlowMaterializer
 
 class AggregateRootHiveTests(_system: ActorSystem)
     extends TestKit(_system) with fixture.WordSpecLike with Matchers with BeforeAndAfterAll {
   def this() = this(ActorSystem("AggregateRootHiveTests", almhirt.TestConfigs.logWarningConfig))
 
-  implicit val mat = akka.stream.ActorFlowMaterializer()
+   implicit def implicitFlowMaterializer = akka.stream.ActorMaterializer()(_system)
 
   implicit val executionContext = system.dispatchers.defaultGlobalDispatcher
   implicit val ccuad = {

@@ -7,7 +7,6 @@ import almhirt.common._
 import akka.stream.scaladsl._
 import akka.testkit._
 import org.scalatest._
-import akka.stream.FlowMaterializer
 
 class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixture.WordSpecLike with Matchers with BeforeAndAfterAll {
   def this() = this(ActorSystem("EventStreamTests", almhirt.TestConfigs.logWarningConfig))
@@ -15,7 +14,7 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
   implicit val executionContext = system.dispatchers.defaultGlobalDispatcher
   implicit val ccuad = CanCreateUuidsAndDateTimes()
 
-  implicit val mat = akka.stream.ActorFlowMaterializer()
+  implicit def implicitFlowMaterializer = akka.stream.ActorMaterializer()(_system)
 
   case class TestEvent(header: EventHeader) extends Event
   object TestEvent {
