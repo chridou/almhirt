@@ -194,7 +194,7 @@ private[almhirt] trait AggregateRootViewsSkeleton[E <: AggregateRootEvent] exten
       request(1)
 
     case ActorSubscriberMessage.OnError(ex) ⇒
-      throw new Exception(s"""I("$self.path") received an error via the stream.""", ex)
+      throw new Exception(s"""I("${self.path}") received an error via the stream.""", ex)
 
     case ActorSubscriberMessage.OnComplete ⇒
       context.stop(self)
