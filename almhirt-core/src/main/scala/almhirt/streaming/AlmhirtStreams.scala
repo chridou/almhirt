@@ -117,7 +117,8 @@ object AlmhirtStreams {
     soakEvents: Boolean,
     soakCommands: Boolean): AlmFuture[AlmhirtStreams with Stoppable] = {
     implicit val ctx = actorRefFactory.dispatcher
-    val supervisorProps = Props(new Actor with ImplicitFlowMaterializer {
+    val supervisorProps = Props(new Actor {
+      implicit def implicitFlowMaterializer = akka.stream.ActorMaterializer()(this.context)
       def receive: Receive = {
         case "get_streams" ⇒
           val streams: AlmhirtStreams with Stoppable = {

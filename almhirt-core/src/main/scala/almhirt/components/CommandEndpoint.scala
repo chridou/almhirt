@@ -44,11 +44,13 @@ object CommandEndpoint {
 }
 
 private[almhirt] class CommandEndpointImpl(
-  commandStatusTrackerToResolve: ToResolve,
-  resolveSettings: ResolveSettings,
-  maxTrackingDuration: FiniteDuration,
-  autoConnect: Boolean)(implicit override val almhirtContext: AlmhirtContext) extends ActorPublisher[Command] with AlmActor with AlmActorLogging with ActorLogging with ImplicitFlowMaterializer {
+    commandStatusTrackerToResolve: ToResolve,
+    resolveSettings: ResolveSettings,
+    maxTrackingDuration: FiniteDuration,
+    autoConnect: Boolean)(implicit override val almhirtContext: AlmhirtContext) extends ActorPublisher[Command] with AlmActor with AlmActorLogging with ActorLogging {
   import CommandStatusTracker._
+
+  implicit def implicitFlowMaterializer = akka.stream.ActorMaterializer()(this.context)
 
   private case object AutoConnect
   private case object Resolve

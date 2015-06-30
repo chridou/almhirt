@@ -12,7 +12,6 @@ import akka.stream.scaladsl._
 import akka.testkit._
 import org.scalatest._
 import almhirt.context.AlmhirtContext
-import akka.stream.FlowMaterializer
 
 class AggregateRootNexusTests(_system: ActorSystem)
     extends TestKit(_system) with fixture.WordSpecLike with Matchers with BeforeAndAfterAll {
@@ -21,7 +20,7 @@ class AggregateRootNexusTests(_system: ActorSystem)
   implicit val executionContext = system.dispatchers.defaultGlobalDispatcher
   implicit val ccuad = CanCreateUuidsAndDateTimes()
 
-  implicit val mat = akka.stream.ActorFlowMaterializer()
+  implicit def implicitFlowMaterializer = akka.stream.ActorMaterializer()(_system)
 
   val counter = new java.util.concurrent.atomic.AtomicInteger(1)
   def nextCounter = counter.getAndIncrement()

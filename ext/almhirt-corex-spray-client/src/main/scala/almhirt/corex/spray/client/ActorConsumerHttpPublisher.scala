@@ -17,12 +17,14 @@ import spray.http.Uri
 import org.reactivestreams.Publisher
 
 abstract class ActorConsumerHttpPublisher[T](
-  autoConnectTo: Option[Publisher[Event]],
-  acceptAsSuccess: Set[StatusCode],
-  contentMediaType: MediaType,
-  method: HttpMethod,
-  circuitControlSettings: CircuitControlSettings,
-  circuitStateReportingInterval: Option[FiniteDuration])(implicit serializer: HttpSerializer[T], problemDeserializer: HttpDeserializer[Problem], entityTag: ClassTag[T]) extends ActorSubscriber with ActorLogging with AlmActor with HttpExternalConnector with RequestsWithEntity with HttpExternalPublisher with ImplicitFlowMaterializer {
+    autoConnectTo: Option[Publisher[Event]],
+    acceptAsSuccess: Set[StatusCode],
+    contentMediaType: MediaType,
+    method: HttpMethod,
+    circuitControlSettings: CircuitControlSettings,
+    circuitStateReportingInterval: Option[FiniteDuration])(implicit serializer: HttpSerializer[T], problemDeserializer: HttpDeserializer[Problem], entityTag: ClassTag[T]) extends ActorSubscriber with ActorLogging with AlmActor with HttpExternalConnector with RequestsWithEntity with HttpExternalPublisher {
+
+  implicit def implicitFlowMaterializer = akka.stream.ActorMaterializer()(this.context)
 
   def createUri(entity: T): Uri
 

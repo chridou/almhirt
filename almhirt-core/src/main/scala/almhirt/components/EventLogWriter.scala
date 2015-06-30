@@ -75,9 +75,10 @@ private[almhirt] class EventLogWriterImpl(
   circuitControlSettings: CircuitControlSettings,
   circuitStateReportingInterval: Option[FiniteDuration],
   eventlogCallTimeout: FiniteDuration,
-  storeEventRetrySettings: RetryPolicyExt)(implicit override val almhirtContext: AlmhirtContext) extends ActorSubscriber with AlmActor with AlmActorLogging with ActorLogging with ImplicitFlowMaterializer {
+  storeEventRetrySettings: RetryPolicyExt)(implicit override val almhirtContext: AlmhirtContext) extends ActorSubscriber with AlmActor with AlmActorLogging with ActorLogging {
   import almhirt.eventlog.EventLog
 
+  implicit def implicitFlowMaterializer = akka.stream.ActorMaterializer()(this.context)
   implicit val executor = almhirtContext.futuresContext
 
   override val requestStrategy = ZeroRequestStrategy

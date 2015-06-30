@@ -38,7 +38,8 @@ private[almhirt] object ActorMayBeDelegatingSubscriberWithAutoSubscribe {
     Props(new ActorDelegatingSubscriberImpl(delegateTo, bufferSize, autoConnectTo))
 }
 
-private[almhirt] class ActorDelegatingSubscriberImpl[T](delegateTo: Option[ActorRef], bufferSize: Int, autoConnectTo: Option[Publisher[T]]) extends ActorSubscriber with ImplicitFlowMaterializer {
+private[almhirt] class ActorDelegatingSubscriberImpl[T](delegateTo: Option[ActorRef], bufferSize: Int, autoConnectTo: Option[Publisher[T]]) extends ActorSubscriber {
+  implicit def implicitFlowMaterializer = akka.stream.ActorMaterializer()(this.context)
 
   protected def requestStrategy: RequestStrategy = ZeroRequestStrategy
 

@@ -5,7 +5,6 @@ import scala.reflect.ClassTag
 import akka.actor._
 import almhirt.almvalidation.kit._
 import akka.stream.actor._
-import akka.stream.scaladsl.ImplicitFlowMaterializer
 import org.reactivestreams.Subscriber
 
 object StreamThrottle {

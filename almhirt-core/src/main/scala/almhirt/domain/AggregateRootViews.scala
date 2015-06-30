@@ -14,7 +14,7 @@ import almhirt.context.AlmhirtContext
 import akka.stream.actor._
 import org.reactivestreams.Publisher
 import akka.stream.scaladsl._
-import akka.stream.FlowMaterializer
+import akka.stream.Materializer
 
 object AggregateRootViews {
 
@@ -51,7 +51,7 @@ object AggregateRootViews {
 
   def subscribeTo[E <: Event](
     publisher: Publisher[Event],
-    views: ActorRef)(implicit mat: FlowMaterializer, tag: scala.reflect.ClassTag[E]) {
+    views: ActorRef)(implicit mat: Materializer, tag: scala.reflect.ClassTag[E]) {
     Source(publisher).filter(p ⇒ tag.runtimeClass.isInstance(p)).map(_.asInstanceOf[E]).to(Sink(ActorSubscriber[E](views))).run()
   }
 
@@ -64,7 +64,7 @@ object AggregateRootViews {
     name: String)(
       implicit ctx: AlmhirtContext,
       actorRefFactory: ActorRefFactory,
-      mat: FlowMaterializer,
+      mat: Materializer,
       tag: scala.reflect.ClassTag[E]): ActorRef = {
     val props = AggregateRootViews.propsRaw(getViewProps, aggregateEventLogToResolve, snapShotStorageToResolve, resolveSettings, eventBufferSize, None)
     val views = actorRefFactory.actorOf(props, name)
@@ -99,11 +99,14 @@ class AggregateRootViews[E <: AggregateRootEvent](
   override val eventBufferSize: Int,
   override val connectTo: Option[Publisher[Event]] = None)(implicit override val almhirtContext: AlmhirtContext, override val eventTag: scala.reflect.ClassTag[E]) extends AggregateRootViewsSkeleton[E]
 
-private[almhirt] trait AggregateRootViewsSkeleton[E <: AggregateRootEvent] extends AlmActor with AlmActorLogging with ActorSubscriber with ActorLogging with ImplicitFlowMaterializer {
+private[almhirt] trait AggregateRootViewsSkeleton[E <: AggregateRootEvent] extends AlmActor with AlmActorLogging with ActorSubscriber with ActorLogging  {
   import AggregateRootViewMessages._
 
   import akka.actor.OneForOneStrategy
   import akka.actor.SupervisorStrategy._
+
+  implicit def implicitFlowMaterializer = akka.stream.ActorMaterializer()(this.context)
+  
   override val supervisorStrategy =
     OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
       case exn: Exception ⇒

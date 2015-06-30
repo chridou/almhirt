@@ -41,7 +41,9 @@ object EventSinkHub {
   def path(root: RootActorPath) = almhirt.context.ContextActorPaths.misc(root) / actorname
 }
 
-private[almhirt] class EventSinksSupervisorImpl(factories: EventSinkHub.EventSinkHubMemberFactories, buffersize: Option[Int], withBlackHoleIfEmpty: Boolean)(implicit ctx: AlmhirtContext) extends ActorSubscriber with ActorLogging with ImplicitFlowMaterializer {
+private[almhirt] class EventSinksSupervisorImpl(factories: EventSinkHub.EventSinkHubMemberFactories, buffersize: Option[Int], withBlackHoleIfEmpty: Boolean)(implicit ctx: AlmhirtContext) extends ActorSubscriber with ActorLogging {
+  implicit def implicitFlowMaterializer = akka.stream.ActorMaterializer()(this.context)
+
   override val requestStrategy = ZeroRequestStrategy
   case object Start
 

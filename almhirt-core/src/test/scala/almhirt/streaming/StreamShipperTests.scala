@@ -8,7 +8,6 @@ import almhirt.common._
 import akka.testkit._
 import org.scalatest._
 import org.reactivestreams.{ Publisher }
-import akka.stream.FlowMaterializer
 
 class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fixture.WordSpecLike with Matchers with BeforeAndAfterAll {
   def this() = this(ActorSystem("StreamShipperTests", almhirt.TestConfigs.logWarningConfig))
@@ -20,7 +19,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
   val nMsgSome = 1000L
   val nMsgSomePublishers = 10L
 
-  implicit val mat = akka.stream.ActorFlowMaterializer()
+  implicit def implicitFlowMaterializer = akka.stream.ActorMaterializer()(_system)
 
   "The StreamShipper" when {
     import akka.stream.actor.ActorSubscriber

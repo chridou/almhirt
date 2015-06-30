@@ -33,9 +33,11 @@ object AggregateRootNexus {
  * Do not design your filters in a way, that multiple hives may contain the same aggregate root!
  */
 private[almhirt] class AggregateRootNexus(
-  commandsPublisher: Option[Publisher[Command]],
-  hiveSelector: HiveSelector,
-  hiveFactory: AggregateRootHiveFactory)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging with ActorSubscriber with ActorPublisher[AggregateRootCommand] with ActorLogging with ImplicitFlowMaterializer {
+    commandsPublisher: Option[Publisher[Command]],
+    hiveSelector: HiveSelector,
+    hiveFactory: AggregateRootHiveFactory)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging with ActorSubscriber with ActorPublisher[AggregateRootCommand] with ActorLogging {
+
+  implicit def implicitFlowMaterializer = akka.stream.ActorMaterializer()(this.context)
 
   import akka.actor.SupervisorStrategy._
 

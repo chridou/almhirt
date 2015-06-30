@@ -73,10 +73,11 @@ private[almhirt] class MyCommandStatusTracker(
   extends AlmActor
   with AlmActorLogging
   with ActorSubscriber
-  with ActorLogging
-  with ImplicitFlowMaterializer {
+  with ActorLogging {
   import CommandStatusTracker._
   import almhirt.storages._
+
+    implicit def implicitFlowMaterializer = akka.stream.ActorMaterializer()(this.context)
 
   if (targetCacheSize < 1) throw new Exception(s"targetCacheSize($targetCacheSize) must be grater than zero.")
   if (shrinkCacheAt < targetCacheSize) throw new Exception(s"shrinkCacheAt($targetCacheSize) must at least targetCacheSize($targetCacheSize).")
