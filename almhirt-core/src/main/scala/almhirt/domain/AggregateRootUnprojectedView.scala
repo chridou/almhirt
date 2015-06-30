@@ -158,7 +158,7 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
     case SnapshotRepository.FoundSnapshot(untypedAr) ⇒
       untypedAr.castTo[T].fold(
         fail ⇒ {
-          context.parent ! AggregateRootViewsInternals.ReportViewError(s"Failed to cast snapshot for ${untypedAr.id.value}. Rebuild all from log.", fail)
+          context.parent ! AggregateRootViewsInternals.ReportViewWarning(s"Failed to cast snapshot for ${untypedAr.id.value}. Rebuild all from log.", fail)
           updateFromEventlog(Vacat, enqueuedRequests, rebuildRetryDelay)
         },
         ar ⇒ {
@@ -175,7 +175,7 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
       context.become(receiveServe(Mortuus(id, version)))
 
     case SnapshotRepository.FindSnapshotFailed(id, prob) ⇒
-      context.parent ! AggregateRootViewsInternals.ReportViewError(s"Failed to load a snapshot. Rebuild all from log.", prob)
+      context.parent ! AggregateRootViewsInternals.ReportViewWarning(s"Failed to load a snapshot. Rebuild all from log.", prob)
       updateFromEventlog(Vacat, enqueuedRequests, rebuildRetryDelay)
 
     case ApplyAggregateRootEvent(event) ⇒
