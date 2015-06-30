@@ -30,7 +30,7 @@ object AggregateRootUnprojectedView {
     maker: (Option[FiniteDuration], Option[FiniteDuration], Option[FiniteDuration]) ⇒ Props,
     viewConfigName: Option[String] = None)(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
     import almhirt.configuration._
-    val path = "almhirt.components.views.unprojected-view" + viewConfigName.map("." + _).getOrElse("")
+    val path = "almhirt.components.views.aggregate-root-view." + viewConfigName.getOrElse("default-unprojected-view")
     for {
       section ← ctx.config.v[com.typesafe.config.Config](path)
       returnToUnitializedAfter ← section.magicOption[FiniteDuration]("return-to-unitialized-after")

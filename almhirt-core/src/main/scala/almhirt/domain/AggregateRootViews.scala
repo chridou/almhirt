@@ -42,7 +42,7 @@ object AggregateRootViews {
     import almhirt.almvalidation.kit._
     val aggregateEventLogToResolve = ResolvePath(ctx.localActorPaths.eventLogs / almhirt.eventlog.AggregateRootEventLog.actorname)
     val snapshotRepositoryToResolve = ResolvePath(ctx.localActorPaths.misc / almhirt.snapshots.SnapshotRepository.actorname)
-    val path = "almhirt.components.views.aggregate-root-views" + viewsConfigName.map("." + _).getOrElse("")
+    val path = "almhirt.components.views.aggregate-root-views." + viewsConfigName.getOrElse("default-views")
     for {
       section ← ctx.config.v[com.typesafe.config.Config](path)
       snapShotStorageToResolve ← section.v[Boolean]("use-snapshots").map {
