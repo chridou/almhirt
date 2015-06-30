@@ -53,7 +53,7 @@ abstract class AggregateRootUnprojectedView[T <: AggregateRoot, E <: AggregateRo
     override val onDispatchFailure: (Problem, ActorRef) ⇒ Unit,
     override val returnToUnitializedAfter: Option[FiniteDuration],
     override val rebuildTimeout: Option[FiniteDuration],
-    override val rebuildRetryDelay: Option[FiniteDuration])(implicit override val futuresContext: ExecutionContext, override val eventTag: ClassTag[E]) extends Actor with AggregateRootUnprojectedViewSkeleton[T, E] { me: AggregateRootEventHandler[T, E] ⇒
+    override val rebuildRetryDelay: Option[FiniteDuration])(implicit override val futuresContext: ExecutionContext, override val eventTag: ClassTag[E], override val arTag: ClassTag[T]) extends Actor with AggregateRootUnprojectedViewSkeleton[T, E] { me: AggregateRootEventHandler[T, E] ⇒
 
   override def receive: Receive = me.receiveUninitialized
 
