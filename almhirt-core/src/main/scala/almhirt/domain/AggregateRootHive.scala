@@ -7,6 +7,7 @@ import scalaz.Validation.FlatMap._
 import akka.actor._
 import almhirt.common._
 import almhirt.aggregates.AggregateRootId
+import almhirt.snapshots._
 import almhirt.tracking._
 import almhirt.akkax._
 import almhirt.context.AlmhirtContext
@@ -20,7 +21,7 @@ object AggregateRootHive {
   def propsRaw(
     hiveDescriptor: HiveDescriptor,
     aggregateEventLogToResolve: ToResolve,
-    snapShotStorageToResolve: Option[ToResolve],
+    snapshottingToResolve: Option[(ToResolve, SnapshottingPolicyProvider)],
     resolveSettings: ResolveSettings,
     commandBuffersize: Int,
     droneFactory: AggregateRootDroneFactory,
@@ -29,7 +30,7 @@ object AggregateRootHive {
     Props(new AggregateRootHive(
       hiveDescriptor,
       aggregateEventLogToResolve,
-      snapShotStorageToResolve,
+      snapshottingToResolve,
       resolveSettings,
       commandBuffersize,
       droneFactory,
@@ -43,18 +44,22 @@ object AggregateRootHive {
     import almhirt.configuration._
     import almhirt.almvalidation.kit._
     val aggregateEventLogToResolve = ResolvePath(ctx.localActorPaths.eventLogs / almhirt.eventlog.AggregateRootEventLog.actorname)
+    val snapshotRepositoryToResolve = ResolvePath(ctx.localActorPaths.misc / almhirt.snapshots.SnapshotRepository.actorname)
     val path = "almhirt.components.aggregates.aggregate-root-hive" + hiveConfigName.map("." + _).getOrElse("")
     for {
       section ← ctx.config.v[com.typesafe.config.Config](path)
-      snapShotStoragePath ← section.magicOption[String]("snapshot-storage-path")
-      snapShotStorageToResolve ← inTryCatch { snapShotStoragePath.map(path ⇒ ResolvePath(ActorPath.fromString(path))) }
+      snapshottingToResolve ← section.magicOption[com.typesafe.config.Config]("snapshot-policy").flatMap {
+        case None ⇒ scalaz.Success(None)
+        case Some(cfg) ⇒
+          SnapshottingPolicyProvider.snapshootAllByConfig(cfg).map(provider ⇒ Some((snapshotRepositoryToResolve, provider)))
+      }
       resolveSettings ← section.v[ResolveSettings]("resolve-settings")
       commandBuffersize ← section.v[Int]("command-buffer-size")
       enqueuedEventsThrottlingThreshold ← section.v[Int]("enqueued-events-throttling-threshold")
     } yield propsRaw(
       hiveDescriptor,
       aggregateEventLogToResolve,
-      snapShotStorageToResolve,
+      snapshottingToResolve,
       resolveSettings,
       commandBuffersize,
       droneFactory,
@@ -112,13 +117,13 @@ private[almhirt] object AggregateRootHiveInternals {
 private[almhirt] class AggregateRootHive(
   override val hiveDescriptor: HiveDescriptor,
   override val aggregateEventLogToResolve: ToResolve,
-  override val snapShotStorageToResolve: Option[ToResolve],
+  override val snapshottingToResolve: Option[(ToResolve, SnapshottingPolicyProvider)],
   override val resolveSettings: ResolveSettings,
   override val commandBuffersize: Int,
   override val droneFactory: AggregateRootDroneFactory,
   override val eventsBroker: StreamBroker[Event],
   override val enqueuedEventsThrottlingThreshold: Int)(implicit override val almhirtContext: AlmhirtContext)
-  extends AlmActor with AlmActorLogging with ActorContractor[Event] with ActorLogging with ActorSubscriber with AggregateRootHiveSkeleton {
+    extends AlmActor with AlmActorLogging with ActorContractor[Event] with ActorLogging with ActorSubscriber with AggregateRootHiveSkeleton {
 
   override val requestStrategy = ZeroRequestStrategy
 
@@ -160,7 +165,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
     }
 
   def aggregateEventLogToResolve: ToResolve
-  def snapShotStorageToResolve: Option[ToResolve]
+  def snapshottingToResolve: Option[(ToResolve, SnapshottingPolicyProvider)]
   def resolveSettings: ResolveSettings
 
   def hiveDescriptor: HiveDescriptor
@@ -188,14 +193,14 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
     case Resolve ⇒
       val actorsToResolve =
         Map("aggregateeventlog" → aggregateEventLogToResolve) ++
-          snapShotStorageToResolve.map(r ⇒ Map("snapshotstorage" → r)).getOrElse(Map.empty)
+          snapshottingToResolve.map(r ⇒ Map("snapshotting" → r._1)).getOrElse(Map.empty)
       context.resolveMany(actorsToResolve, resolveSettings, None, Some("resolver"))
 
     case ActorMessages.ManyResolved(dependencies, _) ⇒
       logInfo("Found dependencies.")
       signContract(eventsBroker)
 
-      context.become(receiveInitialize(dependencies("aggregateeventlog"), dependencies.get("snapshotstorage")))
+      context.become(receiveInitialize(dependencies("aggregateeventlog"), dependencies.get("snapshotting").map((_, snapshottingToResolve.get._2))))
 
     case ActorMessages.ManyNotResolved(problem, _) ⇒
       logError(s"Failed to resolve dependencies:\n$problem")
@@ -203,11 +208,11 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
       sys.error(s"Failed to resolve dependencies.")
   }
 
-  def receiveInitialize(aggregateEventLog: ActorRef, snapshotStorage: Option[ActorRef]): Receive = {
+  def receiveInitialize(aggregateEventLog: ActorRef, snapshotting: Option[(ActorRef, SnapshottingPolicyProvider)]): Receive = {
     case ReadyForDeliveries ⇒
       requestCommands()
       context.system.scheduler.scheduleOnce(5.minutes, self, ReportJettisonedCargo)
-      context.become(receiveRunning(aggregateEventLog, snapshotStorage, Set.empty))
+      context.become(receiveRunning(aggregateEventLog, snapshotting, Set.empty))
   }
 
   private var totalSuppliesRequested = 0
@@ -267,7 +272,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
     }
   }
 
-  def receiveRunning(aggregateEventLog: ActorRef, snapshotStorage: Option[ActorRef], haveOverdueActions: Set[AggregateRootId]): Receive = {
+  def receiveRunning(aggregateEventLog: ActorRef, snapshotting: Option[(ActorRef, SnapshottingPolicyProvider)], haveOverdueActions: Set[AggregateRootId]): Receive = {
     case ActorSubscriberMessage.OnNext(aggregateCommand: AggregateRootCommand) ⇒
       numReceivedInternal += 1
       if (haveOverdueActions.isEmpty) {
@@ -275,7 +280,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
           case Some(drone) ⇒
             drone
           case None ⇒
-            droneFactory(aggregateCommand, aggregateEventLog, snapshotStorage) match {
+            droneFactory(aggregateCommand, aggregateEventLog, snapshotting) match {
               case scalaz.Success(props) ⇒
                 val droneActor = context.actorOf(props, aggregateCommand.aggId.value)
                 context watch droneActor
@@ -329,15 +334,15 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
 
     case AggregateRootHiveInternals.DispatchEventsToStreamTakesTooLong(aggId, elapsed) ⇒
       logWarning(s"Drone ${aggId.value} is overdue on dispatching events after ${elapsed.defaultUnitString}.")
-      context.become(receiveRunning(aggregateEventLog, snapshotStorage, haveOverdueActions + aggId))
+      context.become(receiveRunning(aggregateEventLog, snapshotting, haveOverdueActions + aggId))
 
     case AggregateRootHiveInternals.LogEventsTakesTooLong(aggId, elapsed) ⇒
       logWarning(s"Drone ${aggId.value} is overdue on logging events after ${elapsed.defaultUnitString}.")
-      context.become(receiveRunning(aggregateEventLog, snapshotStorage, haveOverdueActions + aggId))
+      context.become(receiveRunning(aggregateEventLog, snapshotting, haveOverdueActions + aggId))
 
     case m: AggregateRootHiveInternals.SomethingOverdueGotDone ⇒
       logInfo(s"Drone ${m.aggId.value} got it's stuff done.")
-      context.become(receiveRunning(aggregateEventLog, snapshotStorage, haveOverdueActions - m.aggId))
+      context.become(receiveRunning(aggregateEventLog, snapshotting, haveOverdueActions - m.aggId))
 
     case OnDeliverSuppliesNow(amount) ⇒
       deliverEvents(amount)
@@ -362,7 +367,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
 
     case ReportDroneWarning(msg, causeOpt) ⇒
       logWarning(s"Drone ${sender().path.name} reported a warning: $msg")
-      causeOpt.foreach(cause => reportMinorFailure(cause.mapProblem { _.withArg("hive", hiveDescriptor.value) }))
+      causeOpt.foreach(cause ⇒ reportMinorFailure(cause.mapProblem { _.withArg("hive", hiveDescriptor.value) }))
 
     case AggregateRootHiveInternals.CargoJettisoned(id) ⇒
       this.numJettisonedSinceLastReport += 1

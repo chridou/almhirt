@@ -194,10 +194,16 @@ class AggregateRootNexusTests(_system: ActorSystem)
 
     val droneFactory = new AggregateRootDroneFactory {
       import scalaz._, Scalaz._
-      def propsForCommand(command: AggregateRootCommand, ars: ActorRef, ss: Option[ActorRef]): AlmValidation[Props] = {
+      def propsForCommand(command: AggregateRootCommand, ars: ActorRef, snapshotting: Option[(ActorRef, almhirt.snapshots.SnapshottingPolicyProvider)]): AlmValidation[Props] = {
         command match {
-          case c: UserCommand ⇒ droneProps(ars, None).success
-          case x              ⇒ NoSuchElementProblem(s"I don't have props for command $x").failure
+          case c: UserCommand ⇒
+            snapshotting match {
+              case None                   ⇒ droneProps(ars, None).success
+              case Some((repo, provider)) ⇒ provider.apply("user").map(policy ⇒ droneProps(ars, Some(SnapshottingForDrone(repo, policy))))
+            }
+
+          case x ⇒
+            NoSuchElementProblem(s"I don't have props for command $x").failure
         }
       }
     }

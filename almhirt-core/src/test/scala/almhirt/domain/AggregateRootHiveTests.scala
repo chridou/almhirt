@@ -175,11 +175,11 @@ class AggregateRootHiveTests(_system: ActorSystem)
 
     implicit val almhirtContext = AlmhirtContext.TestContext.noComponentsDefaultGlobalDispatcher(s"almhirt-context-$testId", AggregateRootHiveTests.this.ccuad, 5.seconds.dilated).awaitResultOrEscalate(5.seconds.dilated)
 
-    def droneProps(ars: ActorRef, ss: Option[ActorRef]): Props = Props(
+    def droneProps(ars: ActorRef, ss: Option[SnapshottingForDrone]): Props = Props(
       new AggregateRootDrone[User, UserEvent] with ActorLogging with UserEventHandler with UserCommandHandler with UserUpdater with AggregateRootDroneCommandHandlerAdaptor[User, UserCommand, UserEvent] {
         def ccuad = AggregateRootHiveTests.this.ccuad
         val arTag = scala.reflect.ClassTag[User](classOf[User])
-        val snapshotting = None
+        val snapshotting = ss
         def futuresContext: ExecutionContext = executionContext
         def aggregateEventLog: ActorRef = ars
         val eventsBroker: StreamBroker[Event] = almhirtContext.eventBroker
@@ -196,10 +196,16 @@ class AggregateRootHiveTests(_system: ActorSystem)
 
     val droneFactory = new AggregateRootDroneFactory {
       import scalaz._, Scalaz._
-      def propsForCommand(command: AggregateRootCommand, ars: ActorRef, ss: Option[ActorRef]): AlmValidation[Props] = {
+      def propsForCommand(command: AggregateRootCommand, ars: ActorRef, snapshotting: Option[(ActorRef, almhirt.snapshots.SnapshottingPolicyProvider)]): AlmValidation[Props] = {
         command match {
-          case c: UserCommand ⇒ droneProps(ars, ss).success
-          case x              ⇒ NoSuchElementProblem(s"I don't have props for command $x").failure
+          case c: UserCommand ⇒ 
+            snapshotting match {
+            case None => droneProps(ars, None).success
+            case Some((repo, provider)) => provider.apply("user").map(policy => droneProps(ars, Some(SnapshottingForDrone(repo, policy))))
+          }
+            
+          case x              ⇒
+            NoSuchElementProblem(s"I don't have props for command $x").failure
         }
       }
     }
