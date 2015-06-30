@@ -11,6 +11,7 @@ import almhirt.aggregates._
 import almhirt.almvalidation.kit._
 import almhirt.context.AlmhirtContext
 import play.api.libs.iteratee.{ Enumerator, Iteratee }
+import almhirt.snapshots.SnapshotRepository
 
 object AggregateRootViewMessages {
   final case class ApplyAggregateRootEvent(event: AggregateRootEvent)
@@ -45,14 +46,14 @@ private[almhirt] object AggregateRootViewInternal {
 
 /** View an unprojected aggregate root that is updated vial the aggregate event log or aggregate events as they come in */
 abstract class AggregateRootUnprojectedView[T <: AggregateRoot, E <: AggregateRootEvent](
-  override val aggregateRootId: AggregateRootId,
-  override val aggregateEventLog: ActorRef,
-  override val snapshotStorage: Option[ActorRef],
-  override val onDispatchSuccess: (AggregateRootLifecycle[T], ActorRef) ⇒ Unit,
-  override val onDispatchFailure: (Problem, ActorRef) ⇒ Unit,
-  override val returnToUnitializedAfter: Option[FiniteDuration],
-  override val rebuildTimeout: Option[FiniteDuration],
-  override val rebuildRetryDelay: Option[FiniteDuration])(implicit override val futuresContext: ExecutionContext, override val eventTag: ClassTag[E]) extends Actor with AggregateRootUnprojectedViewSkeleton[T, E] { me: AggregateRootEventHandler[T, E] ⇒
+    override val aggregateRootId: AggregateRootId,
+    override val aggregateEventLog: ActorRef,
+    override val snapshotStorage: Option[ActorRef],
+    override val onDispatchSuccess: (AggregateRootLifecycle[T], ActorRef) ⇒ Unit,
+    override val onDispatchFailure: (Problem, ActorRef) ⇒ Unit,
+    override val returnToUnitializedAfter: Option[FiniteDuration],
+    override val rebuildTimeout: Option[FiniteDuration],
+    override val rebuildRetryDelay: Option[FiniteDuration])(implicit override val futuresContext: ExecutionContext, override val eventTag: ClassTag[E]) extends Actor with AggregateRootUnprojectedViewSkeleton[T, E] { me: AggregateRootEventHandler[T, E] ⇒
 
   override def receive: Receive = me.receiveUninitialized
 
@@ -101,7 +102,8 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
         case None ⇒
           updateFromEventlog(Vacat, Vector(sender()), delay = None)
         case Some(snaphots) ⇒
-          ???
+          context.become(receiveRebuildFromSnapshot(Vector(sender())))
+          snaphots ! SnapshotRepository.FindSnapshot(aggregateRootId)
       }
     case ApplyAggregateRootEvent(event) ⇒
       confirmAggregateRootEventHandled()
@@ -109,7 +111,8 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
         case None ⇒
           updateFromEventlog(Vacat, Vector.empty, delay = None)
         case Some(snaphots) ⇒
-          ???
+          context.become(receiveRebuildFromSnapshot(Vector.empty))
+          snaphots ! SnapshotRepository.FindSnapshot(aggregateRootId)
       }
   }
 
@@ -133,7 +136,7 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
       problem match {
         case ServiceNotReadyProblem(p) ⇒
           val newProb = ServiceNotReadyProblem("Not yet ready to answer questions..", cause = Some(p))
-          context.parent ! AggregateRootViewsInternals.ReportViewError("An error occured", newProb)
+          context.parent ! AggregateRootViewsInternals.ReportViewError("An error occured rebuilding the aggregate root.", newProb)
           enqueuedRequests.foreach(receiver ⇒ onDispatchFailure(newProb, receiver))
           updateFromEventlog(currentState, Vector.empty, rebuildRetryDelay)
         case _ ⇒
@@ -152,7 +155,36 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
   }
 
   private def receiveRebuildFromSnapshot(enqueuedRequests: Vector[ActorRef]): Receive = {
-    case _ ⇒ ()
+    case SnapshotRepository.FoundSnapshot(untypedAr) ⇒
+      untypedAr.castTo[T].fold(
+        fail ⇒ {
+          context.parent ! AggregateRootViewsInternals.ReportViewError(s"Failed to cast snapshot for ${untypedAr.id.value}. Rebuild all from log.", fail)
+          updateFromEventlog(Vacat, enqueuedRequests, rebuildRetryDelay)
+        },
+        ar ⇒ {
+          context.parent ! AggregateRootViewsInternals.ReportViewDebug(s"Rebuild from snapshot with version ${ar.version.value}.")
+          updateFromEventlog(Vivus(ar), enqueuedRequests, rebuildRetryDelay)
+        })
+
+    case SnapshotRepository.SnapshotNotFound(id) ⇒
+      context.parent ! AggregateRootViewsInternals.ReportViewDebug(s"Snapshot not found.")
+      updateFromEventlog(Vacat, enqueuedRequests, rebuildRetryDelay)
+
+    case SnapshotRepository.AggregateRootWasDeleted(id, version) ⇒
+      enqueuedRequests.foreach(receiver ⇒ onDispatchFailure(AggregateRootDeletedProblem(id), receiver))
+      context.become(receiveServe(Mortuus(id, version)))
+
+    case SnapshotRepository.FindSnapshotFailed(id, prob) ⇒
+      context.parent ! AggregateRootViewsInternals.ReportViewError(s"Failed to load a snapshot. Rebuild all from log.", prob)
+      updateFromEventlog(Vacat, enqueuedRequests, rebuildRetryDelay)
+
+    case ApplyAggregateRootEvent(event) ⇒
+      // Do nothing. The event must exist in the event log.
+      ()
+
+    case GetAggregateRootProjection ⇒
+      context.become(receiveRebuildFromSnapshot(enqueuedRequests :+ sender()))
+
   }
 
   private def receiveEvaluateEventlogRebuildResult(enqueuedRequests: Vector[ActorRef], enqueuedEvents: Vector[E]): Receive = {
