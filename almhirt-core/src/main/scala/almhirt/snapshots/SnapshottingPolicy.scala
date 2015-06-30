@@ -11,7 +11,7 @@ trait SnapshottingPolicy extends Function2[AggregateRootLifecycle[_ <: Aggregate
   def requiredActionFor(newState: AggregateRootLifecycle[_ <: AggregateRoot], lastSnapshotState: SnapshotState): Option[SnapshotRepository.SnapshottingAction]
 
   final def requiredActionForAggregateRoot[T <: AggregateRoot](newState: AggregateRootLifecycle[T], oldState: AggregateRootLifecycle[T]): Option[SnapshotRepository.SnapshottingAction] =
-    requiredActionFor(newState, SnapshotState.snapshotStatefromLifecycle(oldState))
+    requiredActionFor(newState, SnapshotState.snapshotStateFromLifecycle(oldState))
 }
 
 object SnapshottingPolicy {

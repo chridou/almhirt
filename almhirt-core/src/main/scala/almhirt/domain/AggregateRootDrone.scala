@@ -205,11 +205,15 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
   private case class EventsShouldHaveBeenDispatchedByNow(correlationId: CorrelationId)
   private case class EventsShouldHaveBeenStoredByNow(correlationId: CorrelationId)
 
+  private case object StoreSnapshot
+
   private var cancelWaitingForDispatchedEventsNotification: Option[Cancellable] = None
   private var cancelWaitingForLoggedEventsNotification: Option[Cancellable] = None
 
   // My aggregate root id. If Some(id) already received a command and have probalby been initialized...
   private var capturedId: Option[AggregateRootId] = None
+
+  private var lastSnapshotState: SnapshotState = SnapshotState.SnapshotVacat
 
   private def receiveUninitialized: Receive = {
     case firstCommand: AggregateRootCommand ⇒
@@ -332,12 +336,12 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
           logWarning(s"Failed to cast snapshot for ${untypedAr.id.value}. Rebuild all from log.")
           context.become(receiveRebuildFrom(currentCommand, Vacat))
           aggregateEventLog ! GetAggregateRootEventsFor(currentCommand.aggId, FromStart, ToEnd, skip.none takeAll)
-
         },
         ar ⇒ {
           context.become(receiveRebuildFrom(currentCommand, Vivus(ar)))
-          aggregateEventLog ! GetAggregateRootEventsFor(ar.id, FromVersion(ar.version), ToEnd, skip.none takeAll)
+          this.lastSnapshotState = SnapshotState.snapshotStateFromLivingAr(ar)
 
+          aggregateEventLog ! GetAggregateRootEventsFor(ar.id, FromVersion(ar.version), ToEnd, skip.none takeAll)
         })
 
     case SnapshotRepository.SnapshotNotFound(id) ⇒
@@ -346,8 +350,10 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
       aggregateEventLog ! GetAggregateRootEventsFor(currentCommand.aggId, FromStart, ToEnd, skip.none takeAll)
 
     case SnapshotRepository.AggregateRootWasDeleted(id, version) ⇒
-      context.become(receiveEvaluateRebuildResult(currentCommand))
-      self ! InternalArBuildResult(Mortuus(id, version))
+      this.lastSnapshotState = SnapshotState.SnapshotMortuus(version)
+      val rsp = CommandNotExecuted(currentCommand, AggregateRootDeletedProblem(id))
+      sendMessage(rsp)
+      context.become(receiveMortuus(Mortuus(id, version)))
 
     case SnapshotRepository.FindSnapshotFailed(id, prob) ⇒
       logWarning(s"Failed to load snapshot for ${id.value}. Rebuild all from log.", Some(prob))
@@ -615,7 +621,8 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
       }
       cancelWaitingForDispatchedEventsNotification.foreach { _.cancel() }
       cancelWaitingForDispatchedEventsNotification = None
-      handleCommandExecutedWithCleanup(persisted, currentCommand)
+      context.become(receiveStoreSnapshot(currentCommand, persisted))
+      self ! StoreSnapshot
 
     case DeliveryResult(DeliveryJobFailed(problem, _), payload) ⇒
       cancelWaitingForDispatchedEventsNotification.foreach { _.cancel() }
@@ -633,13 +640,44 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
       ()
 
     case unexpectedCommand: AggregateRootCommand ⇒
-      sendMessage(CommandNotExecuted(unexpectedCommand, UnspecifiedProblem(s"Command ${currentCommand.header} is currently executed.")))
-      context.become(receiveWaitingForEventsDispatched(currentCommand, persisted, committedEvents, startedDispatching, correlationId))
+      sendMessage(Busy(unexpectedCommand))
+  }
+
+  def receiveStoreSnapshot(currentCommand: AggregateRootCommand, persisted: Postnatalis[T]): Receive = {
+    case StoreSnapshot ⇒
+      this.snapshotting match {
+        case None ⇒
+          handleCommandExecutedWithCleanup(persisted, currentCommand)
+        case Some(SnapshottingForDrone(snapshotRepo, policy)) ⇒
+          policy.requiredActionFor(persisted, lastSnapshotState) match {
+            case None ⇒
+              handleCommandExecutedWithCleanup(persisted, currentCommand)
+            case Some(action) ⇒
+              snapshotRepo ! action
+          }
+      }
+
+    case rsp: SnapshotRepository.SuccessfulSnapshottingAction ⇒
+      logDebug(s"Stored snapshot for version ${persisted.version}.")
+      this.lastSnapshotState = SnapshotState.snapshotStateFromLifecycle(persisted)
+      handleCommandExecutedWithCleanup(persisted, currentCommand)
+
+    case rsp: SnapshotRepository.FailedSnapshottingAction ⇒
+      logWarning(s"Failed to store a snapshot for version ${persisted.version}.", Some(rsp.problem))
+      handleCommandExecutedWithCleanup(persisted, currentCommand)
+
+    case EventsShouldHaveBeenDispatchedByNow(_) | EventsShouldHaveBeenStoredByNow(_) ⇒
+      //Do nothing..
+      ()
+
+    case unexpectedCommand: AggregateRootCommand ⇒
+      sendMessage(Busy(unexpectedCommand))
   }
 
   private def receiveMortuus(state: Mortuus): Receive = {
     case commandNotToExecute: AggregateRootCommand ⇒
-      handleCommandFailedAfterCleanup(state, commandNotToExecute, AggregateRootDeletedProblem(commandNotToExecute.aggId))
+      val rsp = CommandNotExecuted(commandNotToExecute, AggregateRootDeletedProblem(state.id))
+      sendMessage(rsp)
 
     case EventsShouldHaveBeenDispatchedByNow(_) | EventsShouldHaveBeenStoredByNow(_) ⇒
       //Do nothing..
