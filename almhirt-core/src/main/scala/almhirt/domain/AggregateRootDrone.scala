@@ -340,7 +340,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
         ar ⇒ {
           context.become(receiveRebuildFrom(currentCommand, Vivus(ar)))
           this.lastSnapshotState = SnapshotState.snapshotStateFromLivingAr(ar)
-
+          logDebug(s"Rebuild from snapshot with version ${ar.version.value}.")
           aggregateEventLog ! GetAggregateRootEventsFor(ar.id, FromVersion(ar.version), ToEnd, skip.none takeAll)
         })
 
