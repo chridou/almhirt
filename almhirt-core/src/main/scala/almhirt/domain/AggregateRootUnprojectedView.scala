@@ -171,6 +171,7 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
       updateFromEventlog(Vacat, enqueuedRequests, rebuildRetryDelay)
 
     case SnapshotRepository.AggregateRootWasDeleted(id, version) ⇒
+      context.parent ! AggregateRootViewsInternals.ReportViewDebug(s"Found snapshot for ${id.value} with version ${version.value}.")
       enqueuedRequests.foreach(receiver ⇒ onDispatchFailure(AggregateRootDeletedProblem(id), receiver))
       context.become(receiveServe(Mortuus(id, version)))
 
