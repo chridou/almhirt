@@ -187,7 +187,7 @@ private[snapshots] class BinarySnapshotRepositoryActor(
             logInfo(s"""Collection "$collectionName" already exists.""")
             AlmFuture.successful(())
           } else {
-            AlmFuture.failed(UnspecifiedProblem(s"""Collection "$collectionName" does not exists."""))
+            AlmFuture.failed(UnspecifiedProblem(s"""Collection "$collectionName" does not exist."""))
           }
         } yield creationRes
       }.onComplete(
@@ -337,11 +337,11 @@ private[snapshots] class BinarySnapshotRepositoryActor(
 
   override def preStart() {
     if (readOnly) {
-      logInfo("Starting(r/w)...")
-      context.become(receiveInitializeReadWrite)
-    } else {
       logInfo("Starting(ro)...")
       context.become(receiveInitializeReadOnly)
+    } else {
+      logInfo("Starting(r/w)...")
+      context.become(receiveInitializeReadWrite)
     }
     self ! Initialize
   }
