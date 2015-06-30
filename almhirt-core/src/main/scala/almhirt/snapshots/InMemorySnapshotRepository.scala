@@ -7,12 +7,12 @@ import almhirt.context.AlmhirtContext
 import almhirt.akkax._
 
 object InMemorySnapshotRepository {
-  def propsRaw(readonly: Boolean)(implicit almhirtContext: AlmhirtContext): Props = Props(new InMemorySnapshotRepositoryActor(readonly))
+  def propsRaw(readonly: Boolean): Props = Props(new InMemorySnapshotRepositoryActor(readonly))
 
-  def componentFactory(readonly: Boolean)(implicit almhirtContext: AlmhirtContext): ComponentFactory = ComponentFactory(propsRaw(readonly), SnapshotRepository.actorname)
+  def componentFactory(readonly: Boolean): ComponentFactory = ComponentFactory(propsRaw(readonly), SnapshotRepository.actorname)
 }
 
-private[snapshots] class InMemorySnapshotRepositoryActor(readOnly: Boolean)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging {
+private[snapshots] class InMemorySnapshotRepositoryActor(readOnly: Boolean) extends Actor {
   import almhirt.snapshots.SnapshotRepository
 
   private sealed trait AggState
@@ -53,18 +53,9 @@ private[snapshots] class InMemorySnapshotRepositoryActor(readOnly: Boolean)(impl
         case Some(AggStateAlive(ar)) ⇒
           sender() ! SnapshotRepository.FoundSnapshot(ar)
         case Some(AggStateDead(id, version)) ⇒
-          sender ! SnapshotRepository.AggregateRootWasDeleted(id, version)
+          sender() ! SnapshotRepository.AggregateRootWasDeleted(id, version)
       }
   }
 
   override def receive: Receive = receiveRunning
-
-  override def preStart() {
-    if (readOnly) {
-      logInfo("Starting(r/w)...")
-    } else {
-      logInfo("Starting(ro)...")
-    }
-  }
-
 }

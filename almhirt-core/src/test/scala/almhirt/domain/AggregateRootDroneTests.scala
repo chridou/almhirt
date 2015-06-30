@@ -487,6 +487,14 @@ class AggregateRootDroneTests(_system: ActorSystem)
         override val aggregateCommandValidator = AggregateRootCommandValidator.Validated
         override val tag = scala.reflect.ClassTag[UserCommand](classOf[UserCommand])
 
+        override def logDebug(msg: ⇒ String): Unit = {}
+
+        override def logWarning(msg: ⇒ String, cause: Option[almhirt.problem.ProblemCause]): Unit = {}
+
+        override def logWarning(msg: ⇒ String): Unit = {}
+
+        override def logError(msg: ⇒ String, cause: almhirt.problem.ProblemCause): Unit = {}
+
         override def sendMessage(msg: AggregateRootHiveInternals.AggregateDroneMessage) {
           testProbe.ref ! msg
         }

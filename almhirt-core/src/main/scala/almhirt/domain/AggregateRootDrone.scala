@@ -658,12 +658,12 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
       }
 
     case rsp: SnapshotRepository.SuccessfulSnapshottingAction ⇒
-      logDebug(s"Stored snapshot for version ${persisted.version}.")
+      logDebug(s"Stored snapshot for version ${persisted.version.value}.")
       this.lastSnapshotState = SnapshotState.snapshotStateFromLifecycle(persisted)
       handleCommandExecutedWithCleanup(persisted, currentCommand)
 
     case rsp: SnapshotRepository.FailedSnapshottingAction ⇒
-      logWarning(s"Failed to store a snapshot for version ${persisted.version}.", Some(rsp.problem))
+      logWarning(s"Failed to store a snapshot for version ${persisted.version.value}.", Some(rsp.problem))
       handleCommandExecutedWithCleanup(persisted, currentCommand)
 
     case EventsShouldHaveBeenDispatchedByNow(_) | EventsShouldHaveBeenStoredByNow(_) ⇒
