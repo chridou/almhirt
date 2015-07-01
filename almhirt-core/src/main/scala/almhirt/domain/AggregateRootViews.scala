@@ -17,48 +17,42 @@ import akka.stream.scaladsl._
 import akka.stream.Materializer
 
 object AggregateRootViews {
-  type ConfigureRawFun[E <: AggregateRootEvent] = ((AggregateRootId, ActorRef, Option[ActorRef]) ⇒ Props, ToResolve, Option[ToResolve], ResolveSettings, Int, Option[Publisher[Event]]) ⇒ (ClassTag[E], AlmhirtContext) ⇒ Props
-
-  def propsRaw[E <: AggregateRootEvent](
-    getViewProps: (AggregateRootId, ActorRef, Option[ActorRef]) ⇒ Props,
+  type ViewConstructor = (AggregateRootId, ActorRef, Option[ActorRef]) ⇒ AlmhirtContext ⇒ Props
+  
+  def propsRaw[E <: AggregateRootEvent: ClassTag](
+    viewConstructor: ViewConstructor,
     aggregateEventLogToResolve: ToResolve,
     snapShotStorageToResolve: Option[ToResolve],
     resolveSettings: ResolveSettings,
     eventBufferSize: Int,
-    connectTo: Option[Publisher[Event]])(tag: ClassTag[E], ctx: AlmhirtContext): Props =
-    Props(new AggregateRootViews[E](getViewProps, aggregateEventLogToResolve, snapShotStorageToResolve, resolveSettings, eventBufferSize, connectTo)(tag, ctx))
+    connectTo: Option[Publisher[Event]])(implicit ctx: AlmhirtContext): Props =
+    Props(new AggregateRootViews[E](viewConstructor, aggregateEventLogToResolve, snapShotStorageToResolve, resolveSettings, eventBufferSize, connectTo))
 
-  def props[E <: AggregateRootEvent](
-    getViewProps: (AggregateRootId, ActorRef, Option[ActorRef]) ⇒ Props,
-    viewsConfigName: Option[String] = None)(implicit tag: ClassTag[E], ctx: AlmhirtContext): AlmValidation[Props] = {
-    configureWith[E](propsRaw: ConfigureRawFun[E], getViewProps, viewsConfigName)
-  }
-
-  def configureWith[E <: AggregateRootEvent](
-    f: ConfigureRawFun[E],
-    getViewProps: (AggregateRootId, ActorRef, Option[ActorRef]) ⇒ Props,
-    viewsConfigName: Option[String] = None)(implicit tag: ClassTag[E], ctx: AlmhirtContext): AlmValidation[Props] = {
+  def props[E <: AggregateRootEvent: ClassTag](
+    viewConstructorFromConf: com.typesafe.config.Config ⇒ AlmValidation[ViewConstructor],
+    viewsConfigName: Option[String] = None)(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
     import almhirt.configuration._
     import almhirt.almvalidation.kit._
     val aggregateEventLogToResolve = ResolvePath(ctx.localActorPaths.eventLogs / almhirt.eventlog.AggregateRootEventLog.actorname)
     val snapshotRepositoryToResolve = ResolvePath(ctx.localActorPaths.misc / almhirt.snapshots.SnapshotRepository.actorname)
-    val path = "almhirt.components.views.aggregate-root-views." + viewsConfigName.getOrElse("default-views")
+    val path = "almhirt.components.views." + viewsConfigName.getOrElse("default-views")
     for {
       section ← ctx.config.v[com.typesafe.config.Config](path)
+      viewSection ← section.v[com.typesafe.config.Config]("view")
+      viewConstructor ← viewConstructorFromConf(viewSection)
       snapShotStorageToResolve ← section.v[Boolean]("use-snapshots").map {
         case true  ⇒ Some(snapshotRepositoryToResolve)
         case false ⇒ None
       }
       resolveSettings ← section.v[ResolveSettings]("resolve-settings")
       eventBufferSize ← section.v[Int]("event-buffer-size")
-    } yield f(
-      getViewProps,
+    } yield propsRaw(
+      viewConstructor,
       aggregateEventLogToResolve,
       snapShotStorageToResolve,
       resolveSettings,
       eventBufferSize,
-      Some(ctx.eventStream))(tag, ctx)
-
+      Some(ctx.eventStream))
   }
 
   def subscribeTo[E <: Event](
@@ -87,12 +81,12 @@ private[almhirt] object AggregateRootViewsInternals {
  *  The Actor is an ActorSubscriber that requests [[AggregateRootEvents]].
  */
 class AggregateRootViews[E <: AggregateRootEvent](
-  override val getViewProps: (AggregateRootId, ActorRef, Option[ActorRef]) ⇒ Props,
+  override val viewConstructor: AggregateRootViews.ViewConstructor,
   override val aggregateEventLogToResolve: ToResolve,
   override val snapShotStorageToResolve: Option[ToResolve],
   override val resolveSettings: ResolveSettings,
   override val eventBufferSize: Int,
-  override val connectTo: Option[Publisher[Event]] = None)(implicit  override val eventTag: scala.reflect.ClassTag[E], override val almhirtContext: AlmhirtContext) extends AggregateRootViewsSkeleton[E]
+  override val connectTo: Option[Publisher[Event]] = None)(implicit override val eventTag: scala.reflect.ClassTag[E], override val almhirtContext: AlmhirtContext) extends AggregateRootViewsSkeleton[E]
 
 private[almhirt] trait AggregateRootViewsSkeleton[E <: AggregateRootEvent] extends AlmActor with AlmActorLogging with ActorSubscriber with ActorLogging {
   import AggregateRootViewMessages._
@@ -109,7 +103,7 @@ private[almhirt] trait AggregateRootViewsSkeleton[E <: AggregateRootEvent] exten
         Restart
     }
 
-  def getViewProps: (AggregateRootId, ActorRef, Option[ActorRef]) ⇒ Props
+  def viewConstructor: AggregateRootViews.ViewConstructor
 
   def aggregateEventLogToResolve: ToResolve
   def snapShotStorageToResolve: Option[ToResolve]
@@ -158,7 +152,7 @@ private[almhirt] trait AggregateRootViewsSkeleton[E <: AggregateRootEvent] exten
         case Some(v) ⇒
           v
         case None ⇒
-          val props = getViewProps(id, aggregateEventLog, snapshotStorage)
+          val props = viewConstructor(id, aggregateEventLog, snapshotStorage)(this.almhirtContext)
           val actor = context.actorOf(props, id.value)
           //context watch actor
           actor

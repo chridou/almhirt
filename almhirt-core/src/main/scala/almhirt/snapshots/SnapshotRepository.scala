@@ -6,8 +6,9 @@ import almhirt.aggregates._
 object SnapshotRepository {
   sealed trait SnapshottingAction
 
-  sealed trait SuccessfulSnapshottingAction { def id: AggregateRootId }
-  sealed trait FailedSnapshottingAction { def id: AggregateRootId; def problem: Problem }
+  sealed trait SnapshottingResponse { def id: AggregateRootId }
+  sealed trait SuccessfulSnapshottingAction extends SnapshottingResponse
+  sealed trait FailedSnapshottingAction extends SnapshottingResponse { def problem: Problem }
 
   final case class StoreSnapshot(snapshoot: AggregateRoot) extends SnapshottingAction
   sealed trait StoreSnapshotResponse

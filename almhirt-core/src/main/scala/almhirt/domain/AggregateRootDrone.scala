@@ -206,6 +206,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
   private case class EventsShouldHaveBeenStoredByNow(correlationId: CorrelationId)
 
   private case object StoreSnapshot
+  private case object DispatchEvents
 
   private var cancelWaitingForDispatchedEventsNotification: Option[Cancellable] = None
   private var cancelWaitingForLoggedEventsNotification: Option[Cancellable] = None
@@ -475,28 +476,31 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
           cancelWaitingForLoggedEventsNotification.foreach { _.cancel() }
           cancelWaitingForLoggedEventsNotification = None
 
-          val cid = CorrelationId(ccuad.getUniqueString())
+          context.become(receiveStoreSnapshot(currentCommand, unpersisted, newDone))
+          self ! StoreSnapshot
 
-          notifyHiveAboutUndispatchedEventsAfter.foreach(delay ⇒
-            cancelWaitingForDispatchedEventsNotification =
-              Some(context.system.scheduler.scheduleOnce(delay, self, EventsShouldHaveBeenDispatchedByNow(cid))(context.dispatcher)))
-
-          val startOfferEvents = Deadline.now
-          hiveNotifiedForDispatch = false
-          this.offerAndThen(newDone, None) {
-            case EventsShouldHaveBeenDispatchedByNow(incomingCorrelationId) ⇒
-              if (incomingCorrelationId == correlationId) {
-                sendMessage(AggregateRootHiveInternals.DispatchEventsToStreamTakesTooLong(currentCommand.aggId, startOfferEvents.lap))
-                hiveNotifiedForDispatch = true
-              }
-
-            case EventsShouldHaveBeenStoredByNow(_) ⇒
-              // Do nothing...
-              ()
-
-            case unexpectedCommand: AggregateRootCommand ⇒
-              sendMessage(Busy(unexpectedCommand))
-          }(receiveWaitingForEventsDispatched(currentCommand, unpersisted, newDone, startOfferEvents, cid))
+//          val cid = CorrelationId(ccuad.getUniqueString())
+//
+//          notifyHiveAboutUndispatchedEventsAfter.foreach(delay ⇒
+//            cancelWaitingForDispatchedEventsNotification =
+//              Some(context.system.scheduler.scheduleOnce(delay, self, EventsShouldHaveBeenDispatchedByNow(cid))(context.dispatcher)))
+//
+//          val startOfferEvents = Deadline.now
+//          hiveNotifiedForDispatch = false
+//          this.offerAndThen(newDone, None) {
+//            case EventsShouldHaveBeenDispatchedByNow(incomingCorrelationId) ⇒
+//              if (incomingCorrelationId == correlationId) {
+//                sendMessage(AggregateRootHiveInternals.DispatchEventsToStreamTakesTooLong(currentCommand.aggId, startOfferEvents.lap))
+//                hiveNotifiedForDispatch = true
+//              }
+//
+//            case EventsShouldHaveBeenStoredByNow(_) ⇒
+//              // Do nothing...
+//              ()
+//
+//            case unexpectedCommand: AggregateRootCommand ⇒
+//              sendMessage(Busy(unexpectedCommand))
+//          }(receiveWaitingForEventsDispatched(currentCommand, unpersisted, newDone, startOfferEvents, cid))
         case next +: newRest ⇒
           executePreStoreAction(next)
           context.become(receiveCommitEvents(currentCommand, next, newRest, newDone, unpersisted, startedStoring, correlationId))
@@ -528,6 +532,75 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
 
     case unexpectedCommand: AggregateRootCommand ⇒
       sendMessage(Busy(unexpectedCommand))
+  }
+
+  def receiveStoreSnapshot(currentCommand: AggregateRootCommand, persisted: Postnatalis[T], eventsToDispatch: Seq[E]): Receive = {
+    case StoreSnapshot ⇒
+      this.snapshotting match {
+        case None ⇒
+          context.become(receiveDispatchEvents(currentCommand, persisted, eventsToDispatch))
+          self ! DispatchEvents
+        case Some(SnapshottingForDrone(snapshotRepo, policy)) ⇒
+          policy.requiredActionFor(persisted, lastSnapshotState) match {
+            case None ⇒
+              context.become(receiveDispatchEvents(currentCommand, persisted, eventsToDispatch))
+              self ! DispatchEvents
+            case Some(action) ⇒
+              snapshotRepo ! action
+          }
+      }
+
+    case rsp: SnapshotRepository.SuccessfulSnapshottingAction ⇒
+      logDebug(s"Stored snapshot for version ${persisted.version.value}.")
+      this.lastSnapshotState = SnapshotState.snapshotStateFromLifecycle(persisted)
+      context.become(receiveDispatchEvents(currentCommand, persisted, eventsToDispatch))
+      self ! DispatchEvents
+
+    case rsp: SnapshotRepository.FailedSnapshottingAction ⇒
+      logWarning(s"Failed to store a snapshot for version ${persisted.version.value}.", Some(rsp.problem))
+      context.become(receiveDispatchEvents(currentCommand, persisted, eventsToDispatch))
+      self ! DispatchEvents
+
+    case EventsShouldHaveBeenDispatchedByNow(_) | EventsShouldHaveBeenStoredByNow(_) ⇒
+      //Do nothing..
+      ()
+
+    case unexpectedCommand: AggregateRootCommand ⇒
+      sendMessage(Busy(unexpectedCommand))
+  }
+
+  def receiveDispatchEvents(currentCommand: AggregateRootCommand, persisted: Postnatalis[T], eventsToDispatch: Seq[E]): Receive = {
+    case DispatchEvents ⇒
+      val cid = CorrelationId(ccuad.getUniqueString())
+
+      notifyHiveAboutUndispatchedEventsAfter.foreach(delay ⇒
+        cancelWaitingForDispatchedEventsNotification =
+          Some(context.system.scheduler.scheduleOnce(delay, self, EventsShouldHaveBeenDispatchedByNow(cid))(context.dispatcher)))
+
+      val startOfferEvents = Deadline.now
+      hiveNotifiedForDispatch = false
+      this.offerAndThen(eventsToDispatch, None) {
+        case EventsShouldHaveBeenDispatchedByNow(incomingCorrelationId) ⇒
+          if (incomingCorrelationId == cid) {
+            sendMessage(AggregateRootHiveInternals.DispatchEventsToStreamTakesTooLong(currentCommand.aggId, startOfferEvents.lap))
+            hiveNotifiedForDispatch = true
+          }
+
+        case EventsShouldHaveBeenStoredByNow(_) ⇒
+          // Do nothing...
+          ()
+
+        case unexpectedCommand: AggregateRootCommand ⇒
+          sendMessage(Busy(unexpectedCommand))
+      }(receiveWaitingForEventsDispatched(currentCommand, persisted, eventsToDispatch, startOfferEvents, cid))
+
+    case EventsShouldHaveBeenDispatchedByNow(_) | EventsShouldHaveBeenStoredByNow(_) ⇒
+      //Do nothing..
+      ()
+
+    case unexpectedCommand: AggregateRootCommand ⇒
+      sendMessage(Busy(unexpectedCommand))
+
   }
 
   def receiveWaitForCleanUpAfterExecutedCommand(persistedState: AggregateRootLifecycle[T]): Receive = {
@@ -621,8 +694,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
       }
       cancelWaitingForDispatchedEventsNotification.foreach { _.cancel() }
       cancelWaitingForDispatchedEventsNotification = None
-      context.become(receiveStoreSnapshot(currentCommand, persisted))
-      self ! StoreSnapshot
+      handleCommandExecutedWithCleanup(persisted, currentCommand)
 
     case DeliveryResult(DeliveryJobFailed(problem, _), payload) ⇒
       cancelWaitingForDispatchedEventsNotification.foreach { _.cancel() }
@@ -637,37 +709,6 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
 
     case EventsShouldHaveBeenStoredByNow(_) ⇒
       // Do nothing....
-      ()
-
-    case unexpectedCommand: AggregateRootCommand ⇒
-      sendMessage(Busy(unexpectedCommand))
-  }
-
-  def receiveStoreSnapshot(currentCommand: AggregateRootCommand, persisted: Postnatalis[T]): Receive = {
-    case StoreSnapshot ⇒
-      this.snapshotting match {
-        case None ⇒
-          handleCommandExecutedWithCleanup(persisted, currentCommand)
-        case Some(SnapshottingForDrone(snapshotRepo, policy)) ⇒
-          policy.requiredActionFor(persisted, lastSnapshotState) match {
-            case None ⇒
-              handleCommandExecutedWithCleanup(persisted, currentCommand)
-            case Some(action) ⇒
-              snapshotRepo ! action
-          }
-      }
-
-    case rsp: SnapshotRepository.SuccessfulSnapshottingAction ⇒
-      logDebug(s"Stored snapshot for version ${persisted.version.value}.")
-      this.lastSnapshotState = SnapshotState.snapshotStateFromLifecycle(persisted)
-      handleCommandExecutedWithCleanup(persisted, currentCommand)
-
-    case rsp: SnapshotRepository.FailedSnapshottingAction ⇒
-      logWarning(s"Failed to store a snapshot for version ${persisted.version.value}.", Some(rsp.problem))
-      handleCommandExecutedWithCleanup(persisted, currentCommand)
-
-    case EventsShouldHaveBeenDispatchedByNow(_) | EventsShouldHaveBeenStoredByNow(_) ⇒
-      //Do nothing..
       ()
 
     case unexpectedCommand: AggregateRootCommand ⇒

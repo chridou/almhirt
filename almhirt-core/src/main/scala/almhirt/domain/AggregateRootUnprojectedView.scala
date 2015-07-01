@@ -22,21 +22,15 @@ object AggregateRootViewMessages {
 }
 
 object AggregateRootUnprojectedView {
-  def propsRawMaker(returnToUnitializedAfter: Option[FiniteDuration], rebuildTimeout: Option[FiniteDuration], rebuildRetryDelay: Option[FiniteDuration], maker: (Option[FiniteDuration], Option[FiniteDuration], Option[FiniteDuration]) ⇒ Props): Props = {
-    maker(returnToUnitializedAfter, rebuildTimeout, rebuildRetryDelay)
-  }
-
-  def propsMaker(
-    maker: (Option[FiniteDuration], Option[FiniteDuration], Option[FiniteDuration]) ⇒ Props,
-    viewConfigName: Option[String] = None)(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
+  def makeViewConstructorFactory(makeViewConstructor: (Option[FiniteDuration], Option[FiniteDuration], Option[FiniteDuration]) ⇒ AlmValidation[AggregateRootViews.ViewConstructor]): com.typesafe.config.Config => AlmValidation[AggregateRootViews.ViewConstructor] = {
     import almhirt.configuration._
-    val path = "almhirt.components.views.aggregate-root-view." + viewConfigName.getOrElse("default-unprojected-view")
+    (config: com.typesafe.config.Config) =>
     for {
-      section ← ctx.config.v[com.typesafe.config.Config](path)
-      returnToUnitializedAfter ← section.magicOption[FiniteDuration]("return-to-unitialized-after")
-      rebuildTimeout ← section.magicOption[FiniteDuration]("rebuild-timeout")
-      rebuildRetryDelay ← section.magicOption[FiniteDuration]("rebuild-retry-delay")
-    } yield propsRawMaker(returnToUnitializedAfter, rebuildTimeout, rebuildRetryDelay, maker)
+      returnToUnitializedAfter ← config.magicOption[FiniteDuration]("return-to-unitialized-after")
+      rebuildTimeout ← config.magicOption[FiniteDuration]("rebuild-timeout")
+      rebuildRetryDelay ← config.magicOption[FiniteDuration]("rebuild-retry-delay")
+      ctor ← makeViewConstructor(returnToUnitializedAfter, rebuildTimeout, rebuildRetryDelay)
+    } yield ctor
   }
 }
 
@@ -162,21 +156,21 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
           updateFromEventlog(Vacat, enqueuedRequests, rebuildRetryDelay)
         },
         ar ⇒ {
-          context.parent ! AggregateRootViewsInternals.ReportViewDebug(s"Rebuild from snapshot with version ${ar.version.value}.")
+          context.parent ! AggregateRootViewsInternals.ReportViewDebug(s"Rebuild ${ar.id.value} from snapshot with version ${ar.version.value}.")
           updateFromEventlog(Vivus(ar), enqueuedRequests, rebuildRetryDelay)
         })
 
     case SnapshotRepository.SnapshotNotFound(id) ⇒
-      context.parent ! AggregateRootViewsInternals.ReportViewDebug(s"Snapshot not found.")
+      context.parent ! AggregateRootViewsInternals.ReportViewDebug(s"Snapshot for ${id.value} not found.")
       updateFromEventlog(Vacat, enqueuedRequests, rebuildRetryDelay)
 
     case SnapshotRepository.AggregateRootWasDeleted(id, version) ⇒
-      context.parent ! AggregateRootViewsInternals.ReportViewDebug(s"Found snapshot for ${id.value} with version ${version.value}.")
+      context.parent ! AggregateRootViewsInternals.ReportViewDebug(s"Snapshot for ${id.value} with version ${version.value} was marked as deleted.")
       enqueuedRequests.foreach(receiver ⇒ onDispatchFailure(AggregateRootDeletedProblem(id), receiver))
       context.become(receiveServe(Mortuus(id, version)))
 
     case SnapshotRepository.FindSnapshotFailed(id, prob) ⇒
-      context.parent ! AggregateRootViewsInternals.ReportViewWarning(s"Failed to load a snapshot. Rebuild all from log.", prob)
+      context.parent ! AggregateRootViewsInternals.ReportViewWarning(s"Failed to load a snapshot for ${id.value}. Rebuild all from log.", prob)
       updateFromEventlog(Vacat, enqueuedRequests, rebuildRetryDelay)
 
     case ApplyAggregateRootEvent(event) ⇒
