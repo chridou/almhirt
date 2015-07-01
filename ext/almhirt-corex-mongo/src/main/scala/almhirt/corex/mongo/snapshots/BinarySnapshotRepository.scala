@@ -230,8 +230,8 @@ private[snapshots] class BinarySnapshotRepositoryActor(
 
     case SnapshotRepository.StoreSnapshot(ar) ⇒
       val f = measureWrite(for {
-        arBytes ← AlmFuture(marshaller.marshal(ar))(marshallingContext)
-        storedAggId ← circuitBreaker.fused(storeSnapshot(PersistableBinaryVivusSnapshotState(ar.id, ar.version, arBytes)))
+        snapshot ← marshal(ar)
+        storedAggId ← circuitBreaker.fused(storeSnapshot(snapshot))
       } yield SnapshotRepository.SnapshotStored(storedAggId))
       f.recoverThenPipeTo(fail ⇒ SnapshotRepository.StoreSnapshotFailed(ar.id, fail))(sender())
 
@@ -359,6 +359,7 @@ private[snapshots] class BinarySnapshotRepositoryActor(
       logInfo("Starting(r/w)...")
       context.become(receiveInitializeReadWrite)
     }
+    logInfo(s"Write warn after ${readWarningThreshold.defaultUnitString}\nRead warn after ${writeWarningThreshold.defaultUnitString}\nCompress: $compress")
     self ! Initialize
   }
 
