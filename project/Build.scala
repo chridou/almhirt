@@ -70,6 +70,7 @@ object Dependencies {
 	lazy val spray_httpx = "io.spray" %% "spray-httpx" % BuildSettings.sprayVersion % "provided"
 	lazy val spray_can = "io.spray" %% "spray-can" % BuildSettings.sprayVersion % "provided"
 
+  lazy val snappy = "org.xerial.snappy" % "snappy-java" % "1.1.2-RC3"
   lazy val logback = "ch.qos.logback" % "logback-classic" % "1.0.+" % "provided"
 	lazy val typesafe_config = "com.typesafe" % "config" % "1.2.+" % "provided"
 
