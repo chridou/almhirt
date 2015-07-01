@@ -205,6 +205,7 @@ trait CorexMongoBuild {
 	  libraryDependencies += akka_streams,
 	  libraryDependencies += play2_iteratees,
 	  libraryDependencies += typesafe_config,
+	  libraryDependencies += snappy,
 	  libraryDependencies += "org.reactivemongo" %% "reactivemongo" % BuildSettings.reactiveMongoVersion % "provided"
 		exclude("ch.qos.logback", "logback-core")
 		exclude("ch.qos.logback", "logback-classic"),
