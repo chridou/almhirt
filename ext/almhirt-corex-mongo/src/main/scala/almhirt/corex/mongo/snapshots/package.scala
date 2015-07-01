@@ -16,6 +16,12 @@ package object snapshots {
             "t" -> "vivus_bin",
             "v" -> version.value,
             "bin" -> BSONBinary(data, Subtype.GenericBinarySubtype))
+        case PersistableSnappyCompressedVivusSnapshotState(aggId, version, data) ⇒
+          BSONDocument(
+            "_id" -> aggId.value,
+            "t" -> "vivus_snappy",
+            "v" -> version.value,
+            "bin" -> BSONBinary(data, Subtype.GenericBinarySubtype))
         case PersistableBsonVivusSnapshotState(aggId, version, agg) ⇒
           BSONDocument(
             "_id" -> aggId.value,
@@ -37,6 +43,15 @@ package object snapshots {
             case _ ⇒ throw new Exception("BSONBinary with Subtype.GenericBinarySubtype expected at 'bin'.")
           }
           PersistableBinaryVivusSnapshotState(
+            AggregateRootId(doc.getAs[String]("_id").get),
+            AggregateRootVersion(doc.getAs[Long]("v").get),
+            binData)
+        case "vivus_snappy" ⇒
+          val binData = doc.getAs[BSONValue]("bin").get match {
+            case BSONBinary(value, Subtype.GenericBinarySubtype) ⇒ value.readArray(value.size)
+            case _ ⇒ throw new Exception("BSONBinary with Subtype.GenericBinarySubtype expected at 'bin'.")
+          }
+          PersistableSnappyCompressedVivusSnapshotState(
             AggregateRootId(doc.getAs[String]("_id").get),
             AggregateRootVersion(doc.getAs[Long]("v").get),
             binData)

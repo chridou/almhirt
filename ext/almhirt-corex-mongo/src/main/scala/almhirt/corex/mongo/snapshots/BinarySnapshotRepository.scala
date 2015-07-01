@@ -25,6 +25,7 @@ object BinarySnapshotRepository {
     readWarningThreshold: FiniteDuration,
     writeWarningThreshold: FiniteDuration,
     readOnly: Boolean,
+    compress: Boolean,
     initializeRetryPolicy: RetryPolicyExt,
     storageRetryPolicy: RetryPolicyExt,
     circuitControlSettings: CircuitControlSettings,
@@ -38,6 +39,7 @@ object BinarySnapshotRepository {
       readWarningThreshold,
       writeWarningThreshold,
       readOnly,
+      compress,
       initializeRetryPolicy,
       storageRetryPolicy,
       circuitControlSettings,
@@ -63,6 +65,7 @@ object BinarySnapshotRepository {
       futuresExecutionContextSelector ← section.v[ExtendedExecutionContextSelector]("futures-context")
       marshallingExecutionContextSelector ← section.v[ExtendedExecutionContextSelector]("marshalling-context")
       readOnly ← section.v[Boolean]("read-only")
+      compress ← section.v[Boolean]("compress")
     } yield propsRaw(
       db,
       collectionName,
@@ -71,6 +74,7 @@ object BinarySnapshotRepository {
       readWarningThreshold,
       writeWarningThreshold,
       readOnly,
+      compress,
       initializeRetryPolicy,
       storageRetryPolicy,
       circuitControlSettings,
@@ -115,6 +119,7 @@ private[snapshots] class BinarySnapshotRepositoryActor(
     readWarningThreshold: FiniteDuration,
     writeWarningThreshold: FiniteDuration,
     readOnly: Boolean,
+    compress: Boolean,
     initializeRetryPolicy: RetryPolicyExt,
     storageRetryPolicy: RetryPolicyExt,
     circuitControlSettings: CircuitControlSettings,
@@ -226,7 +231,7 @@ private[snapshots] class BinarySnapshotRepositoryActor(
     case SnapshotRepository.StoreSnapshot(ar) ⇒
       val f = measureWrite(for {
         arBytes ← AlmFuture(marshaller.marshal(ar))(marshallingContext)
-        storedAggId ← circuitBreaker.fused(storeBinarySnapshot(PersistableBinaryVivusSnapshotState(ar.id, ar.version, arBytes)))
+        storedAggId ← circuitBreaker.fused(storeSnapshot(PersistableBinaryVivusSnapshotState(ar.id, ar.version, arBytes)))
       } yield SnapshotRepository.SnapshotStored(storedAggId))
       f.recoverThenPipeTo(fail ⇒ SnapshotRepository.StoreSnapshotFailed(ar.id, fail))(sender())
 
@@ -263,7 +268,15 @@ private[snapshots] class BinarySnapshotRepositoryActor(
     }
   }
 
-  private def storeBinarySnapshot(snapshot: PersistableBinaryVivusSnapshotState): AlmFuture[AggregateRootId] = {
+  private def marshal(ar: almhirt.aggregates.AggregateRoot): AlmFuture[BinarySnapshotState] =
+    if (compress) {
+      import org.xerial.snappy.Snappy
+      AlmFuture(marshaller.marshal(ar).map(bytes ⇒ PersistableSnappyCompressedVivusSnapshotState(ar.id, ar.version, Snappy.compress(bytes))))(marshallingContext)
+    } else {
+      AlmFuture(marshaller.marshal(ar).map(PersistableBinaryVivusSnapshotState(ar.id, ar.version, _)))(marshallingContext)
+    }
+
+  private def storeSnapshot(snapshot: PersistableSnapshotState): AlmFuture[AggregateRootId] = {
     val collection = db(collectionName)
     retryFuture(storageRetryPolicy)(
       collection.update(BSONDocument("_id" -> snapshot.aggId.value), snapshot: PersistableSnapshotState, writeConcern = getLastError, upsert = true, multi = false).toAlmFuture.mapV(res ⇒
@@ -322,6 +335,9 @@ private[snapshots] class BinarySnapshotRepositoryActor(
         rsp ← snapshotFromStorage match {
           case Some(PersistableBinaryVivusSnapshotState(_, _, bin)) ⇒
             AlmFuture(marshaller.unmarshal(bin).map(SnapshotRepository.FoundSnapshot(_)))(marshallingContext)
+          case Some(PersistableSnappyCompressedVivusSnapshotState(_, _, snappyData)) ⇒
+            import org.xerial.snappy.Snappy
+            AlmFuture(marshaller.unmarshal(Snappy.uncompress(snappyData)).map(SnapshotRepository.FoundSnapshot(_)))(marshallingContext)
           case Some(PersistableBsonVivusSnapshotState(_, _, _)) ⇒
             val prob = UnspecifiedProblem("This storage does not support a BSON representation of an aggregate root.")
             reportMajorFailure(prob)
