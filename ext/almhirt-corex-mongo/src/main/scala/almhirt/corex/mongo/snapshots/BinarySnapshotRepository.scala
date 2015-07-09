@@ -14,13 +14,13 @@ import reactivemongo.bson._
 import reactivemongo.api._
 import reactivemongo.api.indexes.{ Index ⇒ MIndex }
 import reactivemongo.api.indexes.IndexType
-import reactivemongo.core.commands.GetLastError
+import reactivemongo.api.commands.WriteConcern
 
 object BinarySnapshotRepository {
   def propsRaw(
     db: DB with DBMetaCommands,
     collectionName: String,
-    getLastError: GetLastError,
+    writeConcern: WriteConcern,
     marshaller: SnapshotMarshaller[Array[Byte]],
     readWarningThreshold: FiniteDuration,
     writeWarningThreshold: FiniteDuration,
@@ -34,7 +34,7 @@ object BinarySnapshotRepository {
     Props(new BinarySnapshotRepositoryActor(
       db,
       collectionName,
-      getLastError,
+      writeConcern,
       marshaller,
       readWarningThreshold,
       writeWarningThreshold,
@@ -48,7 +48,7 @@ object BinarySnapshotRepository {
 
   def propsWithDb(
     db: DB with DBMetaCommands,
-    getLastError: GetLastError,
+    writeConcern: WriteConcern,
     marshaller: SnapshotMarshaller[Array[Byte]],
     configName: Option[String] = None)(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
     import almhirt.configuration._
@@ -69,7 +69,7 @@ object BinarySnapshotRepository {
     } yield propsRaw(
       db,
       collectionName,
-      getLastError,
+      writeConcern,
       marshaller,
       readWarningThreshold,
       writeWarningThreshold,
@@ -84,7 +84,7 @@ object BinarySnapshotRepository {
 
   def propsWithConnection(
     connection: MongoConnection,
-    getLastError: GetLastError,
+    writeConcern: WriteConcern,
     marshaller: SnapshotMarshaller[Array[Byte]],
     configName: Option[String] = None)(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
     import almhirt.configuration._
@@ -96,7 +96,7 @@ object BinarySnapshotRepository {
       db ← inTryCatch { connection(dbName)(ctx.futuresContext) }
       props ← propsWithDb(
         db,
-        getLastError,
+        writeConcern,
         marshaller,
         configName)
     } yield props
@@ -104,17 +104,17 @@ object BinarySnapshotRepository {
 
   def componentFactory(
     connection: MongoConnection,
-    getLastError: GetLastError,
+    writeConcern: WriteConcern,
     marshaller: SnapshotMarshaller[Array[Byte]],
     configName: Option[String] = None)(implicit ctx: AlmhirtContext): AlmValidation[ComponentFactory] =
-    propsWithConnection(connection, getLastError, marshaller, configName).map(props ⇒ ComponentFactory(props, almhirt.snapshots.SnapshotRepository.actorname))
+    propsWithConnection(connection, writeConcern, marshaller, configName).map(props ⇒ ComponentFactory(props, almhirt.snapshots.SnapshotRepository.actorname))
 
 }
 
 private[snapshots] class BinarySnapshotRepositoryActor(
     db: DB with DBMetaCommands,
     collectionName: String,
-    getLastError: GetLastError,
+    writeConcern: WriteConcern,
     marshaller: SnapshotMarshaller[Array[Byte]],
     readWarningThreshold: FiniteDuration,
     writeWarningThreshold: FiniteDuration,
@@ -279,7 +279,7 @@ private[snapshots] class BinarySnapshotRepositoryActor(
   private def storeSnapshot(snapshot: PersistableSnapshotState): AlmFuture[AggregateRootId] = {
     val collection = db(collectionName)
     retryFuture(storageRetryPolicy)(
-      collection.update(BSONDocument("_id" -> snapshot.aggId.value), snapshot: PersistableSnapshotState, writeConcern = getLastError, upsert = true, multi = false).toAlmFuture.mapV(res ⇒
+      collection.update(BSONDocument("_id" -> snapshot.aggId.value), snapshot: PersistableSnapshotState, writeConcern = writeConcern, upsert = true, multi = false).toAlmFuture.mapV(res ⇒
         if (res.ok) {
           scalaz.Success(snapshot.aggId)
         } else {
@@ -292,7 +292,7 @@ private[snapshots] class BinarySnapshotRepositoryActor(
   private def markSnapshotMortuus(snapshot: PersistableMortuusSnapshotState): AlmFuture[AggregateRootId] = {
     val collection = db(collectionName)
     retryFuture(storageRetryPolicy)(
-      collection.update(BSONDocument("_id" -> snapshot.aggId.value), snapshot: PersistableSnapshotState, writeConcern = getLastError, upsert = true, multi = false).toAlmFuture.mapV(res ⇒
+      collection.update(BSONDocument("_id" -> snapshot.aggId.value), snapshot: PersistableSnapshotState, writeConcern = writeConcern, upsert = true, multi = false).toAlmFuture.mapV(res ⇒
         if (res.ok) {
           scalaz.Success(snapshot.aggId)
         } else {
@@ -305,7 +305,7 @@ private[snapshots] class BinarySnapshotRepositoryActor(
   private def deleteSnapshot(id: AggregateRootId): AlmFuture[AggregateRootId] = {
     val collection = db(collectionName)
     retryFuture(storageRetryPolicy)(
-      collection.remove(BSONDocument("_id" -> id.value), writeConcern = getLastError, firstMatchOnly = true).toAlmFuture.mapV(res ⇒
+      collection.remove(BSONDocument("_id" -> id.value), writeConcern = writeConcern, firstMatchOnly = true).toAlmFuture.mapV(res ⇒
         if (res.ok) {
           scalaz.Success(id)
         } else {

@@ -153,11 +153,11 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
     val collection = db(collectionName)
     val start = Deadline.now
     for {
-      lastError ← collection.insert(document).toAlmFuture
-      _ ← if (lastError.ok)
+      writeResult ← collection.insert(document).toAlmFuture
+      _ ← if (writeResult.ok)
         AlmFuture.successful(())
       else {
-        val msg = lastError.errMsg.getOrElse("unknown error")
+        val msg = writeResult.errmsg.getOrElse("unknown error")
         AlmFuture.failed(PersistenceProblem(msg))
       }
     } yield start
