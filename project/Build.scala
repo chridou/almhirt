@@ -12,8 +12,8 @@ object BuildSettings {
 
   val akkaVersion = "2.4-M1"
   val akkaStreamsVersion = "1.0-RC4"
-  val scalatestVersion = "2.2.+"
-  val sprayVersion = "1.3.+"
+  val scalatestVersion = "2.2.4"
+  val sprayVersion = "1.3.3"
   val reactiveMongoVersion = "0.10.5.0.akka23"
    
   val buildSettings = Defaults.defaultSettings ++ releaseSettings ++ Seq (
@@ -50,18 +50,18 @@ object Resolvers {
 object Dependencies {
 	lazy val scala_reflect = "org.scala-lang" % "scala-reflect" % BuildSettings.buildScalaVersion
 
-	lazy val jodatime    = "joda-time" % "joda-time" % "2.+" % "compile"
-	lazy val jodaconvert    = "org.joda" % "joda-convert" % "1.+" % "compile"
-	lazy val scalaz       = "org.scalaz" %% "scalaz-core" % "7.1.+" % "provided"
+	lazy val jodatime    = "joda-time" % "joda-time" % "2.8.1" % "compile"
+	lazy val jodaconvert    = "org.joda" % "joda-convert" % "1.7" % "compile"
+	lazy val scalaz       = "org.scalaz" %% "scalaz-core" % "7.1.3" % "provided"
 
-	lazy val play2_iteratees   = "com.typesafe.play" %% "play-iteratees" % "2.3.+" % "provided"
+	lazy val play2_iteratees   = "com.typesafe.play" %% "play-iteratees" % "2.3.9" % "provided"
 	
 	lazy val akka_actor  = "com.typesafe.akka" %% "akka-actor" % BuildSettings.akkaVersion % "provided"
 	lazy val akka_agent  = "com.typesafe.akka" %% "akka-agent" % BuildSettings.akkaVersion % "provided"
 	lazy val akka_streams  = "com.typesafe.akka" %% "akka-stream-experimental" % BuildSettings.akkaStreamsVersion % "provided"
 
-	lazy val apache_codecs = "commons-codec" % "commons-codec" % "1.+" 
-	lazy val apache_commons_io = "commons-io" % "commons-io" % "2.+" 
+	lazy val apache_codecs = "commons-codec" % "commons-codec" % "1.10" 
+	lazy val apache_commons_io = "commons-io" % "commons-io" % "2.4" 
 	lazy val icu4j = "com.ibm.icu" % "icu4j" % "55.1" 
 
 	lazy val spray_routing = "io.spray" %% "spray-routing" % BuildSettings.sprayVersion % "provided"
@@ -71,7 +71,7 @@ object Dependencies {
 	lazy val spray_can = "io.spray" %% "spray-can" % BuildSettings.sprayVersion % "provided"
 
   lazy val snappy = "org.xerial.snappy" % "snappy-java" % "1.1.2-RC3"
-  lazy val logback = "ch.qos.logback" % "logback-classic" % "1.0.+" % "provided"
+  lazy val logback = "ch.qos.logback" % "logback-classic" % "1.1.3" % "provided"
 	lazy val typesafe_config = "com.typesafe" % "config" % "1.2.+" % "provided"
 
 	
