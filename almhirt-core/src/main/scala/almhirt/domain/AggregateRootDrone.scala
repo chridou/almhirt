@@ -94,6 +94,9 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
   def notifyHiveAboutUndispatchedEventsAfter: Option[FiniteDuration]
   def notifyHiveAboutUnstoredEventsAfterPerEvent: Option[FiniteDuration]
 
+  def rebuildWarnDuration: Option[FiniteDuration] = Some(0.5.seconds)
+  def commandExecutionWarnDuration: Option[FiniteDuration] = Some(0.5.seconds)
+
   def onBeforeExecutingCommand(cmd: AggregateRootCommand, state: AggregateRootLifecycle[T]): Unit = {
 
   }
@@ -216,11 +219,15 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
 
   private var lastSnapshotState: SnapshotState = SnapshotState.SnapshotVacat
 
+  private var rebuildStartedOn: Deadline = null
+  private var commandStartedOn: Deadline = null
+
   private def receiveUninitialized: Receive = {
     case firstCommand: AggregateRootCommand ⇒
       capturedId match {
         case Some(id) ⇒
           if (firstCommand.aggId == id) {
+            rebuildStartedOn = Deadline.now
             snapshotting match {
               case None ⇒
                 context.become(receiveRebuildFrom(firstCommand, Vacat))
@@ -254,6 +261,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
 
   private def receiveWaitForContract(currentCommand: AggregateRootCommand): Receive = {
     case ReadyForDeliveries(_) ⇒
+      rebuildStartedOn = Deadline.now
       snapshotting match {
         case None ⇒
           context.become(receiveRebuildFrom(currentCommand, Vacat))
@@ -268,6 +276,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
 
   private def receiveAcceptingCommand(persistedState: AggregateRootLifecycle[T], canAccept: Boolean): Receive = {
     case nextCommand: AggregateRootCommand ⇒
+      commandStartedOn = Deadline.now
       if (canAccept) {
         asyncInitializeForCommand(nextCommand, persistedState) match {
           case None ⇒
@@ -371,10 +380,14 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
 
   private def receiveEvaluateRebuildResult(currentCommand: AggregateRootCommand): Receive = {
     case InternalArBuildResult(arState) ⇒
+      rebuildWarnDuration.foreach { rbdur ⇒
+        rebuildStartedOn.whenTooLate(rbdur, dur ⇒ logWarning(s"""Rebuild took more than ${rbdur.defaultUnitString}: ${dur.defaultUnitString}"""))
+      }
       asyncInitializeForCommand(currentCommand, arState) match {
         case None ⇒
           context.become(receiveWaitingForCommandResult(currentCommand, arState))
           onBeforeExecutingCommand(currentCommand, arState)
+          commandStartedOn = Deadline.now
           handleAggregateCommand(DefaultConfirmationContext)(currentCommand, arState)
         case Some(fut) ⇒
           fut.onComplete(
@@ -385,6 +398,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
     case AsyncInitializedForCommand(cmd, persistedState) ⇒
       context.become(receiveWaitingForCommandResult(currentCommand, persistedState))
       onBeforeExecutingCommand(currentCommand, persistedState)
+      commandStartedOn = Deadline.now
       handleAggregateCommand(DefaultConfirmationContext)(currentCommand, persistedState)
 
     case AsyncInitializeForCommandFailed(cmd, persistedState, problem) ⇒
@@ -479,28 +493,6 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
           context.become(receiveStoreSnapshot(currentCommand, unpersisted, newDone))
           self ! StoreSnapshot
 
-//          val cid = CorrelationId(ccuad.getUniqueString())
-//
-//          notifyHiveAboutUndispatchedEventsAfter.foreach(delay ⇒
-//            cancelWaitingForDispatchedEventsNotification =
-//              Some(context.system.scheduler.scheduleOnce(delay, self, EventsShouldHaveBeenDispatchedByNow(cid))(context.dispatcher)))
-//
-//          val startOfferEvents = Deadline.now
-//          hiveNotifiedForDispatch = false
-//          this.offerAndThen(newDone, None) {
-//            case EventsShouldHaveBeenDispatchedByNow(incomingCorrelationId) ⇒
-//              if (incomingCorrelationId == correlationId) {
-//                sendMessage(AggregateRootHiveInternals.DispatchEventsToStreamTakesTooLong(currentCommand.aggId, startOfferEvents.lap))
-//                hiveNotifiedForDispatch = true
-//              }
-//
-//            case EventsShouldHaveBeenStoredByNow(_) ⇒
-//              // Do nothing...
-//              ()
-//
-//            case unexpectedCommand: AggregateRootCommand ⇒
-//              sendMessage(Busy(unexpectedCommand))
-//          }(receiveWaitingForEventsDispatched(currentCommand, unpersisted, newDone, startOfferEvents, cid))
         case next +: newRest ⇒
           executePreStoreAction(next)
           context.become(receiveCommitEvents(currentCommand, next, newRest, newDone, unpersisted, startedStoring, correlationId))
@@ -775,6 +767,9 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
   }
 
   private def handleCommandExecutedAfterCleanup(persistedState: AggregateRootLifecycle[T], command: AggregateRootCommand) {
+    commandExecutionWarnDuration.foreach { comdur ⇒
+      commandStartedOn.whenTooLate(comdur, dur ⇒ logWarning(s"""Execution of command(including cleanup) "${command.commandId.value}" took more than ${comdur.defaultUnitString}: ${dur.defaultUnitString}"""))
+    }
     val rsp = CommandExecuted(command)
     sendMessage(rsp)
     onAfterExecutingCommand(command, None, Some(persistedState))
