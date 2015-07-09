@@ -250,7 +250,7 @@ private[snapshots] class BinarySnapshotRepositoryActor(
 
   override def receive: Receive = Actor.emptyBehavior
 
-  private def measureRead[T](f: AlmFuture[T]): AlmFuture[T] = {
+  private def measureRead[T](f: => AlmFuture[T]): AlmFuture[T] = {
     val start = Deadline.now
     f.onComplete { res ⇒
       val lap = start.lap
@@ -259,7 +259,7 @@ private[snapshots] class BinarySnapshotRepositoryActor(
     }
   }
 
-  private def measureWrite[T](f: AlmFuture[T]): AlmFuture[T] = {
+  private def measureWrite[T](f: => AlmFuture[T]): AlmFuture[T] = {
     val start = Deadline.now
     f.onComplete { res ⇒
       val lap = start.lap
