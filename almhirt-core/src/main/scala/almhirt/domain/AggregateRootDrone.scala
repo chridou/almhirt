@@ -94,7 +94,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
   def notifyHiveAboutUndispatchedEventsAfter: Option[FiniteDuration]
   def notifyHiveAboutUnstoredEventsAfterPerEvent: Option[FiniteDuration]
 
-  def rebuildWarnDuration: Option[FiniteDuration] = Some(0.5.seconds)
+  def rebuildWarnDuration: Option[FiniteDuration] = Some(0.3.seconds)
   def commandExecutionWarnDuration: Option[FiniteDuration] = Some(0.5.seconds)
 
   def onBeforeExecutingCommand(cmd: AggregateRootCommand, state: AggregateRootLifecycle[T]): Unit = {

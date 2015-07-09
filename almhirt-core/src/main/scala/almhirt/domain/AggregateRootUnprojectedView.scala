@@ -1,7 +1,7 @@
 package almhirt.domain
 
 import scala.language.postfixOps
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext
 import scala.reflect.ClassTag
 import scalaz.Validation.FlatMap._
@@ -22,15 +22,15 @@ object AggregateRootViewMessages {
 }
 
 object AggregateRootUnprojectedView {
-  def makeViewConstructorFactory(makeViewConstructor: (Option[FiniteDuration], Option[FiniteDuration], Option[FiniteDuration]) ⇒ AlmValidation[AggregateRootViews.ViewConstructor]): com.typesafe.config.Config => AlmValidation[AggregateRootViews.ViewConstructor] = {
+  def makeViewConstructorFactory(makeViewConstructor: (Option[FiniteDuration], Option[FiniteDuration], Option[FiniteDuration]) ⇒ AlmValidation[AggregateRootViews.ViewConstructor]): com.typesafe.config.Config ⇒ AlmValidation[AggregateRootViews.ViewConstructor] = {
     import almhirt.configuration._
-    (config: com.typesafe.config.Config) =>
-    for {
-      returnToUnitializedAfter ← config.magicOption[FiniteDuration]("return-to-unitialized-after")
-      rebuildTimeout ← config.magicOption[FiniteDuration]("rebuild-timeout")
-      rebuildRetryDelay ← config.magicOption[FiniteDuration]("rebuild-retry-delay")
-      ctor ← makeViewConstructor(returnToUnitializedAfter, rebuildTimeout, rebuildRetryDelay)
-    } yield ctor
+    (config: com.typesafe.config.Config) ⇒
+      for {
+        returnToUnitializedAfter ← config.magicOption[FiniteDuration]("return-to-unitialized-after")
+        rebuildTimeout ← config.magicOption[FiniteDuration]("rebuild-timeout")
+        rebuildRetryDelay ← config.magicOption[FiniteDuration]("rebuild-retry-delay")
+        ctor ← makeViewConstructor(returnToUnitializedAfter, rebuildTimeout, rebuildRetryDelay)
+      } yield ctor
   }
 }
 
@@ -67,6 +67,7 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
   def returnToUnitializedAfter: Option[FiniteDuration]
   def rebuildTimeout: Option[FiniteDuration]
   def rebuildRetryDelay: Option[FiniteDuration]
+  def rebuildWarnDuration: Option[FiniteDuration] = Some(0.3.seconds)
   implicit def eventTag: ClassTag[E]
   implicit def arTag: ClassTag[T]
 
@@ -90,8 +91,11 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
 
   private case class RebuildTimesOutNow(after: FiniteDuration)
 
+  private var rebuildStartedOn: Deadline = null
+
   protected def receiveUninitialized: Receive = {
     case GetAggregateRootProjection ⇒
+      rebuildStartedOn = Deadline.now
       snapshotStorage match {
         case None ⇒
           updateFromEventlog(Vacat, Vector(sender()), delay = None)
@@ -100,6 +104,7 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
           snaphots ! SnapshotRepository.FindSnapshot(aggregateRootId)
       }
     case ApplyAggregateRootEvent(event) ⇒
+      rebuildStartedOn = Deadline.now
       confirmAggregateRootEventHandled()
       snapshotStorage match {
         case None ⇒
@@ -184,6 +189,9 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
 
   private def receiveEvaluateEventlogRebuildResult(enqueuedRequests: Vector[ActorRef], enqueuedEvents: Vector[E]): Receive = {
     case InternalEventlogArBuildResult(arState) ⇒
+      rebuildWarnDuration.foreach { rbdur ⇒
+        rebuildStartedOn.whenTooLate(rbdur, dur ⇒ context.parent ! AggregateRootViewsInternals.ReportViewDebug(s"""Rebuild took more than ${rbdur.defaultUnitString}: ${dur.defaultUnitString}"""))
+      }
       enqueuedEvents.foreach(_ ⇒ confirmAggregateRootEventHandled())
       val toApply = enqueuedEvents.filter(_.aggVersion >= arState.version)
       if (toApply.isEmpty) {
