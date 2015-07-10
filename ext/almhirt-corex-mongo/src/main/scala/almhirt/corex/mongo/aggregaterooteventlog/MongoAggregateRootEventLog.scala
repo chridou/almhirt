@@ -20,6 +20,7 @@ import reactivemongo.api.indexes.{ Index ⇒ MIndex }
 import reactivemongo.api.indexes.IndexType
 import reactivemongo.core.commands.GetLastError
 import com.typesafe.config.Config
+import almhirt.reactivemongox._
 import play.api.libs.iteratee._
 
 object MongoAggregateRootEventLog {
@@ -32,6 +33,8 @@ object MongoAggregateRootEventLog {
     readWarnThreshold: FiniteDuration,
     circuitControlSettings: CircuitControlSettings,
     retrySettings: RetrySettings,
+    writeConcern: WriteConcernAlm,
+    readPreference: ReadPreferenceAlm,
     readOnly: Boolean)(implicit ctx: AlmhirtContext): Props =
     Props(new MongoAggregateRootEventLogImpl(
       db,
@@ -42,12 +45,16 @@ object MongoAggregateRootEventLog {
       readWarnThreshold,
       circuitControlSettings,
       retrySettings,
-      readOnly))
+      readOnly,
+      writeConcern,
+      readPreference))
 
   def propsWithDb(
     db: DB with DBMetaCommands,
     serializeAggregateRootEvent: AggregateRootEvent ⇒ AlmValidation[BSONDocument],
     deserializeAggregateRootEvent: BSONDocument ⇒ AlmValidation[AggregateRootEvent],
+    writeConcern: Option[WriteConcernAlm],
+    readPreference: Option[ReadPreferenceAlm],
     configName: Option[String] = None)(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
     import almhirt.configuration._
     import almhirt.almvalidation.kit._
@@ -60,6 +67,14 @@ object MongoAggregateRootEventLog {
       circuitControlSettings ← section.v[CircuitControlSettings]("circuit-control")
       retrySettings ← section.v[RetrySettings]("retry-settings")
       readOnly ← section.v[Boolean]("read-only")
+      wc ← writeConcern match {
+        case Some(wc) ⇒ wc.success
+        case None     ⇒ section.v[WriteConcernAlm]("write-concern")
+      }
+      rp ← readPreference match {
+        case Some(rp) ⇒ rp.success
+        case None     ⇒ section.v[ReadPreferenceAlm]("read-preference")
+      }
     } yield propsRaw(
       db,
       collectionName,
@@ -69,6 +84,8 @@ object MongoAggregateRootEventLog {
       readWarnThreshold,
       circuitControlSettings,
       retrySettings,
+      wc,
+      rp,
       readOnly)
   }
 
@@ -76,6 +93,8 @@ object MongoAggregateRootEventLog {
     connection: MongoConnection,
     serializeAggregateRootEvent: AggregateRootEvent ⇒ AlmValidation[BSONDocument],
     deserializeAggregateRootEvent: BSONDocument ⇒ AlmValidation[AggregateRootEvent],
+    writeConcern: Option[WriteConcernAlm],
+    readPreference: Option[ReadPreferenceAlm],
     configName: Option[String] = None)(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
     import almhirt.configuration._
     import almhirt.almvalidation.kit._
@@ -88,6 +107,8 @@ object MongoAggregateRootEventLog {
         db,
         serializeAggregateRootEvent,
         deserializeAggregateRootEvent,
+        writeConcern,
+        readPreference,
         configName)
     } yield props
   }
@@ -95,17 +116,24 @@ object MongoAggregateRootEventLog {
 }
 
 private[almhirt] class MongoAggregateRootEventLogImpl(
-  db: DB with DBMetaCommands,
-  collectionName: String,
-  serializeAggregateRootEvent: AggregateRootEvent ⇒ AlmValidation[BSONDocument],
-  deserializeAggregateRootEvent: BSONDocument ⇒ AlmValidation[AggregateRootEvent],
-  writeWarnThreshold: FiniteDuration,
-  readWarnThreshold: FiniteDuration,
-  circuitControlSettings: CircuitControlSettings,
-  retrySettings: RetrySettings,
-  readOnly: Boolean)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging {
+    db: DB with DBMetaCommands,
+    collectionName: String,
+    serializeAggregateRootEvent: AggregateRootEvent ⇒ AlmValidation[BSONDocument],
+    deserializeAggregateRootEvent: BSONDocument ⇒ AlmValidation[AggregateRootEvent],
+    writeWarnThreshold: FiniteDuration,
+    readWarnThreshold: FiniteDuration,
+    circuitControlSettings: CircuitControlSettings,
+    retrySettings: RetrySettings,
+    readOnly: Boolean,
+    writeConcern: WriteConcernAlm,
+    readPreference: ReadPreferenceAlm)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging {
 
   import almhirt.eventlog.AggregateRootEventLog._
+
+  logInfo(s"""|collectionName: $collectionName
+                  |read-only: $readOnly
+                  |write-concern: $writeConcern
+                  |read-preference: $readPreference""".stripMargin)
 
   implicit val defaultExecutor = almhirtContext.futuresContext
   val serializationExecutor = almhirtContext.futuresContext
@@ -188,7 +216,7 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
   def getAggregateRootEventsDocs(query: BSONDocument, sort: BSONDocument, traverse: TraverseWindow): Enumerator[BSONDocument] = {
     val (skip, take) = traverse.toInts
     val collection = db(collectionName)
-    val enumerator = collection.find(query, projectionFilter).options(new QueryOpts(skipN = skip)).sort(sort).cursor.enumerate(maxDocs = take, stopOnError = true)
+    val enumerator = collection.find(query, projectionFilter).options(new QueryOpts(skipN = skip)).sort(sort).cursor(readPreference = readPreference).enumerate(maxDocs = take, stopOnError = true)
     enumerator
   }
 
@@ -360,12 +388,11 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
       val collection = db(collectionName)
       val query = BSONDocument("_id" → BSONString(eventId.value))
       (for {
-        docs ← collection.find(query).cursor.collect[List](2, true).toAlmFuture
+        docs ← collection.find(query).cursor(readPreference = readPreference).collect[List](1, true).toAlmFuture
         aggregateRootEvent ← AlmFuture {
-          docs match {
-            case Nil ⇒ None.success
-            case d :: Nil ⇒ documentToAggregateRootEvent(d).map(Some(_))
-            case x ⇒ PersistenceProblem(s"""Expected 1 domain event with id "$eventId" but found ${x.size}.""").failure
+          docs.headOption match {
+            case None    ⇒ None.success
+            case Some(d) ⇒ documentToAggregateRootEvent(d).map(Some(_))
           }
         }(serializationExecutor)
       } yield aggregateRootEvent).mapOrRecoverThenPipeTo(

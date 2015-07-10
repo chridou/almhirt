@@ -18,6 +18,7 @@ import reactivemongo.bson._
 import reactivemongo.api._
 import reactivemongo.api.indexes.{ Index ⇒ MIndex }
 import reactivemongo.api.indexes.IndexType
+import almhirt.reactivemongox._
 import play.api.libs.iteratee._
 
 object MongoEventLog {
@@ -29,6 +30,8 @@ object MongoEventLog {
     writeWarnThreshold: FiniteDuration,
     circuitControlSettings: CircuitControlSettings,
     initializeRetrySettings: RetryPolicyExt,
+    writeConcern: WriteConcernAlm,
+    readPreference: ReadPreferenceAlm,
     readOnly: Boolean)(implicit ctx: AlmhirtContext): Props =
     Props(new MongoEventLogImpl(
       db,
@@ -38,12 +41,16 @@ object MongoEventLog {
       writeWarnThreshold,
       circuitControlSettings,
       initializeRetrySettings,
-      readOnly))
+      readOnly,
+      writeConcern,
+      readPreference))
 
   def propsWithDb(
     db: DB with DBMetaCommands,
     serializeEvent: Event ⇒ AlmValidation[BSONDocument],
     deserializeEvent: BSONDocument ⇒ AlmValidation[Event],
+    writeConcern: Option[WriteConcernAlm],
+    readPreference: Option[ReadPreferenceAlm],
     configName: Option[String] = None)(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
     import almhirt.configuration._
     import almhirt.almvalidation.kit._
@@ -55,6 +62,14 @@ object MongoEventLog {
       circuitControlSettings ← section.v[CircuitControlSettings]("circuit-control")
       initializeRetrySettings ← section.v[RetryPolicyExt]("initialize-retry-settings")
       readOnly ← section.v[Boolean]("read-only")
+      wc ← writeConcern match {
+        case Some(wc) ⇒ wc.success
+        case None     ⇒ section.v[WriteConcernAlm]("write-concern")
+      }
+      rp ← readPreference match {
+        case Some(rp) ⇒ rp.success
+        case None     ⇒ section.v[ReadPreferenceAlm]("read-preference")
+      }
     } yield propsRaw(
       db,
       collectionName,
@@ -63,12 +78,16 @@ object MongoEventLog {
       writeWarnThreshold,
       circuitControlSettings,
       initializeRetrySettings,
+      wc,
+      rp,
       readOnly)
   }
 
   def propsWithConnection(
     connection: MongoConnection,
     serializeEvent: Event ⇒ AlmValidation[BSONDocument],
+    writeConcern: Option[WriteConcernAlm],
+    readPreference: Option[ReadPreferenceAlm],
     deserializeEvent: BSONDocument ⇒ AlmValidation[Event],
     configName: Option[String] = None)(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
     import almhirt.configuration._
@@ -82,22 +101,31 @@ object MongoEventLog {
         db,
         serializeEvent,
         deserializeEvent,
+        writeConcern,
+        readPreference,
         configName)
     } yield props
   }
 }
 
 private[almhirt] class MongoEventLogImpl(
-  db: DB with DBMetaCommands,
-  collectionName: String,
-  serializeEvent: Event ⇒ AlmValidation[BSONDocument],
-  deserializeEvent: BSONDocument ⇒ AlmValidation[Event],
-  writeWarnThreshold: FiniteDuration,
-  circuitControlSettings: CircuitControlSettings,
-  initializeRetrySettings: RetryPolicyExt,
-  readOnly: Boolean)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging {
+    db: DB with DBMetaCommands,
+    collectionName: String,
+    serializeEvent: Event ⇒ AlmValidation[BSONDocument],
+    deserializeEvent: BSONDocument ⇒ AlmValidation[Event],
+    writeWarnThreshold: FiniteDuration,
+    circuitControlSettings: CircuitControlSettings,
+    initializeRetrySettings: RetryPolicyExt,
+    readOnly: Boolean,
+    writeConcern: WriteConcernAlm,
+    readPreference: ReadPreferenceAlm)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging {
   import EventLog._
   import almhirt.corex.mongo.BsonConverter._
+
+  logInfo(s"""|collectionName: $collectionName
+                  |read-only: $readOnly
+                  |write-concern: $writeConcern
+                  |read-preference: $readPreference""".stripMargin)
 
   implicit val defaultExecutor = almhirtContext.futuresContext
   val serializationExecutor = almhirtContext.futuresContext
@@ -234,7 +262,7 @@ private[almhirt] class MongoEventLogImpl(
   def getEvents(query: BSONDocument, sort: BSONDocument, traverse: TraverseWindow): Enumerator[Event] = {
     val (skip, take) = traverse.toInts
     val collection = db(collectionName)
-    val enumerator = collection.find(query, projectionFilter).options(new QueryOpts(skipN = skip)).sort(sort).cursor.enumerate(maxDocs = take, stopOnError = true)
+    val enumerator = collection.find(query, projectionFilter).options(new QueryOpts(skipN = skip)).sort(sort).cursor(readPreference = readPreference).enumerate(maxDocs = take, stopOnError = true)
     enumerator.through(fromBsonDocToEvent)
   }
 
@@ -343,12 +371,11 @@ private[almhirt] class MongoEventLogImpl(
       val query = BSONDocument("_id" → BSONString(eventId.value))
       val res =
         for {
-          docs ← collection.find(query).cursor.collect[List](2, true).toAlmFuture
+          docs ← collection.find(query).cursor(readPreference = readPreference).collect[List](1, true).toAlmFuture
           Event ← AlmFuture {
-            docs match {
-              case Nil      ⇒ None.success
-              case d :: Nil ⇒ documentToEvent(d).map(Some(_))
-              case x        ⇒ PersistenceProblem(s"""Expected 1 event with id "$eventId" but found ${x.size}.""").failure
+            docs.headOption match {
+              case None    ⇒ None.success
+              case Some(d) ⇒ documentToEvent(d).map(Some(_))
             }
           }(serializationExecutor)
         } yield Event
