@@ -1,7 +1,11 @@
 package almhirt.corex
 
+import scala.concurrent.duration.FiniteDuration
 import almhirt.common._
+import almhirt.configuration._
 import scalaz.Validation.FlatMap._
+import reactivemongo.api.commands.WriteConcern
+import com.typesafe.config.Config
 
 package object mongo {
   import almhirt.configuration._
@@ -18,8 +22,8 @@ package object mongo {
     def tryGetValue(config: Config, path: String): AlmValidation[Option[MongoConnectionSettings]] =
       config.opt[Config](path).flatMap {
         case Some(_) ⇒ getValue(config, path).map(Some(_))
-        case None ⇒ scalaz.Success(None)
+        case None    ⇒ scalaz.Success(None)
       }
   }
-
 }
+
