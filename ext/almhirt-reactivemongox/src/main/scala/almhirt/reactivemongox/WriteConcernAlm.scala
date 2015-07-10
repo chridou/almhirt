@@ -7,7 +7,6 @@ import almhirt.common._
 import almhirt.configuration._
 import reactivemongo.api.commands.{ WriteConcern, GetLastError }
 import com.typesafe.config.Config
-import reactivemongo.api.commands.GetLastError
 
 sealed trait WriteConcernAlm
 object WriteConcernAlm {
