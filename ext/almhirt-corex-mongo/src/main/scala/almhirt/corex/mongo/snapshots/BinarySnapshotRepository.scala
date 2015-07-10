@@ -2,6 +2,7 @@ package almhirt.corex.mongo.snapshots
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
+import scalaz.syntax.validation._
 import scalaz.Validation.FlatMap._
 import akka.actor._
 import almhirt.common._
@@ -15,12 +16,14 @@ import reactivemongo.api._
 import reactivemongo.api.indexes.{ Index ⇒ MIndex }
 import reactivemongo.api.indexes.IndexType
 import reactivemongo.api.commands.WriteConcern
+import almhirt.reactivemongox._
 
 object BinarySnapshotRepository {
   def propsRaw(
     db: DB with DBMetaCommands,
     collectionName: String,
-    writeConcern: WriteConcern,
+    writeConcern: WriteConcernAlm,
+    readPreference: ReadPreferenceAlm,
     marshaller: SnapshotMarshaller[Array[Byte]],
     readWarningThreshold: FiniteDuration,
     writeWarningThreshold: FiniteDuration,
@@ -35,6 +38,7 @@ object BinarySnapshotRepository {
       db,
       collectionName,
       writeConcern,
+      readPreference,
       marshaller,
       readWarningThreshold,
       writeWarningThreshold,
@@ -48,7 +52,8 @@ object BinarySnapshotRepository {
 
   def propsWithDb(
     db: DB with DBMetaCommands,
-    writeConcern: WriteConcern,
+    writeConcern: Option[WriteConcernAlm],
+    readPreference: Option[ReadPreferenceAlm],
     marshaller: SnapshotMarshaller[Array[Byte]],
     configName: Option[String] = None)(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
     import almhirt.configuration._
@@ -66,10 +71,19 @@ object BinarySnapshotRepository {
       marshallingExecutionContextSelector ← section.v[ExtendedExecutionContextSelector]("marshalling-context")
       readOnly ← section.v[Boolean]("read-only")
       compress ← section.v[Boolean]("compress")
+      wc ← writeConcern match {
+        case Some(wc) ⇒ wc.success
+        case None     ⇒ section.v[WriteConcernAlm]("write-concern")
+      }
+      rp ← readPreference match {
+        case Some(rp) ⇒ rp.success
+        case None     ⇒ section.v[ReadPreferenceAlm]("read-preference")
+      }
     } yield propsRaw(
       db,
       collectionName,
-      writeConcern,
+      wc,
+      rp,
       marshaller,
       readWarningThreshold,
       writeWarningThreshold,
@@ -84,7 +98,8 @@ object BinarySnapshotRepository {
 
   def propsWithConnection(
     connection: MongoConnection,
-    writeConcern: WriteConcern,
+    writeConcern: Option[WriteConcernAlm],
+    readPreference: Option[ReadPreferenceAlm],
     marshaller: SnapshotMarshaller[Array[Byte]],
     configName: Option[String] = None)(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
     import almhirt.configuration._
@@ -97,6 +112,7 @@ object BinarySnapshotRepository {
       props ← propsWithDb(
         db,
         writeConcern,
+        readPreference,
         marshaller,
         configName)
     } yield props
@@ -104,17 +120,19 @@ object BinarySnapshotRepository {
 
   def componentFactory(
     connection: MongoConnection,
-    writeConcern: WriteConcern,
+    writeConcern: Option[WriteConcernAlm],
+    readPreference: Option[ReadPreferenceAlm],
     marshaller: SnapshotMarshaller[Array[Byte]],
     configName: Option[String] = None)(implicit ctx: AlmhirtContext): AlmValidation[ComponentFactory] =
-    propsWithConnection(connection, writeConcern, marshaller, configName).map(props ⇒ ComponentFactory(props, almhirt.snapshots.SnapshotRepository.actorname))
+    propsWithConnection(connection, writeConcern, readPreference, marshaller, configName).map(props ⇒ ComponentFactory(props, almhirt.snapshots.SnapshotRepository.actorname))
 
 }
 
 private[snapshots] class BinarySnapshotRepositoryActor(
     db: DB with DBMetaCommands,
     collectionName: String,
-    writeConcern: WriteConcern,
+    writeConcern: WriteConcernAlm,
+    readPreference: ReadPreferenceAlm,
     marshaller: SnapshotMarshaller[Array[Byte]],
     readWarningThreshold: FiniteDuration,
     writeWarningThreshold: FiniteDuration,
@@ -250,7 +268,7 @@ private[snapshots] class BinarySnapshotRepositoryActor(
 
   override def receive: Receive = Actor.emptyBehavior
 
-  private def measureRead[T](f: => AlmFuture[T]): AlmFuture[T] = {
+  private def measureRead[T](f: ⇒ AlmFuture[T]): AlmFuture[T] = {
     val start = Deadline.now
     f.onComplete { res ⇒
       val lap = start.lap
@@ -259,7 +277,7 @@ private[snapshots] class BinarySnapshotRepositoryActor(
     }
   }
 
-  private def measureWrite[T](f: => AlmFuture[T]): AlmFuture[T] = {
+  private def measureWrite[T](f: ⇒ AlmFuture[T]): AlmFuture[T] = {
     val start = Deadline.now
     f.onComplete { res ⇒
       val lap = start.lap
@@ -319,20 +337,8 @@ private[snapshots] class BinarySnapshotRepositoryActor(
     val collection = db(collectionName)
     retryFuture(storageRetryPolicy)(
       (for {
-        docs ← collection.find(BSONDocument("_id" -> id.value)).cursor[PersistableSnapshotState].collect[List](2, true).toAlmFuture
-        snapshotFromStorage ← AlmFuture {
-          docs match {
-            case Nil ⇒
-              scalaz.Success(None)
-            case (x: PersistableSnapshotState) :: Nil ⇒
-              scalaz.Success(Some(x))
-            case x ⇒
-              val prob = PersistenceProblem(s"""Expected 0..1 snapshots of type PersistableSnapshotState with id "${id.value}". Found ${x.size}.""")
-              reportMajorFailure(prob)
-              scalaz.Failure(prob)
-          }
-        }
-        rsp ← snapshotFromStorage match {
+        docs ← collection.find(BSONDocument("_id" -> id.value)).cursor[PersistableSnapshotState](readPreference = readPreference).collect[List](1, true).toAlmFuture
+        rsp ← docs.headOption match {
           case Some(PersistableBinaryVivusSnapshotState(_, _, bin)) ⇒
             AlmFuture(marshaller.unmarshal(bin).map(SnapshotRepository.FoundSnapshot(_)))(marshallingContext)
           case Some(PersistableSnappyCompressedVivusSnapshotState(_, _, snappyData)) ⇒
@@ -347,8 +353,7 @@ private[snapshots] class BinarySnapshotRepositoryActor(
           case None ⇒
             AlmFuture.successful(SnapshotRepository.SnapshotNotFound(id))
         }
-
-      } yield rsp))
+     } yield rsp))
   }
 
   override def preStart() {
@@ -359,7 +364,7 @@ private[snapshots] class BinarySnapshotRepositoryActor(
       logInfo("Starting(r/w)...")
       context.become(receiveInitializeReadWrite)
     }
-    logInfo(s"Write warn after ${readWarningThreshold.defaultUnitString}\nRead warn after ${writeWarningThreshold.defaultUnitString}\nCompress: $compress")
+    logInfo(s"collection: ${collectionName}\nWrite warn after ${readWarningThreshold.defaultUnitString}\nRead warn after ${writeWarningThreshold.defaultUnitString}\nCompress: $compress\nWrite concern:$writeConcern\nRead preference:$readPreference")
     self ! Initialize
   }
 
