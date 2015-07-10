@@ -159,6 +159,20 @@ trait HttpxSprayServiceBuild {
   )
 }
 
+trait AlmhirtxReactiveMongoBuild {
+  import Dependencies._
+  import Resolvers._
+  def almhirtxReactiveMongoProject(name: String, baseFile: java.io.File) = 
+  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
+	  libraryDependencies += scalaz,
+	  libraryDependencies += typesafe_config,
+	  libraryDependencies += "org.reactivemongo" %% "reactivemongo" % BuildSettings.reactiveMongoVersion % "provided"
+		exclude("ch.qos.logback", "logback-core")
+		exclude("ch.qos.logback", "logback-classic"),
+ 	  libraryDependencies += scalatest
+  )
+}
+
 trait CoreBuild {
   import Dependencies._
   import Resolvers._
@@ -298,6 +312,7 @@ object AlmHirtBuild extends Build
 	with CommonBuild 
 	with I18nBuild 
 	with HttpxSprayBuild
+	with AlmhirtxReactiveMongoBuild
 	with CorexSprayClientBuild
 	with HttpxSprayServiceBuild
 	with CoreBuild 
@@ -318,6 +333,7 @@ object AlmHirtBuild extends Build
 									httpxSpray, 
 									corexSprayClient, 
 									httpxSprayService, 
+									almhirtxReactiveMongo, 
 									core, 
 									dashboard, 
 									mongoExtensions, 
@@ -340,6 +356,9 @@ object AlmHirtBuild extends Build
   lazy val httpxSprayService = httpxSprayServiceProject(	name = "almhirt-httpx-spray-service",
                        			baseFile = file("./ext/almhirt-httpx-spray-service")) dependsOn(common, httpxSpray)
 								
+  lazy val almhirtxReactiveMongo = almhirtxReactiveMongoProject(	name = "almhirt-reactivemongox",
+                       			baseFile = file("./ext/almhirt-reactivemongox")) dependsOn(common)
+
   lazy val core = coreProject(	name = "almhirt-core",
 		baseFile = file("almhirt-core")) dependsOn(	common % "compile; test->compile; test->test", i18n/*, 
 																								corexRiftwarp % "test",
