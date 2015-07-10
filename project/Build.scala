@@ -324,8 +324,7 @@ object AlmHirtBuild extends Build
 									corexSprayService, 
 									riftwarp, 
 									riftwarpHttpSpray, 
-									riftwarpMongoProject,
-									sillyDemoApp)	
+									riftwarpMongoProject)	
   lazy val common = commonProject(	name = "almhirt-common",
                        			baseFile = file("almhirt-common"))
 
