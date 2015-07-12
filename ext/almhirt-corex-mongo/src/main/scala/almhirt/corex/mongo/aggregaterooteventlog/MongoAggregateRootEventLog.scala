@@ -388,9 +388,9 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
       val collection = db(collectionName)
       val query = BSONDocument("_id" → BSONString(eventId.value))
       (for {
-        docs ← collection.find(query).cursor(readPreference = readPreference).collect[List](1, true).toAlmFuture
+        doc ← collection.find(query).cursor(readPreference = readPreference).headOption.toAlmFuture
         aggregateRootEvent ← AlmFuture {
-          docs.headOption match {
+          doc match {
             case None    ⇒ None.success
             case Some(d) ⇒ documentToAggregateRootEvent(d).map(Some(_))
           }

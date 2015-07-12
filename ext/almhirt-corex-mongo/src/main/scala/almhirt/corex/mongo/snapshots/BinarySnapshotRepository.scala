@@ -337,8 +337,8 @@ private[snapshots] class BinarySnapshotRepositoryActor(
     val collection = db(collectionName)
     retryFuture(storageRetryPolicy)(
       (for {
-        docs ← collection.find(BSONDocument("_id" -> id.value)).cursor[PersistableSnapshotState](readPreference = readPreference).collect[List](1, true).toAlmFuture
-        rsp ← docs.headOption match {
+        doc ← collection.find(BSONDocument("_id" -> id.value)).cursor[PersistableSnapshotState](readPreference = readPreference).headOption
+        rsp ← doc match {
           case Some(PersistableBinaryVivusSnapshotState(_, _, bin)) ⇒
             AlmFuture(marshaller.unmarshal(bin).map(SnapshotRepository.FoundSnapshot(_)))(marshallingContext)
           case Some(PersistableSnappyCompressedVivusSnapshotState(_, _, snappyData)) ⇒
@@ -353,7 +353,7 @@ private[snapshots] class BinarySnapshotRepositoryActor(
           case None ⇒
             AlmFuture.successful(SnapshotRepository.SnapshotNotFound(id))
         }
-     } yield rsp))
+      } yield rsp))
   }
 
   override def preStart() {

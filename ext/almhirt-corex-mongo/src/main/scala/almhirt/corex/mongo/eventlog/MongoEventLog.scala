@@ -369,16 +369,17 @@ private[almhirt] class MongoEventLogImpl(
       val pinnedSender = sender
       val collection = db(collectionName)
       val query = BSONDocument("_id" → BSONString(eventId.value))
-      val res =
-        for {
-          docs ← collection.find(query).cursor(readPreference = readPreference).collect[List](1, true).toAlmFuture
-          Event ← AlmFuture {
-            docs.headOption match {
-              case None    ⇒ None.success
-              case Some(d) ⇒ documentToEvent(d).map(Some(_))
-            }
-          }(serializationExecutor)
-        } yield Event
+
+      val res: AlmFuture[Option[Event]] = for {
+        doc ← collection.find(query).cursor(readPreference = readPreference).headOption
+        event ← AlmFuture {
+          doc match {
+            case None    ⇒ None.success
+            case Some(d) ⇒ documentToEvent(d).map(Some(_))
+          }
+        }(serializationExecutor)
+      } yield event
+
       res.onComplete(
         problem ⇒ {
           pinnedSender ! FindEventFailed(eventId, problem)
