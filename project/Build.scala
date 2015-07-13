@@ -14,7 +14,7 @@ object BuildSettings {
   val akkaStreamsVersion = "1.0-RC4"
   val scalatestVersion = "2.2.5"
   val sprayVersion = "1.3.3"
-  val reactiveMongoVersion = "0.11.1"
+  val reactiveMongoVersion = "0.11.2"
    
   val buildSettings = Defaults.defaultSettings ++ releaseSettings ++ Seq (
 	organization := buildOrganization,
