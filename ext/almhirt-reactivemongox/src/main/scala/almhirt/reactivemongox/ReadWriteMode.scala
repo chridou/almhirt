@@ -20,8 +20,8 @@ sealed trait ReadWriteMode {
       case None     ⇒ NoSuchElementProblem("No write concern").failure
     }
 
-  def read[T](f: ReadPreferenceAlm ⇒ AlmFuture[T]): AlmFuture[T]
-  def write[T](f: WriteConcernAlm ⇒ AlmFuture[T]): AlmFuture[T]
+  def useForReadOp[T](f: ReadPreferenceAlm ⇒ AlmFuture[T]): AlmFuture[T]
+  def useForWriteOp[T](f: WriteConcernAlm ⇒ AlmFuture[T]): AlmFuture[T]
 }
 
 object ReadWriteMode {
@@ -43,8 +43,8 @@ object ReadWriteMode {
     override val tryGetReadPreference: Option[ReadPreferenceAlm] = None
     override val tryGetWriteConcern: Option[WriteConcernAlm] = None
 
-    override def read[T](f: ReadPreferenceAlm ⇒ AlmFuture[T]): AlmFuture[T] = AlmFuture.failed(IllegalOperationProblem("No reading!"))
-    override def write[T](f: WriteConcernAlm ⇒ AlmFuture[T]): AlmFuture[T] = AlmFuture.failed(IllegalOperationProblem("No writing!"))
+    override def useForReadOp[T](f: ReadPreferenceAlm ⇒ AlmFuture[T]): AlmFuture[T] = AlmFuture.failed(IllegalOperationProblem("No reading!"))
+    override def useForWriteOp[T](f: WriteConcernAlm ⇒ AlmFuture[T]): AlmFuture[T] = AlmFuture.failed(IllegalOperationProblem("No writing!"))
 
     override val toString: String = """NoReadNoWrite"""
   }
@@ -56,8 +56,8 @@ object ReadWriteMode {
     override def tryGetReadPreference: Option[ReadPreferenceAlm] = Some(readPreference)
     override def tryGetWriteConcern: Option[WriteConcernAlm] = None
 
-    override def read[T](f: ReadPreferenceAlm ⇒ AlmFuture[T]): AlmFuture[T] = f(readPreference)
-    override def write[T](f: WriteConcernAlm ⇒ AlmFuture[T]): AlmFuture[T] = AlmFuture.failed(IllegalOperationProblem("No writing in read only mode!"))
+    override def useForReadOp[T](f: ReadPreferenceAlm ⇒ AlmFuture[T]): AlmFuture[T] = f(readPreference)
+    override def useForWriteOp[T](f: WriteConcernAlm ⇒ AlmFuture[T]): AlmFuture[T] = AlmFuture.failed(IllegalOperationProblem("No writing in read only mode!"))
 
     override def toString: String = s"""ReadOnly(readPreference=$readPreference)"""
   }
@@ -69,8 +69,8 @@ object ReadWriteMode {
     override def tryGetReadPreference: Option[ReadPreferenceAlm] = None
     override def tryGetWriteConcern: Option[WriteConcernAlm] = Some(writeConcern)
 
-    override def read[T](f: ReadPreferenceAlm ⇒ AlmFuture[T]): AlmFuture[T] = AlmFuture.failed(IllegalOperationProblem("No reading in write only mode!"))
-    override def write[T](f: WriteConcernAlm ⇒ AlmFuture[T]): AlmFuture[T] = f(writeConcern)
+    override def useForReadOp[T](f: ReadPreferenceAlm ⇒ AlmFuture[T]): AlmFuture[T] = AlmFuture.failed(IllegalOperationProblem("No reading in write only mode!"))
+    override def useForWriteOp[T](f: WriteConcernAlm ⇒ AlmFuture[T]): AlmFuture[T] = f(writeConcern)
 
     override def toString: String = s"""WriteOnly(writeConcern=$writeConcern)"""
   }
@@ -82,8 +82,8 @@ object ReadWriteMode {
     override def tryGetReadPreference: Option[ReadPreferenceAlm] = Some(readPreference)
     override def tryGetWriteConcern: Option[WriteConcernAlm] = Some(writeConcern)
 
-    override def read[T](f: ReadPreferenceAlm ⇒ AlmFuture[T]): AlmFuture[T] = f(readPreference)
-    override def write[T](f: WriteConcernAlm ⇒ AlmFuture[T]): AlmFuture[T] = f(writeConcern)
+    override def useForReadOp[T](f: ReadPreferenceAlm ⇒ AlmFuture[T]): AlmFuture[T] = f(readPreference)
+    override def useForWriteOp[T](f: WriteConcernAlm ⇒ AlmFuture[T]): AlmFuture[T] = f(writeConcern)
 
     override def toString: String = s"""ReadAndWrite(readPreference=$readPreference, writeConcern=$writeConcern)"""
   }
