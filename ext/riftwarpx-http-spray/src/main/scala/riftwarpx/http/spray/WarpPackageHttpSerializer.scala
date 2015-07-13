@@ -39,17 +39,3 @@ class WarpPackageHttpDeserializer(rematerializers: Rematerializers) extends Http
       }
     } yield result
 }
-
-//class WarpPackageHttpSerializing(dematerializers: Dematerializers, rematerializers: Rematerializers) extends HttpSerializer[WarpPackage] {
-//  def this(riftwarp: RiftWarp) = this(riftwarp.dematerializers, riftwarp.rematerializers)
-//
-//  private val serializer = new WarpPackageHttpSerializer(dematerializers)
-//  private val deserializer = new WarpPackageHttpDeserializer(rematerializers)
-//  
-//  override def serialize(channel: String)(what: WarpPackage, options: Map[String, Any] = Map.empty): AlmValidation[(AlmHttpBody, Option[String])] =
-//  	serializer.serialize(channel)(what, options)
-//  	
-//  override def deserialize(channel: String)(what: AlmHttpBody, options: Map[String, Any] = Map.empty): AlmValidation[WarpPackage] =
-//    deserializer.deserialize(channel)(what, options)
-//    
-//}
