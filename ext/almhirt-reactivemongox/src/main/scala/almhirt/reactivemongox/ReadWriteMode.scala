@@ -25,6 +25,9 @@ sealed trait ReadWriteMode {
 }
 
 object ReadWriteMode {
+  sealed trait SupportsReading extends ReadWriteMode
+  sealed trait SupportsWriting extends ReadWriteMode
+
   def apply(readPreference: Option[ReadPreferenceAlm], writeConcern: Option[WriteConcernAlm]): ReadWriteMode =
     (readPreference, writeConcern) match {
       case (None, None)         ⇒ NoReadNoWrite
@@ -46,7 +49,7 @@ object ReadWriteMode {
     override val toString: String = """NoReadNoWrite"""
   }
 
-  final case class ReadOnly(readPreference: ReadPreferenceAlm) extends ReadWriteMode {
+  final case class ReadOnly(readPreference: ReadPreferenceAlm) extends SupportsReading {
     override def isReadOnly: Boolean = true
     override def isWriteOnly: Boolean = false
     override def isReadAndWrite: Boolean = false
@@ -59,7 +62,7 @@ object ReadWriteMode {
     override def toString: String = s"""ReadOnly(readPreference=$readPreference)"""
   }
 
-  final case class WriteOnly(writeConcern: WriteConcernAlm) extends ReadWriteMode {
+  final case class WriteOnly(writeConcern: WriteConcernAlm) extends SupportsWriting {
     override def isReadOnly: Boolean = false
     override def isWriteOnly: Boolean = true
     override def isReadAndWrite: Boolean = false
@@ -72,7 +75,7 @@ object ReadWriteMode {
     override def toString: String = s"""WriteOnly(writeConcern=$writeConcern)"""
   }
 
-  final case class ReadAndWrite(readPreference: ReadPreferenceAlm, writeConcern: WriteConcernAlm) extends ReadWriteMode {
+  final case class ReadAndWrite(readPreference: ReadPreferenceAlm, writeConcern: WriteConcernAlm) extends SupportsReading with SupportsWriting {
     override def isReadOnly: Boolean = false
     override def isWriteOnly: Boolean = false
     override def isReadAndWrite: Boolean = true
