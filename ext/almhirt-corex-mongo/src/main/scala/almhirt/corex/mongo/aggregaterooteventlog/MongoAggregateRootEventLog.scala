@@ -53,7 +53,7 @@ object MongoAggregateRootEventLog {
     import almhirt.configuration._
     import almhirt.almvalidation.kit._
     val path = "almhirt.components.event-logs.aggregate-root-event-log" + configName.map("." + _).getOrElse("")
-    for {
+    (for {
       section ← ctx.config.v[com.typesafe.config.Config](path)
       collectionName ← section.v[String]("collection-name")
       writeWarnThreshold ← section.v[FiniteDuration]("write-warn-threshold")
@@ -71,7 +71,7 @@ object MongoAggregateRootEventLog {
       readWarnThreshold,
       circuitControlSettings,
       retrySettings,
-      rwMode)
+      rwMode)).leftMap(p ⇒ ConfigurationProblem(s"""Failed to configure MongoAggregateRootEventLog @$path.""", cause = Some(p)))
   }
 
   def propsWithConnection(

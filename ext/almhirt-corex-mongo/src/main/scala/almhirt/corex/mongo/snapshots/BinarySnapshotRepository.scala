@@ -53,7 +53,7 @@ object BinarySnapshotRepository {
     import almhirt.configuration._
     import almhirt.almvalidation.kit._
     val path = "almhirt.components.snapshots.repository" + configName.map("." + _).getOrElse("")
-    for {
+    (for {
       section ← ctx.config.v[com.typesafe.config.Config](path)
       collectionName ← section.v[String]("collection-name")
       writeWarningThreshold ← section.v[FiniteDuration]("write-warn-threshold")
@@ -77,7 +77,7 @@ object BinarySnapshotRepository {
       storageRetryPolicy,
       circuitControlSettings,
       futuresExecutionContextSelector,
-      marshallingExecutionContextSelector)
+      marshallingExecutionContextSelector)).leftMap(p ⇒ ConfigurationProblem(s"""Failed to configure BinarySnapshotRepository @$path.""", cause = Some(p)))
   }
 
   def propsWithConnection(

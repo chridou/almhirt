@@ -49,7 +49,7 @@ object MongoEventLog {
     import almhirt.configuration._
     import almhirt.almvalidation.kit._
     val path = "almhirt.components.event-logs.event-log" + configName.map("." + _).getOrElse("")
-    for {
+    (for {
       section ← ctx.config.v[com.typesafe.config.Config](path)
       collectionName ← section.v[String]("collection-name")
       writeWarnThreshold ← section.v[FiniteDuration]("write-warn-threshold")
@@ -64,7 +64,7 @@ object MongoEventLog {
       writeWarnThreshold,
       circuitControlSettings,
       initializeRetrySettings,
-      rwMode)
+      rwMode)).leftMap(p ⇒ ConfigurationProblem(s"""Failed to configure MongoEventLog @$path.""", cause = Some(p)))
   }
 
   def propsWithConnection(
