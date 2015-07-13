@@ -33,9 +33,7 @@ object MongoAggregateRootEventLog {
     readWarnThreshold: FiniteDuration,
     circuitControlSettings: CircuitControlSettings,
     retrySettings: RetrySettings,
-    writeConcern: WriteConcernAlm,
-    readPreference: ReadPreferenceAlm,
-    readOnly: Boolean)(implicit ctx: AlmhirtContext): Props =
+    rwMode: ReadWriteMode.SupportsReading)(implicit ctx: AlmhirtContext): Props =
     Props(new MongoAggregateRootEventLogImpl(
       db,
       collectionName,
@@ -45,16 +43,12 @@ object MongoAggregateRootEventLog {
       readWarnThreshold,
       circuitControlSettings,
       retrySettings,
-      readOnly,
-      writeConcern,
-      readPreference))
+      rwMode))
 
   def propsWithDb(
     db: DB with DBMetaCommands,
     serializeAggregateRootEvent: AggregateRootEvent ⇒ AlmValidation[BSONDocument],
     deserializeAggregateRootEvent: BSONDocument ⇒ AlmValidation[AggregateRootEvent],
-    writeConcern: Option[WriteConcernAlm],
-    readPreference: Option[ReadPreferenceAlm],
     configName: Option[String] = None)(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
     import almhirt.configuration._
     import almhirt.almvalidation.kit._
@@ -67,14 +61,7 @@ object MongoAggregateRootEventLog {
       circuitControlSettings ← section.v[CircuitControlSettings]("circuit-control")
       retrySettings ← section.v[RetrySettings]("retry-settings")
       readOnly ← section.v[Boolean]("read-only")
-      wc ← writeConcern match {
-        case Some(wc) ⇒ wc.success
-        case None     ⇒ section.v[WriteConcernAlm]("write-concern")
-      }
-      rp ← readPreference match {
-        case Some(rp) ⇒ rp.success
-        case None     ⇒ section.v[ReadPreferenceAlm]("read-preference")
-      }
+      rwMode ← section.v[ReadWriteMode.SupportsReading]("read-write-mode")
     } yield propsRaw(
       db,
       collectionName,
@@ -84,17 +71,13 @@ object MongoAggregateRootEventLog {
       readWarnThreshold,
       circuitControlSettings,
       retrySettings,
-      wc,
-      rp,
-      readOnly)
+      rwMode)
   }
 
   def propsWithConnection(
     connection: MongoConnection,
     serializeAggregateRootEvent: AggregateRootEvent ⇒ AlmValidation[BSONDocument],
     deserializeAggregateRootEvent: BSONDocument ⇒ AlmValidation[AggregateRootEvent],
-    writeConcern: Option[WriteConcernAlm],
-    readPreference: Option[ReadPreferenceAlm],
     configName: Option[String] = None)(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
     import almhirt.configuration._
     import almhirt.almvalidation.kit._
@@ -107,8 +90,6 @@ object MongoAggregateRootEventLog {
         db,
         serializeAggregateRootEvent,
         deserializeAggregateRootEvent,
-        writeConcern,
-        readPreference,
         configName)
     } yield props
   }
@@ -124,16 +105,12 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
     readWarnThreshold: FiniteDuration,
     circuitControlSettings: CircuitControlSettings,
     retrySettings: RetrySettings,
-    readOnly: Boolean,
-    writeConcern: WriteConcernAlm,
-    readPreference: ReadPreferenceAlm)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging {
+    rwMode: ReadWriteMode.SupportsReading)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging {
 
   import almhirt.eventlog.AggregateRootEventLog._
 
   logInfo(s"""|collectionName: $collectionName
-                  |read-only: $readOnly
-                  |write-concern: $writeConcern
-                  |read-preference: $readPreference""".stripMargin)
+              |read-write-mode: $rwMode""".stripMargin)
 
   implicit val defaultExecutor = almhirtContext.futuresContext
   val serializationExecutor = almhirtContext.futuresContext
@@ -177,28 +154,27 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
     }
   }
 
-  def insertDocument(document: BSONDocument): AlmFuture[Deadline] = {
-    val collection = db(collectionName)
-    val start = Deadline.now
-    for {
-      writeResult ← collection.insert(document).toAlmFuture
-      _ ← if (writeResult.ok)
-        AlmFuture.successful(())
-      else {
-        val msg = writeResult.errmsg.getOrElse("unknown error")
-        AlmFuture.failed(PersistenceProblem(msg))
-      }
-    } yield start
+  def storeEvent(document: BSONDocument): AlmFuture[Deadline] = {
+    rwMode.useForWriteOp { writeConcern ⇒
+      val collection = db(collectionName)
+      val start = Deadline.now
+      for {
+        writeResult ← collection.insert(document, writeConcern = writeConcern).toAlmFuture
+        _ ← if (writeResult.ok)
+          AlmFuture.successful(())
+        else {
+          val msg = writeResult.errmsg.getOrElse("unknown error")
+          AlmFuture.failed(PersistenceProblem(msg))
+        }
+      } yield start
+    }
   }
 
-  def storeEvent(event: AggregateRootEvent): AlmFuture[Deadline] =
-    for {
-      serialized ← AlmFuture { aggregateRootEventToDocument(event: AggregateRootEvent) }(serializationExecutor)
-      start ← insertDocument(serialized)
-    } yield start
-
   def commitEvent(event: AggregateRootEvent, respondTo: ActorRef) {
-    circuitBreaker.fused(storeEvent(event)) onComplete (
+    (for {
+      serialized ← AlmFuture { aggregateRootEventToDocument(event: AggregateRootEvent) }(serializationExecutor)
+      storeRes ← circuitBreaker.fused(storeEvent(serialized))
+    } yield storeRes) onComplete (
       fail ⇒ {
         logError(s"Could not commit aggregate root event:\n$fail")
         reportMissedEvent(event, CriticalSeverity, fail)
@@ -216,7 +192,7 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
   def getAggregateRootEventsDocs(query: BSONDocument, sort: BSONDocument, traverse: TraverseWindow): Enumerator[BSONDocument] = {
     val (skip, take) = traverse.toInts
     val collection = db(collectionName)
-    val enumerator = collection.find(query, projectionFilter).options(new QueryOpts(skipN = skip)).sort(sort).cursor(readPreference = readPreference).enumerate(maxDocs = take, stopOnError = true)
+    val enumerator = collection.find(query, projectionFilter).options(new QueryOpts(skipN = skip)).sort(sort).cursor(readPreference = rwMode.readPreference).enumerate(maxDocs = take, stopOnError = true)
     enumerator
   }
 
@@ -374,11 +350,6 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
 
   def receiveAggregateRootEventLogMsg: Receive = {
     case CommitAggregateRootEvent(event) ⇒
-      if (readOnly) {
-        val problem = IllegalOperationProblem("Read only mode is enabled.")
-        sender() ! AggregateRootEventNotCommitted(event.eventId, problem)
-        reportMinorFailure(problem)
-      }
       commitEvent(event, sender())
 
     case m: AggregateRootEventLogQueryManyMessage ⇒
@@ -388,7 +359,7 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
       val collection = db(collectionName)
       val query = BSONDocument("_id" → BSONString(eventId.value))
       (for {
-        doc ← collection.find(query).cursor(readPreference = readPreference).headOption.toAlmFuture
+        doc ← collection.find(query).cursor(readPreference = rwMode.readPreference).headOption.toAlmFuture
         aggregateRootEvent ← AlmFuture {
           doc match {
             case None    ⇒ None.success
@@ -405,10 +376,10 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
   }
 
   override def receive =
-    if (readOnly)
-      uninitializedReadOnly
-    else
+    if (rwMode.supportsWriting)
       uninitializedReadWrite
+    else
+      uninitializedReadOnly
 
   override def preStart() {
     super.preStart()

@@ -31,11 +31,43 @@ package object reactivemongox {
       }
   }
 
+  implicit val ReadWriteModeSupportsReadingConfigExtractorInst = new ConfigExtractor[ReadWriteMode.SupportsReading] {
+    def getValue(config: com.typesafe.config.Config, path: String): AlmValidation[ReadWriteMode.SupportsReading] =
+      for {
+        rp ← config.v[ReadPreferenceAlm]("read-preference")
+        wc ← config.magicOption[WriteConcernAlm]("write-concern")
+      } yield wc match {
+        case Some(wc) ⇒ ReadWriteMode.ReadAndWrite(rp, wc)
+        case None     ⇒ ReadWriteMode.ReadOnly(rp)
+      }
+    def tryGetValue(config: com.typesafe.config.Config, path: String): AlmValidation[Option[ReadWriteMode.SupportsReading]] =
+      config.opt[com.typesafe.config.Config](path).flatMap {
+        case Some(_) ⇒ getValue(config, path).map(Some(_))
+        case None    ⇒ scalaz.Success(None)
+      }
+  }
+
+  implicit val ReadWriteModeSupportsWritingConfigExtractorInst = new ConfigExtractor[ReadWriteMode.SupportsWriting] {
+    def getValue(config: com.typesafe.config.Config, path: String): AlmValidation[ReadWriteMode.SupportsWriting] =
+      for {
+        rp ← config.magicOption[ReadPreferenceAlm]("read-preference")
+        wc ← config.v[WriteConcernAlm]("write-concern")
+      } yield rp match {
+        case Some(rp) ⇒ ReadWriteMode.ReadAndWrite(rp, wc)
+        case None     ⇒ ReadWriteMode.WriteOnly(wc)
+      }
+    def tryGetValue(config: com.typesafe.config.Config, path: String): AlmValidation[Option[ReadWriteMode.SupportsWriting]] =
+      config.opt[com.typesafe.config.Config](path).flatMap {
+        case Some(_) ⇒ getValue(config, path).map(Some(_))
+        case None    ⇒ scalaz.Success(None)
+      }
+  }
+
   implicit val ReadWriteModeConfigExtractorInst = new ConfigExtractor[ReadWriteMode] {
     def getValue(config: com.typesafe.config.Config, path: String): AlmValidation[ReadWriteMode] =
       for {
-        rp <- config.magicOption[ReadPreferenceAlm]("read-preference")
-        wc <- config.magicOption[WriteConcernAlm]("write-concern")
+        rp ← config.magicOption[ReadPreferenceAlm]("read-preference")
+        wc ← config.magicOption[WriteConcernAlm]("write-concern")
       } yield ReadWriteMode(rp, wc)
     def tryGetValue(config: com.typesafe.config.Config, path: String): AlmValidation[Option[ReadWriteMode]] =
       config.opt[com.typesafe.config.Config](path).flatMap {

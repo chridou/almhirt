@@ -22,12 +22,10 @@ object BinarySnapshotRepository {
   def propsRaw(
     db: DB with DBMetaCommands,
     collectionName: String,
-    writeConcern: WriteConcernAlm,
-    readPreference: ReadPreferenceAlm,
+    rwMode: ReadWriteMode.SupportsReading,
     marshaller: SnapshotMarshaller[Array[Byte]],
     readWarningThreshold: FiniteDuration,
     writeWarningThreshold: FiniteDuration,
-    readOnly: Boolean,
     compress: Boolean,
     initializeRetryPolicy: RetryPolicyExt,
     storageRetryPolicy: RetryPolicyExt,
@@ -37,12 +35,10 @@ object BinarySnapshotRepository {
     Props(new BinarySnapshotRepositoryActor(
       db,
       collectionName,
-      writeConcern,
-      readPreference,
+      rwMode,
       marshaller,
       readWarningThreshold,
       writeWarningThreshold,
-      readOnly,
       compress,
       initializeRetryPolicy,
       storageRetryPolicy,
@@ -52,8 +48,6 @@ object BinarySnapshotRepository {
 
   def propsWithDb(
     db: DB with DBMetaCommands,
-    writeConcern: Option[WriteConcernAlm],
-    readPreference: Option[ReadPreferenceAlm],
     marshaller: SnapshotMarshaller[Array[Byte]],
     configName: Option[String] = None)(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
     import almhirt.configuration._
@@ -69,25 +63,15 @@ object BinarySnapshotRepository {
       storageRetryPolicy ← section.v[RetryPolicyExt]("storage-retry-policy")
       futuresExecutionContextSelector ← section.v[ExtendedExecutionContextSelector]("futures-context")
       marshallingExecutionContextSelector ← section.v[ExtendedExecutionContextSelector]("marshalling-context")
-      readOnly ← section.v[Boolean]("read-only")
       compress ← section.v[Boolean]("compress")
-      wc ← writeConcern match {
-        case Some(wc) ⇒ wc.success
-        case None     ⇒ section.v[WriteConcernAlm]("write-concern")
-      }
-      rp ← readPreference match {
-        case Some(rp) ⇒ rp.success
-        case None     ⇒ section.v[ReadPreferenceAlm]("read-preference")
-      }
+      rwMode ← section.v[ReadWriteMode.SupportsReading]("read-write-mode")
     } yield propsRaw(
       db,
       collectionName,
-      wc,
-      rp,
+      rwMode,
       marshaller,
       readWarningThreshold,
       writeWarningThreshold,
-      readOnly,
       compress,
       initializeRetryPolicy,
       storageRetryPolicy,
@@ -98,8 +82,6 @@ object BinarySnapshotRepository {
 
   def propsWithConnection(
     connection: MongoConnection,
-    writeConcern: Option[WriteConcernAlm],
-    readPreference: Option[ReadPreferenceAlm],
     marshaller: SnapshotMarshaller[Array[Byte]],
     configName: Option[String] = None)(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
     import almhirt.configuration._
@@ -111,8 +93,6 @@ object BinarySnapshotRepository {
       db ← inTryCatch { connection(dbName)(ctx.futuresContext) }
       props ← propsWithDb(
         db,
-        writeConcern,
-        readPreference,
         marshaller,
         configName)
     } yield props
@@ -120,23 +100,19 @@ object BinarySnapshotRepository {
 
   def componentFactory(
     connection: MongoConnection,
-    writeConcern: Option[WriteConcernAlm],
-    readPreference: Option[ReadPreferenceAlm],
     marshaller: SnapshotMarshaller[Array[Byte]],
     configName: Option[String] = None)(implicit ctx: AlmhirtContext): AlmValidation[ComponentFactory] =
-    propsWithConnection(connection, writeConcern, readPreference, marshaller, configName).map(props ⇒ ComponentFactory(props, almhirt.snapshots.SnapshotRepository.actorname))
+    propsWithConnection(connection, marshaller, configName).map(props ⇒ ComponentFactory(props, almhirt.snapshots.SnapshotRepository.actorname))
 
 }
 
 private[snapshots] class BinarySnapshotRepositoryActor(
     db: DB with DBMetaCommands,
     collectionName: String,
-    writeConcern: WriteConcernAlm,
-    readPreference: ReadPreferenceAlm,
+    rwMode: ReadWriteMode.SupportsReading,
     marshaller: SnapshotMarshaller[Array[Byte]],
     readWarningThreshold: FiniteDuration,
     writeWarningThreshold: FiniteDuration,
-    readOnly: Boolean,
     compress: Boolean,
     initializeRetryPolicy: RetryPolicyExt,
     storageRetryPolicy: RetryPolicyExt,
@@ -245,7 +221,6 @@ private[snapshots] class BinarySnapshotRepositoryActor(
   }
 
   def receiveRunning: Receive = {
-
     case SnapshotRepository.StoreSnapshot(ar) ⇒
       val f = measureWrite(for {
         snapshot ← marshal(ar)
@@ -295,49 +270,55 @@ private[snapshots] class BinarySnapshotRepositoryActor(
     }
 
   private def storeSnapshot(snapshot: PersistableSnapshotState): AlmFuture[AggregateRootId] = {
-    val collection = db(collectionName)
-    retryFuture(storageRetryPolicy)(
-      collection.update(BSONDocument("_id" -> snapshot.aggId.value), snapshot: PersistableSnapshotState, writeConcern = writeConcern, upsert = true, multi = false).toAlmFuture.mapV(res ⇒
-        if (res.ok) {
-          scalaz.Success(snapshot.aggId)
-        } else {
-          val prob = PersistenceProblem(s"""Failed to upsert snapshot for ${snapshot.aggId.value} with version ${snapshot.version.value}: ${res.message}""")
-          reportMajorFailure(prob)
-          scalaz.Failure(prob)
-        }))
+    rwMode.useForWriteOp { writeConcern ⇒
+      val collection = db(collectionName)
+      retryFuture(storageRetryPolicy)(
+        collection.update(BSONDocument("_id" -> snapshot.aggId.value), snapshot: PersistableSnapshotState, writeConcern = writeConcern, upsert = true, multi = false).toAlmFuture.mapV(res ⇒
+          if (res.ok) {
+            scalaz.Success(snapshot.aggId)
+          } else {
+            val prob = PersistenceProblem(s"""Failed to upsert snapshot for ${snapshot.aggId.value} with version ${snapshot.version.value}: ${res.message}""")
+            reportMajorFailure(prob)
+            scalaz.Failure(prob)
+          }))
+    }
   }
 
   private def markSnapshotMortuus(snapshot: PersistableMortuusSnapshotState): AlmFuture[AggregateRootId] = {
-    val collection = db(collectionName)
-    retryFuture(storageRetryPolicy)(
-      collection.update(BSONDocument("_id" -> snapshot.aggId.value), snapshot: PersistableSnapshotState, writeConcern = writeConcern, upsert = true, multi = false).toAlmFuture.mapV(res ⇒
-        if (res.ok) {
-          scalaz.Success(snapshot.aggId)
-        } else {
-          val prob = PersistenceProblem(s"""Failed to mark snapshot for ${snapshot.aggId.value} with version ${snapshot.version.value} as mortuus: ${res.message}""")
-          reportMajorFailure(prob)
-          scalaz.Failure(prob)
-        }))
+    rwMode.useForWriteOp { writeConcern ⇒
+      val collection = db(collectionName)
+      retryFuture(storageRetryPolicy)(
+        collection.update(BSONDocument("_id" -> snapshot.aggId.value), snapshot: PersistableSnapshotState, writeConcern = writeConcern, upsert = true, multi = false).toAlmFuture.mapV(res ⇒
+          if (res.ok) {
+            scalaz.Success(snapshot.aggId)
+          } else {
+            val prob = PersistenceProblem(s"""Failed to mark snapshot for ${snapshot.aggId.value} with version ${snapshot.version.value} as mortuus: ${res.message}""")
+            reportMajorFailure(prob)
+            scalaz.Failure(prob)
+          }))
+    }
   }
 
   private def deleteSnapshot(id: AggregateRootId): AlmFuture[AggregateRootId] = {
-    val collection = db(collectionName)
-    retryFuture(storageRetryPolicy)(
-      collection.remove(BSONDocument("_id" -> id.value), writeConcern = writeConcern, firstMatchOnly = true).toAlmFuture.mapV(res ⇒
-        if (res.ok) {
-          scalaz.Success(id)
-        } else {
-          val prob = PersistenceProblem(s"""Failed to delete snapshot for ${id.value}: ${res.message}""")
-          reportMajorFailure(prob)
-          scalaz.Failure(prob)
-        }))
+    rwMode.useForWriteOp { writeConcern ⇒
+      val collection = db(collectionName)
+      retryFuture(storageRetryPolicy)(
+        collection.remove(BSONDocument("_id" -> id.value), writeConcern = writeConcern, firstMatchOnly = true).toAlmFuture.mapV(res ⇒
+          if (res.ok) {
+            scalaz.Success(id)
+          } else {
+            val prob = PersistenceProblem(s"""Failed to delete snapshot for ${id.value}: ${res.message}""")
+            reportMajorFailure(prob)
+            scalaz.Failure(prob)
+          }))
+    }
   }
 
   private def findSnapshot(id: AggregateRootId): AlmFuture[SnapshotRepository.FindSnapshotResponse] = {
     val collection = db(collectionName)
     retryFuture(storageRetryPolicy)(
       (for {
-        doc ← collection.find(BSONDocument("_id" -> id.value)).cursor[PersistableSnapshotState](readPreference = readPreference).headOption
+        doc ← collection.find(BSONDocument("_id" -> id.value)).cursor[PersistableSnapshotState](readPreference = rwMode.readPreference).headOption
         rsp ← doc match {
           case Some(PersistableBinaryVivusSnapshotState(_, _, bin)) ⇒
             AlmFuture(marshaller.unmarshal(bin).map(SnapshotRepository.FoundSnapshot(_)))(marshallingContext)
@@ -357,14 +338,14 @@ private[snapshots] class BinarySnapshotRepositoryActor(
   }
 
   override def preStart() {
-    if (readOnly) {
-      logInfo("Starting(ro)...")
-      context.become(receiveInitializeReadOnly)
-    } else {
+    if (rwMode.supportsWriting) {
       logInfo("Starting(r/w)...")
       context.become(receiveInitializeReadWrite)
+    } else {
+      logInfo("Starting(ro)...")
+      context.become(receiveInitializeReadOnly)
     }
-    logInfo(s"collection: ${collectionName}\nWrite warn after ${readWarningThreshold.defaultUnitString}\nRead warn after ${writeWarningThreshold.defaultUnitString}\nCompress: $compress\nWrite concern:$writeConcern\nRead preference:$readPreference")
+    logInfo(s"collection: ${collectionName}\nWrite warn after ${readWarningThreshold.defaultUnitString}\nRead warn after ${writeWarningThreshold.defaultUnitString}\nCompress: $compress\nReadWriteMode: $rwMode")
     self ! Initialize
   }
 

@@ -30,9 +30,7 @@ object MongoEventLog {
     writeWarnThreshold: FiniteDuration,
     circuitControlSettings: CircuitControlSettings,
     initializeRetrySettings: RetryPolicyExt,
-    writeConcern: WriteConcernAlm,
-    readPreference: ReadPreferenceAlm,
-    readOnly: Boolean)(implicit ctx: AlmhirtContext): Props =
+    rwMode: ReadWriteMode.SupportsReading)(implicit ctx: AlmhirtContext): Props =
     Props(new MongoEventLogImpl(
       db,
       collectionName,
@@ -41,16 +39,12 @@ object MongoEventLog {
       writeWarnThreshold,
       circuitControlSettings,
       initializeRetrySettings,
-      readOnly,
-      writeConcern,
-      readPreference))
+      rwMode))
 
   def propsWithDb(
     db: DB with DBMetaCommands,
     serializeEvent: Event ⇒ AlmValidation[BSONDocument],
     deserializeEvent: BSONDocument ⇒ AlmValidation[Event],
-    writeConcern: Option[WriteConcernAlm],
-    readPreference: Option[ReadPreferenceAlm],
     configName: Option[String] = None)(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
     import almhirt.configuration._
     import almhirt.almvalidation.kit._
@@ -61,15 +55,7 @@ object MongoEventLog {
       writeWarnThreshold ← section.v[FiniteDuration]("write-warn-threshold")
       circuitControlSettings ← section.v[CircuitControlSettings]("circuit-control")
       initializeRetrySettings ← section.v[RetryPolicyExt]("initialize-retry-settings")
-      readOnly ← section.v[Boolean]("read-only")
-      wc ← writeConcern match {
-        case Some(wc) ⇒ wc.success
-        case None     ⇒ section.v[WriteConcernAlm]("write-concern")
-      }
-      rp ← readPreference match {
-        case Some(rp) ⇒ rp.success
-        case None     ⇒ section.v[ReadPreferenceAlm]("read-preference")
-      }
+      rwMode ← section.v[ReadWriteMode.SupportsReading]("read-write-mode")
     } yield propsRaw(
       db,
       collectionName,
@@ -78,16 +64,12 @@ object MongoEventLog {
       writeWarnThreshold,
       circuitControlSettings,
       initializeRetrySettings,
-      wc,
-      rp,
-      readOnly)
+      rwMode)
   }
 
   def propsWithConnection(
     connection: MongoConnection,
     serializeEvent: Event ⇒ AlmValidation[BSONDocument],
-    writeConcern: Option[WriteConcernAlm],
-    readPreference: Option[ReadPreferenceAlm],
     deserializeEvent: BSONDocument ⇒ AlmValidation[Event],
     configName: Option[String] = None)(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
     import almhirt.configuration._
@@ -101,8 +83,6 @@ object MongoEventLog {
         db,
         serializeEvent,
         deserializeEvent,
-        writeConcern,
-        readPreference,
         configName)
     } yield props
   }
@@ -116,16 +96,12 @@ private[almhirt] class MongoEventLogImpl(
     writeWarnThreshold: FiniteDuration,
     circuitControlSettings: CircuitControlSettings,
     initializeRetrySettings: RetryPolicyExt,
-    readOnly: Boolean,
-    writeConcern: WriteConcernAlm,
-    readPreference: ReadPreferenceAlm)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging {
+    rwMode: ReadWriteMode.SupportsReading)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging {
   import EventLog._
   import almhirt.corex.mongo.BsonConverter._
 
   logInfo(s"""|collectionName: $collectionName
-                  |read-only: $readOnly
-                  |write-concern: $writeConcern
-                  |read-preference: $readPreference""".stripMargin)
+              |read-write-mode: $rwMode""".stripMargin)
 
   implicit val defaultExecutor = almhirtContext.futuresContext
   val serializationExecutor = almhirtContext.futuresContext
@@ -160,11 +136,11 @@ private[almhirt] class MongoEventLogImpl(
     }
   }
 
-  def insertDocument(document: BSONDocument): AlmFuture[Deadline] = {
+  def storeEvent(document: BSONDocument, writeConcern: WriteConcernAlm): AlmFuture[Deadline] = {
     val collection = db(collectionName)
     val start = Deadline.now
     for {
-      writeResult ← collection.insert(document).toAlmFuture
+      writeResult ← collection.insert(document, writeConcern = writeConcern).toAlmFuture
       _ ← if (writeResult.ok)
         AlmFuture.successful(())
       else {
@@ -174,14 +150,11 @@ private[almhirt] class MongoEventLogImpl(
     } yield start
   }
 
-  def storeEvent(event: Event): AlmFuture[Deadline] =
-    for {
-      serialized ← AlmFuture { eventToDocument(event: Event) }(serializationExecutor)
-      start ← insertDocument(serialized)
-    } yield start
-
   def commitEvent(event: Event, respondTo: Option[ActorRef]) {
-    circuitBreaker.fused(storeEvent(event)) onComplete (
+    (for {
+      serialized ← AlmFuture { eventToDocument(event: Event) }(serializationExecutor)
+      storeRes ← rwMode.useForWriteOp { writeConcern ⇒ circuitBreaker.fused(storeEvent(serialized, writeConcern)) }
+    } yield storeRes) onComplete (
       fail ⇒ {
         val msg = s"Could not log event with id ${event.eventId.value}:\n$fail"
 
@@ -262,7 +235,7 @@ private[almhirt] class MongoEventLogImpl(
   def getEvents(query: BSONDocument, sort: BSONDocument, traverse: TraverseWindow): Enumerator[Event] = {
     val (skip, take) = traverse.toInts
     val collection = db(collectionName)
-    val enumerator = collection.find(query, projectionFilter).options(new QueryOpts(skipN = skip)).sort(sort).cursor(readPreference = readPreference).enumerate(maxDocs = take, stopOnError = true)
+    val enumerator = collection.find(query, projectionFilter).options(new QueryOpts(skipN = skip)).sort(sort).cursor(readPreference = rwMode.readPreference).enumerate(maxDocs = take, stopOnError = true)
     enumerator.through(fromBsonDocToEvent)
   }
 
@@ -297,7 +270,7 @@ private[almhirt] class MongoEventLogImpl(
     case Initialized ⇒
       logInfo("Initialized")
       registerCircuitControl(circuitBreaker)
-      context.become(receiveEventLogMsg(false))
+      context.become(receiveEventLogMsg)
 
     case InitializeFailed(prob) ⇒
       logError(s"Initialize failed:\n$prob")
@@ -334,7 +307,7 @@ private[almhirt] class MongoEventLogImpl(
     case Initialized ⇒
       logInfo("Initialized")
       registerCircuitControl(circuitBreaker)
-      context.become(receiveEventLogMsg(true))
+      context.become(receiveEventLogMsg)
 
     case InitializeFailed(prob) ⇒
       logError(s"Initialize failed:\n$prob")
@@ -355,15 +328,9 @@ private[almhirt] class MongoEventLogImpl(
       sender() ! FetchEventsFailed(ServiceNotReadyProblem("I'm still initializing."))
   }
 
-  def receiveEventLogMsg(readOnly: Boolean): Receive = {
+  def receiveEventLogMsg: Receive = {
     case LogEvent(event, acknowledge) ⇒
-      if (readOnly)
-        if (!acknowledge)
-          logWarning("Received log message even though I am in read only mode")
-        else
-          sender() ! EventNotLogged(event.eventId, IllegalOperationProblem("The event log is in read only mode."))
-      else
-        commitEvent(event, if (acknowledge) Some(sender()) else None)
+      commitEvent(event, if (acknowledge) Some(sender()) else None)
 
     case FindEvent(eventId) ⇒
       val pinnedSender = sender
@@ -371,7 +338,7 @@ private[almhirt] class MongoEventLogImpl(
       val query = BSONDocument("_id" → BSONString(eventId.value))
 
       val res: AlmFuture[Option[Event]] = for {
-        doc ← collection.find(query).cursor(readPreference = readPreference).headOption
+        doc ← collection.find(query).cursor(readPreference = rwMode.readPreference).headOption
         event ← AlmFuture {
           doc match {
             case None    ⇒ None.success
@@ -394,10 +361,10 @@ private[almhirt] class MongoEventLogImpl(
   }
 
   override def receive =
-    if (readOnly)
-      uninitializedReadOnly
-    else
+    if (rwMode.supportsWriting)
       uninitializedReadWrite
+    else
+      uninitializedReadOnly
 
   override def preStart() {
     super.preStart()
