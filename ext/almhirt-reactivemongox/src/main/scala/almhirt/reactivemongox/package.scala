@@ -1,6 +1,7 @@
 package almhirt
 
 import scala.language.implicitConversions
+import scalaz.Validation.FlatMap._
 import almhirt.common._
 import almhirt.configuration._
 import reactivemongo.api.commands.WriteConcern
@@ -30,4 +31,16 @@ package object reactivemongox {
       }
   }
 
+  implicit val ReadWriteModeConfigExtractorInst = new ConfigExtractor[ReadWriteMode] {
+    def getValue(config: com.typesafe.config.Config, path: String): AlmValidation[ReadWriteMode] =
+      for {
+        rp <- config.magicOption[ReadPreferenceAlm]("read-preference")
+        wc <- config.magicOption[WriteConcernAlm]("write-concern")
+      } yield ReadWriteMode(rp, wc)
+    def tryGetValue(config: com.typesafe.config.Config, path: String): AlmValidation[Option[ReadWriteMode]] =
+      config.opt[com.typesafe.config.Config](path).flatMap {
+        case Some(_) ⇒ getValue(config, path).map(Some(_))
+        case None    ⇒ scalaz.Success(None)
+      }
+  }
 }
