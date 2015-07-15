@@ -100,7 +100,7 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
         case None ⇒
           updateFromEventlog(Vacat, Vector(sender()), delay = None)
         case Some(snaphots) ⇒
-          context.become(receiveRebuildFromSnapshot(Vector(sender())))
+          context.become(receiveRebuildFromSnapshot(Vector(sender()), Deadline.now))
           snaphots ! SnapshotRepository.FindSnapshot(aggregateRootId)
       }
     case ApplyAggregateRootEvent(event) ⇒
@@ -110,7 +110,7 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
         case None ⇒
           updateFromEventlog(Vacat, Vector.empty, delay = None)
         case Some(snaphots) ⇒
-          context.become(receiveRebuildFromSnapshot(Vector.empty))
+          context.become(receiveRebuildFromSnapshot(Vector.empty, Deadline.now))
           snaphots ! SnapshotRepository.FindSnapshot(aggregateRootId)
       }
   }
@@ -153,7 +153,7 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
 
   }
 
-  private def receiveRebuildFromSnapshot(enqueuedRequests: Vector[ActorRef]): Receive = {
+  private def receiveRebuildFromSnapshot(enqueuedRequests: Vector[ActorRef], startedRebuildOn: Deadline): Receive = {
     case SnapshotRepository.FoundSnapshot(untypedAr) ⇒
       untypedAr.castTo[T].fold(
         fail ⇒ {
@@ -161,12 +161,12 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
           updateFromEventlog(Vacat, enqueuedRequests, rebuildRetryDelay)
         },
         ar ⇒ {
-          context.parent ! AggregateRootViewsInternals.ReportViewDebug(s"Rebuild ${ar.id.value} from snapshot with version ${ar.version.value}.")
+          context.parent ! AggregateRootViewsInternals.ReportViewDebug(s"Rebuild ${ar.id.value} from snapshot with version ${ar.version.value} in ${startedRebuildOn.lap.defaultUnitString}.")
           updateFromEventlog(Vivus(ar), enqueuedRequests, rebuildRetryDelay)
         })
 
     case SnapshotRepository.SnapshotNotFound(id) ⇒
-      context.parent ! AggregateRootViewsInternals.ReportViewDebug(s"Snapshot for ${id.value} not found.")
+      context.parent ! AggregateRootViewsInternals.ReportViewDebug(s"Snapshot for ${id.value} not found. Time: ${startedRebuildOn.lap.defaultUnitString}.")
       updateFromEventlog(Vacat, enqueuedRequests, rebuildRetryDelay)
 
     case SnapshotRepository.AggregateRootWasDeleted(id, version) ⇒
@@ -183,7 +183,7 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
       ()
 
     case GetAggregateRootProjection ⇒
-      context.become(receiveRebuildFromSnapshot(enqueuedRequests :+ sender()))
+      context.become(receiveRebuildFromSnapshot(enqueuedRequests :+ sender(), startedRebuildOn))
 
   }
 
