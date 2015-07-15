@@ -67,7 +67,7 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
   def returnToUnitializedAfter: Option[FiniteDuration]
   def rebuildTimeout: Option[FiniteDuration]
   def rebuildRetryDelay: Option[FiniteDuration]
-  def rebuildWarnDuration: Option[FiniteDuration] = Some(0.3.seconds)
+  def rebuildWarnDuration: Option[FiniteDuration] = Some(0.1.seconds)
   implicit def eventTag: ClassTag[E]
   implicit def arTag: ClassTag[T]
 
@@ -158,16 +158,14 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
       untypedAr.castTo[T].fold(
         fail ⇒ {
           context.parent ! AggregateRootViewsInternals.ReportViewWarning(s"Failed to cast snapshot for ${untypedAr.id.value}. Rebuild all from log.", fail)
-          updateFromEventlog(Vacat, enqueuedRequests, rebuildRetryDelay)
+          updateFromEventlog(Vacat, enqueuedRequests, delay = None)
         },
         ar ⇒ {
-          context.parent ! AggregateRootViewsInternals.ReportViewDebug(s"Rebuild ${ar.id.value} from snapshot with version ${ar.version.value}.")
-          updateFromEventlog(Vivus(ar), enqueuedRequests, rebuildRetryDelay)
+          updateFromEventlog(Vivus(ar), enqueuedRequests, delay = None)
         })
 
     case SnapshotRepository.SnapshotNotFound(id) ⇒
-      context.parent ! AggregateRootViewsInternals.ReportViewDebug(s"Snapshot for ${id.value} not found..")
-      updateFromEventlog(Vacat, enqueuedRequests, rebuildRetryDelay)
+      updateFromEventlog(Vacat, enqueuedRequests, delay = None)
 
     case SnapshotRepository.AggregateRootWasDeleted(id, version) ⇒
       context.parent ! AggregateRootViewsInternals.ReportViewDebug(s"Snapshot for ${id.value} with version ${version.value} was marked as deleted.")
@@ -176,7 +174,7 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
 
     case SnapshotRepository.FindSnapshotFailed(id, prob) ⇒
       context.parent ! AggregateRootViewsInternals.ReportViewWarning(s"Failed to load a snapshot for ${id.value}. Rebuild all from log.", prob)
-      updateFromEventlog(Vacat, enqueuedRequests, rebuildRetryDelay)
+      updateFromEventlog(Vacat, enqueuedRequests, delay = None)
 
     case ApplyAggregateRootEvent(event) ⇒
       // Do nothing. The event must exist in the event log.

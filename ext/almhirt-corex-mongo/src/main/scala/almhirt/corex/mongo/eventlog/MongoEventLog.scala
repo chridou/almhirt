@@ -28,6 +28,7 @@ object MongoEventLog {
     serializeEvent: Event ⇒ AlmValidation[BSONDocument],
     deserializeEvent: BSONDocument ⇒ AlmValidation[Event],
     writeWarnThreshold: FiniteDuration,
+    readWarnThreshold: FiniteDuration,
     circuitControlSettings: CircuitControlSettings,
     initializeRetrySettings: RetryPolicyExt,
     rwMode: ReadWriteMode.SupportsReading)(implicit ctx: AlmhirtContext): Props =
@@ -37,6 +38,7 @@ object MongoEventLog {
       serializeEvent,
       deserializeEvent,
       writeWarnThreshold,
+      readWarnThreshold,
       circuitControlSettings,
       initializeRetrySettings,
       rwMode))
@@ -53,6 +55,7 @@ object MongoEventLog {
       section ← ctx.config.v[com.typesafe.config.Config](path)
       collectionName ← section.v[String]("collection-name")
       writeWarnThreshold ← section.v[FiniteDuration]("write-warn-threshold")
+      readWarnThreshold ← section.v[FiniteDuration]("read-warn-threshold")
       circuitControlSettings ← section.v[CircuitControlSettings]("circuit-control")
       initializeRetrySettings ← section.v[RetryPolicyExt]("initialize-retry-settings")
       rwMode ← section.v[ReadWriteMode.SupportsReading]("read-write-mode")
@@ -62,6 +65,7 @@ object MongoEventLog {
       serializeEvent,
       deserializeEvent,
       writeWarnThreshold,
+      readWarnThreshold,
       circuitControlSettings,
       initializeRetrySettings,
       rwMode)).leftMap(p ⇒ ConfigurationProblem(s"""Failed to configure MongoEventLog @$path.""", cause = Some(p)))
@@ -94,6 +98,7 @@ private[almhirt] class MongoEventLogImpl(
     serializeEvent: Event ⇒ AlmValidation[BSONDocument],
     deserializeEvent: BSONDocument ⇒ AlmValidation[Event],
     writeWarnThreshold: FiniteDuration,
+    readWarnThreshold: FiniteDuration,
     circuitControlSettings: CircuitControlSettings,
     initializeRetrySettings: RetryPolicyExt,
     rwMode: ReadWriteMode.SupportsReading)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging {
@@ -233,10 +238,17 @@ private[almhirt] class MongoEventLogImpl(
   }
 
   def getEvents(query: BSONDocument, sort: BSONDocument, traverse: TraverseWindow): Enumerator[Event] = {
+    val start = Deadline.now
     val (skip, take) = traverse.toInts
     val collection = db(collectionName)
     val enumerator = collection.find(query, projectionFilter).options(new QueryOpts(skipN = skip)).sort(sort).cursor(readPreference = rwMode.readPreference).enumerate(maxDocs = take, stopOnError = true)
-    enumerator.through(fromBsonDocToEvent)
+
+    val enumeratorWithCallback = enumerator.through(fromBsonDocToEvent).onDoneEnumerating({
+      val lap = start.lap
+      if (lap > readWarnThreshold)
+        logWarning(s"""Fetching events took longer than ${readWarnThreshold.defaultUnitString}(${lap.defaultUnitString}).""")
+    })
+    enumeratorWithCallback
   }
 
   def fetchAndDispatchEvents(m: FetchEvents, respondTo: ActorRef) {

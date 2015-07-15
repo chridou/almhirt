@@ -43,7 +43,8 @@ object MongoAggregateRootEventLog {
       readWarnThreshold,
       circuitControlSettings,
       retrySettings,
-      rwMode))
+      rwMode,
+      50))
 
   def propsWithDb(
     db: DB with DBMetaCommands,
@@ -105,12 +106,14 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
     readWarnThreshold: FiniteDuration,
     circuitControlSettings: CircuitControlSettings,
     retrySettings: RetrySettings,
-    rwMode: ReadWriteMode.SupportsReading)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging {
+    rwMode: ReadWriteMode.SupportsReading,
+    batchSize: Int)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging {
 
   import almhirt.eventlog.AggregateRootEventLog._
 
   logInfo(s"""|collectionName: $collectionName
-              |read-write-mode: $rwMode""".stripMargin)
+              |read-write-mode: $rwMode
+              |batch-size: $batchSize""".stripMargin)
 
   implicit val defaultExecutor = almhirtContext.futuresContext
   val serializationExecutor = almhirtContext.futuresContext
@@ -120,7 +123,7 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
   val projectionFilter = BSONDocument("event" → 1)
 
   val noSorting = BSONDocument()
-  val sortByVersion = BSONDocument("aggid" → 1, "version" → 1)
+  val sortByVersion = BSONDocument("version" → 1)
 
   private val fromBsonDocToAggregateRootEvent: Enumeratee[BSONDocument, AggregateRootEvent] =
     Enumeratee.mapM[BSONDocument] { doc ⇒ Future { documentToAggregateRootEvent(doc).resultOrEscalate }(serializationExecutor) }
@@ -192,7 +195,7 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
   def getAggregateRootEventsDocs(query: BSONDocument, sort: BSONDocument, traverse: TraverseWindow): Enumerator[BSONDocument] = {
     val (skip, take) = traverse.toInts
     val collection = db(collectionName)
-    val enumerator = collection.find(query, projectionFilter).options(new QueryOpts(skipN = skip)).sort(sort).cursor(readPreference = rwMode.readPreference).enumerate(maxDocs = take, stopOnError = true)
+    val enumerator = collection.find(query, projectionFilter).options(new QueryOpts(skipN = skip, batchSizeN = batchSize)).sort(sort).cursor(readPreference = rwMode.readPreference).enumerate(maxDocs = take, stopOnError = true)
     enumerator
   }
 
@@ -231,12 +234,12 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
     val start = Deadline.now
     val (query, sort) = createQueryAndSort(m)
     val eventsEnumerator = getAggregateRootEvents(query, sort, m.traverse)
-    val enumeratorWithCallBack = eventsEnumerator.onDoneEnumerating(() ⇒ {
+    val enumeratorWithCallback = eventsEnumerator.onDoneEnumerating({
       val lap = start.lap
       if (lap > readWarnThreshold)
         logWarning(s"""Fetching aggregate root events took longer than ${readWarnThreshold.defaultUnitString}(${lap.defaultUnitString}).""")
     })
-    respondTo ! FetchedAggregateRootEvents(enumeratorWithCallBack)
+    respondTo ! FetchedAggregateRootEvents(enumeratorWithCallback)
   }
 
   private case object Initialize
