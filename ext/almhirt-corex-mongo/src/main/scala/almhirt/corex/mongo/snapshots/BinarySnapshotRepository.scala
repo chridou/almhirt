@@ -251,8 +251,6 @@ private[snapshots] class BinarySnapshotRepositoryActor(
       val lap = start.lap
       if (lap > readWarningThreshold)
         logWarning(s"Read operationen took longer than ${readWarningThreshold.defaultUnitString}(${lap.defaultUnitString}).")
-      else
-        logInfo(s"Read operationen took ${lap.defaultUnitString}.")
     }
   }
 
@@ -262,8 +260,6 @@ private[snapshots] class BinarySnapshotRepositoryActor(
       val lap = start.lap
       if (lap > writeWarningThreshold)
         logWarning(s"Write operationen took longer than ${writeWarningThreshold.defaultUnitString}(${lap.defaultUnitString}).")
-      else
-        logInfo(s"Write operationen took ${lap.defaultUnitString}.")
     }
   }
 
