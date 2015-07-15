@@ -222,22 +222,24 @@ private[snapshots] class BinarySnapshotRepositoryActor(
 
   def receiveRunning: Receive = {
     case SnapshotRepository.StoreSnapshot(ar) ⇒
-      val f = measureWrite(for {
-        snapshot ← marshal(ar)
-        storedAggId ← circuitBreaker.fused(storeSnapshot(snapshot))
-      } yield SnapshotRepository.SnapshotStored(storedAggId))
+      val f = measureWrite {
+        for {
+          snapshot ← marshal(ar)
+          storedAggId ← circuitBreaker.fused(storeSnapshot(snapshot))
+        } yield SnapshotRepository.SnapshotStored(storedAggId)
+      }
       f.recoverThenPipeTo(fail ⇒ SnapshotRepository.StoreSnapshotFailed(ar.id, fail))(sender())
 
     case SnapshotRepository.MarkAggregateRootMortuus(id, version) ⇒
-      val f = measureWrite(circuitBreaker.fused(markSnapshotMortuus(PersistableMortuusSnapshotState(id, version))).map(SnapshotRepository.AggregateRootMarkedMortuus(_)))
+      val f = measureWrite { circuitBreaker.fused(markSnapshotMortuus(PersistableMortuusSnapshotState(id, version))).map(SnapshotRepository.AggregateRootMarkedMortuus(_)) }
       f.recoverThenPipeTo(fail ⇒ SnapshotRepository.MarkAggregateRootMortuusFailed(id, fail))(sender())
 
     case SnapshotRepository.DeleteSnapshot(id) ⇒
-      val f = measureWrite(circuitBreaker.fused(deleteSnapshot(id)).map(SnapshotRepository.SnapshotDeleted(_)))
+      val f = measureWrite { circuitBreaker.fused(deleteSnapshot(id)).map(SnapshotRepository.SnapshotDeleted(_)) }
       f.recoverThenPipeTo(fail ⇒ SnapshotRepository.DeleteSnapshotFailed(id, fail))(sender())
 
     case SnapshotRepository.FindSnapshot(id) ⇒
-      val f = measureRead(circuitBreaker.fused(findSnapshot(id)))
+      val f = measureRead { circuitBreaker.fused(findSnapshot(id)) }
       f.recoverThenPipeTo(fail ⇒ SnapshotRepository.FindSnapshotFailed(id, fail))(sender())
   }
 
