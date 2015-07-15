@@ -115,7 +115,7 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
       }
   }
 
-  private def receiveRebuildFromEventlog(currentState: AggregateRootLifecycle[T], enqueuedRequests: Vector[ActorRef], enqueuedEvents: Vector[E], start: Deadline): Receive = {
+  private def receiveRebuildFromEventlog(currentState: AggregateRootLifecycle[T], enqueuedRequests: Vector[ActorRef], enqueuedEvents: Vector[E]): Receive = {
     case FetchedAggregateRootEvents(eventsEnumerator) ⇒
       val iteratee: Iteratee[AggregateRootEvent, AggregateRootLifecycle[T]] = Iteratee.fold[AggregateRootEvent, AggregateRootLifecycle[T]](currentState) {
         case (acc, event) ⇒
@@ -124,8 +124,6 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
 
       eventsEnumerator.run(iteratee).onComplete {
         case scala.util.Success(arState) ⇒
-          context.parent ! AggregateRootViewsInternals.ReportViewDebug(s"Rebuild (${aggregateRootId.value}) from eventlog took ${start.lap.defaultUnitString}.")
-          
           self ! InternalEventlogArBuildResult(arState)
         case scala.util.Failure(error) ⇒
           self ! InternalEventlogBuildArFailed(error)
@@ -145,10 +143,10 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
       }
 
     case ApplyAggregateRootEvent(event) ⇒
-      context.become(receiveRebuildFromEventlog(currentState, enqueuedRequests, enqueuedEvents :+ event.specificUnsafeWithHandler[E](onError(enqueuedRequests, enqueuedEvents.size + 1)), start))
+      context.become(receiveRebuildFromEventlog(currentState, enqueuedRequests, enqueuedEvents :+ event.specificUnsafeWithHandler[E](onError(enqueuedRequests, enqueuedEvents.size + 1))))
 
     case GetAggregateRootProjection ⇒
-      context.become(receiveRebuildFromEventlog(currentState, enqueuedRequests :+ sender(), enqueuedEvents, start))
+      context.become(receiveRebuildFromEventlog(currentState, enqueuedRequests :+ sender(), enqueuedEvents))
 
     case RebuildTimesOutNow(after) ⇒
       onError(enqueuedRequests, enqueuedEvents.size)(AggregateRootEventStoreFailedReadingException(aggregateRootId, s"Rebuilding the aggregate root(${aggregateRootId.value}) timed out after ${after.defaultUnitString}."))
@@ -283,7 +281,7 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
         onError(enqueuedRequests, 0)(RebuildAggregateRootFailedException(aggregateRootId, "An error has occured building the aggregate root. Nothing can be built from a dead aggregate root."))
     }
     rebuildTimeout.foreach(timeout ⇒ context.system.scheduler.scheduleOnce(timeout, self, RebuildTimesOutNow(timeout))(futuresContext))
-    context.become(receiveRebuildFromEventlog(state, enqueuedRequests, Vector.empty, Deadline.now))
+    context.become(receiveRebuildFromEventlog(state, enqueuedRequests, Vector.empty))
   }
 
   private def dispatchState(currentState: AggregateRootLifecycle[T], to: ActorRef*) {
