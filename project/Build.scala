@@ -21,6 +21,7 @@ object BuildSettings {
   scalaVersion := buildScalaVersion,
   resolvers += "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/",
   resolvers += "Sonatype Releases" at "https://oss.sonatype.org/content/repositories/releases/",
+  testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-o", "-h", "target/html-test-reports", "-u", "target/test-reports"),
   scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature"),
 
   releaseProcess <<= thisProjectRef apply { ref =>
@@ -77,6 +78,7 @@ object Dependencies {
 	
   lazy val scalatest = "org.scalatest" %% "scalatest" % BuildSettings.scalatestVersion % "test"	
 	lazy val akka_testkit = "com.typesafe.akka" %% "akka-testkit" % BuildSettings.akkaVersion % "test"
+  lazy val pegdown = "org.pegdown" % "pegdown" % "1.4.2" % "test"
 
 }
 
@@ -138,7 +140,8 @@ trait CorexSprayClientBuild {
 	  libraryDependencies += spray_client,
 	  libraryDependencies += typesafe_config,
 	  libraryDependencies += scalaz,
-	  libraryDependencies += scalatest
+	  libraryDependencies += scalatest,
+    libraryDependencies += pegdown
   )
 }
 
@@ -155,7 +158,8 @@ trait HttpxSprayServiceBuild {
 	  libraryDependencies += spray_routing,
 	  libraryDependencies += typesafe_config,
 	  libraryDependencies += scalaz,
-	  libraryDependencies += scalatest
+	  libraryDependencies += scalatest,
+    libraryDependencies += pegdown
   )
 }
 
@@ -169,7 +173,8 @@ trait AlmhirtxReactiveMongoBuild {
 	  libraryDependencies += "org.reactivemongo" %% "reactivemongo" % BuildSettings.reactiveMongoVersion % "provided"
 		exclude("ch.qos.logback", "logback-core")
 		exclude("ch.qos.logback", "logback-classic"),
- 	  libraryDependencies += scalatest
+ 	  libraryDependencies += scalatest,
+    libraryDependencies += pegdown
   )
 }
 
@@ -186,7 +191,8 @@ trait CoreBuild {
 	  libraryDependencies += akka_actor,
 	  libraryDependencies += logback,
 	  libraryDependencies += akka_testkit,
-	  libraryDependencies += scalatest
+	  libraryDependencies += scalatest,
+    libraryDependencies += pegdown
   )
 }
 
@@ -202,7 +208,8 @@ trait DashboardBuild {
 	  libraryDependencies += akka_actor,
 	  libraryDependencies += logback,
 	  libraryDependencies += akka_testkit,
-	  libraryDependencies += scalatest
+	  libraryDependencies += scalatest,
+    libraryDependencies += pegdown
   )
 }
 
@@ -223,7 +230,8 @@ trait CorexMongoBuild {
 	  libraryDependencies += "org.reactivemongo" %% "reactivemongo" % BuildSettings.reactiveMongoVersion % "provided"
 		exclude("ch.qos.logback", "logback-core")
 		exclude("ch.qos.logback", "logback-classic"),
- 	  libraryDependencies += scalatest
+ 	  libraryDependencies += scalatest,
+    libraryDependencies += pegdown
   )
 }
 
@@ -240,7 +248,8 @@ trait CorexSprayServiceBuild {
 	  libraryDependencies += spray_routing,
 	  libraryDependencies += spray_testkit,
 	  libraryDependencies += spray_can,
-	  libraryDependencies += scalatest
+	  libraryDependencies += scalatest,
+    libraryDependencies += pegdown
 	  )
 	  }
 }
@@ -257,7 +266,8 @@ trait RiftWarpBuild {
 	  libraryDependencies += apache_codecs,
 	  libraryDependencies += scalaz,
 //	  libraryDependencies += "com.chuusai" %% "shapeless" % "1.2.4",
-	  libraryDependencies += scalatest
+	  libraryDependencies += scalatest,
+    libraryDependencies += pegdown
   )
 }
 
@@ -273,7 +283,8 @@ trait RiftWarpHttpSprayBuild {
 	  libraryDependencies += apache_codecs,
 	  libraryDependencies += spray_httpx,
 	  libraryDependencies += scalaz,
-	  libraryDependencies += scalatest
+	  libraryDependencies += scalatest,
+    libraryDependencies += pegdown
   )
 }
 
@@ -291,7 +302,8 @@ trait RiftWarpMongoExtBuild {
 		exclude("ch.qos.logback", "logback-core")
 		exclude("ch.qos.logback", "logback-classic"),
 	  libraryDependencies += scalaz,
-	  libraryDependencies += scalatest
+	  libraryDependencies += scalatest,
+    libraryDependencies += pegdown
   )
 }
 
@@ -304,7 +316,8 @@ trait RiftWarpAutomaticBuild {
 	  libraryDependencies += jodaconvert,
 	  libraryDependencies += apache_codecs,
 	  libraryDependencies += scalaz,
-	  libraryDependencies += scalatest
+	  libraryDependencies += scalatest,
+    libraryDependencies += pegdown
   )
 }
 
