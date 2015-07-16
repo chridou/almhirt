@@ -22,6 +22,8 @@ object BuildSettings {
   resolvers += "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/",
   resolvers += "Sonatype Releases" at "https://oss.sonatype.org/content/repositories/releases/",
   testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-o", "-h", "target/html-test-reports", "-u", "target/test-reports"),
+  fork in Test := true,
+  parallelExecution in Test := false,
   scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature"),
 
   releaseProcess <<= thisProjectRef apply { ref =>

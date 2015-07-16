@@ -10,7 +10,7 @@ import akka.testkit._
 import org.scalatest._
 
 class UnboundedSinkTests(_system: ActorSystem) extends TestKit(_system) with FunSuiteLike with Matchers with BeforeAndAfterAll {
-  def this() = this(ActorSystem("UnboundedSinkTests", almhirt.TestConfigs.logInfoConfig))
+  def this() = this(ActorSystem("UnboundedSinkTests", almhirt.TestConfigs.logErrorConfig))
 
   implicit val executionContext = system.dispatchers.defaultGlobalDispatcher
   implicit val ccuad = CanCreateUuidsAndDateTimes()

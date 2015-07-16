@@ -58,13 +58,13 @@ class IcuPluralTests extends FunSuite with Matchers {
     res should equal("2 items")
   }
 
-  test("""render the plural string "1000 items" for value 1000""") {
+  ignore("""render the plural string "1000 items" for value 1000""") {
     val formatable = resourcesWithoutFallback.forceFormatter(resourceKey, "en")
     val res = formatable.forceFormat("amount" -> 1000)
     res should equal("1000 items")
   }
 
-  test("""render the plural string  "1000 items" for value 1000.0""") {
+  ignore("""render the plural string  "1000 items" for value 1000.0""") {
     val formatable = resourcesWithoutFallback.forceFormatter(resourceKey, "en")
     val res = formatable.forceFormat("amount" -> 1000.0)
     res should equal("1000 items")

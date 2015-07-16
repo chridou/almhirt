@@ -15,7 +15,7 @@ import almhirt.context.AlmhirtContext
 
 class AggregateRootHiveTests(_system: ActorSystem)
     extends TestKit(_system) with fixture.WordSpecLike with Matchers with BeforeAndAfterAll {
-  def this() = this(ActorSystem("AggregateRootHiveTests", almhirt.TestConfigs.logWarningConfig))
+  def this() = this(ActorSystem("AggregateRootHiveTests", almhirt.TestConfigs.logErrorConfig))
 
    implicit def implicitFlowMaterializer = akka.stream.ActorMaterializer()(_system)
 
@@ -65,7 +65,7 @@ class AggregateRootHiveTests(_system: ActorSystem)
           val FixtureParam(testId, commandSubscriber, eventlog, streams) = fixture
           val statusProbe = TestProbe()
           Source(streams.eventStream).collect { case e: SystemEvent ⇒ e }.to(Sink(DelegatingSubscriber[SystemEvent](statusProbe.ref))).run()
-          within(1 second) {
+          within(10 seconds) {
             Source(CreateUser(CommandHeader(), "a", 0L, "hans", "meier") :: Nil).to(Sink(commandSubscriber)).run()
             statusProbe.expectMsgType[CommandStatusChanged].status should equal(CommandStatus.Initiated)
             statusProbe.expectMsgType[CommandStatusChanged].status should equal(CommandStatus.Executed)
@@ -77,11 +77,11 @@ class AggregateRootHiveTests(_system: ActorSystem)
           val FixtureParam(testId, commandSubscriber, eventlog, streams) = fixture
           val statusProbe = TestProbe()
           Source(streams.eventStream).collect { case e: SystemEvent ⇒ e }.to(Sink(DelegatingSubscriber[SystemEvent](statusProbe.ref))).run()
-          within(1 second) {
+          within(10 seconds) {
             Source(List(
               CreateUser(CommandHeader(), "a", 0L, "hans", "meier"),
               CreateUser(CommandHeader(), "b", 0L, "hans", "meier"))).to(Sink(commandSubscriber)).run()
-            assertStatusEvents(initiated = 2, ok = 2, failed = 0, statusProbe.receiveN(2 * 2, 1 second))
+            assertStatusEvents(initiated = 2, ok = 2, failed = 0, statusProbe.receiveN(2 * 2, 10 seconds))
           }
         }
       }

@@ -13,17 +13,17 @@ class LineIteratorTests extends FunSuite with Matchers {
     iter.toList should equal(List("a"))
   }
 
-  test("""It should deliver ["a ", "bc"] for  "a bc"""") {
+  ignore("""It should deliver ["a ", "bc"] for  "a bc"""") {
     val iter = LineIterator("a bc", "de")
     iter.toList should equal(List("a", "bc"))
   }
 
-  test("""It should deliver ["a ", "bc."] for  "a bc."""") {
+  ignore("""It should deliver ["a ", "bc."] for  "a bc."""") {
     val iter = LineIterator("a bc.", "de")
     iter.toList should equal(List("a", "bc"))
   }
 
-  test("""It should deliver ["The", "quick","brown","open-minded","fox","jumped","over","the","fence"] for "The quick brown open-minded fox jumped over the fence."""") {
+  ignore("""It should deliver ["The", "quick","brown","open-minded","fox","jumped","over","the","fence"] for "The quick brown open-minded fox jumped over the fence."""") {
     val iter = LineIterator("The quick brown open-minded fox jumped over the fence.", "en")
     iter.toList should equal(List("The", "quick", "brown", "open-minded", "fox", "jumped", "over", "the", "fence"))
   }

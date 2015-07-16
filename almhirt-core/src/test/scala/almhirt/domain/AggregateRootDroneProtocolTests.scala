@@ -12,8 +12,8 @@ import akka.testkit._
 import org.scalatest._
 
 class AggregateRootDroneProtocolTests(_system: ActorSystem)
-  extends TestKit(_system) with fixture.WordSpecLike with Matchers with BeforeAndAfterAll {
-  def this() = this(ActorSystem("AggregateRootDroneProtocolTests", almhirt.TestConfigs.logWarningConfig))
+    extends TestKit(_system) with fixture.WordSpecLike with Matchers with BeforeAndAfterAll {
+  def this() = this(ActorSystem("AggregateRootDroneProtocolTests", almhirt.TestConfigs.logErrorConfig))
 
   implicit def implicitFlowMaterializer = akka.stream.ActorMaterializer()(_system)
 
@@ -27,7 +27,7 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
       override def getUtcTimestamp(): LocalDateTime = dt
     }
   }
-  
+
   "The AggregateRootDrone" when {
     import almhirt.eventlog.AggregateRootEventLog._
     import AggregateRootHiveInternals._
@@ -40,7 +40,7 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
           val FixtureParam(testId, droneActor, droneProbe, streams) = fixture
           val eventsProbe = TestProbe()
           Source(streams.eventStream).collect { case e: AggregateRootEvent ⇒ e }.to(Sink(DelegatingSubscriber[AggregateRootEvent](eventsProbe.ref))).run()
-          within(1 second) {
+          within(10 seconds) {
             droneProbe.send(droneActor, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
             eventsProbe.expectMsgType[UserCreated]
           }
@@ -51,7 +51,7 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
           val FixtureParam(testId, droneActor, droneProbe, streams) = fixture
           val eventsProbe = TestProbe()
           Source(streams.eventStream).collect { case e: AggregateRootEvent ⇒ e }.to(Sink(DelegatingSubscriber[AggregateRootEvent](eventsProbe.ref))).run()
-          within(1 second) {
+          within(10 seconds) {
             droneProbe.send(droneActor, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
             droneProbe.expectMsgType[CommandExecuted]
             droneProbe.send(droneActor, ChangeUserAgeForCreditCard(CommandHeader(), "a", 1L, 22))
@@ -65,7 +65,7 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
           val FixtureParam(testId, droneActor, droneProbe, streams) = fixture
           val eventsProbe = TestProbe()
           Source(streams.eventStream).collect { case e: AggregateRootEvent ⇒ e }.to(Sink(DelegatingSubscriber[AggregateRootEvent](eventsProbe.ref))).run()
-          within(1 second) {
+          within(10 seconds) {
             droneProbe.send(droneActor, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
             droneProbe.expectMsgType[CommandExecuted]
             droneProbe.send(droneActor, ChangeUserAgeForCreditCard(CommandHeader(), "a", 1L, 22))
@@ -82,7 +82,7 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
           val FixtureParam(testId, droneActor, droneProbe, streams) = fixture
           val eventsProbe = TestProbe()
           Source(streams.eventStream).collect { case e: AggregateRootEvent ⇒ e }.to(Sink(DelegatingSubscriber[AggregateRootEvent](eventsProbe.ref))).run()
-          within(1 second) {
+          within(10 seconds) {
             droneProbe.send(droneActor, UserUow(CommandHeader(), "a", 0L, Seq.empty))
             eventsProbe.expectNoMsg(500 millis)
           }
@@ -93,7 +93,7 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
           val FixtureParam(testId, droneActor, droneProbe, streams) = fixture
           val eventsProbe = TestProbe()
           Source(streams.eventStream).collect { case e: AggregateRootEvent ⇒ e }.to(Sink(DelegatingSubscriber[AggregateRootEvent](eventsProbe.ref))).run()
-          within(1 second) {
+          within(10 seconds) {
             droneProbe.send(droneActor, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
             droneProbe.expectMsgType[CommandExecuted]
             droneProbe.send(droneActor, ChangeUserAgeForCreditCard(CommandHeader(), "a", 1L, 22))
@@ -115,7 +115,7 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
           val FixtureParam(testId, droneActor, droneProbe, streams) = fixture
           val eventsProbe = TestProbe()
           Source(streams.eventStream).collect { case e: AggregateRootEvent ⇒ e }.to(Sink(DelegatingSubscriber[AggregateRootEvent](eventsProbe.ref))).run()
-          within(1 second) {
+          within(10 seconds) {
             droneProbe.send(droneActor, ChangeUserLastname(CommandHeader(), "a", 0L, "meier"))
             eventsProbe.expectNoMsg(500 millis)
           }
@@ -126,7 +126,7 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
           val FixtureParam(testId, droneActor, droneProbe, streams) = fixture
           val eventsProbe = TestProbe()
           Source(streams.eventStream).collect { case e: AggregateRootEvent ⇒ e }.to(Sink(DelegatingSubscriber[AggregateRootEvent](eventsProbe.ref))).run()
-          within(1 second) {
+          within(10 seconds) {
             droneProbe.send(droneActor, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
             droneProbe.expectMsgType[CommandExecuted]
             droneProbe.send(droneActor, ChangeUserAgeForCreditCard(CommandHeader(), "a", 7L, 22))
@@ -157,7 +157,7 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
     val eventlogProps: Props = almhirt.eventlog.InMemoryAggregateRootEventLog.props()
     val eventlogActor: ActorRef = system.actorOf(eventlogProps, s"eventlog-$testId")
     val droneProbe = TestProbe()
-    val streams = AlmhirtStreams(s"almhirt-streams-$testId")(1 second).awaitResultOrEscalate(1 second)
+    val streams = AlmhirtStreams(s"almhirt-streams-$testId")(10 seconds).awaitResultOrEscalate(10 seconds)
     val droneProps: Props = Props(
       new AggregateRootDrone[User, UserEvent] with ActorLogging with UserEventHandler with UserCommandHandler with UserUpdater with AggregateRootDroneCommandHandlerAdaptor[User, UserCommand, UserEvent] {
         def ccuad = AggregateRootDroneProtocolTests.this.ccuad
@@ -170,7 +170,15 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
         def retryEventLogActionDelay: Option[FiniteDuration] = None
         val eventsBroker: StreamBroker[Event] = streams.eventBroker
         val returnToUnitializedAfter = None
-        val preStoreActionFor = (e: UserEvent) => PreStoreEventAction.NoAction
+        val preStoreActionFor = (e: UserEvent) ⇒ PreStoreEventAction.NoAction
+
+        override def logDebug(msg: ⇒ String): Unit = {}
+
+        override def logWarning(msg: ⇒ String, cause: Option[almhirt.problem.ProblemCause]): Unit = {}
+
+        override def logWarning(msg: ⇒ String): Unit = {}
+
+        override def logError(msg: ⇒ String, cause: almhirt.problem.ProblemCause): Unit = {}
 
         override val aggregateCommandValidator = AggregateRootCommandValidator.Validated
         override val tag = scala.reflect.ClassTag[UserCommand](classOf[UserCommand])

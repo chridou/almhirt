@@ -29,7 +29,7 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
     def apply(id: String): TestSystemEvent = TestSystemEvent(EventHeader(EventId(id)))
   }
 
-  val nMsgBig = 50000
+  val nMsgBig = 10000
 
   "The AlmhirtStreams" when {
     "accessed via a contractor" should {
@@ -39,7 +39,7 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
 
         val event = TestEvent("a")
         val subscriber = DelegatingEventSubscriber[Event](subscriberProbeEvent.ref, (err: Throwable) => info(s"A ${err.getMessage}"))
-        within(1 second) {
+        within(10 seconds) {
           streams.eventStream.subscribe(subscriber)
           Stillage(List[Event](event)).signContract(streams.eventBroker)
           subscriberProbeEvent.expectMsg(100 millis, event)
@@ -54,7 +54,7 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
         val event1 = TestEvent("a")
         val event2 = TestEvent("b")
         val subscriber = DelegatingEventSubscriber[Event](subscriberProbeEvent.ref, (err: Throwable) => info(s"B ${err.getMessage}"))
-        within(1 second) {
+        within(10 seconds) {
           streams.eventStream.subscribe(subscriber)
           Stillage(List[Event](event1)).signContract(streams.eventBroker)
           Stillage(List[Event](event2)).signContract(streams.eventBroker)
@@ -70,7 +70,7 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
         val event = TestEvent("a")
         val subscriber1 = DelegatingEventSubscriber[Event](subscriberProbeEvent1.ref, (err: Throwable) => info(s"C1 ${err.getMessage}"))
         val subscriber2 = DelegatingEventSubscriber[Event](subscriberProbeEvent2.ref, (err: Throwable) => info(s"C2 ${err.getMessage}"))
-        within(1 second) {
+        within(10 seconds) {
           streams.eventStream.subscribe(subscriber1)
           streams.eventStream.subscribe(subscriber2)
           Stillage(List[Event](event)).signContract(streams.eventBroker)
@@ -85,7 +85,7 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
 
         val event = TestDomainEvent("a")
         val subscriber = DelegatingEventSubscriber[Event](subscriberProbeEvent.ref, (err: Throwable) => info(s"D ${err.getMessage}"))
-        within(1 second) {
+        within(10 seconds) {
           streams.eventStream.subscribe(subscriber)
           Stillage(List[Event](event)).signContract(streams.eventBroker)
           subscriberProbeEvent.expectMsg(100 millis, event)
@@ -118,7 +118,7 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
         val event = TestEvent("a")
         val subscriber = DelegatingEventSubscriber[Event](subscriberProbeEvent.ref, (err: Throwable) => info(s"F ${err.getMessage}"))
         val streamSubscriber = streams.eventBroker.newSubscriber
-        within(1 second) {
+        within(10 seconds) {
           streams.eventStream.subscribe(streamSubscriber)
           Source(List[Event](event)).to(Sink(subscriber)).run()
           subscriberProbeEvent.expectMsg(100 millis, event)
@@ -134,7 +134,7 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
         val subscriber = DelegatingEventSubscriber[Event](subscriberProbeEvent.ref, (err: Throwable) => info(s"G ${err.getMessage}"))
         val streamSubscriber1 = streams.eventBroker.newSubscriber
         val streamSubscriber2 = streams.eventBroker.newSubscriber
-        within(1 second) {
+        within(10 seconds) {
           streams.eventStream.subscribe(subscriber)
           Source(List[Event](event1)).to(Sink(streamSubscriber1)).run()
           subscriberProbeEvent.expectMsg(100 millis, event1)
@@ -154,7 +154,7 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
   def withFixture(test: OneArgTest) = {
     val testId = nextTestId
     info(s"Test $testId")
-    val (streams) = AlmhirtStreams(s"almhirt-streams-$testId")(1 second).awaitResultOrEscalate(1 second)
+    val (streams) = AlmhirtStreams(s"almhirt-streams-$testId")(10 seconds).awaitResultOrEscalate(10 seconds)
     val fixture = FixtureParam(streams)
     try {
       withFixture(test.toNoArgTest(fixture))

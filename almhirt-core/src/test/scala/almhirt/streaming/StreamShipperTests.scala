@@ -10,7 +10,7 @@ import org.scalatest._
 import org.reactivestreams.{ Publisher }
 
 class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fixture.WordSpecLike with Matchers with BeforeAndAfterAll {
-  def this() = this(ActorSystem("StreamShipperTests", almhirt.TestConfigs.logWarningConfig))
+  def this() = this(ActorSystem("StreamShipperTests", almhirt.TestConfigs.logErrorConfig))
 
   implicit val executionContext = system.dispatchers.defaultGlobalDispatcher
 

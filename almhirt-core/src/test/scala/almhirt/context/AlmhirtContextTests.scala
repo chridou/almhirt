@@ -8,7 +8,7 @@ import akka.testkit._
 import org.scalatest._
 
 class AlmhirtContextTests(_system: ActorSystem)  extends TestKit(_system) with FunSuiteLike with Matchers with BeforeAndAfterAll {
-  def this() = this(ActorSystem("AlmhirtContextTests", almhirt.TestConfigs.logInfoConfig))
+  def this() = this(ActorSystem("AlmhirtContextTests", almhirt.TestConfigs.logErrorConfig))
 
   implicit val exCtx = system.dispatchers.defaultGlobalDispatcher
   

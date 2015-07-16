@@ -12,7 +12,7 @@ import almhirt.snapshots.InMemorySnapshotRepository
 
 class AggregateRootDroneWithSnapshottingTests(_system: ActorSystem)
     extends TestKit(_system) with fixture.WordSpecLike with Matchers with BeforeAndAfterAll {
-  def this() = this(ActorSystem("AggregateRootDroneWithSnapshottingTests", almhirt.TestConfigs.logWarningConfig))
+  def this() = this(ActorSystem("AggregateRootDroneWithSnapshottingTests", almhirt.TestConfigs.logErrorConfig))
 
   implicit val executionContext = system.dispatchers.defaultGlobalDispatcher
   implicit val ccuad = {
@@ -36,7 +36,7 @@ class AggregateRootDroneWithSnapshottingTests(_system: ActorSystem)
       "no aggregate root exists" should {
         "execute a create command" in { fixture ⇒
           val FixtureParam(testId, drone, eventlog, probe, snapshotRepository) = fixture
-          within(2 seconds) {
+          within(10 seconds) {
             probe.send(drone, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
             probe.expectMsgType[CommandExecuted]
 
@@ -48,7 +48,7 @@ class AggregateRootDroneWithSnapshottingTests(_system: ActorSystem)
 
         "execute a create command and then a modifying command" in { fixture ⇒
           val FixtureParam(testId, drone, eventlog, probe, snapshotRepository) = fixture
-          within(2 seconds) {
+          within(10 seconds) {
             probe.send(drone, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
             probe.expectMsgType[CommandExecuted]
 
@@ -68,7 +68,7 @@ class AggregateRootDroneWithSnapshottingTests(_system: ActorSystem)
 
         "execute a create command, then a modifying and then a deleting command" in { fixture ⇒
           val FixtureParam(testId, drone, eventlog, probe, snapshotRepository) = fixture
-          within(2 seconds) {
+          within(10 seconds) {
             probe.send(drone, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
             probe.expectMsgType[CommandExecuted]
 
@@ -94,7 +94,7 @@ class AggregateRootDroneWithSnapshottingTests(_system: ActorSystem)
 
         "execute a command that deletes the aggregate root right away" in { fixture ⇒
           val FixtureParam(testId, drone, eventlog, probe, snapshotRepository) = fixture
-          within(2 seconds) {
+          within(10 seconds) {
             probe.send(drone, RejectUser(CommandHeader(), "a", 0L, "hans", "meier"))
             probe.expectMsgType[CommandExecuted]
 
@@ -106,7 +106,7 @@ class AggregateRootDroneWithSnapshottingTests(_system: ActorSystem)
 
         "execute a create command and then a command that does nothing" in { fixture ⇒
           val FixtureParam(testId, drone, eventlog, probe, snapshotRepository) = fixture
-          within(2 seconds) {
+          within(10 seconds) {
             probe.send(drone, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
             probe.expectMsgType[CommandExecuted]
 
@@ -135,7 +135,7 @@ class AggregateRootDroneWithSnapshottingTests(_system: ActorSystem)
 
         "execute a modifying command" in { fixture ⇒
           val FixtureParam(testId, drone, eventlog, probe, snapshotRepository) = fixture
-          within(2 seconds) {
+          within(10 seconds) {
             createAr(eventlog, probe, snapshotRepository)
             probe.send(drone, ChangeUserLastname(CommandHeader(), "a", 2L, "müller"))
             probe.expectMsgType[CommandExecuted]
@@ -148,7 +148,7 @@ class AggregateRootDroneWithSnapshottingTests(_system: ActorSystem)
 
         "execute a deleting command" in { fixture ⇒
           val FixtureParam(testId, drone, eventlog, probe, snapshotRepository) = fixture
-          within(2 seconds) {
+          within(10 seconds) {
             createAr(eventlog, probe, snapshotRepository)
             probe.send(drone, ConfirmUserDeath(CommandHeader(), "a", 2L))
             probe.expectMsgType[CommandExecuted]
@@ -171,7 +171,7 @@ class AggregateRootDroneWithSnapshottingTests(_system: ActorSystem)
 
         "execute a modifying command" in { fixture ⇒
           val FixtureParam(testId, drone, eventlog, probe, snapshotRepository) = fixture
-          within(2 seconds) {
+          within(10 seconds) {
             createAr(eventlog, probe, snapshotRepository)
             probe.send(drone, ChangeUserLastname(CommandHeader(), "a", 2L, "müller"))
             probe.expectMsgType[CommandExecuted]
@@ -184,7 +184,7 @@ class AggregateRootDroneWithSnapshottingTests(_system: ActorSystem)
 
         "execute a deleting command" in { fixture ⇒
           val FixtureParam(testId, drone, eventlog, probe, snapshotRepository) = fixture
-          within(2 seconds) {
+          within(10 seconds) {
             createAr(eventlog, probe, snapshotRepository)
             probe.send(drone, ConfirmUserDeath(CommandHeader(), "a", 2L))
             probe.expectMsgType[CommandExecuted]
@@ -200,7 +200,7 @@ class AggregateRootDroneWithSnapshottingTests(_system: ActorSystem)
       "no aggregate root exists" should {
         "not execute a modifying command" in { fixture ⇒
           val FixtureParam(testId, drone, eventlog, probe, snapshotRepository) = fixture
-          within(2 seconds) {
+          within(10 seconds) {
             probe.send(drone, ChangeUserLastname(CommandHeader(), "a", 0, "müller"))
             probe.expectMsgType[CommandNotExecuted]
 
@@ -210,7 +210,7 @@ class AggregateRootDroneWithSnapshottingTests(_system: ActorSystem)
         }
         "not execute a deleting command" in { fixture ⇒
           val FixtureParam(testId, drone, eventlog, probe, snapshotRepository) = fixture
-          within(2 seconds) {
+          within(10 seconds) {
             probe.send(drone, ConfirmUserDeath(CommandHeader(), "a", 0))
             probe.expectMsgType[CommandNotExecuted]
 
@@ -231,7 +231,7 @@ class AggregateRootDroneWithSnapshottingTests(_system: ActorSystem)
 
         "not execute a creating command that targets version 0" in { fixture ⇒
           val FixtureParam(testId, drone, eventlog, probe, snapshotRepository) = fixture
-          within(2 seconds) {
+          within(10 seconds) {
             createAr(eventlog, probe, snapshotRepository)
             probe.send(drone, CreateUser(CommandHeader(), "a", 0, "hans", "meier"))
             probe.expectMsgType[CommandNotExecuted]
@@ -244,7 +244,7 @@ class AggregateRootDroneWithSnapshottingTests(_system: ActorSystem)
 
         "not execute a creating command that targets version 2" in { fixture ⇒
           val FixtureParam(testId, drone, eventlog, probe, snapshotRepository) = fixture
-          within(2 seconds) {
+          within(10 seconds) {
             createAr(eventlog, probe, snapshotRepository)
             probe.send(drone, CreateUser(CommandHeader(), "a", 2, "hans", "meier"))
             probe.expectMsgType[CommandNotExecuted]
@@ -256,7 +256,7 @@ class AggregateRootDroneWithSnapshottingTests(_system: ActorSystem)
         }
         "not execute an invalid command but afterwards a valid command" in { fixture ⇒
           val FixtureParam(testId, drone, eventlog, probe, snapshotRepository) = fixture
-          within(2 seconds) {
+          within(10 seconds) {
             createAr(eventlog, probe, snapshotRepository)
             probe.send(drone, CreateUser(CommandHeader(), "a", 2, "hans", "meier"))
             probe.expectMsgType[CommandNotExecuted]
@@ -281,7 +281,7 @@ class AggregateRootDroneWithSnapshottingTests(_system: ActorSystem)
 
         "not execute a creating command that targets version 0" in { fixture ⇒
           val FixtureParam(testId, drone, eventlog, probe, snapshotRepository) = fixture
-          within(2 seconds) {
+          within(10 seconds) {
             createAr(eventlog, probe, snapshotRepository)
             probe.send(drone, CreateUser(CommandHeader(), "a", 0, "hans", "meier"))
             probe.expectMsgType[CommandNotExecuted]
@@ -294,7 +294,7 @@ class AggregateRootDroneWithSnapshottingTests(_system: ActorSystem)
 
         "not execute a creating command that targets version 2" in { fixture ⇒
           val FixtureParam(testId, drone, eventlog, probe, snapshotRepository) = fixture
-          within(2 seconds) {
+          within(10 seconds) {
             createAr(eventlog, probe, snapshotRepository)
             probe.send(drone, CreateUser(CommandHeader(), "a", 2, "hans", "meier"))
             probe.expectMsgType[CommandNotExecuted]
@@ -306,7 +306,7 @@ class AggregateRootDroneWithSnapshottingTests(_system: ActorSystem)
         }
         "not execute an invalid command but afterwards a valid command" in { fixture ⇒
           val FixtureParam(testId, drone, eventlog, probe, snapshotRepository) = fixture
-          within(2 seconds) {
+          within(10 seconds) {
             createAr(eventlog, probe, snapshotRepository)
             probe.send(drone, CreateUser(CommandHeader(), "a", 2, "hans", "meier"))
             probe.expectMsgType[CommandNotExecuted]
@@ -334,7 +334,7 @@ class AggregateRootDroneWithSnapshottingTests(_system: ActorSystem)
 
         "not execute a modifying command that targets version 3" in { fixture ⇒
           val FixtureParam(testId, drone, eventlog, probe, snapshotRepository) = fixture
-          within(2 seconds) {
+          within(10 seconds) {
             createAr(eventlog, probe, snapshotRepository)
             probe.send(drone, ChangeUserLastname(CommandHeader(), "a", 3, "müller"))
             probe.expectMsgType[CommandNotExecuted]
@@ -360,7 +360,7 @@ class AggregateRootDroneWithSnapshottingTests(_system: ActorSystem)
 
         "not execute a modifying command that targets version 3" in { fixture ⇒
           val FixtureParam(testId, drone, eventlog, probe, snapshotRepository) = fixture
-          within(2 seconds) {
+          within(10 seconds) {
             createAr(eventlog, probe, snapshotRepository)
             probe.send(drone, ChangeUserLastname(CommandHeader(), "a", 3, "müller"))
             probe.expectMsgType[CommandNotExecuted]
@@ -376,7 +376,7 @@ class AggregateRootDroneWithSnapshottingTests(_system: ActorSystem)
     "the eventlog is corrupted" should {
       "crash when receiving an event" in { fixture ⇒
         val FixtureParam(testId, drone, eventlog, probe, snapshotRepository) = fixture
-        within(2 seconds) {
+        within(10 seconds) {
           probe.send(eventlog, CommitAggregateRootEvent(UserSurnameChanged(EventHeader(), "a", 0, "peter")))
           probe.expectMsgType[AggregateRootEventCommitted]
           probe.send(drone, ChangeUserLastname(CommandHeader(), "a", 1, "müller"))

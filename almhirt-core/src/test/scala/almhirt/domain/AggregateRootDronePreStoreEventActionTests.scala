@@ -11,7 +11,7 @@ import org.scalatest._
 
 class AggregateRootDronePreStoreEventActionTests(_system: ActorSystem)
     extends TestKit(_system) with fixture.WordSpecLike with Matchers with BeforeAndAfterAll {
-  def this() = this(ActorSystem("AggregateRootDronePreStoreEventActionTests", almhirt.TestConfigs.logWarningConfig))
+  def this() = this(ActorSystem("AggregateRootDronePreStoreEventActionTests", almhirt.TestConfigs.logErrorConfig))
 
   implicit val executionContext = system.dispatchers.defaultGlobalDispatcher
   implicit val ccuad = {
@@ -36,7 +36,7 @@ class AggregateRootDronePreStoreEventActionTests(_system: ActorSystem)
           "receiving a create command" should {
             "succeed and not execute the pre store handler" in { fixture ⇒
               val FixtureParam(testId, drone, eventlog, probe, counter) = fixture
-              within(2 seconds) {
+              within(10 seconds) {
                 probe.send(drone, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
                 probe.expectMsgType[CommandExecuted]
                 counter.get should equal(0)
@@ -46,7 +46,7 @@ class AggregateRootDronePreStoreEventActionTests(_system: ActorSystem)
           "receiving a create command and then a ChangeUserSurname" should {
             "succeed and execute the pre store handler once" in { fixture ⇒
               val FixtureParam(testId, drone, eventlog, probe, counter) = fixture
-              within(2 seconds) {
+              within(10 seconds) {
                 probe.send(drone, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
                 probe.expectMsgType[CommandExecuted]
                 counter.get should equal(0)
@@ -57,7 +57,7 @@ class AggregateRootDronePreStoreEventActionTests(_system: ActorSystem)
             }
             "store the correct events" in { fixture ⇒
               val FixtureParam(testId, drone, eventlog, probe, counter) = fixture
-              within(2 seconds) {
+              within(10 seconds) {
                 probe.send(drone, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
                 probe.expectMsgType[CommandExecuted]
                 probe.send(drone, ChangeUserSurname(CommandHeader(), "a", 1L, "miller"))
@@ -75,7 +75,7 @@ class AggregateRootDronePreStoreEventActionTests(_system: ActorSystem)
           "receiving a create command and then a ChangeUserSurname and then a ChangeUserAge" should {
             "succeed and execute the pre store handler once" in { fixture ⇒
               val FixtureParam(testId, drone, eventlog, probe, counter) = fixture
-              within(2 seconds) {
+              within(10 seconds) {
                 probe.send(drone, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
                 probe.expectMsgType[CommandExecuted]
                 counter.get should equal(0)
@@ -91,7 +91,7 @@ class AggregateRootDronePreStoreEventActionTests(_system: ActorSystem)
           "receiving a create command and then a ChangeUserSurname and then a ChangeUserAge and then a ChangeUserSurname " should {
             "succeed and execute the pre store handler twice" in { fixture ⇒
               val FixtureParam(testId, drone, eventlog, probe, counter) = fixture
-              within(2 seconds) {
+              within(10 seconds) {
                 probe.send(drone, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
                 probe.expectMsgType[CommandExecuted]
                 counter.get should equal(0)
@@ -110,7 +110,7 @@ class AggregateRootDronePreStoreEventActionTests(_system: ActorSystem)
           "receiving a create command and then a ChangeUserSurname" should {
             "fail when executing the prestore action" in { fixture ⇒
               val FixtureParam(testId, drone, eventlog, probe, counter) = fixture
-              within(2 seconds) {
+              within(10 seconds) {
                 probe.send(drone, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
                 probe.expectMsgType[CommandExecuted]
                 counter.get should equal(0)
@@ -123,7 +123,7 @@ class AggregateRootDronePreStoreEventActionTests(_system: ActorSystem)
             }
             "fail but store the UserCreatedEvent" in { fixture ⇒
               val FixtureParam(testId, drone, eventlog, probe, counter) = fixture
-              within(2 seconds) {
+              within(10 seconds) {
                 probe.send(drone, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
                 probe.expectMsgType[CommandExecuted]
                 probe.send(drone, ChangeUserLastname(CommandHeader(), "a", 1L, "miller"))
