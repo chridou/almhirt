@@ -78,7 +78,7 @@ class AggregateRootNexusTests(_system: ActorSystem)
             Source[Command](List(
               CreateUser(CommandHeader(), createId(1), 0L, "hans", "meier"),
               CreateUser(CommandHeader(), createId(2), 0L, "hans", "meier"))).to(Sink(commandSubscriber)).run()
-            assertStatusEvents(initiated = 2, ok = 2, failed = 0, statusProbe.receiveN(2 * 2, 15 seconds))
+            assertStatusEvents(initiated = 2, ok = 2, failed = 0, statusProbe.receiveN(2 * 2, 30 seconds))
           }
         }
       }
@@ -93,7 +93,7 @@ class AggregateRootNexusTests(_system: ActorSystem)
           val start = Deadline.now
           within(15 seconds) {
             Source[Command](ids.toStream.map(id ⇒ CreateUser(CommandHeader(), id, 0L, "hans", "meier"))).to(Sink(commandSubscriber)).run()
-            assertStatusEvents(initiated = n, ok = n, failed = 0, statusProbe.receiveN(n * 2, 15 seconds))
+            assertStatusEvents(initiated = n, ok = n, failed = 0, statusProbe.receiveN(n * 2, 30 seconds))
             val time = start.lap
             info(s"Dispatched ${n} in ${start.lap.defaultUnitString}((${(n * 1000).toDouble / time.toMillis}/s)).")
           }
@@ -109,7 +109,7 @@ class AggregateRootNexusTests(_system: ActorSystem)
           val start = Deadline.now
           within(15 seconds) {
             flow.to(Sink(commandSubscriber)).run()
-            assertStatusEvents(initiated = 2 * n, ok = 2 * n, failed = 0, statusProbe.receiveN(2 * n * 2, 15 seconds))
+            assertStatusEvents(initiated = 2 * n, ok = 2 * n, failed = 0, statusProbe.receiveN(2 * n * 2, 30 seconds))
             val time = start.lap
             info(s"Dispatched ${n} commands in ${start.lap.defaultUnitString}((${(n * 1000).toDouble / time.toMillis}/s)).")
           }
@@ -126,7 +126,7 @@ class AggregateRootNexusTests(_system: ActorSystem)
           val start = Deadline.now
           within(15 seconds) {
             flow.to(Sink(commandSubscriber)).run()
-            assertStatusEvents(initiated = 3 * n, ok = 3 * n, failed = 0, statusProbe.receiveN(3 * n * 2, 15 seconds))
+            assertStatusEvents(initiated = 3 * n, ok = 3 * n, failed = 0, statusProbe.receiveN(3 * n * 2, 30 seconds))
             val time = start.lap
             info(s"Dispatched ${n} commands in ${start.lap.defaultUnitString}((${(n * 1000).toDouble / time.toMillis}/s)).")
           }
@@ -143,7 +143,7 @@ class AggregateRootNexusTests(_system: ActorSystem)
             val start = Deadline.now
             within(15 seconds) {
               flow.to(Sink(commandSubscriber)).run()
-              assertStatusEvents(initiated = 3 * bigN, ok = 3 * bigN, failed = 0, statusProbe.receiveN(3 * bigN * 2, 15 seconds))
+              assertStatusEvents(initiated = 3 * bigN, ok = 3 * bigN, failed = 0, statusProbe.receiveN(3 * bigN * 2, 30 seconds))
             }
             val time = start.lap
             info(s"Dispatched ${bigN} commands in ${start.lap.defaultUnitString}((${(bigN * 1000).toDouble / time.toMillis}/s)).")

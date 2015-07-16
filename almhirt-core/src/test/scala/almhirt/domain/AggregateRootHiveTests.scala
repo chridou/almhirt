@@ -77,11 +77,11 @@ class AggregateRootHiveTests(_system: ActorSystem)
           val FixtureParam(testId, commandSubscriber, eventlog, streams) = fixture
           val statusProbe = TestProbe()
           Source(streams.eventStream).collect { case e: SystemEvent ⇒ e }.to(Sink(DelegatingSubscriber[SystemEvent](statusProbe.ref))).run()
-          within(10 seconds) {
+          within(30 seconds) {
             Source(List(
               CreateUser(CommandHeader(), "a", 0L, "hans", "meier"),
               CreateUser(CommandHeader(), "b", 0L, "hans", "meier"))).to(Sink(commandSubscriber)).run()
-            assertStatusEvents(initiated = 2, ok = 2, failed = 0, statusProbe.receiveN(2 * 2, 10 seconds))
+            assertStatusEvents(initiated = 2, ok = 2, failed = 0, statusProbe.receiveN(2 * 2, 30 seconds))
           }
         }
       }
@@ -92,9 +92,9 @@ class AggregateRootHiveTests(_system: ActorSystem)
           val statusProbe = TestProbe()
           Source(streams.eventStream).collect { case e: SystemEvent ⇒ e }.to(Sink(DelegatingSubscriber[SystemEvent](statusProbe.ref))).run()
           val start = Deadline.now
-          within(15 seconds) {
+          within(30 seconds) {
             Source((1 to n).toSeq.map(id ⇒ CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"))).to(Sink(commandSubscriber)).run()
-            assertStatusEvents(initiated = n, ok = n, failed = 0, statusProbe.receiveN(n * 2, 15 seconds))
+            assertStatusEvents(initiated = n, ok = n, failed = 0, statusProbe.receiveN(n * 2, 30 seconds))
           }
           val time = start.lap
           info(s"Dispatched ${n} in ${start.lap.defaultUnitString}((${(n * 1000).toDouble / time.toMillis}/s)).")
@@ -109,9 +109,9 @@ class AggregateRootHiveTests(_system: ActorSystem)
             (1 to n).toSeq.map(id ⇒ CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"): AggregateRootCommand) ++
               (1 to n).toSeq.map(id ⇒ ChangeUserLastname(CommandHeader(), s"$id", 1L, "müller"): AggregateRootCommand))
           val start = Deadline.now
-          within(15 seconds) {
+          within(30 seconds) {
             flow.to(Sink(commandSubscriber)).run()
-            assertStatusEvents(initiated = 2 * n, ok = 2 * n, failed = 0, statusProbe.receiveN(2 * n * 2, 15 seconds))
+            assertStatusEvents(initiated = 2 * n, ok = 2 * n, failed = 0, statusProbe.receiveN(2 * n * 2, 30 seconds))
           }
           val time = start.lap
           info(s"Dispatched ${n} commands in ${start.lap.defaultUnitString}((${(n * 1000).toDouble / time.toMillis}/s)).")
@@ -126,9 +126,9 @@ class AggregateRootHiveTests(_system: ActorSystem)
             (1 to n).toSeq.map(id ⇒ ChangeUserLastname(CommandHeader(), s"$id", 1L, "müller"): AggregateRootCommand) ++
             (1 to n).toSeq.map(id ⇒ ConfirmUserDeath(CommandHeader(), s"$id", 2L): AggregateRootCommand))
           val start = Deadline.now
-          within(15 seconds) {
+          within(30 seconds) {
             flow.to(Sink(commandSubscriber)).run()
-            assertStatusEvents(initiated = 3 * n, ok = 3 * n, failed = 0, statusProbe.receiveN(3 * n * 2, 15 seconds))
+            assertStatusEvents(initiated = 3 * n, ok = 3 * n, failed = 0, statusProbe.receiveN(3 * n * 2, 30 seconds))
           }
           val time = start.lap
           info(s"Dispatched ${n} commands in ${start.lap.defaultUnitString}((${(n * 1000).toDouble / time.toMillis}/s)).")
@@ -144,9 +144,9 @@ class AggregateRootHiveTests(_system: ActorSystem)
             (1 to bigN).toSeq.map(id ⇒ ChangeUserLastname(CommandHeader(), s"$id", 1L, "müller"): AggregateRootCommand) ++
             (1 to bigN).toSeq.map(id ⇒ ConfirmUserDeath(CommandHeader(), s"$id", 2L): AggregateRootCommand))
           val start = Deadline.now
-          within(15 seconds) {
+          within(30 seconds) {
             flow.to(Sink(commandSubscriber)).run()
-            assertStatusEvents(initiated = 3 * bigN, ok = 3 * bigN, failed = 0, statusProbe.receiveN(3 * bigN * 2, 15 seconds))
+            assertStatusEvents(initiated = 3 * bigN, ok = 3 * bigN, failed = 0, statusProbe.receiveN(3 * bigN * 2, 30 seconds))
           }
           val time = start.lap
           info(s"Dispatched ${bigN} commands in ${start.lap.defaultUnitString}((${(bigN * 1000).toDouble / time.toMillis}/s)).")

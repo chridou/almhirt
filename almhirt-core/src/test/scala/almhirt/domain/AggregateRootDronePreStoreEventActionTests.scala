@@ -115,8 +115,6 @@ class AggregateRootDronePreStoreEventActionTests(_system: ActorSystem)
                 probe.expectMsgType[CommandExecuted]
                 counter.get should equal(0)
                 probe.send(drone, ChangeUserLastname(CommandHeader(), "a", 1L, "miller"))
-                //probe.expectMsgType[CommandNotExecuted]
-                probe.expectMsgType[ReportDroneError]
                 probe.expectMsgType[CommandNotExecuted]
                 counter.get should equal(0)
               }
@@ -127,8 +125,6 @@ class AggregateRootDronePreStoreEventActionTests(_system: ActorSystem)
                 probe.send(drone, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
                 probe.expectMsgType[CommandExecuted]
                 probe.send(drone, ChangeUserLastname(CommandHeader(), "a", 1L, "miller"))
-                //probe.expectMsgType[CommandNotExecuted]
-                probe.expectMsgType[ReportDroneError]
                 probe.expectMsgType[CommandNotExecuted]
                 probe.send(eventlog, GetAggregateRootEventsFrom("a", 0L))
                 val eventsEnumerator = probe.expectMsgType[FetchedAggregateRootEvents].enumerator
