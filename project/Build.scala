@@ -11,7 +11,7 @@ object BuildSettings {
   val buildScalaVersion = "2.11.6"
 
   val akkaVersion = "2.4-M2"
-  val akkaStreamsVersion = "1.0-RC4"
+  val akkaStreamsVersion = "1.0"
   val scalatestVersion = "2.2.5"
   val sprayVersion = "1.3.3"
   val reactiveMongoVersion = "0.11.2"
