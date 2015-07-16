@@ -124,7 +124,7 @@ class AggregateRootNexusTests(_system: ActorSystem)
             ids.toStream.map(id ⇒ ChangeUserLastname(CommandHeader(), id, 1L, "müller"): AggregateRootCommand) ++
             ids.toStream.map(id ⇒ ConfirmUserDeath(CommandHeader(), id, 2L): AggregateRootCommand))
           val start = Deadline.now
-          within(15 seconds) {
+          within(30 seconds) {
             flow.to(Sink(commandSubscriber)).run()
             assertStatusEvents(initiated = 3 * n, ok = 3 * n, failed = 0, statusProbe.receiveN(3 * n * 2, 30 seconds))
             val time = start.lap
@@ -141,7 +141,7 @@ class AggregateRootNexusTests(_system: ActorSystem)
               (1 to bigN).toSeq.map(id ⇒ ChangeUserLastname(CommandHeader(), s"$id", 1L, "müller"): AggregateRootCommand) ++
               (1 to bigN).toSeq.map(id ⇒ ConfirmUserDeath(CommandHeader(), s"$id", 2L): AggregateRootCommand))
             val start = Deadline.now
-            within(15 seconds) {
+            within(30 seconds) {
               flow.to(Sink(commandSubscriber)).run()
               assertStatusEvents(initiated = 3 * bigN, ok = 3 * bigN, failed = 0, statusProbe.receiveN(3 * bigN * 2, 30 seconds))
             }
