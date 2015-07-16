@@ -28,7 +28,7 @@ class AggregateCommandHandlerTests extends FlatSpec with Matchers with UserComma
     }
   }
 
-  val defaultAwait: FiniteDuration = 100 millis
+  val defaultAwait: FiniteDuration = 1000 millis
 
   behavior of "AggregateCommandHandler"
 

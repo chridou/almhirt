@@ -85,7 +85,7 @@ class AggregateRootHiveTests(_system: ActorSystem)
           }
         }
       }
-      val n = 500
+      val n = 100
       s"$n aggregate roots are created" should {
         s"emit the status events [Initiated, Executed] $n times" in { fixture ⇒
           val FixtureParam(testId, commandSubscriber, eventlog, streams) = fixture
@@ -134,7 +134,7 @@ class AggregateRootHiveTests(_system: ActorSystem)
           info(s"Dispatched ${n} commands in ${start.lap.defaultUnitString}((${(n * 1000).toDouble / time.toMillis}/s)).")
         }
       }
-      val bigN = 2500
+      val bigN = 500
       s"$bigN aggregate roots are created, updated and then deleted" should {
         s"emit the status events ([Initiated, Executed]x3) $bigN times" in { fixture ⇒
           val FixtureParam(testId, commandSubscriber, eventlog, streams) = fixture
