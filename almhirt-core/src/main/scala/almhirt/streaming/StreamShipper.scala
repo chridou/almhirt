@@ -512,7 +512,7 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
   }
 
   override def preRestart(reason: Throwable, message: Option[Any]) {
-    sys.error(s"""Not restartable!. Error: "${reason.getMessage} Message: $message""")
+    sys.error(s"""Not restartable! Error: "${reason.getMessage} Message: $message""")
   }
 
   override def postStop() {

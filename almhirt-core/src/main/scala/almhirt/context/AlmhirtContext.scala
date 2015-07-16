@@ -295,6 +295,13 @@ object AlmhirtContext {
       val blockersExecutor = system.dispatchers.defaultGlobalDispatcher
 
       val almhirtProps = Props(new Actor with ActorLogging {
+
+        override val supervisorStrategy = OneForOneStrategy(maxNrOfRetries = 0) {
+          case scala.util.control.NonFatal(e) ⇒
+            log.error(e, "Something failed in a child. Escalating")
+            SupervisorStrategy.Escalate
+        }
+
         implicit val execCtx = futuresExecutor
         var theReceiver: ActorRef = null
         def receive: Receive = {
