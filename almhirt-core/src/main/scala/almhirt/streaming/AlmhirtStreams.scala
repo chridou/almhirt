@@ -117,9 +117,15 @@ object AlmhirtStreams {
     soakEvents: Boolean,
     soakCommands: Boolean): AlmFuture[AlmhirtStreams with Stoppable] = {
     implicit val ctx = actorRefFactory.dispatcher
-    val supervisorProps = Props(new Actor {
+    val supervisorProps = Props(new Actor with ActorLogging {
+      override val supervisorStrategy: SupervisorStrategy = OneForOneStrategy(maxNrOfRetries = 0) {
+        case scala.util.control.NonFatal(e) ⇒ 
+          log.error(e, "Escalating!")
+          SupervisorStrategy.Escalate
+      }
+
       implicit def implicitFlowMaterializer = akka.stream.ActorMaterializer()(this.context)
-      def receive: Receive = {
+      def receiveInit: Receive = {
         case "get_streams" ⇒
           val streams: AlmhirtStreams with Stoppable = {
             val eventShipperActor = context.actorOf(StreamShipper.props(), "event-broker")
@@ -138,7 +144,7 @@ object AlmhirtStreams {
 
             // commands
 
-            val commandShipperActor = actorRefFactory.actorOf(StreamShipper.props(), "command-broker")
+            val commandShipperActor = context.actorOf(StreamShipper.props(), "command-broker")
             val (commandShipperIn, commandShipperOut, stopCommandShipper) = StreamShipper[Command](commandShipperActor)
 
             val commandsDrain = Sink.fanoutPublisher[Command](initialFanoutCommands, maxFanoutCommands)
@@ -163,7 +169,20 @@ object AlmhirtStreams {
             }
           }
           sender() ! streams
+          context.become(receiveRunning)
+
       }
+
+      def receiveRunning: Receive = {
+        case x ⇒ sys.error(s"Received a message ${x}")
+      }
+      
+      def receive: Receive = receiveInit
+
+      override def preRestart(reason: Throwable, message: Option[Any]) {
+        sys.error(s"""Not restartable! Error: "${reason.getMessage} Message: $message""")
+      }
+
     })
     val props = supervisorProps
     val supervisor = actorRefFactory.actorOf(props, supervisorName)
