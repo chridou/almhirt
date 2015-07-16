@@ -92,7 +92,8 @@ trait CommonBuild {
 	  libraryDependencies += apache_codecs,
 	  libraryDependencies += typesafe_config,
 	  libraryDependencies += scalaz,
-	  libraryDependencies += scalatest
+	  libraryDependencies += scalatest,
+    libraryDependencies += pegdown
   )
 }
 
@@ -106,7 +107,8 @@ trait I18nBuild {
 	  libraryDependencies += apache_commons_io,
     libraryDependencies += icu4j,
 	  libraryDependencies += scalaz,
-	  libraryDependencies += scalatest
+	  libraryDependencies += scalatest,
+    libraryDependencies += pegdown
   )
 }
 
@@ -122,7 +124,8 @@ trait HttpxSprayBuild {
 	  libraryDependencies += spray_httpx,
 	  libraryDependencies += typesafe_config,
 	  libraryDependencies += scalaz,
-	  libraryDependencies += scalatest
+	  libraryDependencies += scalatest,
+    libraryDependencies += pegdown
   )
 }
 
