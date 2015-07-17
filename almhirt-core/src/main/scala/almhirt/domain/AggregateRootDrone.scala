@@ -543,7 +543,6 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
       }
 
     case rsp: SnapshotRepository.SuccessfulSnapshottingAction ⇒
-      logDebug(s"Stored snapshot for version ${persisted.version.value}.")
       this.lastSnapshotState = SnapshotState.snapshotStateFromLifecycle(persisted)
       context.become(receiveDispatchEvents(currentCommand, persisted, eventsToDispatch))
       self ! DispatchEvents
