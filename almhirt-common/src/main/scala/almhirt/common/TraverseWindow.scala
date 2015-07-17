@@ -2,23 +2,31 @@ package almhirt.common
 
 import scalaz.Validation.FlatMap._
 
-final case class TraverseWindow(skip: TraverseWindow.LowerBound, take: TraverseWindow.Length) {
-  def toInts = (skip.toInt, take.toInt)
-}
+final case class TraverseWindow(skip: TraverseWindow.LowerBound, take: TraverseWindow.Length)
 
 object TraverseWindow {
   val noWindow = TraverseWindow(SkipNone, TakeAll)
 
+  implicit class TraverseWindowOps(val self: TraverseWindow) extends AnyVal {
+    def toInts = (self.skip.toInt, self.take.toInt)
+    def limit(maxLen: Int) =
+      self.take match {
+        case TakeAll               ⇒ self.copy(take = Take(maxLen))
+        case Take(n) if n > maxLen ⇒ self.copy(take = Take(maxLen))
+        case _                     ⇒ self
+      }
+  }
+
   def fromIntOptions(skip: Option[Int], take: Option[Int]): TraverseWindow = {
     val s = skip match {
-      case None ⇒ SkipNone
+      case None              ⇒ SkipNone
       case Some(x) if x <= 0 ⇒ SkipNone
-      case Some(x) ⇒ Skip(x)
+      case Some(x)           ⇒ Skip(x)
     }
     val t = take match {
-      case None ⇒ TakeAll
+      case None              ⇒ TakeAll
       case Some(x) if x <= 0 ⇒ Take(0)
-      case Some(x) ⇒ Take(x)
+      case Some(x)           ⇒ Take(x)
     }
 
     TraverseWindow(s, t)

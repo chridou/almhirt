@@ -1,4 +1,4 @@
-package almhirt.corex.mongo
+package almhirt.reactivemongox
 
 import reactivemongo.api.{ MongoDriver, MongoConnection }
 

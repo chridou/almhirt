@@ -239,9 +239,8 @@ private[almhirt] class MongoEventLogImpl(
 
   def getEvents(query: BSONDocument, sort: BSONDocument, traverse: TraverseWindow): Enumerator[Event] = {
     val start = Deadline.now
-    val (skip, take) = traverse.toInts
     val collection = db(collectionName)
-    val enumerator = collection.find(query, projectionFilter).options(new QueryOpts(skipN = skip)).sort(sort).cursor(readPreference = rwMode.readPreference).enumerate(maxDocs = take, stopOnError = true)
+     val enumerator = collection.traverse(query, projectionFilter, sort, rwMode.readPreference).withWindow(traverse).enumerate[BSONDocument]
 
     val enumeratorWithCallback = enumerator.through(fromBsonDocToEvent).onDoneEnumerating({
       val lap = start.lap

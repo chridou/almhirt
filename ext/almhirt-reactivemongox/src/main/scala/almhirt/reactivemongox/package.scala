@@ -1,15 +1,73 @@
 package almhirt
 
 import scala.language.implicitConversions
+import scala.concurrent.ExecutionContext
+import scala.concurrent.duration.FiniteDuration
 import scalaz.Validation.FlatMap._
 import almhirt.common._
-import almhirt.configuration._
 import reactivemongo.api.commands.WriteConcern
-import reactivemongo.api.ReadPreference
+import reactivemongo.api._
+import reactivemongo.bson.{ BSONDocument, BSONDocumentReader }
+import play.api.libs.iteratee.{ Enumerator, Enumeratee }
+import almhirt.configuration._
+import com.typesafe.config.Config
 
 package object reactivemongox {
   implicit def almWc2RmWc(self: WriteConcernAlm): WriteConcern = WriteConcernAlm.toReactiveMongoWriteConcern(self)
   implicit def almRp2RmRp(self: ReadPreferenceAlm): ReadPreference = ReadPreferenceAlm.toReactiveMongoReadPreference(self)
+
+  implicit class BsonCollectionOps(val self: reactivemongo.api.collections.bson.BSONCollection) extends AnyVal {
+    def traverseWith[T: BSONDocumentReader](selector: Option[BSONDocument], projection: Option[BSONDocument], sort: Option[BSONDocument], traverse: TraverseWindow, readPreference: ReadPreferenceAlm, stopOnError: Boolean)(implicit ctx: ExecutionContext): Enumerator[T] = {
+      val effSel = selector getOrElse BSONDocument.empty
+      val effProj = projection getOrElse BSONDocument.empty
+      val effSort = sort getOrElse BSONDocument.empty
+      traverse match {
+        case TraverseWindow(TraverseWindow.SkipNone, TraverseWindow.TakeAll) ⇒
+          self.find(effSel, effProj).sort(effSort).cursor[T](readPreference = readPreference).enumerate(stopOnError = stopOnError)
+        case TraverseWindow(TraverseWindow.SkipNone, TraverseWindow.Take(take: Int)) ⇒
+          self.find(effSel, effProj).sort(effSort).cursor[T](readPreference = readPreference).enumerate(maxDocs = take, stopOnError = stopOnError) &> Enumeratee.take(take)
+        case TraverseWindow(TraverseWindow.Skip(skip: Int), TraverseWindow.TakeAll) ⇒
+          self.find(effSel, effProj).options(new QueryOpts(skipN = skip)).sort(effSort).cursor[T](readPreference = readPreference).enumerate(stopOnError = stopOnError)
+        case TraverseWindow(TraverseWindow.Skip(skip: Int), TraverseWindow.Take(take: Int)) ⇒
+          self.find(effSel, effProj).options(new QueryOpts(skipN = skip)).sort(effSort).cursor[T](readPreference = readPreference).enumerate(maxDocs = take, stopOnError = stopOnError) &> Enumeratee.take(take)
+      }
+    }
+
+    def traverseWith[T: BSONDocumentReader](selector: BSONDocument, projection: BSONDocument, sort: BSONDocument, traverse: TraverseWindow, readPreference: ReadPreferenceAlm)(implicit ctx: ExecutionContext): Enumerator[T] =
+      traverseWith(Some(selector), Some(projection), Some(sort), traverse, readPreference, true)
+
+    def traverseWith[T: BSONDocumentReader](selector: BSONDocument, projection: BSONDocument, traverse: TraverseWindow, readPreference: ReadPreferenceAlm)(implicit ctx: ExecutionContext): Enumerator[T] =
+      traverseWith(Some(selector), Some(projection), None, traverse, readPreference, true)
+
+    def traverseWith[T: BSONDocumentReader](selector: BSONDocument, traverse: TraverseWindow, readPreference: ReadPreferenceAlm)(implicit ctx: ExecutionContext): Enumerator[T] =
+      traverseWith(Some(selector), None, None, traverse, readPreference, true)
+
+    def traverseWith[T: BSONDocumentReader](traverse: TraverseWindow, readPreference: ReadPreferenceAlm)(implicit ctx: ExecutionContext): Enumerator[T] =
+      traverseWith(None, None, None, traverse, readPreference, true)
+
+    def traverse(readPreference: ReadPreferenceAlm): TraverseBuilder = TraverseBuilder(self, readPreference)
+
+    def traverse(selector: BSONDocument, readPreference: ReadPreferenceAlm): TraverseBuilder = TraverseBuilder(self, selector = selector, readPreference = readPreference)
+
+    def traverse(selector: BSONDocument, projection: BSONDocument, readPreference: ReadPreferenceAlm): TraverseBuilder = TraverseBuilder(self, selector = selector, projection = projection, readPreference = readPreference)
+
+    def traverse(selector: BSONDocument, projection: BSONDocument, sort: BSONDocument, readPreference: ReadPreferenceAlm): TraverseBuilder = TraverseBuilder(self, selector = selector, projection = projection, sort = sort, readPreference = readPreference)
+  }
+
+  implicit object MongoConnectionSettingsConfigExtractor extends ConfigExtractor[MongoConnectionSettings] {
+    def getValue(config: Config, path: String): AlmValidation[MongoConnectionSettings] =
+      for {
+        section ← config.v[Config](path)
+        hosts ← section.v[List[String]]("hosts")
+        numChannelsPerNode ← section.magicDefault[Int]("default", 10)("num-channels-per-node")
+      } yield MongoConnectionSettings(hosts, numChannelsPerNode = numChannelsPerNode)
+
+    def tryGetValue(config: Config, path: String): AlmValidation[Option[MongoConnectionSettings]] =
+      config.opt[Config](path).flatMap {
+        case Some(_) ⇒ getValue(config, path).map(Some(_))
+        case None    ⇒ scalaz.Success(None)
+      }
+  }
 
   implicit val WriteConcernAlmConfigExtractorInst = new ConfigExtractor[WriteConcernAlm] {
     def getValue(config: com.typesafe.config.Config, path: String): AlmValidation[WriteConcernAlm] =
