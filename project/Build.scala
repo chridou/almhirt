@@ -15,7 +15,7 @@ object BuildSettings {
   val scalatestVersion = "2.2.5"
   val sprayVersion = "1.3.3"
   val scalazVersion = "7.1.3"
-  val reactiveMongoVersion = "0.11.2"
+  val reactiveMongoVersion = "0.11.3"
    
   val buildSettings = Defaults.defaultSettings ++ releaseSettings ++ Seq (
 	organization := buildOrganization,
@@ -386,7 +386,7 @@ object AlmHirtBuild extends Build
   lazy val dashboard = dashboardProject(	name = "almhirt-dashboard", baseFile = file("./ext/almhirt-dashboard")) dependsOn(common, core, httpxSprayService)
 
   lazy val mongoExtensions = corexMongoProject(	name = "almhirt-corex-mongo",
-                       			baseFile = file("./ext/almhirt-corex-mongo")) dependsOn(common, almhirtxReactiveMongo, riftwarp % "test->test", riftwarpMongoProject % "test")
+                       			baseFile = file("./ext/almhirt-corex-mongo")) dependsOn(common, core, almhirtxReactiveMongo, riftwarp % "test->test", riftwarpMongoProject % "test")
 								
   lazy val corexSprayService = corexSprayServiceProject(	name = "almhirt-corex-spray-service",
 	                       				baseFile = file("./ext/almhirt-corex-spray-service")) dependsOn(common, httpxSprayService, core, riftwarp % "test")
