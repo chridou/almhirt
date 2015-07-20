@@ -14,6 +14,7 @@ object BuildSettings {
   val akkaStreamsVersion = "1.0"
   val scalatestVersion = "2.2.5"
   val sprayVersion = "1.3.3"
+  val scalazVersion = "7.1.3"
   val reactiveMongoVersion = "0.11.2"
    
   val buildSettings = Defaults.defaultSettings ++ releaseSettings ++ Seq (
@@ -55,9 +56,9 @@ object Dependencies {
 
 	lazy val jodatime    = "joda-time" % "joda-time" % "2.8.1" % "compile"
 	lazy val jodaconvert    = "org.joda" % "joda-convert" % "1.7" % "compile"
-	lazy val scalaz       = "org.scalaz" %% "scalaz-core" % "7.1.3" % "provided"
+	lazy val scalaz       = "org.scalaz" %% "scalaz-core" % BuildSettings.scalazVersion 
 
-	lazy val play2_iteratees   = "com.typesafe.play" %% "play-iteratees" % "2.3.9" % "provided"
+	lazy val play2_iteratees   = "com.typesafe.play" %% "play-iteratees" % "2.3.9" 
 	
 	lazy val akka_actor  = "com.typesafe.akka" %% "akka-actor" % BuildSettings.akkaVersion % "provided"
 	lazy val akka_agent  = "com.typesafe.akka" %% "akka-agent" % BuildSettings.akkaVersion % "provided"
@@ -75,7 +76,7 @@ object Dependencies {
 
   lazy val snappy = "org.xerial.snappy" % "snappy-java" % "1.1.2-RC3"
   lazy val logback = "ch.qos.logback" % "logback-classic" % "1.1.3" % "provided"
-	lazy val typesafe_config = "com.typesafe" % "config" % "1.2.+" % "provided"
+	lazy val typesafe_config = "com.typesafe" % "config" % "1.3.+" % "provided"
 
 	
   lazy val scalatest = "org.scalatest" %% "scalatest" % BuildSettings.scalatestVersion % "test"	
