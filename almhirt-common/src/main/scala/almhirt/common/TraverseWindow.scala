@@ -15,6 +15,9 @@ object TraverseWindow {
         case Take(n) if n > maxLen ⇒ self.copy(take = Take(maxLen))
         case _                     ⇒ self
       }
+
+    def setSkip(v: TraverseWindow.LowerBound): TraverseWindow = self.copy(skip = v)
+    def setLength(v: TraverseWindow.Length): TraverseWindow = self.copy(take = v)
   }
 
   def fromIntOptions(skip: Option[Int], take: Option[Int]): TraverseWindow = {

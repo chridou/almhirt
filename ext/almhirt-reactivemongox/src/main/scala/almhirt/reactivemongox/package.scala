@@ -45,13 +45,15 @@ package object reactivemongox {
     def traverseWith[T: BSONDocumentReader](traverse: TraverseWindow, readPreference: ReadPreferenceAlm)(implicit ctx: ExecutionContext): Enumerator[T] =
       traverseWith(None, None, None, traverse, readPreference, true)
 
-    def traverse(readPreference: ReadPreferenceAlm): TraverseBuilder = TraverseBuilder(self, readPreference)
+    def queryAlm(): QueryBuilderAlm = QueryBuilderAlm(self)
 
-    def traverse(selector: BSONDocument, readPreference: ReadPreferenceAlm): TraverseBuilder = TraverseBuilder(self, selector = selector, readPreference = readPreference)
+    def queryAlm(readPreference: ReadPreferenceAlm): QueryBuilderAlm = QueryBuilderAlm(self, readPreference)
 
-    def traverse(selector: BSONDocument, projection: BSONDocument, readPreference: ReadPreferenceAlm): TraverseBuilder = TraverseBuilder(self, selector = selector, projection = projection, readPreference = readPreference)
+    def queryAlm(selector: BSONDocument, readPreference: ReadPreferenceAlm): QueryBuilderAlm = QueryBuilderAlm(self, selector = selector, readPreference = readPreference)
 
-    def traverse(selector: BSONDocument, projection: BSONDocument, sort: BSONDocument, readPreference: ReadPreferenceAlm): TraverseBuilder = TraverseBuilder(self, selector = selector, projection = projection, sort = sort, readPreference = readPreference)
+    def queryAlm(selector: BSONDocument, projection: BSONDocument, readPreference: ReadPreferenceAlm): QueryBuilderAlm = QueryBuilderAlm(self, selector = selector, projection = projection, readPreference = readPreference)
+
+    def queryAlm(selector: BSONDocument, projection: BSONDocument, sort: BSONDocument, readPreference: ReadPreferenceAlm): QueryBuilderAlm = QueryBuilderAlm(self, selector = selector, projection = projection, sort = sort, readPreference = readPreference)
   }
 
   implicit object MongoConnectionSettingsConfigExtractor extends ConfigExtractor[MongoConnectionSettings] {
