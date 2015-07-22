@@ -4,9 +4,9 @@ import javax.xml.datatype.Duration
 
 sealed trait NumberOfRetries
 object NumberOfRetries {
-  case object NoRetry extends NumberOfRetries{ override val toString: String = "NoRetry"}
-  final case class LimitedRetries(retries: Int) extends NumberOfRetries { override def toString: String = s"LimitedRetries($retries)"}
-  case object InfiniteRetries extends NumberOfRetries{ override val toString: String = "InfiniteRetries(∞)"}
+  case object NoRetry extends NumberOfRetries { override val toString: String = "NoRetry" }
+  final case class LimitedRetries(retries: Int) extends NumberOfRetries { override def toString: String = s"LimitedRetries($retries)" }
+  case object InfiniteRetries extends NumberOfRetries { override val toString: String = "InfiniteRetries(∞)" }
 
   def apply(n: Int): NumberOfRetries =
     if (n <= 1) NoRetry
