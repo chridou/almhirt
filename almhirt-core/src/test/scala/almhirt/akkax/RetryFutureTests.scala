@@ -10,7 +10,7 @@ import akka.testkit._
 import org.scalatest._
 import java.util.concurrent.atomic.AtomicInteger
 
-class ActorRetryFutureTests(_system: ActorSystem) extends TestKit(_system) with FunSuiteLike with Matchers with BeforeAndAfterAll {
+class RetryFutureTests(_system: ActorSystem) extends TestKit(_system) with FunSuiteLike with Matchers with BeforeAndAfterAll {
   def this() = this(ActorSystem("ActorRetryFutureTests"))
 
   protected implicit val ContextSchedulerSchedulingMagnet = new almhirt.almfuture.ActionSchedulingMagnet[Scheduler] {
@@ -116,6 +116,22 @@ class ActorRetryFutureTests(_system: ActorSystem) extends TestKit(_system) with 
       info("times executed: " + v.toString)
       defaultProblem.failure
     })
+    res.awaitResult(1.second) should equal(defaultProblem.failure[Int])
+    timesExecuted.get should equal(4)
+  }
+
+  test("BY-NAME in BY-NAME: should retry a future that always fails with 3 retries and a delay 4 times(in an inner func that takes a future by name)") {
+
+    val timesExecuted = new AtomicInteger(0)
+    val settings = RetryPolicy(numberOfRetries = NumberOfRetries.LimitedRetries(4), delay = RetryDelayMode.ConstantDelay(100.millis))
+    def byNameRetry[T](f: ⇒ AlmFuture[T]): AlmFuture[T] = AlmFuture.retry(settings, scheduler)(f)
+
+    val res = byNameRetry(AlmFuture[Int] {
+      val v = timesExecuted.incrementAndGet()
+      info("times executed: " + v.toString)
+      defaultProblem.failure
+    })
+
     res.awaitResult(1.second) should equal(defaultProblem.failure[Int])
     timesExecuted.get should equal(4)
   }
