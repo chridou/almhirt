@@ -168,6 +168,8 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
     new AlmFuture(p.future)
   }
 
+  def mapCast[U: scala.reflect.ClassTag](implicit executionContext: ExecutionContext): AlmFuture[U] = this.mapV { almhirt.almvalidation.all.almCast[U] }
+
   /** Act on completion */
   def onComplete(handler: AlmValidation[R] ⇒ Unit)(implicit executionContext: ExecutionContext): AlmFuture[R] = {
     underlying.onComplete {

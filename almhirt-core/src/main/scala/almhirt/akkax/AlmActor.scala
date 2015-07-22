@@ -92,9 +92,10 @@ trait AlmActor extends Actor with HasAlmhirtContext with AlmActorSupport {
     import akka.pattern._
     import almhirt.almfuture.all._
     implicit val executor = policy.executorSelector.map { selectExecutionContext(_) } getOrElse this.context.dispatcher
-    retryFuture(policy) {
-      (actor ? m)(atMost).mapCastTo[T]
+    val f: AlmFuture[Any] = retryFuture(policy) {
+      (actor ? m)(atMost).toAlmFuture
     }
+    f.mapCast[T]
   }
   
   def retryAskEvalForFailure[T](policy: RetryPolicyExt)(failPf: PartialFunction[T, Problem])(actor: ActorRef, m: Any, atMost: FiniteDuration)(implicit classTag: ClassTag[T]): AlmFuture[T] = {
