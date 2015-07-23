@@ -65,8 +65,8 @@ package object reactivemongox {
         sslEnabled ← section.opt[Boolean]("ssl-enabled")
         sslAllowsInvalidCert ← section.opt[Boolean]("ssl-allows-invalid-cert")
       } yield MongoConnectionSettings(hosts, options = MongoConnectionSettings.MongoConnectionOptions(
-        numChannelsPerNode = numChannelsPerNode
-        , sslEnabled = sslEnabled getOrElse false, 
+        numChannelsPerNode = numChannelsPerNode,
+        sslEnabled = sslEnabled getOrElse false,
         sslAllowsInvalidCert = sslAllowsInvalidCert getOrElse false))
 
     def tryGetValue(config: Config, path: String): AlmValidation[Option[MongoConnectionSettings]] =
