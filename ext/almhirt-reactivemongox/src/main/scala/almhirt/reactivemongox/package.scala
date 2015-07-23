@@ -62,7 +62,10 @@ package object reactivemongox {
         section ← config.v[Config](path)
         hosts ← section.v[List[String]]("hosts")
         numChannelsPerNode ← section.magicDefault[Int]("default", 10)("num-channels-per-node")
-      } yield MongoConnectionSettings(hosts, numChannelsPerNode = numChannelsPerNode)
+        sslEnabled ← section.magicDefault[Boolean]("default", false)("ssl-enabled")
+        sslAllowsInvalidCert ← section.magicDefault[Boolean]("default", false)("ssl-allows-invalid-cert")
+      } yield MongoConnectionSettings(hosts, options = MongoConnectionSettings.MongoConnectionOptions(
+        numChannelsPerNode = numChannelsPerNode, sslEnabled = sslEnabled, sslAllowsInvalidCert = sslAllowsInvalidCert))
 
     def tryGetValue(config: Config, path: String): AlmValidation[Option[MongoConnectionSettings]] =
       config.opt[Config](path).flatMap {
