@@ -94,12 +94,17 @@ class ResourcesAndKeysTests extends FunSuite with Matchers {
 
   test("""render the boolean in en when true.""") {
     val formatable = resourcesWithoutFallback.forceFormatter(group.withKey("yesno"), "en")
-    info(formatable.forceFormatValues(true))
+    formatable.forceFormatValues(true) should equal("Yes!")
   }
 
   test("""render the boolean in en when false.""") {
     val formatable = resourcesWithoutFallback.forceFormatter(group.withKey("yesno"), "en")
-    info(formatable.forceFormatValues(false))
+    formatable.forceFormatValues(false) should equal("No!")
+  }
+
+  test("""render the boolean in en via the lookups extension methods.""") {
+    import ResourceLookup.UnsafeFormattingImplicits._
+    resourcesWithoutFallback.forceFormatValues(group.withKey("yesno"), "en", true) should equal("Yes!")
   }
 
   test("""select an existing text(alternative a).""") {

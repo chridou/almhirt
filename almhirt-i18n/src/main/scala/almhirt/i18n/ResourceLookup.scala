@@ -360,7 +360,7 @@ object ResourceLookup {
         intoBuffer[AlmFormatter](key, appendTo, () ⇒ self.getFormatter(key, locale), (formatter, buffer) ⇒ formatter.formatValuesInto(buffer, values: _*))
 
       def forceFormatValues[L: LocaleMagnet](key: ResourceKey, locale: L, values: Any*): String =
-        forceFormatValuesInto(key, locale, new StringBuffer, values).toString
+        forceFormatValuesInto(key, locale, new StringBuffer, values: _*).toString
 
       def forceFormatNumericInto[T: Numeric, L: LocaleMagnet](key: ResourceKey, locale: L, num: T, appendTo: StringBuffer): StringBuffer =
         intoBuffer[AlmNumericFormatter](key, appendTo, () ⇒ self.getNumericFormatter(key, locale), (formatter, buffer) ⇒ formatter.formatNumericInto(num, appendTo))
