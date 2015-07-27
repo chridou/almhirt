@@ -15,7 +15,7 @@ sealed trait SingleProblem extends Problem {
   def cause: Option[ProblemCause]
 
   override private[problem] def baseInfo(indentLevel: Int): StringBuilder = {
-    val indentation = (0 until (indentLevel * 2)).map(_ ⇒ " ").mkString
+    val indentation = (0 until (indentLevel * 2)).map(_ ⇒ "\u00A0").mkString
     val builder = new StringBuilder()
     builder.append(indentation + "Problem:\n")
     builder.append(indentation + "Type: %s\n".format(problemType))
@@ -45,7 +45,7 @@ sealed trait SingleProblem extends Problem {
 sealed trait AggregatedProblem extends Problem {
   def problems: Seq[Problem]
   override private[problem] def baseInfo(indentLevel: Int): StringBuilder = {
-    val indentation = (0 until (indentLevel * 2)).map(_ ⇒ " ").mkString
+    val indentation = (0 until (indentLevel * 2)).map(_ ⇒ "\u00A0").mkString
     val builder = new StringBuilder()
     builder.append(indentation + "Multiple Problems:\n")
     builder.append(indentation + s"CorrelationId: $correlationId\n")
