@@ -18,15 +18,35 @@ import scala.language.implicitConversions
 import almhirt.common.EscalatedProblemException
 
 sealed trait ProblemCause
-case class CauseIsProblem(problem: Problem) extends ProblemCause
-case class CauseIsThrowable(representation: ThrowableRepresentation) extends ProblemCause
+final case class CauseIsProblem(problem: Problem) extends ProblemCause {
+  override def toString(): String =
+    s"""|Cause is a problem:
+        |$problem""".stripMargin
+}
+final case class CauseIsThrowable(representation: ThrowableRepresentation) extends ProblemCause
 
 sealed trait ThrowableRepresentation
-case class HasAThrowable(exn: Throwable) extends ThrowableRepresentation {
+final case class HasAThrowable(exn: Throwable) extends ThrowableRepresentation {
   def toDescription: HasAThrowableDescribed = HasAThrowableDescribed(exn)
+  override def toString(): String =
+    s"""|Cause is a throwable:
+        |$exn""".stripMargin
 }
 
-case class HasAThrowableDescribed(classname: String, message: String, stacktrace: String, cause: Option[HasAThrowableDescribed]) extends ThrowableRepresentation
+final case class HasAThrowableDescribed(classname: String, message: String, stacktrace: String, cause: Option[HasAThrowableDescribed]) extends ThrowableRepresentation {
+  override def toString(): String =
+    s"""|Cause is a described throwable:
+        |class: $classname
+        |message: $message
+        |stack trace: $stacktrace
+        |Caused by:
+        |${
+      cause match {
+        case None        ⇒ "no inner cause"
+        case Some(inner) ⇒ inner.toString()
+      }
+    }""".stripMargin
+}
 
 object HasAThrowableDescribed {
   def apply(exn: Throwable): HasAThrowableDescribed =
@@ -61,7 +81,7 @@ object ProblemCause {
         case CauseIsThrowable(HasAThrowable(exn))        ⇒ exn
         case CauseIsThrowable(d: HasAThrowableDescribed) ⇒ new Exception(s"There was a description of an exception:\n$d")
       }
-    
+
     def unwrap(recursively: Boolean = false): ProblemCause =
       self match {
         case CauseIsProblem(problemtypes.ExceptionCaughtProblem(ContainsThrowable(throwable))) ⇒

@@ -120,6 +120,20 @@ class RetryFutureTests(_system: ActorSystem) extends TestKit(_system) with FunSu
     timesExecuted.get should equal(4)
   }
 
+  test("should retry a future that always fails with an Exception with 3 retries and a delay 4 times") {
+    val timesExecuted = new AtomicInteger(0)
+    val settings = RetryPolicy(numberOfRetries = NumberOfRetries.LimitedRetries(4), delay = RetryDelayMode.ConstantDelay(100.millis))
+    val res = AlmFuture.retry(settings, scheduler)(AlmFuture[Int] {
+      val v = timesExecuted.incrementAndGet()
+      info("times executed: " + v.toString)
+      throw new Exception("Bammm!")
+    })
+    val rres = res.awaitResult(1.second)
+    rres.isFailure should equal(true)
+    timesExecuted.get should equal(4)
+
+  }
+
   test("BY-NAME in BY-NAME: should retry a future that always fails with 3 retries and a delay 4 times(in an inner func that takes a future by name)") {
 
     val timesExecuted = new AtomicInteger(0)
