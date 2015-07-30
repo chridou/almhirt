@@ -50,6 +50,7 @@ trait AlmActorSupport { me: Actor ⇒
   }
 
   implicit def almFuture2PipeableFuture[T](future: AlmFuture[T]): PipeableAlmFuture[T] = new PipeableAlmFuture(future)
+  implicit def future2PipeableFuture[T](future: Future[T])(implicit executor: ExecutionContext): PipeableAlmFuture[T] = new PipeableAlmFuture(future.toAlmFuture)
 
   class PipeableAlmFuture[T](future: AlmFuture[T]) extends AnyRef {
     def pipeTo(receiver: ActorRef, unwrapProblem: Boolean = true)(implicit executionContext: ExecutionContext): AlmFuture[T] = {
