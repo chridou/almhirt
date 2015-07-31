@@ -1326,7 +1326,9 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
       {
         (failure match {
           case CauseIsProblem(p)                       ⇒ p.toString
-          case CauseIsThrowable(HasAThrowable(exn))    ⇒ exn.toString
+          case CauseIsThrowable(HasAThrowable(exn))    ⇒ s"""|${exn.getClass.getName}
+                                                             |${exn.getMessage}
+                                                             |${exn.getStackTrace.mkString("\n")}""".stripMargin
           case CauseIsThrowable(x: HasAThrowableDescribed)⇒ x.toString
         }).split("\\r?\\n").map(line ⇒ <span>{ line }<br/></span>)
       }
