@@ -319,20 +319,16 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
     awaitResult(atMost).resultOrEscalate
   }
 
-  def withTimeout(maxDuration: scala.concurrent.duration.FiniteDuration, createMessage: scala.concurrent.duration.FiniteDuration ⇒ String = t ⇒ s"A timeout occured after ${t}.")(implicit executionContext: ExecutionContext): AlmFuture[R] = {
+  def timeout[S: almhirt.almfuture.ActionSchedulingMagnet](after: scala.concurrent.duration.FiniteDuration, scheduler: S)(implicit executor: ExecutionContext): AlmFuture[R] = {
+    val schedulerMagnet = implicitly[almhirt.almfuture.ActionSchedulingMagnet[S]]
     val p = Promise[AlmValidation[R]]
 
-    this.onComplete(
-      fail ⇒ p.complete(scala.util.Success(fail.failure)),
-      succ ⇒ p.complete(scala.util.Success(succ.success)))
-
-    val timer = new java.util.Timer()
-    val r = new java.util.TimerTask() {
-      def run() {
-        p.complete(scala.util.Success(OperationTimedOutProblem(createMessage(maxDuration)).failure))
-      }
-    }
-    timer.schedule(r, maxDuration.toMillis)
+    this.underlying.onComplete(p.complete)
+    schedulerMagnet.schedule(
+      scheduler,
+      p.complete(scala.util.Success(OperationTimedOutProblem(s"A future did not complete timely(after ${after.defaultUnitString}. Be careful, timed out future might run forever.").failure)),
+      after,
+      executor)
 
     new AlmFuture(p.future)
   }
