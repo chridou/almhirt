@@ -32,12 +32,12 @@ trait AlmActorLogging extends ActorLogging { me: AlmActor ⇒
 
   def logError(message: String, throwable: Throwable): Unit = {
     log.error(throwable, message)
-    informVeryImportant(s"$message\n${throwable.getMessage()}")
+    informVeryImportant(s"$message\n${throwable}")
   }
-  
+
   def logProblem(problem: ⇒ Problem): Unit = {
     log.warning(problem.toString())
     informImportant(problem.message)
   }
-   
+
 }
