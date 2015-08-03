@@ -1180,10 +1180,15 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
                         val anchor = Elem(null, "a", att, TopScope, true, Text("last 100"))
                         <span>{ anchor }</span><br/>
                       }
+                      {
+                        val att = new UnprefixedAttribute("href", s"$pathToHerder/information/${app.value}/${component.value}/500", xml.Null)
+                        val anchor = Elem(null, "a", att, TopScope, true, Text("last 500"))
+                        <span>{ anchor }</span><br/>
+                      }
                     </span>
                   } else {
-                    val att = new UnprefixedAttribute("href", s"$pathToHerder/information/${app.value}/${component.value}/5", xml.Null)
-                    val anchor = Elem(null, "a", att, TopScope, true, Text("last 5"))
+                    val att = new UnprefixedAttribute("href", s"$pathToHerder/information/${app.value}/${component.value}/100", xml.Null)
+                    val anchor = Elem(null, "a", att, TopScope, true, Text("last 100"))
                     <span>{ anchor }</span>
                   }
                 }
