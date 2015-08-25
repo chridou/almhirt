@@ -10,6 +10,12 @@ trait CanCreateDateTime { def getDateTime(): ZonedDateTime; def getUtcTimestamp:
 
 trait CanCreateUuidsAndDateTimes extends CanCreateUuid with CanCreateDateTime
 
+object CanCreateDateTime {
+  implicit class CanCreateDateTimesOps(val self: CanCreateDateTime) extends AnyVal {
+    def utcEpochMillis: Long = self.getUtcTimestamp.toInstant(java.time.ZoneOffset.UTC).toEpochMilli()
+  }
+}
+
 object CanCreateUuidsAndDateTimes {
   def apply(): CanCreateUuidsAndDateTimes = new CanCreateUuidsAndDateTimes {
     override def getUuid(): java.util.UUID = java.util.UUID.randomUUID()
