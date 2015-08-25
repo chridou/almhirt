@@ -12,7 +12,7 @@ trait CanCreateUuidsAndDateTimes extends CanCreateUuid with CanCreateDateTime
 
 object CanCreateDateTime {
   implicit class CanCreateDateTimesOps(val self: CanCreateDateTime) extends AnyVal {
-    def utcEpochMillis: Long = self.getUtcTimestamp.toInstant(java.time.ZoneOffset.UTC).toEpochMilli()
+    def utcEpochMillis: Long = almhirt.converters.DateTimeConverter.localDateTimeToUtcEpochMillis(self.getUtcTimestamp)
   }
 }
 

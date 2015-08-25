@@ -35,7 +35,7 @@ object ToBsonDematerializer extends DematerializerTemplate[BSONValue] {
       case WarpUuid(value) ⇒ BsonConverter.uuidToBson(value)
       case WarpUri(value) ⇒ BSONString(value.toString)
       case WarpDateTime(value) ⇒ BSONString(value.toString)
-      case WarpLocalDateTime(localDateTime) ⇒ BSONTimestamp(localDateTime.atOffset(_root_.java.time.ZoneOffset.UTC).toInstant().toEpochMilli())
+      case WarpLocalDateTime(localDateTime) ⇒ BSONTimestamp(almhirt.converters.DateTimeConverter.localDateTimeToUtcEpochMillis(localDateTime))
       case WarpDuration(value) ⇒ BSONLong(value.toNanos)
     }
 

@@ -45,7 +45,7 @@ object FromBsonRematerializer extends Rematerializer[BSONValue] {
     bsonElems.map(labelAndValue ⇒
       labelAndValue._2 match {
         case BSONNull ⇒ WarpElement(labelAndValue._1, None).success
-        case v ⇒ extract(v, labelAndValue._1 :: path).map(x ⇒ WarpElement(labelAndValue._1, Some(x))).toAgg
+        case v        ⇒ extract(v, labelAndValue._1 :: path).map(x ⇒ WarpElement(labelAndValue._1, Some(x))).toAgg
       }).toVector.sequence
 
   private def extractCollection(what: BSONArray, path: List[String]): AlmValidation[WarpCollection] =
@@ -54,14 +54,13 @@ object FromBsonRematerializer extends Rematerializer[BSONValue] {
   private def extractPrimitive(what: BSONValue, path: List[String]): AlmValidation[WarpPrimitive] = {
     what match {
       case BSONBoolean(value) ⇒ WarpBoolean(value).success
-      case BSONString(value) ⇒ WarpString(value).success
+      case BSONString(value)  ⇒ WarpString(value).success
       case BSONInteger(value) ⇒ WarpInt(value).success
-      case BSONLong(value) ⇒ WarpLong(value).success
-      case BSONDouble(value) ⇒ WarpDouble(value).success
-      case BSONTimestamp(value) ⇒ 
-        val instant = java.time.Instant.ofEpochMilli(value)
-        WarpLocalDateTime(LocalDateTime.ofInstant(instant, java.time.ZoneOffset.UTC)).success
-      case BSONBinary(value, Subtype.UuidSubtype) ⇒ WarpUuid(BinaryConverter.bytesToUuid(value.readArray(16))).success
+      case BSONLong(value)    ⇒ WarpLong(value).success
+      case BSONDouble(value)  ⇒ WarpDouble(value).success
+      case BSONTimestamp(millis) ⇒
+        WarpLocalDateTime(almhirt.converters.DateTimeConverter.utcEpochMillisToLocalDateTime(millis)).success
+      case BSONBinary(value, Subtype.UuidSubtype)    ⇒ WarpUuid(BinaryConverter.bytesToUuid(value.readArray(16))).success
       case BSONBinary(value, Subtype.OldUuidSubtype) ⇒ WarpUuid(BinaryConverter.bytesBigEndianToUuid(value.readArray(16))).success
       case BSONBinary(value, st) ⇒
         Failure(SerializationProblem(s"A BSONBinary with subtype ${st.toString()} is not a primitive type. The path is ${path.reverse.mkString("[", "→", "]")}."))
