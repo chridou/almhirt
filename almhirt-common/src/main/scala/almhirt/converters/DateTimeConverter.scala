@@ -15,6 +15,6 @@ object DateTimeConverter {
     ldt.atOffset(ZoneOffset.UTC).toZonedDateTime()
 
   def zonedDateTimeToUtcLocalDateTime(ldt: ZonedDateTime): LocalDateTime =
-    ldt.toLocalDateTime()
+    ldt.toOffsetDateTime().withOffsetSameInstant(ZoneOffset.UTC).toLocalDateTime()
     
 }
