@@ -1,7 +1,7 @@
 package riftwarp
 
 import java.util.UUID
-import org.joda.time.{DateTime, LocalDateTime}
+import _root_.java.time.{ ZonedDateTime, LocalDateTime }
 import scalaz._, Scalaz._
 import scalaz.Validation.FlatMap._
 import almhirt.common._
@@ -81,7 +81,7 @@ object PrimitiveTypesUnpacker extends RegisterableWarpUnpacker[PrimitiveTypes] {
         float ← lookup.getAs[Float]("float")
         double ← lookup.getAs[Double]("double")
         bigDec ← lookup.getAs[BigDecimal]("bigDec")
-        dateTime ← lookup.getAs[DateTime]("dateTime")
+        dateTime ← lookup.getAs[ZonedDateTime]("dateTime")
         localDateTime ← lookup.getAs[LocalDateTime]("localDateTime")
         uuid ← lookup.getAs[UUID]("uuid")
       } yield PrimitiveTypes(str, bool, byte, int, long, bigInt, float, double, bigDec, dateTime, localDateTime, uuid)
@@ -111,7 +111,7 @@ object PrimitiveListMAsUnpacker extends RegisterableWarpUnpacker[PrimitiveListMA
         listInt ← lookup.getPrimitives[Int]("listInt").map(_.toList)
         listDouble ← lookup.getPrimitives[Double]("listDouble").map(_.toList)
         listBigDecimal ← lookup.getPrimitives[BigDecimal]("listBigDecimal").map(_.toList)
-        listDateTime ← lookup.getPrimitives[DateTime]("listDateTime").map(_.toList)
+        listDateTime ← lookup.getPrimitives[ZonedDateTime]("listDateTime").map(_.toList)
       } yield PrimitiveListMAs(listString, listInt, listDouble, listBigDecimal, listDateTime)
     }
   }
@@ -163,7 +163,7 @@ object PrimitiveMapsUnpacker extends RegisterableWarpUnpacker[PrimitiveMaps] {
       for {
         mapIntInt ← lookup.getPrimitiveAssocs[Int, Int]("mapIntInt").map(_.toMap)
         mapStringInt ← lookup.getPrimitiveAssocs[String, Int]("mapStringInt").map(_.toMap)
-        mapUuidDateTime ← lookup.getPrimitiveAssocs[UUID, DateTime]("mapUuidDateTime").map(_.toMap)
+        mapUuidDateTime ← lookup.getPrimitiveAssocs[UUID, ZonedDateTime]("mapUuidDateTime").map(_.toMap)
       } yield PrimitiveMaps(mapIntInt, mapStringInt, mapUuidDateTime)
     }
   }

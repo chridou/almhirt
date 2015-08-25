@@ -15,8 +15,8 @@ trait HasCommonHttpSerializers {
   implicit def bigDecimalHttpSerializer: HttpSerializer[BigDecimal] with HttpDeserializer[BigDecimal]
   implicit def uriHttpSerializer: HttpSerializer[java.net.URI] with HttpDeserializer[java.net.URI]
   implicit def uuidHttpSerializer: HttpSerializer[java.util.UUID] with HttpDeserializer[java.util.UUID]
-  implicit def localDateTimeHttpSerializer: HttpSerializer[org.joda.time.LocalDateTime] with HttpDeserializer[org.joda.time.LocalDateTime]
-  implicit def dateTimeHttpSerializer: HttpSerializer[org.joda.time.DateTime] with HttpDeserializer[org.joda.time.DateTime]
+  implicit def localDateTimeHttpSerializer: HttpSerializer[java.time.LocalDateTime] with HttpDeserializer[java.time.LocalDateTime]
+  implicit def dateTimeHttpSerializer: HttpSerializer[java.time.ZonedDateTime] with HttpDeserializer[java.time.ZonedDateTime]
   implicit def finiteDurationHttpSerializer: HttpSerializer[scala.concurrent.duration.FiniteDuration] with HttpDeserializer[scala.concurrent.duration.FiniteDuration]
 
   implicit def booleansHttpSerializer: HttpSerializer[Seq[Boolean]] with HttpDeserializer[Seq[Boolean]]
@@ -31,8 +31,8 @@ trait HasCommonHttpSerializers {
   implicit def bigDecimalsHttpSerializer: HttpSerializer[Seq[BigDecimal]] with HttpDeserializer[Seq[BigDecimal]]
   implicit def urisHttpSerializer: HttpSerializer[Seq[java.net.URI]] with HttpDeserializer[Seq[java.net.URI]]
   implicit def uuidsHttpSerializer: HttpSerializer[Seq[java.util.UUID]] with HttpDeserializer[Seq[java.util.UUID]]
-  implicit def localDateTimesHttpSerializer: HttpSerializer[Seq[org.joda.time.LocalDateTime]] with HttpDeserializer[Seq[org.joda.time.LocalDateTime]]
-  implicit def dateTimesHttpSerializer: HttpSerializer[Seq[org.joda.time.DateTime]] with HttpDeserializer[Seq[org.joda.time.DateTime]]
+  implicit def localDateTimesHttpSerializer: HttpSerializer[Seq[java.time.LocalDateTime]] with HttpDeserializer[Seq[java.time.LocalDateTime]]
+  implicit def dateTimesHttpSerializer: HttpSerializer[Seq[java.time.ZonedDateTime]] with HttpDeserializer[Seq[java.time.ZonedDateTime]]
   implicit def finiteDurationsHttpSerializer: HttpSerializer[Seq[scala.concurrent.duration.FiniteDuration]] with HttpDeserializer[Seq[scala.concurrent.duration.FiniteDuration]]
 
   implicit def eventHttpSerializer: HttpSerializer[almhirt.common.Event] with HttpDeserializer[almhirt.common.Event]

@@ -1,6 +1,6 @@
 package almhirt.common
 
-import org.joda.time.LocalDateTime
+import java.time.LocalDateTime
 import almhirt.aggregates.{ AggregateRootId, AggregateRootVersion }
 import almhirt.aggregates.AggregateRootId
 import almhirt.aggregates.AggregateRootVersion

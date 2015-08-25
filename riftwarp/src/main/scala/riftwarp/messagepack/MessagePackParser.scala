@@ -154,12 +154,12 @@ object MessagePackParser {
 
   def parseDateTime(size: Int, reader: BinaryReader): WarpDateTime = {
     val bytes = reader.readByteArray(size)
-    WarpDateTime(org.joda.time.DateTime.parse(new String(bytes, "utf-8")))
+    WarpDateTime(java.time.ZonedDateTime.parse(new String(bytes, "utf-8")))
   }
 
   def parseLocalDateTime(size: Int, reader: BinaryReader): WarpLocalDateTime = {
     val bytes = reader.readByteArray(size)
-    WarpLocalDateTime(org.joda.time.LocalDateTime.parse(new String(bytes, "utf-8")))
+    WarpLocalDateTime(java.time.LocalDateTime.parse(new String(bytes, "utf-8")))
   }
 
   def parseDuration(reader: BinaryReader): WarpDuration = {

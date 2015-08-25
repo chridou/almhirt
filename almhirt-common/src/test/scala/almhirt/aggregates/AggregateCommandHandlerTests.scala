@@ -6,7 +6,7 @@ import org.scalatest._
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
-import org.joda.time.{ DateTime, LocalDateTime, DateTimeZone }
+import java.time.{ ZonedDateTime, LocalDateTime }
 import scalaz._, Scalaz._
 import almhirt.common._
 import almhirt.almvalidation.kit._
@@ -17,13 +17,13 @@ class AggregateCommandHandlerTests extends FlatSpec with Matchers with UserComma
 
   implicit override val futuresContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
   implicit val cv = AggregateRootCommandValidator.Validated
-  
+
   implicit val ccuad = {
-    val dt = new LocalDateTime(0L)
+    val dt = LocalDateTime.of(0: Int, 0: Int, 0: Int, 0: Int, 0: Int)
     new CanCreateUuidsAndDateTimes {
       override def getUuid(): java.util.UUID = ???
       override def getUniqueString(): String = "unique"
-      override def getDateTime(): DateTime = ???
+      override def getDateTime(): ZonedDateTime = ???
       override def getUtcTimestamp(): LocalDateTime = dt
     }
   }
@@ -152,7 +152,7 @@ class AggregateCommandHandlerTests extends FlatSpec with Matchers with UserComma
         UserUow(CommandHeader(), "a", 2L, List(
           ChangeUserAgeForCreditCard(CommandHeader(), "a", 2L, 22),
           ChangeUserSurname(CommandHeader(), "a", 3L, "willi"))),
-          ChangeUserFullName(CommandHeader(), "a", 4L, "peter", "pan"),
+        ChangeUserFullName(CommandHeader(), "a", 4L, "peter", "pan"),
         ConfirmUserDeath(CommandHeader(), "a", 6L)))
 
     val (state, events) = handleAggregateCommand(cmd, Vacat)

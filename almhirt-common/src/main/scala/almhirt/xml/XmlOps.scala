@@ -22,7 +22,7 @@ import scalaz.Validation
 import scalaz.syntax.Ops
 import almhirt.common._
 import almhirt.almvalidation._
-import org.joda.time.{DateTime, LocalDateTime}
+import _root_.java.time.{ZonedDateTime, LocalDateTime}
 
 trait XmlOps0 extends Ops[Elem]{
   def extractString(): AlmValidation[String] =
@@ -85,13 +85,13 @@ trait XmlOps0 extends Ops[Elem]{
   def extractOptionalDecimal(): AlmValidation[Option[BigDecimal]] = 
     funs.optionalDecimalFromXmlNode(self)
     
-  def extractDateTime(): AlmValidation[DateTime] = 
+  def extractDateTime(): AlmValidation[ZonedDateTime] = 
     funs.dateTimeFromXmlNode(self)
     
   def extractLocalDateTime(): AlmValidation[LocalDateTime] = 
     funs.localDateTimeFromXmlNode(self)
     
-  def extractOptionalDateTime(): AlmValidation[Option[DateTime]] = 
+  def extractOptionalDateTime(): AlmValidation[Option[ZonedDateTime]] = 
     funs.optionalDateTimeFromXmlNode(self)
     
   def extractDuration(): AlmValidation[FiniteDuration] = 
@@ -142,10 +142,10 @@ trait XmlOps0 extends Ops[Elem]{
   def extractOptionalDoubleFromChild(label: String): AlmValidation[Option[Double]] =
     funs.doubleOptionFromChild(self, label)
     
-  def extractDateTimeFromChild(label: String): AlmValidation[DateTime] = 
+  def extractDateTimeFromChild(label: String): AlmValidation[ZonedDateTime] = 
     funs.dateTimeFromChild(self, label)
     
-  def extractOptionalDateTimeFromChild(label: String): AlmValidation[Option[DateTime]] = 
+  def extractOptionalDateTimeFromChild(label: String): AlmValidation[Option[ZonedDateTime]] = 
     funs.dateTimeOptionFromChild(self, label)
     
   def extractUuidFromChild(label: String): AlmValidation[JUUID] = 

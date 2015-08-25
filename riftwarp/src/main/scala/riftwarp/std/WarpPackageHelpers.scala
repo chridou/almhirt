@@ -34,7 +34,9 @@ object WarpPackageHelpers {
       true
     else if (clazz == classOf[BigDecimal])
       true
-    else if (clazz == classOf[org.joda.time.DateTime])
+    else if (clazz == classOf[_root_.java.time.ZonedDateTime])
+      true
+    else if (clazz == classOf[_root_.java.time.LocalDateTime])
       true
     else if (clazz == classOf[_root_.java.util.UUID])
       true

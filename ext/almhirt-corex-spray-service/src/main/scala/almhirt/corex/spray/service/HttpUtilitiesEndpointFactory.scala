@@ -9,20 +9,19 @@ import almhirt.context.{ HasAlmhirtContext, AlmhirtContext }
 import spray.httpx.marshalling.Marshaller
 import spray.http.StatusCodes
 import spray.routing.Directives
-import org.joda.time.LocalDateTime
-import org.joda.time.DateTime
+import java.time.{ LocalDateTime, ZonedDateTime }
 import spray.routing.RequestContext
 
 object HttpUtilitiesEndpointFactory {
   final case class HttpUtilitiesEndpointParams(
     returnConfigEnabled: Boolean,
     localDateTimeMarshaller: Marshaller[LocalDateTime],
-    dateTimeMarshaller: Marshaller[DateTime],
+    dateTimeMarshaller: Marshaller[ZonedDateTime],
     stringMarshaller: Marshaller[String],
     uuidMarshaller: Marshaller[java.util.UUID],
     problemMarshaller: Marshaller[Problem])
 
-  def paramsFactory(implicit ctx: AlmhirtContext): AlmValidation[(Marshaller[LocalDateTime], Marshaller[DateTime], Marshaller[String], Marshaller[java.util.UUID], Marshaller[Problem]) ⇒ HttpUtilitiesEndpointParams] = {
+  def paramsFactory(implicit ctx: AlmhirtContext): AlmValidation[(Marshaller[LocalDateTime], Marshaller[ZonedDateTime], Marshaller[String], Marshaller[java.util.UUID], Marshaller[Problem]) ⇒ HttpUtilitiesEndpointParams] = {
     import com.typesafe.config.Config
     import almhirt.configuration._
     import scala.concurrent.duration.FiniteDuration
@@ -31,7 +30,7 @@ object HttpUtilitiesEndpointFactory {
       returnConfigEnabled ← section.v[Boolean]("return-config-enabled")
     } yield {
       (localDateTimeMarshaller: Marshaller[LocalDateTime],
-      dateTimeMarshaller: Marshaller[DateTime],
+      dateTimeMarshaller: Marshaller[ZonedDateTime],
       stringMarshaller: Marshaller[String],
       uuidMarshaller: Marshaller[java.util.UUID],
       problemMarshaller: Marshaller[Problem]) ⇒

@@ -1,6 +1,6 @@
 package riftwarpx.mongo
 
-import org.joda.time.{ LocalDateTime, DateTimeZone }
+import _root_.java.time.{ ZonedDateTime, LocalDateTime }
 import scalaz._
 import scalaz.Scalaz._
 import scalaz.Validation.FlatMap._
@@ -58,7 +58,9 @@ object FromBsonRematerializer extends Rematerializer[BSONValue] {
       case BSONInteger(value) ⇒ WarpInt(value).success
       case BSONLong(value) ⇒ WarpLong(value).success
       case BSONDouble(value) ⇒ WarpDouble(value).success
-      case BSONTimestamp(value) ⇒ WarpLocalDateTime(new LocalDateTime(value, DateTimeZone.UTC)).success
+      case BSONTimestamp(value) ⇒ 
+        val instant = java.time.Instant.ofEpochMilli(value)
+        WarpLocalDateTime(LocalDateTime.ofInstant(instant, java.time.ZoneOffset.UTC)).success
       case BSONBinary(value, Subtype.UuidSubtype) ⇒ WarpUuid(BinaryConverter.bytesToUuid(value.readArray(16))).success
       case BSONBinary(value, Subtype.OldUuidSubtype) ⇒ WarpUuid(BinaryConverter.bytesBigEndianToUuid(value.readArray(16))).success
       case BSONBinary(value, st) ⇒

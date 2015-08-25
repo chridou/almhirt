@@ -1,6 +1,6 @@
 package almhirt.common
 
-import org.joda.time.{ LocalDateTime, DateTime }
+import java.time.{ LocalDateTime, ZonedDateTime }
 
 final case class LocalDateTimeRange(from: LocalDateTimeRange.RangeStart, to: LocalDateTimeRange.RangeEnd)
 
@@ -27,17 +27,17 @@ final case class DateTimeRange(from: DateTimeRange.RangeStart, to: DateTimeRange
 object DateTimeRange {
   sealed trait RangeStart
   object BeginningOfTime extends RangeStart
-  final case class From(when: DateTime) extends RangeStart
-  final case class After(when: DateTime) extends RangeStart
+  final case class From(when: ZonedDateTime) extends RangeStart
+  final case class After(when: ZonedDateTime) extends RangeStart
 
   sealed trait RangeEnd
   object EndOfTime extends RangeEnd
-  final case class Until(when: DateTime) extends RangeEnd
-  final case class To(when: DateTime) extends RangeEnd
+  final case class Until(when: ZonedDateTime) extends RangeEnd
+  final case class To(when: ZonedDateTime) extends RangeEnd
 
   implicit class RangeStartOps(self: RangeStart) {
-    def until(end: DateTime): DateTimeRange = DateTimeRange(self, Until(end))
-    def to(end: DateTime): DateTimeRange = DateTimeRange(self, To(end))
+    def until(end: ZonedDateTime): DateTimeRange = DateTimeRange(self, Until(end))
+    def to(end: ZonedDateTime): DateTimeRange = DateTimeRange(self, To(end))
     def endless: DateTimeRange = DateTimeRange(self, EndOfTime)
   }
 

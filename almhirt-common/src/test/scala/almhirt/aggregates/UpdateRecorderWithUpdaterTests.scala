@@ -2,7 +2,7 @@ package almhirt.aggregates
 
 import org.scalatest._
 
-import org.joda.time.{ DateTime, LocalDateTime, DateTimeZone }
+import _root_.java.time.{ ZonedDateTime, LocalDateTime }
 import scalaz._, Scalaz._
 import almhirt.common._
 import almhirt.almvalidation.kit._
@@ -12,11 +12,11 @@ class UpdateRecorderWithUpdaterTests extends FlatSpec with Matchers with Inside
   import aggregatesforthelazyones._
 
   implicit val ccuad = {
-    val dt = new LocalDateTime(0L)
+    val dt = LocalDateTime.of(0: Int, 0: Int, 0: Int, 0: Int, 0: Int)
     new CanCreateUuidsAndDateTimes {
       override def getUuid(): java.util.UUID = ???
       override def getUniqueString(): String = "unique"
-      override def getDateTime(): DateTime = ???
+      override def getDateTime(): ZonedDateTime = ???
       override def getUtcTimestamp(): LocalDateTime = dt
     }
   }

@@ -54,8 +54,6 @@ object Resolvers {
 object Dependencies {
 	lazy val scala_reflect = "org.scala-lang" % "scala-reflect" % BuildSettings.buildScalaVersion
 
-	lazy val jodatime    = "joda-time" % "joda-time" % "2.8.1" % "compile"
-	lazy val jodaconvert    = "org.joda" % "joda-convert" % "1.7" % "compile"
 	lazy val scalaz       = "org.scalaz" %% "scalaz-core" % BuildSettings.scalazVersion 
 
 	lazy val play2_iteratees   = "com.typesafe.play" %% "play-iteratees" % "2.3.9" 
@@ -90,8 +88,6 @@ trait CommonBuild {
   import Resolvers._
   def commonProject(name: String, baseFile: java.io.File) = 
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
-	  libraryDependencies += jodatime,
-	  libraryDependencies += jodaconvert,
 	  libraryDependencies += apache_codecs,
 	  libraryDependencies += typesafe_config,
 	  libraryDependencies += scalaz,
@@ -105,8 +101,6 @@ trait I18nBuild {
   import Resolvers._
   def i18nProject(name: String, baseFile: java.io.File) = 
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
-	  libraryDependencies += jodatime,
-	  libraryDependencies += jodaconvert,
 	  libraryDependencies += apache_commons_io,
     libraryDependencies += icu4j,
 	  libraryDependencies += scalaz,
@@ -121,8 +115,6 @@ trait HttpxSprayBuild {
   def httpxSprayProject(name: String, baseFile: java.io.File) = 
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
   	  resolvers += sprayRepo,
-	  libraryDependencies += jodatime,
-	  libraryDependencies += jodaconvert,
 	  libraryDependencies += akka_actor,
 	  libraryDependencies += spray_httpx,
 	  libraryDependencies += typesafe_config,
@@ -138,8 +130,6 @@ trait CorexSprayClientBuild {
   def corexSprayClientProject(name: String, baseFile: java.io.File) = 
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
   	  resolvers += sprayRepo,
-	  libraryDependencies += jodatime,
-	  libraryDependencies += jodaconvert,
 	  libraryDependencies += akka_actor,
 	  libraryDependencies += akka_streams,
 	  libraryDependencies += spray_httpx,
@@ -157,8 +147,6 @@ trait HttpxSprayServiceBuild {
   def httpxSprayServiceProject(name: String, baseFile: java.io.File) = 
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
   	  resolvers += sprayRepo,
-	  libraryDependencies += jodatime,
-	  libraryDependencies += jodaconvert,
 	  libraryDependencies += akka_actor,
 	  libraryDependencies += spray_httpx,
 	  libraryDependencies += spray_routing,
@@ -189,8 +177,6 @@ trait CoreBuild {
   import Resolvers._
   def coreProject(name: String, baseFile: java.io.File) = 
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
-	  libraryDependencies += jodatime,
-	  libraryDependencies += jodaconvert,
 	  libraryDependencies += scalaz,
 	  libraryDependencies += play2_iteratees,
 	  libraryDependencies += akka_streams,
@@ -207,8 +193,6 @@ trait DashboardBuild {
   import Resolvers._
   def dashboardProject(name: String, baseFile: java.io.File) = 
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
-	  libraryDependencies += jodatime,
-	  libraryDependencies += jodaconvert,
 	  libraryDependencies += scalaz,
 	  libraryDependencies += akka_streams,
 	  libraryDependencies += akka_actor,
@@ -225,8 +209,6 @@ trait CorexMongoBuild {
   def corexMongoProject(name: String, baseFile: java.io.File) = 
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
 	  resolvers += sonatypeSnapshots,
-	  libraryDependencies += jodatime,
-	  libraryDependencies += jodaconvert,
 	  libraryDependencies += scalaz,
 	  libraryDependencies += akka_actor,
 	  libraryDependencies += akka_streams,
@@ -267,8 +249,6 @@ trait RiftWarpBuild {
   def riftwarpProject(name: String, baseFile: java.io.File) = 
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
 	  libraryDependencies += scala_reflect,
-	  libraryDependencies += jodatime,
-	  libraryDependencies += jodaconvert,
 	  libraryDependencies += apache_codecs,
 	  libraryDependencies += scalaz,
 //	  libraryDependencies += "com.chuusai" %% "shapeless" % "1.2.4",
@@ -283,8 +263,6 @@ trait RiftWarpHttpSprayBuild {
   def riftwarpHttpSprayProject(name: String, baseFile: java.io.File) = 
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
 	  libraryDependencies += scala_reflect,
-	  libraryDependencies += jodatime,
-	  libraryDependencies += jodaconvert,
     libraryDependencies += akka_actor,
 	  libraryDependencies += apache_codecs,
 	  libraryDependencies += spray_httpx,
@@ -301,8 +279,6 @@ trait RiftWarpMongoExtBuild {
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
 	  resolvers += sonatypeSnapshots,
 	  libraryDependencies += scala_reflect,
-	  libraryDependencies += jodatime,
-	  libraryDependencies += jodaconvert,
 	  libraryDependencies += apache_codecs,
 	  libraryDependencies += "org.reactivemongo" %% "reactivemongo-bson" % BuildSettings.reactiveMongoVersion % "provided"     
 		exclude("ch.qos.logback", "logback-core")
@@ -318,8 +294,6 @@ trait RiftWarpAutomaticBuild {
   import Resolvers._
   def riftwarpAutomaticProject(name: String, baseFile: java.io.File) = 
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
-	  libraryDependencies += jodatime,
-	  libraryDependencies += jodaconvert,
 	  libraryDependencies += apache_codecs,
 	  libraryDependencies += scalaz,
 	  libraryDependencies += scalatest,

@@ -20,7 +20,7 @@ import java.util.UUID
 import scalaz.{ Validation, NonEmptyList }
 import scalaz.syntax.Ops
 import scalaz.syntax.validation._
-import org.joda.time.{ DateTime, LocalDateTime }
+import java.time.{ ZonedDateTime, LocalDateTime }
 import almhirt.common._
 import scala.collection.TraversableLike
 import scala.collection.generic.CanBuildFrom
@@ -57,7 +57,7 @@ trait AlmValidationOps0 extends Ops[String] {
     parseFloatAlm(self)
   def toDecimalAlm(): AlmValidation[BigDecimal] =
     parseDecimalAlm(self)
-  def toDateTimeAlm(): AlmValidation[DateTime] =
+  def toDateTimeAlm(): AlmValidation[ZonedDateTime] =
     parseDateTimeAlm(self)
   def toLocalDateTimeAlm(): AlmValidation[LocalDateTime] =
     parseLocalDateTimeAlm(self)

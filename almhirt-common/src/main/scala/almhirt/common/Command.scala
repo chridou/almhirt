@@ -1,7 +1,7 @@
 package almhirt.common
 
 import scalaz._, Scalaz._
-import org.joda.time.LocalDateTime
+import _root_.java.time.LocalDateTime
 import almhirt.aggregates.{ AggregateRootId, AggregateRootVersion }
 
 case class CommandHeader(id: CommandId, timestamp: LocalDateTime, metadata: Map[String, String])

@@ -16,8 +16,8 @@ trait HasCommonMarshallers extends HasProblemMarshaller {
   implicit def bigDecimalMarshaller: Marshaller[BigDecimal]
   implicit def uriMarshaller: Marshaller[java.net.URI]
   implicit def uuidMarshaller: Marshaller[java.util.UUID]
-  implicit def localDateTimeMarshaller: Marshaller[org.joda.time.LocalDateTime]
-  implicit def dateTimeMarshaller: Marshaller[org.joda.time.DateTime]
+  implicit def localDateTimeMarshaller: Marshaller[java.time.LocalDateTime]
+  implicit def dateTimeMarshaller: Marshaller[java.time.ZonedDateTime]
   implicit def finiteDurationMarshaller: Marshaller[scala.concurrent.duration.FiniteDuration]
 
   implicit def booleansMarshaller: Marshaller[Seq[Boolean]]
@@ -32,8 +32,8 @@ trait HasCommonMarshallers extends HasProblemMarshaller {
   implicit def bigDecimalsMarshaller: Marshaller[Seq[BigDecimal]]
   implicit def urisMarshaller: Marshaller[Seq[java.net.URI]]
   implicit def uuidsMarshaller: Marshaller[Seq[java.util.UUID]]
-  implicit def localDateTimesMarshaller: Marshaller[Seq[org.joda.time.LocalDateTime]]
-  implicit def dateTimesMarshaller: Marshaller[Seq[org.joda.time.DateTime]]
+  implicit def localDateTimesMarshaller: Marshaller[Seq[java.time.LocalDateTime]]
+  implicit def dateTimesMarshaller: Marshaller[Seq[java.time.ZonedDateTime]]
   implicit def finiteDurationsMarshaller: Marshaller[Seq[scala.concurrent.duration.FiniteDuration]]
 
   implicit def eventMarshaller: Marshaller[almhirt.common.Event]
@@ -92,11 +92,11 @@ trait CommonMarshallerInstances { self: HasCommonMarshallers ⇒
   override lazy val uuidMarshaller: Marshaller[java.util.UUID] =
     ContentTypeBoundMarshallerFactory[java.util.UUID](commonContentTypeProviders.uuidContentTypeProvider, DefaultMarshallingInstances.UuidMarshallingInst).marshaller(commonHttpSerializers.uuidHttpSerializer)
 
-  override lazy val localDateTimeMarshaller: Marshaller[org.joda.time.LocalDateTime] =
-    ContentTypeBoundMarshallerFactory[org.joda.time.LocalDateTime](commonContentTypeProviders.localDateTimeContentTypeProvider, DefaultMarshallingInstances.LocalDateTimeMarshallingInst).marshaller(commonHttpSerializers.localDateTimeHttpSerializer)
+  override lazy val localDateTimeMarshaller: Marshaller[java.time.LocalDateTime] =
+    ContentTypeBoundMarshallerFactory[java.time.LocalDateTime](commonContentTypeProviders.localDateTimeContentTypeProvider, DefaultMarshallingInstances.LocalDateTimeMarshallingInst).marshaller(commonHttpSerializers.localDateTimeHttpSerializer)
 
-  override lazy val dateTimeMarshaller: Marshaller[org.joda.time.DateTime] =
-    ContentTypeBoundMarshallerFactory[org.joda.time.DateTime](commonContentTypeProviders.dateTimeContentTypeProvider, DefaultMarshallingInstances.DateTimeMarshallingInst).marshaller(commonHttpSerializers.dateTimeHttpSerializer)
+  override lazy val dateTimeMarshaller: Marshaller[java.time.ZonedDateTime] =
+    ContentTypeBoundMarshallerFactory[java.time.ZonedDateTime](commonContentTypeProviders.dateTimeContentTypeProvider, DefaultMarshallingInstances.DateTimeMarshallingInst).marshaller(commonHttpSerializers.dateTimeHttpSerializer)
 
   override lazy val finiteDurationMarshaller: Marshaller[scala.concurrent.duration.FiniteDuration] =
     ContentTypeBoundMarshallerFactory[scala.concurrent.duration.FiniteDuration](commonContentTypeProviders.finiteDurationTypeProvider, DefaultMarshallingInstances.DurationMarshallingInst).marshaller(commonHttpSerializers.finiteDurationHttpSerializer)
@@ -137,11 +137,11 @@ trait CommonMarshallerInstances { self: HasCommonMarshallers ⇒
   override lazy val uuidsMarshaller: Marshaller[Seq[java.util.UUID]] =
     ContentTypeBoundMarshallerFactory[Seq[java.util.UUID]](commonContentTypeProviders.uuidsContentTypeProvider, DefaultMarshallingInstances.UuidsMarshallingInst).marshaller(commonHttpSerializers.uuidsHttpSerializer)
 
-  override lazy val localDateTimesMarshaller: Marshaller[Seq[org.joda.time.LocalDateTime]] =
-    ContentTypeBoundMarshallerFactory[Seq[org.joda.time.LocalDateTime]](commonContentTypeProviders.localDateTimesContentTypeProvider, DefaultMarshallingInstances.LocalDateTimesMarshallingInst).marshaller(commonHttpSerializers.localDateTimesHttpSerializer)
+  override lazy val localDateTimesMarshaller: Marshaller[Seq[java.time.LocalDateTime]] =
+    ContentTypeBoundMarshallerFactory[Seq[java.time.LocalDateTime]](commonContentTypeProviders.localDateTimesContentTypeProvider, DefaultMarshallingInstances.LocalDateTimesMarshallingInst).marshaller(commonHttpSerializers.localDateTimesHttpSerializer)
 
-  override lazy val dateTimesMarshaller: Marshaller[Seq[org.joda.time.DateTime]] =
-    ContentTypeBoundMarshallerFactory[Seq[org.joda.time.DateTime]](commonContentTypeProviders.dateTimesContentTypeProvider, DefaultMarshallingInstances.DateTimesMarshallingInst).marshaller(commonHttpSerializers.dateTimesHttpSerializer)
+  override lazy val dateTimesMarshaller: Marshaller[Seq[java.time.ZonedDateTime]] =
+    ContentTypeBoundMarshallerFactory[Seq[java.time.ZonedDateTime]](commonContentTypeProviders.dateTimesContentTypeProvider, DefaultMarshallingInstances.DateTimesMarshallingInst).marshaller(commonHttpSerializers.dateTimesHttpSerializer)
 
   override lazy val finiteDurationsMarshaller: Marshaller[Seq[scala.concurrent.duration.FiniteDuration]] =
     ContentTypeBoundMarshallerFactory[Seq[scala.concurrent.duration.FiniteDuration]](commonContentTypeProviders.finiteDurationsContentTypeProvider, DefaultMarshallingInstances.DurationsMarshallingInst).marshaller(commonHttpSerializers.finiteDurationsHttpSerializer)

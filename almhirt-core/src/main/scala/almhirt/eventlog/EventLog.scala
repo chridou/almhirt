@@ -1,7 +1,7 @@
 package almhirt.eventlog
 
 import java.util.{ UUID ⇒ JUUID }
-import org.joda.time.LocalDateTime
+import java.time.LocalDateTime
 import akka.actor._
 import almhirt.common._
 import play.api.libs.iteratee.Enumerator

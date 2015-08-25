@@ -18,7 +18,7 @@ import java.util.{ UUID ⇒ JUUID }
 import scala.concurrent.duration._
 import scalaz.syntax.validation._
 import scalaz.std._
-import org.joda.time.{ DateTime, LocalDateTime }
+import _root_.java.time.{ ZonedDateTime, LocalDateTime }
 import almhirt.common._
 import almhirt.almvalidation.funs._
 import almhirt.problem.inst._
@@ -148,10 +148,10 @@ trait XmlFunctions {
     else
       decimalFromXmlNode(node) fold (_.failure, Some(_).success)
 
-  def dateTimeFromXmlNode(node: Elem): AlmValidation[DateTime] =
+  def dateTimeFromXmlNode(node: Elem): AlmValidation[ZonedDateTime] =
     notEmptyOrWhitespace(node.text) flatMap (ne ⇒ parseDateTimeAlm(ne)) bimap (f ⇒ f.withLabel(node.label), s ⇒ s)
 
-  def optionalDateTimeFromXmlNode(node: Elem): AlmValidation[Option[DateTime]] =
+  def optionalDateTimeFromXmlNode(node: Elem): AlmValidation[Option[ZonedDateTime]] =
     if (node.text.trim.isEmpty)
       None.success
     else
@@ -268,11 +268,11 @@ trait XmlFunctions {
   def doubleOptionFromChild(node: Elem, label: String): AlmValidation[Option[Double]] =
     flatMapOptionalFirstChild(node, label, n ⇒ emptyStringIsNone(n.text, s ⇒ parseDoubleAlm(s))) bimap (f ⇒ f.withLabel(label), s ⇒ s)
 
-  def dateTimeFromChild(node: Elem, label: String): AlmValidation[DateTime] =
+  def dateTimeFromChild(node: Elem, label: String): AlmValidation[ZonedDateTime] =
     firstChildNodeMandatory(node, label)
       .flatMap { node ⇒ parseDateTimeAlm(node.text) } bimap (f ⇒ f.withLabel(label), s ⇒ s)
 
-  def dateTimeOptionFromChild(node: Elem, label: String): AlmValidation[Option[DateTime]] =
+  def dateTimeOptionFromChild(node: Elem, label: String): AlmValidation[Option[ZonedDateTime]] =
     flatMapOptionalFirstChild(node, label, n ⇒ emptyStringIsNone(n.text, s ⇒ parseDateTimeAlm(s))) bimap (f ⇒ f.withLabel(label), s ⇒ s)
 
   def uuidFromChild(node: Elem, label: String): AlmValidation[JUUID] =

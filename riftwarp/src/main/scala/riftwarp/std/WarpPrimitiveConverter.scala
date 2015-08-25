@@ -220,8 +220,8 @@ trait WarpPrimitiveToUriConverter extends WarpPrimitiveConverter[java.net.URI] {
   override def convertBack(what: java.net.URI) = WarpUri(what)
 }
 
-trait WarpPrimitiveToDateTimeConverter extends WarpPrimitiveConverter[org.joda.time.DateTime] {
-  override def convert(what: WarpPackage): AlmValidation[org.joda.time.DateTime] =
+trait WarpPrimitiveToDateTimeConverter extends WarpPrimitiveConverter[java.time.ZonedDateTime] {
+  override def convert(what: WarpPackage): AlmValidation[java.time.ZonedDateTime] =
     what match {
       case WarpDateTime(value) ⇒ value.success
       case WarpString(value) ⇒ value.toDateTimeAlm
@@ -229,11 +229,11 @@ trait WarpPrimitiveToDateTimeConverter extends WarpPrimitiveConverter[org.joda.t
        UnspecifiedProblem(s"""A WarpObject can not be a DateTime. The descriptor is ${wd.toString}""").failure
       case x ⇒ UnspecifiedProblem(s""""${x.getClass().getName()}" can not be a DateTime""").failure
     }
-  override def convertBack(what: org.joda.time.DateTime) = WarpDateTime(what)
+  override def convertBack(what: java.time.ZonedDateTime) = WarpDateTime(what)
 }
 
-trait WarpPrimitiveToLocalDateTimeConverter extends WarpPrimitiveConverter[org.joda.time.LocalDateTime] {
-  override def convert(what: WarpPackage): AlmValidation[org.joda.time.LocalDateTime] =
+trait WarpPrimitiveToLocalDateTimeConverter extends WarpPrimitiveConverter[java.time.LocalDateTime] {
+  override def convert(what: WarpPackage): AlmValidation[java.time.LocalDateTime] =
     what match {
       case WarpLocalDateTime(value) ⇒ value.success
       case WarpString(value) ⇒ value.toLocalDateTimeAlm
@@ -241,7 +241,7 @@ trait WarpPrimitiveToLocalDateTimeConverter extends WarpPrimitiveConverter[org.j
        UnspecifiedProblem(s"""A WarpObject can not be a LocalDateTime. The descriptor is ${wd.toString}""").failure
       case x ⇒ UnspecifiedProblem(s""""${x.getClass().getName()}" can not be a LocalDateTime""").failure
     }
-  override def convertBack(what: org.joda.time.LocalDateTime) = WarpLocalDateTime(what)
+  override def convertBack(what: java.time.LocalDateTime) = WarpLocalDateTime(what)
 }
 
 trait WarpPrimitiveToDurationConverter extends WarpPrimitiveConverter[FiniteDuration] {

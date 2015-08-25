@@ -2,7 +2,7 @@ package riftwarp
 
 import org.scalatest._
 import java.util.{ UUID ⇒ JUUID }
-import org.joda.time.{DateTime, LocalDateTime}
+import _root_.java.time.{ ZonedDateTime, LocalDateTime }
 import scalaz.@@
 import scalaz.Validation.FlatMap._
 import almhirt.common._
@@ -77,7 +77,7 @@ class JsonSerialization extends FunSuite with Matchers {
   }
 
   test("A WarpDateTime should dematerialize to the corresponding JSON String") {
-    val dateTime = DateTime.now()
+    val dateTime = ZonedDateTime.now()
     val res = WarpDateTime(dateTime).dematerialize[String @@ WarpTags.Json]
     res should equal(s""""${dateTime.toString()}"""")
   }
@@ -155,8 +155,8 @@ class JsonSerialization extends FunSuite with Matchers {
   }
   
   test("RiftWarpFuns should dematerialize a DateTime") {
-    val dt = DateTime.now
-    val resV = prepareFlatDeparture[DateTime, String @@ WarpTags.Json](dt)
+    val dt = ZonedDateTime.now
+    val resV = prepareFlatDeparture[ZonedDateTime, String @@ WarpTags.Json](dt)
     resV.forceResult._1 should equal("\""+dt.toString()+"\"")
   }
   

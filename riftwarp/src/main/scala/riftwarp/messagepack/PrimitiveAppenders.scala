@@ -93,13 +93,13 @@ object RiftWarpPrimitiveAppenders {
   }
 
   @inline
-  def appendDateTime(v: org.joda.time.DateTime, writer: BinaryWriter): BinaryWriter = {
+  def appendDateTime(v: java.time.ZonedDateTime, writer: BinaryWriter): BinaryWriter = {
     val bytes = v.toString().getBytes()
     appendExt(bytes, RiftwarpTypecodes.DateTimeCode, writer)
   }
 
   @inline
-  def appendLocalDateTime(v: org.joda.time.LocalDateTime, writer: BinaryWriter): BinaryWriter = {
+  def appendLocalDateTime(v: java.time.LocalDateTime, writer: BinaryWriter): BinaryWriter = {
     val bytes = v.toString().getBytes()
     appendExt(bytes, RiftwarpTypecodes.LocalDateTimeCode, writer)
   }

@@ -66,7 +66,7 @@ package object configuration {
   implicit val ConfigLongExtractorInst = new ConfigLongExtractor {}
   implicit val ConfigDoubleExtractorInst = new ConfigDoubleExtractor {}
   implicit val ConfigFiniteDurationMsExtractorInst = new ConfigFiniteDurationMsExtractor {}
-  implicit val ConfigJodaDurationMsExtractorInst = new ConfigJodaDurationMsExtractor {}
+  implicit val ConfigJavaDurationMsExtractorInst = new ConfigJavaDurationMsExtractor {}
   implicit val ConfigUuidExtractorInst = new ConfigUuidExtractor {}
   implicit val ConfigUriExtractorInst = new ConfigUriExtractor {}
 
@@ -76,7 +76,7 @@ package object configuration {
   implicit val ConfigLongListExtractorInst = new ConfigLongListExtractor {}
   implicit val ConfigDoubleListExtractorInst = new ConfigDoubleListExtractor {}
   implicit val ConfigFiniteDurationListMsExtractorInst = new ConfigFiniteDurationListMsExtractor {}
-  implicit val ConfigJodaDurationListMsExtractorInst = new ConfigJodaDurationListMsExtractor {}
+  implicit val ConfigJavaDurationListMsExtractorInst = new ConfigJavaDurationListMsExtractor {}
   implicit val ConfigUuidListExtractorInst = new ConfigUuidListExtractor {}
   implicit val ConfigUriListExtractorInst = new ConfigUriListExtractor {}
   implicit val ConfigConfigListExtractorExtractorInst = new ConfigConfigListExtractor {}

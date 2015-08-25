@@ -16,8 +16,8 @@ trait HasCommonUnmarshallers {
   implicit def bigDecimalUnmarshaller: Unmarshaller[BigDecimal]
   implicit def uriUnmarshaller: Unmarshaller[java.net.URI]
   implicit def uuidUnmarshaller: Unmarshaller[java.util.UUID]
-  implicit def localDateTimeUnmarshaller: Unmarshaller[org.joda.time.LocalDateTime]
-  implicit def dateTimeUnmarshaller: Unmarshaller[org.joda.time.DateTime]
+  implicit def localDateTimeUnmarshaller: Unmarshaller[java.time.LocalDateTime]
+  implicit def dateTimeUnmarshaller: Unmarshaller[java.time.ZonedDateTime]
   implicit def finiteDurationUnmarshaller: Unmarshaller[scala.concurrent.duration.FiniteDuration]
 
   implicit def booleansUnmarshaller: Unmarshaller[Seq[Boolean]]
@@ -32,8 +32,8 @@ trait HasCommonUnmarshallers {
   implicit def bigDecimalsUnmarshaller: Unmarshaller[Seq[BigDecimal]]
   implicit def urisUnmarshaller: Unmarshaller[Seq[java.net.URI]]
   implicit def uuidsUnmarshaller: Unmarshaller[Seq[java.util.UUID]]
-  implicit def localDateTimesUnmarshaller: Unmarshaller[Seq[org.joda.time.LocalDateTime]]
-  implicit def dateTimesUnmarshaller: Unmarshaller[Seq[org.joda.time.DateTime]]
+  implicit def localDateTimesUnmarshaller: Unmarshaller[Seq[java.time.LocalDateTime]]
+  implicit def dateTimesUnmarshaller: Unmarshaller[Seq[java.time.ZonedDateTime]]
   implicit def finiteDurationsUnmarshaller: Unmarshaller[Seq[scala.concurrent.duration.FiniteDuration]]
 
   implicit def eventUnmarshaller: Unmarshaller[almhirt.common.Event]
@@ -92,11 +92,11 @@ trait CommonUnmarshallerInstances { self: HasCommonUnmarshallers ⇒
   override lazy val uuidUnmarshaller: Unmarshaller[java.util.UUID] =
     ContentTypeBoundUnmarshallerFactory[java.util.UUID](commonContentTypeProviders.uuidContentTypeProvider, DefaultMarshallingInstances.UuidMarshallingInst).unmarshaller(commonHttpSerializers.uuidHttpSerializer)
 
-  override lazy val localDateTimeUnmarshaller: Unmarshaller[org.joda.time.LocalDateTime] =
-    ContentTypeBoundUnmarshallerFactory[org.joda.time.LocalDateTime](commonContentTypeProviders.localDateTimeContentTypeProvider, DefaultMarshallingInstances.LocalDateTimeMarshallingInst).unmarshaller(commonHttpSerializers.localDateTimeHttpSerializer)
+  override lazy val localDateTimeUnmarshaller: Unmarshaller[java.time.LocalDateTime] =
+    ContentTypeBoundUnmarshallerFactory[java.time.LocalDateTime](commonContentTypeProviders.localDateTimeContentTypeProvider, DefaultMarshallingInstances.LocalDateTimeMarshallingInst).unmarshaller(commonHttpSerializers.localDateTimeHttpSerializer)
 
-  override lazy val dateTimeUnmarshaller: Unmarshaller[org.joda.time.DateTime] =
-    ContentTypeBoundUnmarshallerFactory[org.joda.time.DateTime](commonContentTypeProviders.dateTimeContentTypeProvider, DefaultMarshallingInstances.DateTimeMarshallingInst).unmarshaller(commonHttpSerializers.dateTimeHttpSerializer)
+  override lazy val dateTimeUnmarshaller: Unmarshaller[java.time.ZonedDateTime] =
+    ContentTypeBoundUnmarshallerFactory[java.time.ZonedDateTime](commonContentTypeProviders.dateTimeContentTypeProvider, DefaultMarshallingInstances.DateTimeMarshallingInst).unmarshaller(commonHttpSerializers.dateTimeHttpSerializer)
 
   override lazy val finiteDurationUnmarshaller: Unmarshaller[scala.concurrent.duration.FiniteDuration] =
     ContentTypeBoundUnmarshallerFactory[scala.concurrent.duration.FiniteDuration](commonContentTypeProviders.finiteDurationTypeProvider, DefaultMarshallingInstances.DurationMarshallingInst).unmarshaller(commonHttpSerializers.finiteDurationHttpSerializer)
@@ -137,11 +137,11 @@ trait CommonUnmarshallerInstances { self: HasCommonUnmarshallers ⇒
   override lazy val uuidsUnmarshaller: Unmarshaller[Seq[java.util.UUID]] =
     ContentTypeBoundUnmarshallerFactory[Seq[java.util.UUID]](commonContentTypeProviders.uuidsContentTypeProvider, DefaultMarshallingInstances.UuidsMarshallingInst).unmarshaller(commonHttpSerializers.uuidsHttpSerializer)
 
-  override lazy val localDateTimesUnmarshaller: Unmarshaller[Seq[org.joda.time.LocalDateTime]] =
-    ContentTypeBoundUnmarshallerFactory[Seq[org.joda.time.LocalDateTime]](commonContentTypeProviders.localDateTimesContentTypeProvider, DefaultMarshallingInstances.LocalDateTimesMarshallingInst).unmarshaller(commonHttpSerializers.localDateTimesHttpSerializer)
+  override lazy val localDateTimesUnmarshaller: Unmarshaller[Seq[java.time.LocalDateTime]] =
+    ContentTypeBoundUnmarshallerFactory[Seq[java.time.LocalDateTime]](commonContentTypeProviders.localDateTimesContentTypeProvider, DefaultMarshallingInstances.LocalDateTimesMarshallingInst).unmarshaller(commonHttpSerializers.localDateTimesHttpSerializer)
 
-  override lazy val dateTimesUnmarshaller: Unmarshaller[Seq[org.joda.time.DateTime]] =
-    ContentTypeBoundUnmarshallerFactory[Seq[org.joda.time.DateTime]](commonContentTypeProviders.dateTimesContentTypeProvider, DefaultMarshallingInstances.DateTimesMarshallingInst).unmarshaller(commonHttpSerializers.dateTimesHttpSerializer)
+  override lazy val dateTimesUnmarshaller: Unmarshaller[Seq[java.time.ZonedDateTime]] =
+    ContentTypeBoundUnmarshallerFactory[Seq[java.time.ZonedDateTime]](commonContentTypeProviders.dateTimesContentTypeProvider, DefaultMarshallingInstances.DateTimesMarshallingInst).unmarshaller(commonHttpSerializers.dateTimesHttpSerializer)
 
   override lazy val finiteDurationsUnmarshaller: Unmarshaller[Seq[scala.concurrent.duration.FiniteDuration]] =
     ContentTypeBoundUnmarshallerFactory[Seq[scala.concurrent.duration.FiniteDuration]](commonContentTypeProviders.finiteDurationsContentTypeProvider, DefaultMarshallingInstances.DurationsMarshallingInst).unmarshaller(commonHttpSerializers.finiteDurationsHttpSerializer)

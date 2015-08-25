@@ -15,8 +15,8 @@ trait HasCommonAlmMediaTypesProviders {
   implicit def bigDecimalAlmMediaTypesProvider: AlmMediaTypesProvider[BigDecimal]
   implicit def uriAlmMediaTypesProvider: AlmMediaTypesProvider[java.net.URI]
   implicit def uuidAlmMediaTypesProvider: AlmMediaTypesProvider[java.util.UUID]
-  implicit def localDateTimeAlmMediaTypesProvider: AlmMediaTypesProvider[org.joda.time.LocalDateTime]
-  implicit def dateTimeAlmMediaTypesProvider: AlmMediaTypesProvider[org.joda.time.DateTime]
+  implicit def localDateTimeAlmMediaTypesProvider: AlmMediaTypesProvider[java.time.LocalDateTime]
+  implicit def dateTimeAlmMediaTypesProvider: AlmMediaTypesProvider[java.time.ZonedDateTime]
   implicit def finiteDurationAlmMediaTypesProvider: AlmMediaTypesProvider[scala.concurrent.duration.FiniteDuration]
 
   implicit def booleansAlmMediaTypesProvider: AlmMediaTypesProvider[Seq[Boolean]]
@@ -31,8 +31,8 @@ trait HasCommonAlmMediaTypesProviders {
   implicit def bigDecimalsAlmMediaTypesProvider: AlmMediaTypesProvider[Seq[BigDecimal]]
   implicit def urisAlmMediaTypesProvider: AlmMediaTypesProvider[Seq[java.net.URI]]
   implicit def uuidsAlmMediaTypesProvider: AlmMediaTypesProvider[Seq[java.util.UUID]]
-  implicit def localDateTimesAlmMediaTypesProvider: AlmMediaTypesProvider[Seq[org.joda.time.LocalDateTime]]
-  implicit def dateTimesAlmMediaTypesProvider: AlmMediaTypesProvider[Seq[org.joda.time.DateTime]]
+  implicit def localDateTimesAlmMediaTypesProvider: AlmMediaTypesProvider[Seq[java.time.LocalDateTime]]
+  implicit def dateTimesAlmMediaTypesProvider: AlmMediaTypesProvider[Seq[java.time.ZonedDateTime]]
   implicit def finiteDurationsAlmMediaTypesProvider: AlmMediaTypesProvider[Seq[scala.concurrent.duration.FiniteDuration]]
 
   implicit def eventAlmMediaTypesProvider: AlmMediaTypesProvider[almhirt.common.Event]
@@ -66,8 +66,8 @@ trait VendorBasedCommonAlmMediaTypesProviders { self: HasCommonAlmMediaTypesProv
   override lazy val bigDecimalAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[BigDecimal]("BigDecimal").withGenericTargets
   override lazy val uriAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[java.net.URI]("Uri").withGenericTargets
   override lazy val uuidAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[java.util.UUID]("Uuid").withGenericTargets
-  override lazy val localDateTimeAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[org.joda.time.LocalDateTime]("LocalDateTime").withGenericTargets
-  override lazy val dateTimeAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[org.joda.time.DateTime]("DateTime").withGenericTargets
+  override lazy val localDateTimeAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[java.time.LocalDateTime]("LocalDateTime").withGenericTargets
+  override lazy val dateTimeAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[java.time.ZonedDateTime]("DateTime").withGenericTargets
   override lazy val finiteDurationAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[scala.concurrent.duration.FiniteDuration]("FiniteDuration").withGenericTargets
 
   override lazy val booleansAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[Seq[Boolean]]("Booleans").withGenericTargets
@@ -82,8 +82,8 @@ trait VendorBasedCommonAlmMediaTypesProviders { self: HasCommonAlmMediaTypesProv
   override lazy val bigDecimalsAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[Seq[BigDecimal]]("BigDecimals").withGenericTargets
   override lazy val urisAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[Seq[java.net.URI]]("Uris").withGenericTargets
   override lazy val uuidsAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[Seq[java.util.UUID]]("Uuids").withGenericTargets
-  override lazy val localDateTimesAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[Seq[org.joda.time.LocalDateTime]]("LocalDateTimes").withGenericTargets
-  override lazy val dateTimesAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[Seq[org.joda.time.DateTime]]("DateTimes").withGenericTargets
+  override lazy val localDateTimesAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[Seq[java.time.LocalDateTime]]("LocalDateTimes").withGenericTargets
+  override lazy val dateTimesAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[Seq[java.time.ZonedDateTime]]("DateTimes").withGenericTargets
   override lazy val finiteDurationsAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[Seq[scala.concurrent.duration.FiniteDuration]]("FiniteDurations").withGenericTargets
 
   override lazy val eventAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[almhirt.common.Event]("Event").withGenericTargets

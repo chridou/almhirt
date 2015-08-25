@@ -1,7 +1,7 @@
 package riftwarp.serialization.common
 
 import java.util.{ UUID ⇒ JUUID }
-import org.joda.time.LocalDateTime
+import _root_.java.time.LocalDateTime
 import scalaz._, Scalaz._
 import scalaz.Validation.FlatMap._
 import almhirt.common._

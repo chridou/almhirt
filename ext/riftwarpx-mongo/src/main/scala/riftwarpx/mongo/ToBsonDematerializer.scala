@@ -1,7 +1,6 @@
 package riftwarpx.mongo
 
 import scala.annotation.tailrec
-import org.joda.time.DateTimeZone
 import scalaz._
 import scalaz.Cord
 import scalaz.Cord._
@@ -36,7 +35,7 @@ object ToBsonDematerializer extends DematerializerTemplate[BSONValue] {
       case WarpUuid(value) ⇒ BsonConverter.uuidToBson(value)
       case WarpUri(value) ⇒ BSONString(value.toString)
       case WarpDateTime(value) ⇒ BSONString(value.toString)
-      case WarpLocalDateTime(value) ⇒ BSONTimestamp(value.toDateTime(DateTimeZone.UTC).getMillis())
+      case WarpLocalDateTime(localDateTime) ⇒ BSONTimestamp(localDateTime.atOffset(_root_.java.time.ZoneOffset.UTC).toInstant().toEpochMilli())
       case WarpDuration(value) ⇒ BSONLong(value.toNanos)
     }
 

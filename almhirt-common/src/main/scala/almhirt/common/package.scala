@@ -43,12 +43,12 @@ package object common extends ops.DeadlineExt with ops.FiniteDurationExt {
       case NonFatal(exn) ⇒ launderException(exn)
     }
 
-  implicit object DateTimeOrdering extends Ordering[org.joda.time.DateTime] {
-    def compare(a: org.joda.time.DateTime, b: org.joda.time.DateTime) = a.compareTo(b)
+  implicit object DateTimeOrdering extends Ordering[java.time.ZonedDateTime] {
+    def compare(a: java.time.ZonedDateTime, b: java.time.ZonedDateTime) = a.compareTo(b)
   }
 
-  implicit object LocalDateTimeOrdering extends Ordering[org.joda.time.LocalDateTime] {
-    def compare(a: org.joda.time.LocalDateTime, b: org.joda.time.LocalDateTime) = a.compareTo(b)
+  implicit object LocalDateTimeOrdering extends Ordering[java.time.LocalDateTime] {
+    def compare(a: java.time.LocalDateTime, b: java.time.LocalDateTime) = a.compareTo(b)
   }
 
   implicit class AlmRichString(self: String) {

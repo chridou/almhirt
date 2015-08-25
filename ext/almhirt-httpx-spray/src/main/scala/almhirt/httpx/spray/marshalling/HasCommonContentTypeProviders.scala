@@ -16,8 +16,8 @@ trait HasCommonContentTypeProviders {
   implicit def bigDecimalContentTypeProvider: FullContentTypeProvider[BigDecimal]
   implicit def uriContentTypeProvider: FullContentTypeProvider[java.net.URI]
   implicit def uuidContentTypeProvider: FullContentTypeProvider[java.util.UUID]
-  implicit def localDateTimeContentTypeProvider: FullContentTypeProvider[org.joda.time.LocalDateTime]
-  implicit def dateTimeContentTypeProvider: FullContentTypeProvider[org.joda.time.DateTime]
+  implicit def localDateTimeContentTypeProvider: FullContentTypeProvider[java.time.LocalDateTime]
+  implicit def dateTimeContentTypeProvider: FullContentTypeProvider[java.time.ZonedDateTime]
   implicit def finiteDurationTypeProvider: FullContentTypeProvider[scala.concurrent.duration.FiniteDuration]
 
   implicit def booleansContentTypeProvider: FullContentTypeProvider[Seq[Boolean]]
@@ -32,8 +32,8 @@ trait HasCommonContentTypeProviders {
   implicit def bigDecimalsContentTypeProvider: FullContentTypeProvider[Seq[BigDecimal]]
   implicit def urisContentTypeProvider: FullContentTypeProvider[Seq[java.net.URI]]
   implicit def uuidsContentTypeProvider: FullContentTypeProvider[Seq[java.util.UUID]]
-  implicit def localDateTimesContentTypeProvider: FullContentTypeProvider[Seq[org.joda.time.LocalDateTime]]
-  implicit def dateTimesContentTypeProvider: FullContentTypeProvider[Seq[org.joda.time.DateTime]]
+  implicit def localDateTimesContentTypeProvider: FullContentTypeProvider[Seq[java.time.LocalDateTime]]
+  implicit def dateTimesContentTypeProvider: FullContentTypeProvider[Seq[java.time.ZonedDateTime]]
   implicit def finiteDurationsContentTypeProvider: FullContentTypeProvider[Seq[scala.concurrent.duration.FiniteDuration]]
 
   implicit def eventContentTypeProvider: FullContentTypeProvider[almhirt.common.Event]
@@ -65,8 +65,8 @@ trait EmptyCommonContentTypeProviders extends HasCommonContentTypeProviders {
   override val bigDecimalContentTypeProvider = FullContentTypeProvider.empty[BigDecimal]
   override val uriContentTypeProvider = FullContentTypeProvider.empty[java.net.URI]
   override val uuidContentTypeProvider = FullContentTypeProvider.empty[java.util.UUID]
-  override val localDateTimeContentTypeProvider = FullContentTypeProvider.empty[org.joda.time.LocalDateTime]
-  override val dateTimeContentTypeProvider = FullContentTypeProvider.empty[org.joda.time.DateTime]
+  override val localDateTimeContentTypeProvider = FullContentTypeProvider.empty[java.time.LocalDateTime]
+  override val dateTimeContentTypeProvider = FullContentTypeProvider.empty[java.time.ZonedDateTime]
   override val finiteDurationTypeProvider = FullContentTypeProvider.empty[scala.concurrent.duration.FiniteDuration]
 
   override val booleansContentTypeProvider = FullContentTypeProvider.empty[Seq[Boolean]]
@@ -81,8 +81,8 @@ trait EmptyCommonContentTypeProviders extends HasCommonContentTypeProviders {
   override val bigDecimalsContentTypeProvider = FullContentTypeProvider.empty[Seq[BigDecimal]]
   override val urisContentTypeProvider = FullContentTypeProvider.empty[Seq[java.net.URI]]
   override val uuidsContentTypeProvider = FullContentTypeProvider.empty[Seq[java.util.UUID]]
-  override val localDateTimesContentTypeProvider = FullContentTypeProvider.empty[Seq[org.joda.time.LocalDateTime]]
-  override val dateTimesContentTypeProvider = FullContentTypeProvider.empty[Seq[org.joda.time.DateTime]]
+  override val localDateTimesContentTypeProvider = FullContentTypeProvider.empty[Seq[java.time.LocalDateTime]]
+  override val dateTimesContentTypeProvider = FullContentTypeProvider.empty[Seq[java.time.ZonedDateTime]]
   override val finiteDurationsContentTypeProvider = FullContentTypeProvider.empty[Seq[scala.concurrent.duration.FiniteDuration]]
 
   override val eventContentTypeProvider = FullContentTypeProvider.empty[almhirt.common.Event]
@@ -114,8 +114,8 @@ trait CommonContentTypeProvidersFromMediaTypes extends HasCommonContentTypeProvi
   override lazy val bigDecimalContentTypeProvider = FullContentTypeProvider[BigDecimal]
   override lazy val uriContentTypeProvider = FullContentTypeProvider[java.net.URI]
   override lazy val uuidContentTypeProvider = FullContentTypeProvider[java.util.UUID]
-  override lazy val localDateTimeContentTypeProvider = FullContentTypeProvider[org.joda.time.LocalDateTime]
-  override lazy val dateTimeContentTypeProvider = FullContentTypeProvider[org.joda.time.DateTime]
+  override lazy val localDateTimeContentTypeProvider = FullContentTypeProvider[java.time.LocalDateTime]
+  override lazy val dateTimeContentTypeProvider = FullContentTypeProvider[java.time.ZonedDateTime]
   override lazy val finiteDurationTypeProvider = FullContentTypeProvider[scala.concurrent.duration.FiniteDuration]
 
   override lazy val booleansContentTypeProvider = FullContentTypeProvider[Seq[Boolean]]
@@ -130,8 +130,8 @@ trait CommonContentTypeProvidersFromMediaTypes extends HasCommonContentTypeProvi
   override lazy val bigDecimalsContentTypeProvider = FullContentTypeProvider[Seq[BigDecimal]]
   override lazy val urisContentTypeProvider = FullContentTypeProvider[Seq[java.net.URI]]
   override lazy val uuidsContentTypeProvider = FullContentTypeProvider[Seq[java.util.UUID]]
-  override lazy val localDateTimesContentTypeProvider = FullContentTypeProvider[Seq[org.joda.time.LocalDateTime]]
-  override lazy val dateTimesContentTypeProvider = FullContentTypeProvider[Seq[org.joda.time.DateTime]]
+  override lazy val localDateTimesContentTypeProvider = FullContentTypeProvider[Seq[java.time.LocalDateTime]]
+  override lazy val dateTimesContentTypeProvider = FullContentTypeProvider[Seq[java.time.ZonedDateTime]]
   override lazy val finiteDurationsContentTypeProvider = FullContentTypeProvider[Seq[scala.concurrent.duration.FiniteDuration]]
 
   override lazy val eventContentTypeProvider = FullContentTypeProvider[almhirt.common.Event]
@@ -165,8 +165,8 @@ trait DelegatingCommonContentTypeProvidersFromMediaTypes extends HasCommonConten
   override lazy val bigDecimalContentTypeProvider = FullContentTypeProvider[BigDecimal](hasCommonAlmMediaTypesProviders.bigDecimalAlmMediaTypesProvider, defaultEncoding)
   override lazy val uriContentTypeProvider = FullContentTypeProvider[java.net.URI](hasCommonAlmMediaTypesProviders.uriAlmMediaTypesProvider, defaultEncoding)
   override lazy val uuidContentTypeProvider = FullContentTypeProvider[java.util.UUID](hasCommonAlmMediaTypesProviders.uuidAlmMediaTypesProvider, defaultEncoding)
-  override lazy val localDateTimeContentTypeProvider = FullContentTypeProvider[org.joda.time.LocalDateTime](hasCommonAlmMediaTypesProviders.localDateTimeAlmMediaTypesProvider, defaultEncoding)
-  override lazy val dateTimeContentTypeProvider = FullContentTypeProvider[org.joda.time.DateTime](hasCommonAlmMediaTypesProviders.dateTimeAlmMediaTypesProvider, defaultEncoding)
+  override lazy val localDateTimeContentTypeProvider = FullContentTypeProvider[java.time.LocalDateTime](hasCommonAlmMediaTypesProviders.localDateTimeAlmMediaTypesProvider, defaultEncoding)
+  override lazy val dateTimeContentTypeProvider = FullContentTypeProvider[java.time.ZonedDateTime](hasCommonAlmMediaTypesProviders.dateTimeAlmMediaTypesProvider, defaultEncoding)
   override lazy val finiteDurationTypeProvider = FullContentTypeProvider[scala.concurrent.duration.FiniteDuration](hasCommonAlmMediaTypesProviders.finiteDurationAlmMediaTypesProvider, defaultEncoding)
 
   override lazy val booleansContentTypeProvider = FullContentTypeProvider[Seq[Boolean]](hasCommonAlmMediaTypesProviders.booleansAlmMediaTypesProvider, defaultEncoding)
@@ -181,8 +181,8 @@ trait DelegatingCommonContentTypeProvidersFromMediaTypes extends HasCommonConten
   override lazy val bigDecimalsContentTypeProvider = FullContentTypeProvider[Seq[BigDecimal]](hasCommonAlmMediaTypesProviders.bigDecimalsAlmMediaTypesProvider, defaultEncoding)
   override lazy val urisContentTypeProvider = FullContentTypeProvider[Seq[java.net.URI]](hasCommonAlmMediaTypesProviders.urisAlmMediaTypesProvider, defaultEncoding)
   override lazy val uuidsContentTypeProvider = FullContentTypeProvider[Seq[java.util.UUID]](hasCommonAlmMediaTypesProviders.uuidsAlmMediaTypesProvider, defaultEncoding)
-  override lazy val localDateTimesContentTypeProvider = FullContentTypeProvider[Seq[org.joda.time.LocalDateTime]](hasCommonAlmMediaTypesProviders.localDateTimesAlmMediaTypesProvider, defaultEncoding)
-  override lazy val dateTimesContentTypeProvider = FullContentTypeProvider[Seq[org.joda.time.DateTime]](hasCommonAlmMediaTypesProviders.dateTimesAlmMediaTypesProvider, defaultEncoding)
+  override lazy val localDateTimesContentTypeProvider = FullContentTypeProvider[Seq[java.time.LocalDateTime]](hasCommonAlmMediaTypesProviders.localDateTimesAlmMediaTypesProvider, defaultEncoding)
+  override lazy val dateTimesContentTypeProvider = FullContentTypeProvider[Seq[java.time.ZonedDateTime]](hasCommonAlmMediaTypesProviders.dateTimesAlmMediaTypesProvider, defaultEncoding)
   override lazy val finiteDurationsContentTypeProvider = FullContentTypeProvider[Seq[scala.concurrent.duration.FiniteDuration]](hasCommonAlmMediaTypesProviders.finiteDurationsAlmMediaTypesProvider, defaultEncoding)
 
   override lazy val eventContentTypeProvider = FullContentTypeProvider[almhirt.common.Event](hasCommonAlmMediaTypesProviders.eventAlmMediaTypesProvider, defaultEncoding)

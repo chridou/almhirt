@@ -1,6 +1,6 @@
 package almhirt.herder
 
-import org.joda.time.LocalDateTime
+import java.time.LocalDateTime
 import akka.actor.ActorRef
 import almhirt.common._
 import almhirt.akkax.{ CircuitControl, CircuitState, ComponentId }

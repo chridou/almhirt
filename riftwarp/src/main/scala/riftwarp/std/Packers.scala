@@ -2,7 +2,7 @@ package riftwarp.std
 
 import java.net.URI
 import java.util.{ UUID ⇒ JUUID }
-import org.joda.time.{ DateTime, LocalDateTime }
+import java.time.{ ZonedDateTime, LocalDateTime }
 import scala.concurrent.duration._
 import scalaz.syntax.validation._
 import almhirt.common._
@@ -229,16 +229,16 @@ object UriWarpUnpacker extends RegisterableWarpUnpacker[URI] {
     }
 }
 
-object DateTimeWarpPacker extends WarpPacker[DateTime] with SimpleWarpPacker[DateTime] with RegisterableWarpPacker {
+object DateTimeWarpPacker extends WarpPacker[ZonedDateTime] with SimpleWarpPacker[ZonedDateTime] with RegisterableWarpPacker {
   override val warpDescriptor = WarpDescriptor("DateTime")
-  override val alternativeWarpDescriptors = WarpDescriptor(classOf[DateTime]) :: Nil
-  override def pack(what: DateTime)(implicit packers: WarpPackers): AlmValidation[WarpDateTime] = WarpDateTime(what).success
+  override val alternativeWarpDescriptors = WarpDescriptor(classOf[ZonedDateTime]) :: Nil
+  override def pack(what: ZonedDateTime)(implicit packers: WarpPackers): AlmValidation[WarpDateTime] = WarpDateTime(what).success
 }
 
-object DateTimeWarpUnpacker extends RegisterableWarpUnpacker[DateTime] {
+object DateTimeWarpUnpacker extends RegisterableWarpUnpacker[ZonedDateTime] {
   override val warpDescriptor = WarpDescriptor("DateTime")
-  override val alternativeWarpDescriptors = WarpDescriptor(classOf[DateTime]) :: Nil
-  override def unpack(what: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[DateTime] =
+  override val alternativeWarpDescriptors = WarpDescriptor(classOf[ZonedDateTime]) :: Nil
+  override def unpack(what: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[ZonedDateTime] =
     what match {
       case WarpDateTime(v) ⇒ v.success
       case WarpString(v) ⇒ v.toDateTimeAlm

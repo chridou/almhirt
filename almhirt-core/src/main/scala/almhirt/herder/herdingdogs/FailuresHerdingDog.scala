@@ -1,6 +1,6 @@
 package almhirt.herder.herdingdogs
 
-import org.joda.time.LocalDateTime
+import java.time.LocalDateTime
 import scalaz.Validation.FlatMap._
 import akka.actor._
 import almhirt.context._

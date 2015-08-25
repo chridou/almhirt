@@ -1,7 +1,7 @@
 package almhirt.tracking
 
 import scala.language.existentials
-import org.joda.time.LocalDateTime
+import java.time.LocalDateTime
 import almhirt.common.CommandId
 import almhirt.common.Command
 import almhirt.common.AggregateRootCommand

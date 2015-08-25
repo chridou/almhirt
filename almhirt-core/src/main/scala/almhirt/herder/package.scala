@@ -1,6 +1,6 @@
 package almhirt
 
-import org.joda.time.LocalDateTime
+import java.time.LocalDateTime
 import almhirt.common.{ Event, Command, Importance }
 import almhirt.akkax.ComponentId
 import almhirt.problem.{ ProblemCause, Severity }

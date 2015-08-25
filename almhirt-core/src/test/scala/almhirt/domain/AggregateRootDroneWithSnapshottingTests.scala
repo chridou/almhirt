@@ -1,7 +1,7 @@
 package almhirt.domain
 
 import scala.language.postfixOps
-import org.joda.time.{ DateTime, LocalDateTime, DateTimeZone }
+import java.time.{ ZonedDateTime, LocalDateTime }
 import scala.concurrent._
 import scala.concurrent.duration._
 import akka.actor._
@@ -16,11 +16,11 @@ class AggregateRootDroneWithSnapshottingTests(_system: ActorSystem)
 
   implicit val executionContext = system.dispatchers.defaultGlobalDispatcher
   implicit val ccuad = {
-    val dt = new LocalDateTime(0L)
+    val dt = LocalDateTime.of(0: Int, 0: Int, 0: Int, 0: Int, 0: Int)
     new CanCreateUuidsAndDateTimes {
       override def getUuid(): java.util.UUID = ???
       override def getUniqueString(): String = "unique"
-      override def getDateTime(): DateTime = ???
+      override def getDateTime(): ZonedDateTime = ???
       override def getUtcTimestamp(): LocalDateTime = dt
     }
   }

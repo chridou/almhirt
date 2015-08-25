@@ -21,7 +21,7 @@ import scala.collection.generic.CanBuildFrom
 import scalaz.syntax.validation._
 import scalaz.Validation.FlatMap._
 import scalaz.std._
-import org.joda.time.{ DateTime, LocalDateTime }
+import _root_.java.time.{ ZonedDateTime, LocalDateTime }
 import almhirt.common._
 
 /**
@@ -95,16 +95,16 @@ trait AlmValidationParseFunctions {
       case err: Exception ⇒ ParsingProblem("Not a valid number(BigDecimal): %s".format(toParse)).failure
     }
 
-  def parseDateTimeAlm(toParse: String): AlmValidation[DateTime] =
+  def parseDateTimeAlm(toParse: String): AlmValidation[ZonedDateTime] =
     try {
-      new DateTime(toParse).success
+      ZonedDateTime.parse(toParse).success
     } catch {
       case err: Exception ⇒ ParsingProblem("Not a valid DateTime: %s".format(toParse)).failure
     }
 
   def parseLocalDateTimeAlm(toParse: String): AlmValidation[LocalDateTime] =
     try {
-      new LocalDateTime(toParse).success
+      LocalDateTime.parse(toParse).success
     } catch {
       case err: Exception ⇒ ParsingProblem("Not a valid DateTime: %s".format(toParse)).failure
     }
@@ -169,7 +169,7 @@ trait AlmValidationParseFunctions {
   def tryParseDecimalAlm(toParse: String): AlmValidation[Option[BigDecimal]] =
     emptyStringIsNone(toParse, x ⇒ parseDecimalAlm(x))
 
-  def tryParseDateTimeAlm(toParse: String): AlmValidation[Option[DateTime]] =
+  def tryParseDateTimeAlm(toParse: String): AlmValidation[Option[ZonedDateTime]] =
     emptyStringIsNone(toParse, x ⇒ parseDateTimeAlm(x))
 
   def tryParseUUIDAlm(toParse: String): AlmValidation[Option[UUID]] =

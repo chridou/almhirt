@@ -19,7 +19,6 @@ import scala.language.higherKinds
 import scala.collection.generic.CanBuildFrom
 import scalaz._
 import scalaz.syntax.validation._
-import org.joda.time.DateTime
 import almhirt.common._
 
 trait AlmValidationFunctions {

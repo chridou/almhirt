@@ -5,7 +5,7 @@ import almhirt.almvalidation.kit._
 import scalaz._, Scalaz._
 import almhirt.common.AlmValidation
 import java.util.UUID
-import org.joda.time.{DateTime, LocalDateTime}
+import _root_.java.time.{ ZonedDateTime, LocalDateTime }
 
 case class UnknownObject(what: Any)
 
@@ -19,7 +19,7 @@ case class PrimitiveTypes(
   float: Float,
   double: Double,
   bigDec: BigDecimal,
-  dateTime: DateTime,
+  dateTime: ZonedDateTime,
   localDateTime: LocalDateTime,
   uuid: UUID)
 
@@ -28,7 +28,7 @@ case class PrimitiveListMAs(
   listInt: List[Int],
   listDouble: List[Double],
   listBigDecimal: List[BigDecimal],
-  listDateTime: List[DateTime])
+  listDateTime: List[ZonedDateTime])
 
 case class ComplexMAs(
   addresses1: List[TestAddress],
@@ -39,7 +39,7 @@ case class ComplexMAs(
 case class PrimitiveMaps(
   mapIntInt: Map[Int, Int],
   mapStringInt: Map[String, Int],
-  mapUuidDateTime: Map[UUID, DateTime])
+  mapUuidDateTime: Map[UUID, ZonedDateTime])
 
 case class ComplexMaps(
   mapIntTestAddress1: Map[Int, TestAddress],
@@ -82,15 +82,15 @@ object TestObjectA {
         float = 1.3675F,
         double = 1.3672322350005D,
         bigDec = BigDecimal("23761247614876823746.23846749182408184098140981094809184834082307582375243658732465897259724"),
-        dateTime = new DateTime(),
-        localDateTime = new LocalDateTime(),
+        dateTime = ZonedDateTime.now,
+        localDateTime = LocalDateTime.now,
         uuid = UUID.randomUUID()),
       primitiveListMAs = PrimitiveListMAs(
         listString = List("alpha", "beta", "gamma", "delta"),
         listInt = List(1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
         listDouble = List(1.0, 0.5, 0.2, 0.125),
         listBigDecimal = List(BigDecimal("1.333333"), BigDecimal("1.33333335"), BigDecimal("1.6666666"), BigDecimal("1.6666667")),
-        listDateTime = List(new DateTime().plusHours(1), new DateTime().plusHours(2), new DateTime().plusHours(3), new DateTime().plusHours(4))),
+        listDateTime = List(ZonedDateTime.now.plusHours(1), ZonedDateTime.now.plusHours(2), ZonedDateTime.now.plusHours(3),ZonedDateTime.now.plusHours(4))),
       complexMAs = ComplexMAs(
         TestAddress.someAddresses,
         Vector(TestAddress.someAddresses: _*),
@@ -99,7 +99,7 @@ object TestObjectA {
       primitiveMaps = PrimitiveMaps(
         Map(1 → 10, 2 → 20, 3 → 30, 4 → 40),
         Map("a" → 1, "b" → 2, "a" → 1, "c" → 3),
-        Map(UUID.randomUUID() → DateTime.now(), UUID.randomUUID() → DateTime.now().plusDays(1), UUID.randomUUID() → DateTime.now().plusDays(2))),
+        Map(UUID.randomUUID() → ZonedDateTime.now(), UUID.randomUUID() → ZonedDateTime.now().plusDays(1), UUID.randomUUID() → ZonedDateTime.now().plusDays(2))),
       complexMaps = ComplexMaps(
         TestAddress.someAddresses.zipWithIndex.map(x ⇒ (x._2, x._1)).toMap,
         TestAddress.someAddresses.zipWithIndex.map(x ⇒ (x._2, x._1)).toMap),

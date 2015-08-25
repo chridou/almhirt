@@ -20,8 +20,8 @@ trait CommonHttpSerializersByRiftWarp extends HasCommonHttpSerializers { self: H
   override lazy val bigDecimalHttpSerializer = WarpHttpSerializer.direct[BigDecimal](myRiftWarp)
   override lazy val uriHttpSerializer = WarpHttpSerializer.direct[java.net.URI](myRiftWarp)
   override lazy val uuidHttpSerializer = WarpHttpSerializer.direct[java.util.UUID](myRiftWarp)
-  override lazy val localDateTimeHttpSerializer = WarpHttpSerializer.direct[org.joda.time.LocalDateTime](myRiftWarp)
-  override lazy val dateTimeHttpSerializer = WarpHttpSerializer.direct[org.joda.time.DateTime](myRiftWarp)
+  override lazy val localDateTimeHttpSerializer = WarpHttpSerializer.direct[java.time.LocalDateTime](myRiftWarp)
+  override lazy val dateTimeHttpSerializer = WarpHttpSerializer.direct[java.time.ZonedDateTime](myRiftWarp)
   override lazy val finiteDurationHttpSerializer = WarpHttpSerializer.direct[scala.concurrent.duration.FiniteDuration](myRiftWarp)
 
   override lazy val booleansHttpSerializer = WarpHttpSerializer.collectionDirect[Boolean](myRiftWarp)
@@ -36,8 +36,8 @@ trait CommonHttpSerializersByRiftWarp extends HasCommonHttpSerializers { self: H
   override lazy val bigDecimalsHttpSerializer = WarpHttpSerializer.collectionDirect[BigDecimal](myRiftWarp)
   override lazy val urisHttpSerializer = WarpHttpSerializer.collectionDirect[java.net.URI](myRiftWarp)
   override lazy val uuidsHttpSerializer = WarpHttpSerializer.collectionDirect[java.util.UUID](myRiftWarp)
-  override lazy val localDateTimesHttpSerializer = WarpHttpSerializer.collectionDirect[org.joda.time.LocalDateTime](myRiftWarp)
-  override lazy val dateTimesHttpSerializer = WarpHttpSerializer.collectionDirect[org.joda.time.DateTime](myRiftWarp)
+  override lazy val localDateTimesHttpSerializer = WarpHttpSerializer.collectionDirect[java.time.LocalDateTime](myRiftWarp)
+  override lazy val dateTimesHttpSerializer = WarpHttpSerializer.collectionDirect[java.time.ZonedDateTime](myRiftWarp)
   override lazy val finiteDurationsHttpSerializer = WarpHttpSerializer.collectionDirect[scala.concurrent.duration.FiniteDuration](myRiftWarp)
 
   override lazy val eventHttpSerializer = WarpHttpSerializer.event(myRiftWarp)

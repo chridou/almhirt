@@ -2,7 +2,7 @@ package riftwarp.messagepack
 
 import org.scalatest._
 import java.util.{ UUID ⇒ JUUID }
-import org.joda.time.{ DateTime, LocalDateTime }
+import _root_.java.time.{ ZonedDateTime, LocalDateTime }
 import scalaz._, Scalaz._
 import almhirt.common._
 import almhirt.almvalidation.kit._
@@ -483,7 +483,7 @@ class MessagePackSerialization extends FunSuite with Matchers {
   }
 
   test("A WarpDateTime should dematerialize and rematerialize to an equal instance") {
-    val sample = WarpDateTime(DateTime.now())
+    val sample = WarpDateTime(ZonedDateTime.now())
     val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
     val rematerialized = dematerialized.rematerialize.forceResult
     rematerialized.toString() should equal(sample.toString())

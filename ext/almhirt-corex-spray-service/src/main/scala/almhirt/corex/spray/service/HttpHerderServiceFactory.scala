@@ -1,6 +1,6 @@
 package almhirt.corex.spray.service
 
-import org.joda.time.LocalDateTime
+import java.time.LocalDateTime
 import scalaz.Validation.FlatMap._
 import akka.actor._
 import akka.pattern._
