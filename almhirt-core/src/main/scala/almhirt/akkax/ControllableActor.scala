@@ -39,6 +39,17 @@ trait ControllableActorReportsOnly { me: ControllableActor with AlmActor with Al
     case ActorMessages.ReportComponentState =>
       sender() ! ComponentState.Running
   } 
+ 
+  val runningHandler: PartialFunction[ActorMessages.ComponentControlMessage, Unit] = {
+    case ActorMessages.Pause   ⇒
+      logWarning("Pause is not supported.")
+    case ActorMessages.Resume  ⇒
+      logWarning("Resume is not supported.")
+    case ActorMessages.Restart ⇒
+      logWarning("Restart is not supported.")
+    case ActorMessages.ReportComponentState =>
+      sender() ! ComponentState.Running
+  } 
   
   def errorTerminator(cause: almhirt.problem.ProblemCause): Receive = {
     case ActorMessages.Pause   ⇒

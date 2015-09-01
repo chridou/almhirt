@@ -68,14 +68,14 @@ object EventLogWriter {
 }
 
 private[almhirt] class EventLogWriterImpl(
-  eventLogToResolve: ToResolve,
-  resolveSettings: ResolveSettings,
-  warningThreshold: FiniteDuration,
-  autoConnect: Boolean,
-  circuitControlSettings: CircuitControlSettings,
-  circuitStateReportingInterval: Option[FiniteDuration],
-  eventlogCallTimeout: FiniteDuration,
-  storeEventRetrySettings: RetryPolicyExt)(implicit override val almhirtContext: AlmhirtContext) extends ActorSubscriber with AlmActor with AlmActorLogging with ActorLogging {
+    eventLogToResolve: ToResolve,
+    resolveSettings: ResolveSettings,
+    warningThreshold: FiniteDuration,
+    autoConnect: Boolean,
+    circuitControlSettings: CircuitControlSettings,
+    circuitStateReportingInterval: Option[FiniteDuration],
+    eventlogCallTimeout: FiniteDuration,
+    storeEventRetrySettings: RetryPolicyExt)(implicit override val almhirtContext: AlmhirtContext) extends ActorSubscriber with AlmActor with AlmActorLogging with ActorLogging with ControllableActor with ControllableActorReportsOnly {
   import almhirt.eventlog.EventLog
 
   implicit def implicitFlowMaterializer = akka.stream.ActorMaterializer()(this.context)
@@ -91,6 +91,7 @@ private[almhirt] class EventLogWriterImpl(
 
   def receiveResolve: Receive = {
     case Resolve ⇒
+      registerComponentControl()
       context.resolveSingle(eventLogToResolve, resolveSettings, None, Some("event-log-resolver"))
 
     case ActorMessages.ResolvedSingle(eventlog, _) ⇒
@@ -158,6 +159,8 @@ private[almhirt] class EventLogWriterImpl(
       if (log.isInfoEnabled)
         circuitBreaker.state.onSuccess(s ⇒ log.info(s"Circuit state: $s"))
 
+    case m: ActorMessages.ComponentControlMessage ⇒
+      runningHandler(m)
   }
 
   def receiveCircuitOpen(eventLog: ActorRef): Receive = {
@@ -183,9 +186,12 @@ private[almhirt] class EventLogWriterImpl(
         circuitStateReportingInterval.foreach(interval ⇒
           context.system.scheduler.scheduleOnce(interval, self, DisplayCircuitState))
       }
+
+    case m: ActorMessages.ComponentControlMessage ⇒
+      runningHandler(m)
   }
 
-  override def receive: Receive = receiveResolve
+  override def receive: Receive = receiveResolve orElse (startupTerminator)
 
   override def preStart() {
     circuitBreaker.defaultActorListeners(self)
@@ -195,6 +201,7 @@ private[almhirt] class EventLogWriterImpl(
   }
 
   override def postStop() {
+    deregisterComponentControl()
     deregisterCircuitControl()
   }
 } 

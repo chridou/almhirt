@@ -8,11 +8,10 @@ import akka.actor._
 import almhirt.common._
 import almhirt.tracking.{ CommandStatus, CommandStatusChanged, CommandResult }
 import almhirt.context.AlmhirtContext
+import almhirt.akkax._
 import akka.stream.actor._
 import org.reactivestreams.Subscriber
 import akka.stream.scaladsl._
-import almhirt.akkax.AlmActor
-import almhirt.akkax.AlmActorLogging
 
 object CommandStatusTracker {
   sealed trait CommandStatusTrackerMessage
@@ -73,7 +72,10 @@ private[almhirt] class MyCommandStatusTracker(
   extends AlmActor
   with AlmActorLogging
   with ActorSubscriber
-  with ActorLogging {
+  with ActorLogging
+  with ControllableActor
+  with ControllableActorReportsOnly
+  {
   import CommandStatusTracker._
   import almhirt.storages._
 
@@ -221,7 +223,7 @@ private[almhirt] class MyCommandStatusTracker(
 
   }
 
-  override def receive: Receive = running()
+  override def receive: Receive = running() orElse runningTerminator
 
   override def preStart() {
     super.preStart()
@@ -230,5 +232,11 @@ private[almhirt] class MyCommandStatusTracker(
     else
       request(1)
     context.system.scheduler.scheduleOnce(checkTimeoutInterval, self, CheckTimeouts)
+    registerComponentControl()
+  }
+  
+  override def postStop() {
+    super.postStop()
+    deregisterComponentControl()
   }
 }

@@ -118,7 +118,7 @@ private[snapshots] class BinarySnapshotRepositoryActor(
     storageRetryPolicy: RetryPolicyExt,
     circuitControlSettings: CircuitControlSettings,
     futuresExecutionContextSelector: ExtendedExecutionContextSelector,
-    marshallingExecutionContextSelector: ExtendedExecutionContextSelector)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging {
+    marshallingExecutionContextSelector: ExtendedExecutionContextSelector)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging with ControllableActor with ControllableActorReportsOnly {
   import almhirt.snapshots.SnapshotRepository
 
   implicit val futuresContext = selectExecutionContext(futuresExecutionContextSelector)
@@ -241,6 +241,9 @@ private[snapshots] class BinarySnapshotRepositoryActor(
     case SnapshotRepository.FindSnapshot(id) ⇒
       val f = measureRead { circuitBreaker.fused(findSnapshot(id)) }
       f.recoverThenPipeTo(fail ⇒ SnapshotRepository.FindSnapshotFailed(id, fail))(sender())
+
+    case m: ActorMessages.ComponentControlMessage ⇒
+      runningHandler(m)
   }
 
   override def receive: Receive = Actor.emptyBehavior
@@ -342,13 +345,18 @@ private[snapshots] class BinarySnapshotRepositoryActor(
   override def preStart() {
     if (rwMode.supportsWriting) {
       logInfo("Starting(r/w)...")
-      context.become(receiveInitializeReadWrite)
+      context.become(receiveInitializeReadWrite orElse startupTerminator)
     } else {
       logInfo("Starting(ro)...")
-      context.become(receiveInitializeReadOnly)
+      context.become(receiveInitializeReadOnly orElse startupTerminator)
     }
     logInfo(s"collection: ${collectionName}\nWrite warn after ${readWarningThreshold.defaultUnitString}\nRead warn after ${writeWarningThreshold.defaultUnitString}\nCompress: $compress\nReadWriteMode: $rwMode")
+    registerComponentControl()
     self ! Initialize
+  }
+
+  override def postStop() {
+    deregisterComponentControl()
   }
 
 }

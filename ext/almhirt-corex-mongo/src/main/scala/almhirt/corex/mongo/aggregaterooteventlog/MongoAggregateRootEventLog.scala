@@ -105,7 +105,7 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
     readWarnThreshold: FiniteDuration,
     circuitControlSettings: CircuitControlSettings,
     retrySettings: RetrySettings,
-    rwMode: ReadWriteMode.SupportsReading)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging {
+    rwMode: ReadWriteMode.SupportsReading)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging with ControllableActor with ControllableActorReportsOnly {
 
   import almhirt.eventlog.AggregateRootEventLog._
 
@@ -372,21 +372,26 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
           reportMajorFailure(problem)
           GetAggregateRootEventFailed(eventId, problem)
         })(sender())
+
+    case m: ActorMessages.ComponentControlMessage ⇒
+      runningHandler(m)
   }
 
   override def receive =
     if (rwMode.supportsWriting)
-      uninitializedReadWrite
+      uninitializedReadWrite orElse startupTerminator
     else
-      uninitializedReadOnly
+      uninitializedReadOnly orElse startupTerminator
 
   override def preStart() {
     super.preStart()
+    registerComponentControl()
     self ! Initialize
   }
 
   override def postStop() {
     deregisterCircuitControl()
+    deregisterComponentControl()
   }
 
 }

@@ -101,7 +101,7 @@ private[almhirt] class MongoEventLogImpl(
     readWarnThreshold: FiniteDuration,
     circuitControlSettings: CircuitControlSettings,
     initializeRetrySettings: RetryPolicyExt,
-    rwMode: ReadWriteMode.SupportsReading)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging {
+    rwMode: ReadWriteMode.SupportsReading)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging with ControllableActor with ControllableActorReportsOnly {
   import EventLog._
   import almhirt.corex.mongo.BsonConverter._
 
@@ -368,22 +368,26 @@ private[almhirt] class MongoEventLogImpl(
 
     case m: FetchEvents ⇒
       fetchAndDispatchEvents(m, sender())
-
+      
+    case m: ActorMessages.ComponentControlMessage =>
+      runningHandler(m)
   }
 
   override def receive =
     if (rwMode.supportsWriting)
-      uninitializedReadWrite
+      uninitializedReadWrite orElse startupTerminator
     else
-      uninitializedReadOnly
+      uninitializedReadOnly orElse startupTerminator
 
   override def preStart() {
     super.preStart()
+    registerComponentControl()
     self ! Initialize
   }
 
   override def postStop() {
     deregisterCircuitControl()
+    deregisterComponentControl()
   }
 
 }
