@@ -87,7 +87,7 @@ trait ControllableActorWithPauseResume { me: ControllableActor with AlmActor wit
     case ActorMessages.Restart ⇒
       logWarning("Restart is not supported.")
     case ActorMessages.ReportComponentState =>
-      sender() ! ComponentState.Running
+      sender() ! ComponentState.Paused
   } 
   
   def errorTerminator(cause: almhirt.problem.ProblemCause): Receive = {
