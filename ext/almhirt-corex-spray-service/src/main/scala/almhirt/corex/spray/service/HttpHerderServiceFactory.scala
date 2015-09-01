@@ -1440,7 +1440,7 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
               <h2>Circuits</h2><br/><a href="./herder/circuits?ui">Circuit control</a>
             </th>
             <th>
-              <h2>Components</h2><br/><a href="./herder/components?ui">Components report</a>
+              <h2>Components</h2><br/><a href="./herder/component-controls?ui">Components report</a>
             </th>
           </tr>
           <tr>
