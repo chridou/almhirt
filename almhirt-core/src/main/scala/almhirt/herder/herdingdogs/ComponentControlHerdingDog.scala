@@ -31,7 +31,8 @@ private[almhirt] class ComponentControlHerdingDog()(implicit override val almhir
 
     case ReportComponentStates ⇒
       val pinnedSender = sender()
-      val futs = componentControls.map({ case (ownerId, cb) ⇒ cb.state(1.second).map(st ⇒ (ownerId, st)) })
+      val futs = componentControls.map({ case (ownerId, cb) ⇒ 
+        cb.state(1.second).recover(p => almhirt.akkax.ComponentState.Error(p)).map(st ⇒ (ownerId, st)) })
       val statesF = AlmFuture.sequence(futs.toSeq)
       statesF.onComplete(
         fail ⇒ log.error(s"Could not determine circuit states:\n$fail"),
