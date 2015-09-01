@@ -3,7 +3,7 @@ package almhirt.herder
 import java.time.LocalDateTime
 import akka.actor.ActorRef
 import almhirt.common._
-import almhirt.akkax.{ CircuitControl, CircuitState, ComponentId }
+import almhirt.akkax.{ CircuitControl, CircuitState, ComponentControl, ComponentId, ComponentState }
 import almhirt.problem.ProblemCause
 import almhirt.tracking.CommandRepresentation
 
@@ -26,6 +26,20 @@ object HerderMessages {
     final case class CircumventCircuit(id: ComponentId) extends CircuitControlMessage
   }
 
+  object ComponentControlMessages {
+    sealed trait ComponentControlMessage
+    final case class RegisterComponentControl(id: ComponentId, control: ComponentControl) extends ComponentControlMessage with HerderNotificicationMessage
+    final case class DeregisterComponentControl(id: ComponentId) extends ComponentControlMessage with HerderNotificicationMessage
+ 
+    final case object ReportComponentStates extends ComponentControlMessage
+    final case class ComponentStates(states: Seq[(ComponentId, ComponentState)]) extends ComponentControlMessage
+  
+    final case class AttemptPause(id: ComponentId) extends ComponentControlMessage
+    final case class AttemptResume(id: ComponentId) extends ComponentControlMessage
+    final case class AttemptRestart(id: ComponentId) extends ComponentControlMessage
+     
+  }
+
   object EventMessages {
     sealed trait EventsMessage
 
@@ -34,9 +48,9 @@ object HerderMessages {
     case object ReportMissedEvents extends EventsMessage
     final case class MissedEvents(missedEvents: Seq[(ComponentId, BadThingsHistory[MissedEventsEntry])]) extends EventsMessage
 
-    final case class ReportMissedEventsFor(id: ComponentId) extends EventsMessage 
+    final case class ReportMissedEventsFor(id: ComponentId) extends EventsMessage
     final case class ReportedMissedEventsFor(id: ComponentId, missedEvents: Option[BadThingsHistory[MissedEventsEntry]]) extends EventsMessage
-  
+
   }
 
   object CommandMessages {
@@ -47,9 +61,9 @@ object HerderMessages {
     case object ReportRejectedCommands extends CommandsMessage
     final case class RejectedCommands(rejectedCommands: Seq[(ComponentId, BadThingsHistory[RejectedCommandsEntry])]) extends CommandsMessage
 
-    final case class ReportRejectedCommandsFor(id: ComponentId) extends CommandsMessage 
+    final case class ReportRejectedCommandsFor(id: ComponentId) extends CommandsMessage
     final case class ReportedRejectedCommandsFor(id: ComponentId, rejectedCommands: Option[BadThingsHistory[RejectedCommandsEntry]]) extends CommandsMessage
-  
+
   }
 
   object FailureMessages {
@@ -60,20 +74,20 @@ object HerderMessages {
     case object ReportFailures extends FailuresMessage
     final case class ReportedFailures(failures: Seq[(ComponentId, BadThingsHistory[FailuresEntry])]) extends FailuresMessage
 
-    final case class ReportFailuresFor(id: ComponentId) extends FailuresMessage 
+    final case class ReportFailuresFor(id: ComponentId) extends FailuresMessage
     final case class ReportedFailuresFor(id: ComponentId, entry: Option[BadThingsHistory[FailuresEntry]]) extends FailuresMessage
   }
 
   object InformationMessages {
     sealed trait InformationMessage
-    
+
     final case class Information(id: ComponentId, message: String, importance: Importance, timestamp: LocalDateTime) extends InformationMessage with HerderNotificicationMessage
- 
+
     case object ReportInformation extends InformationMessage
     final case class ReportedInformation(information: Seq[(ComponentId, ImportantThingsHistory[InformationEntry])]) extends InformationMessage
 
-    final case class ReportInformationFor(id: ComponentId) extends InformationMessage 
+    final case class ReportInformationFor(id: ComponentId) extends InformationMessage
     final case class ReportedInformationFor(id: ComponentId, entry: Option[ImportantThingsHistory[InformationEntry]]) extends InformationMessage
-    
+
   }
 }

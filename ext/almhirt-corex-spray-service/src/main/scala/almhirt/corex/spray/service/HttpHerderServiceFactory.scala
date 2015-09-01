@@ -50,15 +50,13 @@ object HttpHerderService {
 
   def propsRaw(params: HttpHerderServiceFactory.HttpHerderServiceParams)(implicit ctx: AlmhirtContext): Props =
     Props(new HttpHerderServiceActor(params))
-    
 
   def props(problemMarshaller: Marshaller[Problem])(implicit ctx: AlmhirtContext): AlmValidation[Props] =
-    HttpHerderServiceFactory.paramsFactory.map(f => propsRaw(f(problemMarshaller)))
-    
- def componentFactory(problemMarshaller: Marshaller[Problem])(implicit ctx: AlmhirtContext): AlmValidation[ComponentFactory] =
-   props(problemMarshaller).map(props => ComponentFactory(props, actorname))
-  
-    
+    HttpHerderServiceFactory.paramsFactory.map(f ⇒ propsRaw(f(problemMarshaller)))
+
+  def componentFactory(problemMarshaller: Marshaller[Problem])(implicit ctx: AlmhirtContext): AlmValidation[ComponentFactory] =
+    props(problemMarshaller).map(props ⇒ ComponentFactory(props, actorname))
+
   val actorname = "herder-service"
 }
 
@@ -91,6 +89,7 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
           get { ctx ⇒
             val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
             val futCircuits = (herder ? CircuitMessages.ReportCircuitStates)(maxCallDuration).mapCastTo[CircuitMessages.CircuitStates].map(_.states)
+            val futComponentStates = (herder ? ComponentControlMessages.ReportComponentStates)(maxCallDuration).mapCastTo[ComponentControlMessages.ComponentStates].map(_.states)
             val futFailures = (herder ? FailureMessages.ReportFailures)(maxCallDuration).mapCastTo[FailureMessages.ReportedFailures].map(_.failures)
             val futRejectedCommands = (herder ? CommandMessages.ReportRejectedCommands)(maxCallDuration).mapCastTo[CommandMessages.RejectedCommands].map(_.rejectedCommands)
             val futMissedEvents = (herder ? EventMessages.ReportMissedEvents)(maxCallDuration).mapCastTo[EventMessages.MissedEvents].map(_.missedEvents)
@@ -98,11 +97,12 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
             val futHtml =
               for {
                 circuitStates ← futCircuits
+                componentStates ← futComponentStates
                 failures ← futFailures
                 rejectedCommands ← futRejectedCommands
                 missedEvents ← futMissedEvents
                 information ← futInfos
-              } yield createStatusReport(circuitStates, failures, rejectedCommands, missedEvents, information, "./herder")
+              } yield createStatusReport(circuitStates, componentStates, failures, rejectedCommands, missedEvents, information, "./herder")
             futHtml.fold(
               problem ⇒ implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, problem),
               html ⇒ ctx.complete(StatusCodes.OK, html))
@@ -159,6 +159,54 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
                   val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
                   herder ! CircuitMessages.CircumventCircuit(ComponentId(AppName(appName), ComponentName(componentName)))
                   ctx.complete(StatusCodes.Accepted, s"attempting to circumvent circuit $componentName")
+                }
+              }
+            }
+          }
+        }  ~ pathPrefix("component-controls") {
+          pathEnd {
+            parameter('ui.?) { uiEnabledP ⇒
+              val isUiEnabled =
+                uiEnabledP match {
+                  case None ⇒ false
+                  case Some(str) ⇒
+                    str.trim().isEmpty || str.trim() == "true"
+                }
+              get { ctx ⇒
+                val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
+                val fut = (herder ? ComponentControlMessages.ReportComponentStates)(maxCallDuration).mapCastTo[ComponentControlMessages.ComponentStates].map(_.states)
+                fut.fold(
+                  problem ⇒ implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, problem),
+                  states ⇒ if (isUiEnabled) {
+                    ctx.complete(StatusCodes.OK, createComponentsUi(states))
+                  } else {
+                    ctx.complete(StatusCodes.OK, states.map { case (name, state) ⇒ s"$name → $state" }.mkString("\n"))
+                  })
+              }
+            }
+          } ~ pathPrefix(Segment / Segment) { (appName, componentName) ⇒
+            pathPrefix("attempt-pause") {
+              pathEnd {
+                get { ctx ⇒
+                  val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
+                  herder ! ComponentControlMessages.AttemptPause(ComponentId(AppName(appName), ComponentName(componentName)))
+                  ctx.complete(StatusCodes.Accepted, s"attempting to pause $componentName")
+                }
+              }
+            } ~ pathPrefix("attempt-resume") {
+              pathEnd {
+                get { ctx ⇒
+                  val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
+                  herder ! ComponentControlMessages.AttemptResume(ComponentId(AppName(appName), ComponentName(componentName)))
+                  ctx.complete(StatusCodes.Accepted, s"attempting to resume $componentName")
+                }
+              }
+            } ~ pathPrefix("attempt-restart") {
+              pathEnd {
+                get { ctx ⇒
+                  val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
+                  herder ! ComponentControlMessages.AttemptRestart(ComponentId(AppName(appName), ComponentName(componentName)))
+                  ctx.complete(StatusCodes.Accepted, s"attempting to restart $componentName")
                 }
               }
             }
@@ -406,6 +454,118 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
           <th>App</th>
           <th>Component</th>
           <th colspan="4">Actions</th>
+        </tr>
+        { state.map { case (component, state) ⇒ createRow(component, state, false) } }
+      </table>
+    }
+  }
+
+  private def createComponentsUi(state: Seq[(ComponentId, ComponentState)]) = {
+    <html>
+      <head>
+        <title>Components</title>
+      </head>
+      <body>
+        { createComponentsContent(state, false) }
+        <br><a href="../herder">Dashboard</a></br>
+        <br>{ almhirtContext.getUtcTimestamp.toString }</br>
+      </body>
+    </html>
+  }
+  
+  private def createComponentsContent(state: Seq[(ComponentId, ComponentState)], isReport: Boolean) = {
+    def createStateItem(state: ComponentState) = {
+      state match {
+        case ComponentState.Startup ⇒
+          <td style="background-color:yellow">STARTUP</td>
+        case ComponentState.Running ⇒
+          <td style="background-color:green">Running</td>
+        case ComponentState.Paused ⇒
+          <td style="background-color:orange">PAUSED</td>
+        case ComponentState.Error(cause) ⇒
+          <td style="background-color:red">ERROR: { cause.message }</td>
+      }
+    }
+
+    def createPauseAction(component: ComponentId, state: ComponentState) = {
+      state match {
+        case ComponentState.Paused ⇒
+          <td>no action</td>
+        case ComponentState.Startup ⇒
+          <td>no action</td>
+        case ComponentState.Running ⇒
+          val att = new UnprefixedAttribute("href", s"./component-controls/${component.app.value}/${component.component.value}/attempt-pause", xml.Null)
+          val anchor = Elem(null, "a", att, TopScope, true, Text("pause"))
+          <td>{ anchor }</td>
+        case ComponentState.Error(_) ⇒
+          <td>no action</td>
+      }
+    }
+
+    def createResumeAction(component: ComponentId, state: ComponentState) = {
+      state match {
+        case ComponentState.Paused ⇒
+          val att = new UnprefixedAttribute("href", s"./component-controls/${component.app.value}/${component.component.value}/attempt-resume", xml.Null)
+          val anchor = Elem(null, "a", att, TopScope, true, Text("resume"))
+          <td>{ anchor }</td>
+        case ComponentState.Startup ⇒
+          <td>no action</td>
+        case ComponentState.Running ⇒
+          <td>no action</td>
+        case ComponentState.Error(_) ⇒
+          <td>no action</td>
+      }
+    }
+
+    def createRestartAction(component: ComponentId, state: ComponentState) = {
+      state match {
+        case ComponentState.Paused ⇒
+          <td>no action</td>
+        case ComponentState.Startup ⇒
+          <td>no action</td>
+        case ComponentState.Running ⇒
+          <td>no action</td>
+        case ComponentState.Error(_) ⇒
+          val att = new UnprefixedAttribute("href", s"./component-controls/${component.app.value}/${component.component.value}/attempt-restart", xml.Null)
+          val anchor = Elem(null, "a", att, TopScope, true, Text("restart"))
+          <td>{ anchor }</td>
+      }
+    }
+
+   def createRow(component: ComponentId, state: ComponentState, isReport: Boolean) = {
+      if (!isReport) {
+        <tr>
+          <td>{ component.app.value }</td>
+          <td>{ component.component.value }</td>
+          { createStateItem(state) }
+          { createPauseAction(component, state) }
+          { createResumeAction(component, state) }
+          { createRestartAction(component, state) }
+        </tr>
+      } else {
+        <tr>
+          <td>{ component.app.value }</td>
+          <td>{ component.component.value }</td>
+          { createStateItem(state) }
+        </tr>
+      }
+    }
+   
+    if (isReport) {
+      <table border="1">
+        <tr>
+          <th>App</th>
+          <th>Component</th>
+          <th>Component State</th>
+        </tr>
+        { state.map { case (component, state) ⇒ createRow(component, state, true) } }
+      </table>
+    } else {
+      <table border="1">
+        <tr>
+          <th>App</th>
+          <th>Component</th>
+          <th colspan="3">Actions</th>
         </tr>
         { state.map { case (component, state) ⇒ createRow(component, state, false) } }
       </table>
@@ -1261,7 +1421,8 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
   // INFORMATION
 
   def createStatusReport(
-    circuitsState: Seq[(ComponentId, CircuitState)],
+    circuitsStates: Seq[(ComponentId, CircuitState)],
+    componentStates: Seq[(ComponentId, ComponentState)],
     failures: Seq[(ComponentId, BadThingsHistory[FailuresEntry])],
     rejectedCommands: Seq[(ComponentId, BadThingsHistory[RejectedCommandsEntry])],
     missedEvents: Seq[(ComponentId, BadThingsHistory[MissedEventsEntry])],
@@ -1279,12 +1440,20 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
               <h2>Circuits</h2><br/><a href="./herder/circuits?ui">Circuit control</a>
             </th>
             <th>
+              <h2>Components</h2><br/><a href="./herder/components?ui">Components report</a>
+            </th>
+          </tr>
+          <tr>
+            <td>{ createCircuitsContent(circuitsStates, true) }</td>
+            <td>{ createComponentsContent(componentStates, true) }</td>
+          </tr>
+          <tr>
+            <th colspan="2">
               <h2>Reported Failures</h2><br/><a href="./herder/failures">Failures report</a>
             </th>
           </tr>
           <tr>
-            <td>{ createCircuitsContent(circuitsState, true) }</td>
-            <td>{ createFailuresReportContent(failures, true, pathToHerder) }</td>
+            <td colspan="2">{ createFailuresReportContent(failures, true, pathToHerder) }</td>
           </tr>
           <tr>
             <th><h2>Rejected Commands</h2><br/><a href="./herder/rejected-commands">Rejected commands report</a></th>
@@ -1330,8 +1499,8 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
     <span>
       {
         (failure match {
-          case CauseIsProblem(p)                       ⇒ p.toString
-          case CauseIsThrowable(HasAThrowable(exn))    ⇒ s"""|${exn.getClass.getName}
+          case CauseIsProblem(p)⇒ p.toString
+          case CauseIsThrowable(HasAThrowable(exn)) ⇒ s"""|${exn.getClass.getName}
                                                              |${exn.getMessage}
                                                              |${exn.getStackTrace.mkString("\n")}""".stripMargin
           case CauseIsThrowable(x: HasAThrowableDescribed)⇒ x.toString

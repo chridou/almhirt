@@ -68,6 +68,15 @@ object ProblemCause {
   implicit def prob2ProblemCause(problem: Problem): ProblemCause = ProblemCause(problem)
 
   implicit class ProblemCauseOps(val self: ProblemCause) extends AnyVal {
+    def message: String = {
+       self match {
+        case CauseIsProblem(p)                           ⇒ p.message
+        case CauseIsThrowable(HasAThrowable(exn))        ⇒ exn.getMessage()
+        case CauseIsThrowable(d: HasAThrowableDescribed) ⇒ d.message
+      }
+     
+    }
+    
     def toProblem: Problem =
       self match {
         case CauseIsProblem(p)                           ⇒ p

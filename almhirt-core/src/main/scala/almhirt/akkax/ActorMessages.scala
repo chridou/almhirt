@@ -36,6 +36,12 @@ object ActorMessages {
   case object HerderServiceAppStarted extends HerderAppStartupMessage
   final case class HerderServiceAppFailedToStart(problem: Problem) extends HerderAppStartupMessage
   
+  sealed trait ComponentControlMessage
+  case object Pause extends ComponentControlMessage
+  case object Resume extends ComponentControlMessage
+  case object Restart extends ComponentControlMessage
+  case object ReportComponentState extends ComponentControlMessage
+  
 }
 
 object CreateChildActorHelper {

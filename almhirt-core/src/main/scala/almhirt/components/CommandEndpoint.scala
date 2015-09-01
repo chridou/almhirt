@@ -47,7 +47,7 @@ private[almhirt] class CommandEndpointImpl(
     commandStatusTrackerToResolve: ToResolve,
     resolveSettings: ResolveSettings,
     maxTrackingDuration: FiniteDuration,
-    autoConnect: Boolean)(implicit override val almhirtContext: AlmhirtContext) extends ActorPublisher[Command] with AlmActor with AlmActorLogging with ActorLogging {
+    autoConnect: Boolean)(implicit override val almhirtContext: AlmhirtContext) extends ActorPublisher[Command] with AlmActor with AlmActorLogging with ActorLogging with ControllableActor with ControllableActorWithPauseResume {
   import CommandStatusTracker._
 
   implicit def implicitFlowMaterializer = akka.stream.ActorMaterializer()(this.context)
@@ -57,6 +57,7 @@ private[almhirt] class CommandEndpointImpl(
 
   def receiveResolve: Receive = {
     case Resolve ⇒
+      registerComponentControl()
       context.resolveSingle(commandStatusTrackerToResolve, resolveSettings, None, Some("status-tracker-resolver"))
 
     case ActorMessages.ResolvedSingle(commandStatusTracker, _) ⇒
@@ -71,6 +72,7 @@ private[almhirt] class CommandEndpointImpl(
 
     case cmd: Command ⇒
       sender() ! CommandNotAccepted(cmd.commandId, ServiceNotAvailableProblem("Command endpoint not ready! Try again later."))
+
   }
 
   def receiveRunning(commandStatusTracker: ActorRef): Receive = {
@@ -85,9 +87,19 @@ private[almhirt] class CommandEndpointImpl(
         sender(),
         commandStatusTracker)
 
+    case m: ActorMessages.ComponentControlMessage ⇒
+      runningControlHandler(receivePause(commandStatusTracker))(m)
   }
 
-  override def receive: Receive = receiveResolve
+  def receivePause(commandStatusTracker: ActorRef): Receive = {
+    case m: ActorMessages.ComponentControlMessage ⇒
+      pauseControlHandler(receiveRunning(commandStatusTracker))(m)
+
+    case cmd: Command ⇒
+      sender() ! CommandNotAccepted(cmd.commandId, ServiceNotAvailableProblem("I'm taking a break. Try again later."))
+  }
+
+  override def receive: Receive = receiveResolve orElse (startupTerminator)
 
   private def checkCommandDispatchable(cmd: Command): AlmValidation[Command] =
     if (totalDemand > 0 && isActive) {
@@ -149,6 +161,7 @@ private[almhirt] class CommandEndpointImpl(
   }
 
   override def postStop() {
+    deregisterComponentControl()
     logInfo("Stopped")
   }
 

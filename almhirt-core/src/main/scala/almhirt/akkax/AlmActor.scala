@@ -13,7 +13,9 @@ import almhirt.problem.ProblemCause
 import almhirt.tracking.CommandRepresentation
 
 trait AlmActor extends Actor with HasAlmhirtContext with AlmActorSupport {
-
+  
+  
+  
   private object DefaultComponentIdProvider extends ActorComponentIdProvider {
     def componentId = ComponentId(AppName("almhirt"), ComponentName(self.path.name))
   }
@@ -146,5 +148,4 @@ trait AlmActor extends Actor with HasAlmhirtContext with AlmActorSupport {
       }
     }
   }
-
 }

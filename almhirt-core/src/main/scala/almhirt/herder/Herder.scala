@@ -38,14 +38,15 @@ object Herder {
 }
 
 private[almhirt] class Pastor(
-  failuresHerdingDogProps: Props,
-  rejectedCommandsHerdingDogProps: Props,
-  missedEventsHerdingDogProps: Props,
-  informationHerdingDogProps: Props,
-  runtimeHerdingDogProps: Props)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging with ActorLogging with HasAlmhirtContext {
+    failuresHerdingDogProps: Props,
+    rejectedCommandsHerdingDogProps: Props,
+    missedEventsHerdingDogProps: Props,
+    informationHerdingDogProps: Props,
+    runtimeHerdingDogProps: Props)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging with ActorLogging with HasAlmhirtContext {
   import almhirt.components.{ EventSinkHub, EventSinkHubMessage }
 
   val circuitsHerdingDog: ActorRef = context.actorOf(Props(new CircuitsHerdingDog()), CircuitsHerdingDog.actorname)
+  val componentControlHerdingDog: ActorRef = context.actorOf(Props(new ComponentControlHerdingDog()), ComponentControlHerdingDog.actorname)
   val failuresHerdingDog: ActorRef = context.actorOf(failuresHerdingDogProps, FailuresHerdingDog.actorname)
   val rejectedCommandsHerdingDog: ActorRef = context.actorOf(rejectedCommandsHerdingDogProps, RejectedCommandsHerdingDog.actorname)
   val missedEventsHerdingDog: ActorRef = context.actorOf(missedEventsHerdingDogProps, MissedEventsHerdingDog.actorname)
@@ -62,15 +63,17 @@ private[almhirt] class Pastor(
   context.actorSelection(almhirtContext.localActorPaths.almhirt / "streams" / "command-broker") ! almhirt.streaming.InternalBrokerMessages.InternalEnableNotifyOnNoDemand(5.minutes)
 
   def receiveRunning: Receive = {
-    case m: HerderMessages.CircuitMessages.CircuitMessage         ⇒ circuitsHerdingDog forward m
+    case m: HerderMessages.CircuitMessages.CircuitMessage                   ⇒ circuitsHerdingDog forward m
 
-    case m: HerderMessages.FailureMessages.FailuresMessage        ⇒ failuresHerdingDog forward m
+    case m: HerderMessages.ComponentControlMessages.ComponentControlMessage ⇒ componentControlHerdingDog forward m
 
-    case m: HerderMessages.CommandMessages.CommandsMessage        ⇒ rejectedCommandsHerdingDog forward m
+    case m: HerderMessages.FailureMessages.FailuresMessage                  ⇒ failuresHerdingDog forward m
 
-    case m: HerderMessages.EventMessages.EventsMessage            ⇒ missedEventsHerdingDog forward m
+    case m: HerderMessages.CommandMessages.CommandsMessage                  ⇒ rejectedCommandsHerdingDog forward m
 
-    case m: HerderMessages.InformationMessages.InformationMessage ⇒ informationHerdingDog forward m
+    case m: HerderMessages.EventMessages.EventsMessage                      ⇒ missedEventsHerdingDog forward m
+
+    case m: HerderMessages.InformationMessages.InformationMessage           ⇒ informationHerdingDog forward m
   }
 
   def receive = receiveRunning
