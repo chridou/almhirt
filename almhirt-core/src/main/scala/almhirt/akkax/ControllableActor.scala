@@ -50,7 +50,7 @@ trait ControllableActor { me: AlmActor with AlmActorLogging ⇒
 
   def supportedComponentControlActions: Set[ActorMessages.ComponentControlAction]
 
-  val componentControl: ComponentControl = ComponentControl(self, supportedComponentControlActions, Some(logWarning))
+  lazy val componentControl: ComponentControl = ComponentControl(self, supportedComponentControlActions, Some(logWarning))
 
   def registerComponentControl()(implicit cnp: ActorComponentIdProvider): Unit =
     almhirtContext.tellHerder(HerderMessages.ComponentControlMessages.RegisterComponentControl(cnp.componentId, componentControl))
