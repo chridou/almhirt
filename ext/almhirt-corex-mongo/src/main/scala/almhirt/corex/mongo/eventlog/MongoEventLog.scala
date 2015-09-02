@@ -105,7 +105,7 @@ private[almhirt] class MongoEventLogImpl(
   import EventLog._
   import almhirt.corex.mongo.BsonConverter._
 
-  override val supportedComponentControlActions = ActorMessages.ComponentControlActions.none
+  override val componentControl = ComponentControl(self, ActorMessages.ComponentControlActions.none, Some(logWarning))
 
   logInfo(s"""|collectionName: $collectionName
               |read-write-mode: $rwMode""".stripMargin)

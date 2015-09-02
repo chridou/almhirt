@@ -50,7 +50,7 @@ private[almhirt] class CommandEndpointImpl(
     autoConnect: Boolean)(implicit override val almhirtContext: AlmhirtContext) extends ActorPublisher[Command] with AlmActor with AlmActorLogging with ActorLogging with ControllableActor {
   import CommandStatusTracker._
 
-  override val supportedComponentControlActions = ActorMessages.ComponentControlActions.pauseResume
+  override val componentControl = ComponentControl(self, ActorMessages.ComponentControlActions.pauseResume, Some(logWarning))
 
   implicit def implicitFlowMaterializer = akka.stream.ActorMaterializer()(this.context)
 

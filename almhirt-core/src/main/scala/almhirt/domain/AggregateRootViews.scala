@@ -96,7 +96,7 @@ private[almhirt] trait AggregateRootViewsSkeleton[E <: AggregateRootEvent] exten
 
   implicit def implicitFlowMaterializer = akka.stream.ActorMaterializer()(this.context)
 
-  def supportedComponentControlActions: Set[ActorMessages.ComponentControlAction] = ActorMessages.ComponentControlActions.none
+  override val componentControl = ComponentControl(self, ActorMessages.ComponentControlActions.none, Some(logWarning))
 
   override val supervisorStrategy =
     OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {

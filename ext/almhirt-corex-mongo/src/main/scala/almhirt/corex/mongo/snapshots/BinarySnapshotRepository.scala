@@ -121,7 +121,7 @@ private[snapshots] class BinarySnapshotRepositoryActor(
     marshallingExecutionContextSelector: ExtendedExecutionContextSelector)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging with ControllableActor {
   import almhirt.snapshots.SnapshotRepository
 
-  override val supportedComponentControlActions = ActorMessages.ComponentControlActions.none
+  override val componentControl = ComponentControl(self, ActorMessages.ComponentControlActions.none, Some(logWarning))
 
   implicit val futuresContext = selectExecutionContext(futuresExecutionContextSelector)
   val marshallingContext = selectExecutionContext(marshallingExecutionContextSelector)

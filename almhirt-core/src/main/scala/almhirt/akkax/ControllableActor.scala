@@ -48,9 +48,7 @@ trait ControllableActor { me: AlmActor with AlmActorLogging ⇒
     def terminateReadyForShutdown: Receive = rec orElse readyForShutdownTerminator
   }
 
-  def supportedComponentControlActions: Set[ActorMessages.ComponentControlAction]
-
-  lazy val componentControl: ComponentControl = ComponentControl(self, supportedComponentControlActions, Some(logWarning))
+  def componentControl: ComponentControl 
 
   def registerComponentControl()(implicit cnp: ActorComponentIdProvider): Unit =
     almhirtContext.tellHerder(HerderMessages.ComponentControlMessages.RegisterComponentControl(cnp.componentId, componentControl))
