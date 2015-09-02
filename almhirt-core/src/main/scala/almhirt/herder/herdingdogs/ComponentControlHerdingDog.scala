@@ -33,7 +33,12 @@ private[almhirt] class ComponentControlHerdingDog()(implicit override val almhir
       val pinnedSender = sender()
       val futs = componentControls.map({
         case (ownerId, cb) ⇒
+          try {
           cb.state(1.second).recover(p ⇒ almhirt.akkax.ComponentState.Error(p)).map(st ⇒ (ownerId, st))
+          } catch {
+            case scala.util.control.NonFatal(exn) =>
+              AlmFuture.successful((ownerId, almhirt.akkax.ComponentState.Error(UnspecifiedProblem(s"Failed to Report component state for $ownerId:\n$exn"))))
+          }
       })
       val statesF = AlmFuture.sequence(futs.toSeq)
       statesF.onComplete(
