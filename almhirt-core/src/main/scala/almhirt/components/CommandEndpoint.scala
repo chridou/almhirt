@@ -76,7 +76,7 @@ private[almhirt] class CommandEndpointImpl(
 
   }
 
-  def receiveRunning(commandStatusTracker: ActorRef): Receive = running(receivePause(commandStatusTracker)) {
+  def receiveRunning(commandStatusTracker: ActorRef): Receive = runningWithPause(receivePause(commandStatusTracker)) {
     case AutoConnect ⇒
       logInfo("Connecting to command consumer.")
       CommandEndpoint(self).subscribe(almhirtContext.commandBroker.newSubscriber)
