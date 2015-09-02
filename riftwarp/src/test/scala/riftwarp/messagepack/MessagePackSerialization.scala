@@ -47,6 +47,26 @@ class MessagePackSerialization extends FunSuite with Matchers {
     rematerialized should equal(sample)
   }
 
+  test("""A WarpString("Lämplig för fönstersmygar och skåp. Levereras med förhöjningsring för utanpåliggande montage") should dematerialize and rematerialize to an equal instance""") {
+    val sample = WarpString("Lämplig för fönstersmygar och skåp. Levereras med förhöjningsring för utanpåliggande montage")
+    val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
+    val rematerialized = dematerialized.rematerialize.forceResult
+    rematerialized should equal(sample)
+  }
+
+  test("""A WarpString("文字化け") should dematerialize and rematerialize to an equal instance""") {
+    val sample = WarpString("文字化け")
+    val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
+    val rematerialized = dematerialized.rematerialize.forceResult
+    rematerialized should equal(sample)
+  }
+
+  test("""A WarpString("Код Обмена Информацией") should dematerialize and rematerialize to an equal instance""") {
+    val sample = WarpString("Код Обмена Информацией")
+    val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
+    val rematerialized = dematerialized.rematerialize.forceResult
+    rematerialized should equal(sample)
+  }
   test("""A WarpString(20 chars) should dematerialize and rematerialize to an equal instance""") {
     val sample = WarpString("abcdefghijklmnopqrstu")
     val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
