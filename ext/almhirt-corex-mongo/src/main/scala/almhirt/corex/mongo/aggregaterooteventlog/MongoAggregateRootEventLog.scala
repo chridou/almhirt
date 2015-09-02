@@ -389,6 +389,7 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
   }
 
   override def postStop() {
+    super.postStop()
     deregisterCircuitControl()
     deregisterComponentControl()
   }
