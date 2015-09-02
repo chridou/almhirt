@@ -7,13 +7,14 @@ import almhirt.context._
 import almhirt.herder.HerderMessages
 import akka.actor.ActorRef
 import almhirt.akkax.{ ComponentControl, ComponentId }
+import almhirt.akkax._
 
 object ComponentControlHerdingDog {
 
   val actorname = "component-control-herdingdog"
 }
 
-private[almhirt] class ComponentControlHerdingDog()(implicit override val almhirtContext: AlmhirtContext) extends Actor with HasAlmhirtContext with ActorLogging {
+private[almhirt] class ComponentControlHerdingDog()(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with HasAlmhirtContext with AlmActorLogging {
   import HerderMessages.ComponentControlMessages._
 
   implicit val executor = almhirtContext.futuresContext
@@ -22,11 +23,11 @@ private[almhirt] class ComponentControlHerdingDog()(implicit override val almhir
 
   def receiveRunning: Receive = {
     case RegisterComponentControl(ownerId, cb) ⇒
-      log.info(s"""Component control registered for "${ownerId}".""")
+      logInfo(s"""Component control registered for "${ownerId}".""")
       componentControls = componentControls + (ownerId → cb)
 
     case DeregisterComponentControl(ownerId) ⇒
-      log.info(s"""Component control deregistered for "${ownerId}".""")
+      logInfo(s"""Component control deregistered for "${ownerId}".""")
       componentControls = componentControls - ownerId
 
     case ReportComponentStates ⇒
@@ -37,12 +38,13 @@ private[almhirt] class ComponentControlHerdingDog()(implicit override val almhir
           cb.state(1.second).recover(p ⇒ almhirt.akkax.ComponentState.Error(p)).map(st ⇒ (ownerId, st))
           } catch {
             case scala.util.control.NonFatal(exn) =>
+              logError(s"Failed to Report component state for $ownerId", exn)
               AlmFuture.successful((ownerId, almhirt.akkax.ComponentState.Error(UnspecifiedProblem(s"Failed to Report component state for $ownerId:\n$exn"))))
           }
       })
       val statesF = AlmFuture.sequence(futs.toSeq)
       statesF.onComplete(
-        fail ⇒ log.error(s"Could not determine circuit states:\n$fail"),
+        fail ⇒ logError(s"Could not determine circuit states:\n$fail"),
         states ⇒ pinnedSender ! ComponentStates(states.toSeq.sortBy(_._1)))
 
     case AttemptComponentControlAction(ownerId, action) ⇒
@@ -50,13 +52,24 @@ private[almhirt] class ComponentControlHerdingDog()(implicit override val almhir
         case Some(cc) ⇒
           if (cc._2.supports(action)) {
             cc._2.changeState(action)
-            log.info(s"""Sent request for action $action to component "$ownerId".""")
+            logInfo(s"""Sent request for action $action to component "$ownerId".""")
           } else {
-            log.warning(s""""$ownerId" does not support $action.""")
+            logWarning(s""""$ownerId" does not support $action.""")
           }
-        case None ⇒ log.warning(s"""There is no component named "$ownerId".""")
+        case None ⇒ logWarning(s"""There is no component named "$ownerId".""")
       }
   }
 
   override def receive: Receive = receiveRunning
+  
+  override def preStart() {
+    super.preStart()
+    logInfo("Starting..")
+  }
+  
+  override def postStop() {
+    super.postStop()
+    logInfo("Stopped..")
+  }
+  
 } 
