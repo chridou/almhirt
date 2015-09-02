@@ -18,7 +18,7 @@ import akka.stream.Materializer
 
 object AggregateRootViews {
   type ViewConstructor = (AggregateRootId, ActorRef, Option[ActorRef]) ⇒ AlmhirtContext ⇒ Props
-  
+
   def propsRaw[E <: AggregateRootEvent: ClassTag](
     viewConstructor: ViewConstructor,
     aggregateEventLogToResolve: ToResolve,
@@ -88,13 +88,15 @@ class AggregateRootViews[E <: AggregateRootEvent](
   override val eventBufferSize: Int,
   override val connectTo: Option[Publisher[Event]] = None)(implicit override val eventTag: scala.reflect.ClassTag[E], override val almhirtContext: AlmhirtContext) extends AggregateRootViewsSkeleton[E]
 
-private[almhirt] trait AggregateRootViewsSkeleton[E <: AggregateRootEvent] extends AlmActor with AlmActorLogging with ActorSubscriber with ActorLogging {
+private[almhirt] trait AggregateRootViewsSkeleton[E <: AggregateRootEvent] extends AlmActor with AlmActorLogging with ActorSubscriber with ActorLogging with ControllableActor {
   import AggregateRootViewMessages._
 
   import akka.actor.OneForOneStrategy
   import akka.actor.SupervisorStrategy._
 
   implicit def implicitFlowMaterializer = akka.stream.ActorMaterializer()(this.context)
+
+  def supportedComponentControlActions: Set[ActorMessages.ComponentControlAction] = ActorMessages.ComponentControlActions.none
 
   override val supervisorStrategy =
     OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
@@ -121,7 +123,7 @@ private[almhirt] trait AggregateRootViewsSkeleton[E <: AggregateRootEvent] exten
 
   private var numJettisonedSinceLastReport = 0
 
-  def receiveResolve: Receive = {
+  def receiveResolve: Receive = startup() {
     case Resolve ⇒
       val actorsToResolve =
         Map("aggregateeventlog" → aggregateEventLogToResolve) ++
@@ -140,13 +142,14 @@ private[almhirt] trait AggregateRootViewsSkeleton[E <: AggregateRootEvent] exten
       request(eventBufferSize)
       context.system.scheduler.scheduleOnce(5.minutes, self, ReportJettisonedCargo)(this.context.dispatcher)
       context.become(receiveRunning(dependencies("aggregateeventlog"), dependencies.get("snapshotstorage")))
+      logInfo("Running..")
 
     case ActorMessages.ManyNotResolved(problem, _) ⇒
       logError(s"Failed to resolve dependencies:\n$problem")
       sys.error(s"Failed to resolve dependencies.")
   }
 
-  private def receiveRunning(aggregateEventLog: ActorRef, snapshotStorage: Option[ActorRef]): Receive = {
+  private def receiveRunning(aggregateEventLog: ActorRef, snapshotStorage: Option[ActorRef]): Receive = running() {
     case GetAggregateRootProjectionFor(id) ⇒
       val view = context.child(id.value) match {
         case Some(v) ⇒
@@ -216,6 +219,13 @@ private[almhirt] trait AggregateRootViewsSkeleton[E <: AggregateRootEvent] exten
     logInfo("Starting...")
     logInfo(s"SnapshotStorage: ${snapShotStorageToResolve}")
     logInfo(s"event buffer size: ${eventBufferSize}")
+    registerComponentControl()
     self ! Resolve
   }
+
+  override def postStop() {
+    super.postStop()
+    deregisterComponentControl()
+  }
+
 }
