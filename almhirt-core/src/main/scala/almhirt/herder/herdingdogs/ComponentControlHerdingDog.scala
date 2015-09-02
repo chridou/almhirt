@@ -23,8 +23,12 @@ private[almhirt] class ComponentControlHerdingDog()(implicit override val almhir
 
   def receiveRunning: Receive = {
     case RegisterComponentControl(ownerId, cb) ⇒
-      logInfo(s"""Component control registered for "${ownerId}".""")
-      componentControls = componentControls + (ownerId → cb)
+      if (cb == null) {
+        logError(s"ComponentControl for $ownerId is null!")
+      } else {
+        logInfo(s"""Component control registered for "${ownerId}".""")
+        componentControls = componentControls + (ownerId → cb)
+      }
 
     case DeregisterComponentControl(ownerId) ⇒
       logInfo(s"""Component control deregistered for "${ownerId}".""")
@@ -35,9 +39,9 @@ private[almhirt] class ComponentControlHerdingDog()(implicit override val almhir
       val futs = componentControls.map({
         case (ownerId, cb) ⇒
           try {
-          cb.state(1.second).recover(p ⇒ almhirt.akkax.ComponentState.Error(p)).map(st ⇒ (ownerId, st))
+            cb.state(1.second).recover(p ⇒ almhirt.akkax.ComponentState.Error(p)).map(st ⇒ (ownerId, st))
           } catch {
-            case scala.util.control.NonFatal(exn) =>
+            case scala.util.control.NonFatal(exn) ⇒
               logError(s"Failed to Report component state for $ownerId", exn)
               AlmFuture.successful((ownerId, almhirt.akkax.ComponentState.Error(UnspecifiedProblem(s"Failed to Report component state for $ownerId:\n$exn"))))
           }
@@ -61,15 +65,15 @@ private[almhirt] class ComponentControlHerdingDog()(implicit override val almhir
   }
 
   override def receive: Receive = receiveRunning
-  
+
   override def preStart() {
     super.preStart()
     logInfo("Starting..")
   }
-  
+
   override def postStop() {
     super.postStop()
     logInfo("Stopped..")
   }
-  
+
 } 
