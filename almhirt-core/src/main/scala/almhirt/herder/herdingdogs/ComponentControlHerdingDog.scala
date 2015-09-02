@@ -25,8 +25,10 @@ private[almhirt] class ComponentControlHerdingDog()(implicit override val almhir
     case RegisterComponentControl(ownerId, cb) ⇒
       if (ownerId == null) {
         logError(s"$ownerId is null!. sender: ${sender()}")
+        reportMajorFailure(UnspecifiedProblem(s"$ownerId is null!. sender: ${sender()}"))
       } else if (cb == null) {
         logError(s"ComponentControl for $ownerId is null!")
+        reportMajorFailure(UnspecifiedProblem(s"ComponentControl for $ownerId is null!"))
       } else {
         logInfo(s"""Component control registered for "${ownerId}".""")
         componentControls = componentControls + (ownerId → cb)
@@ -45,12 +47,16 @@ private[almhirt] class ComponentControlHerdingDog()(implicit override val almhir
           } catch {
             case scala.util.control.NonFatal(exn) ⇒
               logError(s"Failed to Report component state for $ownerId", exn)
+              reportMinorFailure(exn)
               AlmFuture.successful((ownerId, almhirt.akkax.ComponentState.Error(UnspecifiedProblem(s"Failed to Report component state for $ownerId:\n$exn"))))
           }
       })
       val statesF = AlmFuture.sequence(futs.toSeq)
       statesF.onComplete(
-        fail ⇒ logError(s"Could not determine circuit states:\n$fail"),
+        fail ⇒ {
+          reportMinorFailure(fail)
+          logError(s"Could not determine circuit states:\n$fail")
+        },
         states ⇒ pinnedSender ! ComponentStates(states.toSeq.sortBy(_._1)))
 
     case AttemptComponentControlAction(ownerId, action) ⇒
