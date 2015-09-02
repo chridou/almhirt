@@ -23,7 +23,9 @@ private[almhirt] class ComponentControlHerdingDog()(implicit override val almhir
 
   def receiveRunning: Receive = {
     case RegisterComponentControl(ownerId, cb) ⇒
-      if (cb == null) {
+      if (ownerId == null) {
+        logError(s"$ownerId is null!. sender: ${sender()}")
+      } else if (cb == null) {
         logError(s"ComponentControl for $ownerId is null!")
       } else {
         logInfo(s"""Component control registered for "${ownerId}".""")
