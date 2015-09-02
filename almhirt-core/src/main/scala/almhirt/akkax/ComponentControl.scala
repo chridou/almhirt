@@ -1,6 +1,5 @@
 package almhirt.akkax
 
-
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext
 import akka.actor.ActorRef
@@ -15,56 +14,27 @@ object ComponentState {
   case object Running extends ComponentState
   case object Paused extends ComponentState
   final case class Error(cause: almhirt.problem.ProblemCause) extends ComponentState
+  case object PreparingForShutdown extends ComponentState
+  case object ReadyForShutdown extends ComponentState
 }
 
 trait ComponentControl {
-  def supportsPauseResume: Boolean
-  def supportsRestart: Boolean
-  def pause(): Unit
-  def resume(): Unit
-  def restart(): Unit
-  
+  def supports(action: ActorMessages.ComponentControlAction): Boolean
+  def changeState(action: ActorMessages.ComponentControlAction): Unit
+
   def state(timeout: FiniteDuration)(implicit executor: ExecutionContext): AlmFuture[ComponentState]
 }
 
 object ComponentControl {
-  def apply(actor: ActorRef): ComponentControl = 
-    new ComponentControl {
-      def supportsPauseResume: Boolean = true
-      def supportsRestart: Boolean = true
-      def pause(): Unit = actor ! ActorMessages.Pause
-      def resume(): Unit = actor! ActorMessages.Resume
-      def restart(): Unit = actor! ActorMessages.Restart
-    
-      def state(timeout: FiniteDuration)(implicit executor: ExecutionContext): AlmFuture[ComponentState] = (actor ? ActorMessages.ReportComponentState)(timeout).mapCastTo[ComponentState]
-  }
-  
-  def reportsOnly(actor: ActorRef): ComponentControl = 
-    new ComponentControl {
-      def supportsPauseResume: Boolean = false
-      def supportsRestart: Boolean = false
-      def pause(): Unit = {}
-      def resume(): Unit = {}
-      def restart(): Unit = {}
-    
-      def state(timeout: FiniteDuration)(implicit executor: ExecutionContext): AlmFuture[ComponentState] = (actor ? ActorMessages.ReportComponentState)(timeout).mapCastTo[ComponentState]
-  }
-  
-  
-  def pauseResume(actor: ActorRef): ComponentControl = 
-    new ComponentControl {
-      def supportsPauseResume: Boolean = true
-      def supportsRestart: Boolean = false
-      def pause(): Unit = actor ! ActorMessages.Pause
-      def resume(): Unit = actor! ActorMessages.Resume
-      def restart(): Unit = {}
-    
-      def state(timeout: FiniteDuration)(implicit executor: ExecutionContext): AlmFuture[ComponentState] = (actor ? ActorMessages.ReportComponentState)(timeout).mapCastTo[ComponentState]
-  }
-  
-  val noActionTerminator: akka.actor.Actor.Receive = {
-    case ActorMessages.Pause => 
-    case ActorMessages.Resume => 
-    case ActorMessages.Restart => 
+  def apply(actor: ActorRef, supportedStateChangeActions: Set[ActorMessages.ComponentControlAction], logMsg: Option[(=> String) ⇒ Unit]): ComponentControl = new ComponentControl {
+    def supports(action: ActorMessages.ComponentControlAction): Boolean = supportedStateChangeActions(action)
+    def changeState(action: ActorMessages.ComponentControlAction): Unit =
+      if (supports(action))
+        actor ! action
+      else
+        logMsg.foreach(_(s"Attempt to execute an unsupportet state change action: $action"))
+
+    def state(timeout: FiniteDuration)(implicit executor: ExecutionContext): AlmFuture[ComponentState] =
+      (actor ? ActorMessages.ReportComponentState)(timeout).mapCastTo[ComponentState]
   }
 }

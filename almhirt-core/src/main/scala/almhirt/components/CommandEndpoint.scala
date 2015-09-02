@@ -47,17 +47,18 @@ private[almhirt] class CommandEndpointImpl(
     commandStatusTrackerToResolve: ToResolve,
     resolveSettings: ResolveSettings,
     maxTrackingDuration: FiniteDuration,
-    autoConnect: Boolean)(implicit override val almhirtContext: AlmhirtContext) extends ActorPublisher[Command] with AlmActor with AlmActorLogging with ActorLogging with ControllableActor with ControllableActorWithPauseResume {
+    autoConnect: Boolean)(implicit override val almhirtContext: AlmhirtContext) extends ActorPublisher[Command] with AlmActor with AlmActorLogging with ActorLogging with ControllableActor {
   import CommandStatusTracker._
+
+  override val supportedComponentControlActions = ActorMessages.ComponentControlActions.pauseResume
 
   implicit def implicitFlowMaterializer = akka.stream.ActorMaterializer()(this.context)
 
   private case object AutoConnect
   private case object Resolve
 
-  def receiveResolve: Receive = {
+  def receiveResolve: Receive = startup() {
     case Resolve ⇒
-      registerComponentControl()
       context.resolveSingle(commandStatusTrackerToResolve, resolveSettings, None, Some("status-tracker-resolver"))
 
     case ActorMessages.ResolvedSingle(commandStatusTracker, _) ⇒
@@ -75,7 +76,7 @@ private[almhirt] class CommandEndpointImpl(
 
   }
 
-  def receiveRunning(commandStatusTracker: ActorRef): Receive = {
+  def receiveRunning(commandStatusTracker: ActorRef): Receive = running(receivePause(commandStatusTracker)) {
     case AutoConnect ⇒
       logInfo("Connecting to command consumer.")
       CommandEndpoint(self).subscribe(almhirtContext.commandBroker.newSubscriber)
@@ -86,20 +87,14 @@ private[almhirt] class CommandEndpointImpl(
         checkCommandDispatchable(cmd),
         sender(),
         commandStatusTracker)
-
-    case m: ActorMessages.ComponentControlMessage ⇒
-      runningControlHandler(receivePause(commandStatusTracker))(m)
   }
 
-  def receivePause(commandStatusTracker: ActorRef): Receive = {
-    case m: ActorMessages.ComponentControlMessage ⇒
-      pauseControlHandler(receiveRunning(commandStatusTracker))(m)
-
+  def receivePause(commandStatusTracker: ActorRef): Receive = pause(receiveRunning(commandStatusTracker)) {
     case cmd: Command ⇒
       sender() ! CommandNotAccepted(cmd.commandId, ServiceNotAvailableProblem("I'm taking a break. Try again later."))
   }
 
-  override def receive: Receive = receiveResolve orElse (startupTerminator)
+  override def receive: Receive = receiveResolve
 
   private def checkCommandDispatchable(cmd: Command): AlmValidation[Command] =
     if (totalDemand > 0 && isActive) {
@@ -157,6 +152,7 @@ private[almhirt] class CommandEndpointImpl(
 
   override def preStart() {
     logInfo("Starting...")
+    registerComponentControl()
     self ! Resolve
   }
 

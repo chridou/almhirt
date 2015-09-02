@@ -31,37 +31,23 @@ private[almhirt] class ComponentControlHerdingDog()(implicit override val almhir
 
     case ReportComponentStates ⇒
       val pinnedSender = sender()
-      val futs = componentControls.map({ case (ownerId, cb) ⇒ 
-        cb.state(1.second).recover(p => almhirt.akkax.ComponentState.Error(p)).map(st ⇒ (ownerId, st)) })
+      val futs = componentControls.map({
+        case (ownerId, cb) ⇒
+          cb.state(1.second).recover(p ⇒ almhirt.akkax.ComponentState.Error(p)).map(st ⇒ (ownerId, st))
+      })
       val statesF = AlmFuture.sequence(futs.toSeq)
       statesF.onComplete(
         fail ⇒ log.error(s"Could not determine circuit states:\n$fail"),
         states ⇒ pinnedSender ! ComponentStates(states.toSeq.sortBy(_._1)))
 
-    case AttemptPause(ownerId) ⇒
+    case AttemptComponentControlAction(ownerId, action) ⇒
       componentControls.find(_._1 == ownerId) match {
         case Some(cc) ⇒
-          cc._2.pause()
-          log.info(s"""Sent pause request to component "$ownerId".""")
-        case None ⇒ log.warning(s"""There is no component named "$ownerId".""")
-      }
-
-    case AttemptResume(ownerId) ⇒
-      componentControls.find(_._1 == ownerId) match {
-        case Some(cc) ⇒
-          cc._2.resume()
-          log.info(s"""Sent resume fuse request to component "$ownerId".""")
-        case None ⇒ log.warning(s"""There is no component named "$ownerId".""")
-      }
-
-    case AttemptRestart(ownerId) ⇒
-      componentControls.find(_._1 == ownerId) match {
-        case Some(cc) ⇒
-          if (cc._2.supportsRestart) {
-            cc._2.restart()
-            log.info(s"""Sent restart fuse request to component "$ownerId".""")
+          if (cc._2.supports(action)) {
+            cc._2.changeState(action)
+            log.info(s"""Sent request for action $action to component "$ownerId".""")
           } else {
-            log.info(s"""Component "$ownerId" does not support restart.""")
+            log.warning(s""""$ownerId" does not support $action.""")
           }
         case None ⇒ log.warning(s"""There is no component named "$ownerId".""")
       }

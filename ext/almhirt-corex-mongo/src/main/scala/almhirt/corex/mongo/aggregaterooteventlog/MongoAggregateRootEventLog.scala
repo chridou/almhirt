@@ -105,9 +105,11 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
     readWarnThreshold: FiniteDuration,
     circuitControlSettings: CircuitControlSettings,
     retrySettings: RetrySettings,
-    rwMode: ReadWriteMode.SupportsReading)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging with ControllableActor with ControllableActorReportsOnly {
+    rwMode: ReadWriteMode.SupportsReading)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging with ControllableActor {
 
   import almhirt.eventlog.AggregateRootEventLog._
+
+  override val supportedComponentControlActions = ActorMessages.ComponentControlActions.none
 
   logInfo(s"""|collectionName: $collectionName
               |read-write-mode: $rwMode""".stripMargin)
@@ -242,7 +244,7 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
   private case object Initialized
   private case class InitializeFailed(prob: Problem)
 
-  def uninitializedReadWrite: Receive = {
+  def uninitializedReadWrite: Receive = startup() {
     case Initialize ⇒
       logInfo("Initializing(read/write)")
       val toTry = () ⇒ (for {
@@ -299,7 +301,7 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
       }
   }
 
-  def uninitializedReadOnly: Receive = {
+  def uninitializedReadOnly: Receive = startup() {
     case Initialize ⇒
       logInfo("Initializing(read-only)")
       context.retryWithLogging[Unit](
@@ -347,7 +349,7 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
       }
   }
 
-  def receiveAggregateRootEventLogMsg: Receive = {
+  def receiveAggregateRootEventLogMsg: Receive = running() {
     case CommitAggregateRootEvent(event) ⇒
       commitEvent(event, sender())
 
@@ -372,16 +374,13 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
           reportMajorFailure(problem)
           GetAggregateRootEventFailed(eventId, problem)
         })(sender())
-
-    case m: ActorMessages.ComponentControlMessage ⇒
-      runningHandler(m)
   }
 
   override def receive =
     if (rwMode.supportsWriting)
-      uninitializedReadWrite orElse startupTerminator
+      uninitializedReadWrite
     else
-      uninitializedReadOnly orElse startupTerminator
+      uninitializedReadOnly
 
   override def preStart() {
     super.preStart()

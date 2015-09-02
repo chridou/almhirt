@@ -31,17 +31,28 @@ object ActorMessages {
   case object CircuitFuseRemoved extends CircuitAllWillFail
   case object CircuitDestroyed extends CircuitAllWillFail
   case object CircuitCircumvented extends CircuitNotAllWillFail
-  
+
   sealed trait HerderAppStartupMessage
   case object HerderServiceAppStarted extends HerderAppStartupMessage
   final case class HerderServiceAppFailedToStart(problem: Problem) extends HerderAppStartupMessage
-  
+
   sealed trait ComponentControlMessage
-  case object Pause extends ComponentControlMessage
-  case object Resume extends ComponentControlMessage
-  case object Restart extends ComponentControlMessage
+  sealed trait ComponentControlAction extends ComponentControlMessage
+  case object Pause extends ComponentControlAction
+  case object Resume extends ComponentControlAction
+  case object Restart extends ComponentControlAction
+  case object PrepareForShutdown extends ComponentControlAction
   case object ReportComponentState extends ComponentControlMessage
-  
+
+  object ComponentControlActions {
+    val none = Set[ComponentControlAction]()
+    val pauseResume = Set[ComponentControlAction](Pause, Resume)
+    val pauseResumeShutdown = Set[ComponentControlAction](Pause, Resume, PrepareForShutdown)
+    val pauseResumeShutdownRestart = Set[ComponentControlAction](Pause, Resume, PrepareForShutdown, Restart)
+    val shutdown = Set[ComponentControlAction](PrepareForShutdown)
+    val shutdownRestart = Set[ComponentControlAction](PrepareForShutdown, Restart)
+  }
+
 }
 
 object CreateChildActorHelper {
@@ -51,7 +62,7 @@ object CreateChildActorHelper {
   import almhirt.almfuture.all._
   def createChildActor(parent: ActorRef, factory: ComponentFactory, correlationId: Option[CorrelationId])(maxDur: FiniteDuration)(implicit execCtx: ExecutionContext): AlmFuture[ActorRef] = {
     parent.ask(ActorMessages.CreateChildActor(factory, true, correlationId))(maxDur).mapCastTo[ActorMessages.CreateChildActorRsp].mapV {
-      case ActorMessages.ChildActorCreated(newChild, correlationId) ⇒ scalaz.Success(newChild)
+      case ActorMessages.ChildActorCreated(newChild, correlationId)     ⇒ scalaz.Success(newChild)
       case ActorMessages.CreateChildActorFailed(problem, correlationId) ⇒ scalaz.Failure(problem)
     }
   }

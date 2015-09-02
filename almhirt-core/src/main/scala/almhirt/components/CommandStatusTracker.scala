@@ -69,17 +69,17 @@ private[almhirt] class MyCommandStatusTracker(
   shrinkCacheAt: Int,
   checkTimeoutInterval: FiniteDuration,
   autoConnect: Boolean)(implicit override val almhirtContext: AlmhirtContext)
-  extends AlmActor
-  with AlmActorLogging
-  with ActorSubscriber
-  with ActorLogging
-  with ControllableActor
-  with ControllableActorReportsOnly
-  {
+    extends AlmActor
+    with AlmActorLogging
+    with ActorSubscriber
+    with ActorLogging
+    with ControllableActor {
   import CommandStatusTracker._
   import almhirt.storages._
 
-    implicit def implicitFlowMaterializer = akka.stream.ActorMaterializer()(this.context)
+  override val supportedComponentControlActions = ActorMessages.ComponentControlActions.none
+
+  implicit def implicitFlowMaterializer = akka.stream.ActorMaterializer()(this.context)
 
   if (targetCacheSize < 1) throw new Exception(s"targetCacheSize($targetCacheSize) must be grater than zero.")
   if (shrinkCacheAt < targetCacheSize) throw new Exception(s"shrinkCacheAt($targetCacheSize) must at least targetCacheSize($targetCacheSize).")
@@ -87,7 +87,7 @@ private[almhirt] class MyCommandStatusTracker(
   logInfo(s"""|target-cache-size: $targetCacheSize
               |shrink-cache-at: $shrinkCacheAt
               |check-timeout-interval: ${checkTimeoutInterval.defaultUnitString}""".stripMargin)
-  
+
   override val requestStrategy = ZeroRequestStrategy
 
   implicit val executionContext: ExecutionContext = context.dispatcher
@@ -127,7 +127,7 @@ private[almhirt] class MyCommandStatusTracker(
 
   private case object AutoConnect
 
-  def running(): Receive = {
+  def receiveRunning(): Receive = running(){
     case AutoConnect ⇒
       logInfo("Subscribing to event stream.")
       Source(almhirtContext.eventStream).collect { case e: CommandStatusChanged ⇒ e }.to(Sink(CommandStatusTracker(self))).run()
@@ -223,7 +223,7 @@ private[almhirt] class MyCommandStatusTracker(
 
   }
 
-  override def receive: Receive = running() orElse runningTerminator
+  override def receive: Receive = receiveRunning()
 
   override def preStart() {
     super.preStart()
@@ -234,7 +234,7 @@ private[almhirt] class MyCommandStatusTracker(
     context.system.scheduler.scheduleOnce(checkTimeoutInterval, self, CheckTimeouts)
     registerComponentControl()
   }
-  
+
   override def postStop() {
     super.postStop()
     deregisterComponentControl()

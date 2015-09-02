@@ -75,8 +75,10 @@ private[almhirt] class EventLogWriterImpl(
     circuitControlSettings: CircuitControlSettings,
     circuitStateReportingInterval: Option[FiniteDuration],
     eventlogCallTimeout: FiniteDuration,
-    storeEventRetrySettings: RetryPolicyExt)(implicit override val almhirtContext: AlmhirtContext) extends ActorSubscriber with AlmActor with AlmActorLogging with ActorLogging with ControllableActor with ControllableActorReportsOnly {
+    storeEventRetrySettings: RetryPolicyExt)(implicit override val almhirtContext: AlmhirtContext) extends ActorSubscriber with AlmActor with AlmActorLogging with ActorLogging with ControllableActor {
   import almhirt.eventlog.EventLog
+
+  override val supportedComponentControlActions = ActorMessages.ComponentControlActions.none
 
   implicit def implicitFlowMaterializer = akka.stream.ActorMaterializer()(this.context)
   implicit val executor = almhirtContext.futuresContext
@@ -89,7 +91,7 @@ private[almhirt] class EventLogWriterImpl(
   private case object Resolve
   private case object DisplayCircuitState
 
-  def receiveResolve: Receive = {
+  def receiveResolve: Receive = startup() {
     case Resolve ⇒
       registerComponentControl()
       context.resolveSingle(eventLogToResolve, resolveSettings, None, Some("event-log-resolver"))
@@ -111,7 +113,7 @@ private[almhirt] class EventLogWriterImpl(
       reportCriticalFailure(problem)
   }
 
-  def receiveCircuitClosed(eventLog: ActorRef): Receive = {
+  def receiveCircuitClosed(eventLog: ActorRef): Receive = running() {
     case AutoConnect ⇒
       logInfo("Subscribing to event stream.")
       Source(almhirtContext.eventStream).to(Sink(EventLogWriter(self))).run()
@@ -158,12 +160,9 @@ private[almhirt] class EventLogWriterImpl(
     case DisplayCircuitState ⇒
       if (log.isInfoEnabled)
         circuitBreaker.state.onSuccess(s ⇒ log.info(s"Circuit state: $s"))
-
-    case m: ActorMessages.ComponentControlMessage ⇒
-      runningHandler(m)
   }
 
-  def receiveCircuitOpen(eventLog: ActorRef): Receive = {
+  def receiveCircuitOpen(eventLog: ActorRef): Receive = running() {
     case ActorSubscriberMessage.OnNext(event: Event) ⇒
       reportMissedEvent(event, MajorSeverity, CircuitOpenProblem())
       request(1)
@@ -186,12 +185,9 @@ private[almhirt] class EventLogWriterImpl(
         circuitStateReportingInterval.foreach(interval ⇒
           context.system.scheduler.scheduleOnce(interval, self, DisplayCircuitState))
       }
-
-    case m: ActorMessages.ComponentControlMessage ⇒
-      runningHandler(m)
   }
 
-  override def receive: Receive = receiveResolve orElse (startupTerminator)
+  override def receive: Receive = receiveResolve
 
   override def preStart() {
     circuitBreaker.defaultActorListeners(self)

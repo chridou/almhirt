@@ -118,8 +118,10 @@ private[snapshots] class BinarySnapshotRepositoryActor(
     storageRetryPolicy: RetryPolicyExt,
     circuitControlSettings: CircuitControlSettings,
     futuresExecutionContextSelector: ExtendedExecutionContextSelector,
-    marshallingExecutionContextSelector: ExtendedExecutionContextSelector)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging with ControllableActor with ControllableActorReportsOnly {
+    marshallingExecutionContextSelector: ExtendedExecutionContextSelector)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging with ControllableActor {
   import almhirt.snapshots.SnapshotRepository
+
+  override val supportedComponentControlActions = ActorMessages.ComponentControlActions.none
 
   implicit val futuresContext = selectExecutionContext(futuresExecutionContextSelector)
   val marshallingContext = selectExecutionContext(marshallingExecutionContextSelector)
@@ -130,7 +132,7 @@ private[snapshots] class BinarySnapshotRepositoryActor(
   private case object Initialized
   private case class InitializeFailed(prob: Problem)
 
-  def receiveInitializeReadWrite: Receive = {
+  def receiveInitializeReadWrite: Receive = startup() {
     case Initialize ⇒
       logInfo("Initializing")
       retryFuture(initializeRetryPolicy) {
@@ -176,7 +178,7 @@ private[snapshots] class BinarySnapshotRepositoryActor(
       sender() ! SnapshotRepository.FindSnapshotFailed(id, ServiceNotReadyProblem("The storage is not yet initialized."))
   }
 
-  def receiveInitializeReadOnly: Receive = {
+  def receiveInitializeReadOnly: Receive = startup() {
     case Initialize ⇒
       logInfo("Initializing")
       retryFuture(initializeRetryPolicy) {
@@ -220,7 +222,7 @@ private[snapshots] class BinarySnapshotRepositoryActor(
       sender() ! SnapshotRepository.FindSnapshotFailed(id, ServiceNotReadyProblem("The storage is not yet initialized."))
   }
 
-  def receiveRunning: Receive = {
+  def receiveRunning: Receive = running() {
     case SnapshotRepository.StoreSnapshot(ar) ⇒
       val f = measureWrite {
         for {
@@ -241,9 +243,6 @@ private[snapshots] class BinarySnapshotRepositoryActor(
     case SnapshotRepository.FindSnapshot(id) ⇒
       val f = measureRead { circuitBreaker.fused(findSnapshot(id)) }
       f.recoverThenPipeTo(fail ⇒ SnapshotRepository.FindSnapshotFailed(id, fail))(sender())
-
-    case m: ActorMessages.ComponentControlMessage ⇒
-      runningHandler(m)
   }
 
   override def receive: Receive = Actor.emptyBehavior
@@ -345,10 +344,10 @@ private[snapshots] class BinarySnapshotRepositoryActor(
   override def preStart() {
     if (rwMode.supportsWriting) {
       logInfo("Starting(r/w)...")
-      context.become(receiveInitializeReadWrite orElse startupTerminator)
+      context.become(receiveInitializeReadWrite)
     } else {
       logInfo("Starting(ro)...")
-      context.become(receiveInitializeReadOnly orElse startupTerminator)
+      context.become(receiveInitializeReadOnly)
     }
     logInfo(s"collection: ${collectionName}\nWrite warn after ${readWarningThreshold.defaultUnitString}\nRead warn after ${writeWarningThreshold.defaultUnitString}\nCompress: $compress\nReadWriteMode: $rwMode")
     registerComponentControl()

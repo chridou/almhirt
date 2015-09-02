@@ -101,9 +101,11 @@ private[almhirt] class MongoEventLogImpl(
     readWarnThreshold: FiniteDuration,
     circuitControlSettings: CircuitControlSettings,
     initializeRetrySettings: RetryPolicyExt,
-    rwMode: ReadWriteMode.SupportsReading)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging with ControllableActor with ControllableActorReportsOnly {
+    rwMode: ReadWriteMode.SupportsReading)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging with ControllableActor {
   import EventLog._
   import almhirt.corex.mongo.BsonConverter._
+
+  override val supportedComponentControlActions = ActorMessages.ComponentControlActions.none
 
   logInfo(s"""|collectionName: $collectionName
               |read-write-mode: $rwMode""".stripMargin)
@@ -240,7 +242,7 @@ private[almhirt] class MongoEventLogImpl(
   def getEvents(query: BSONDocument, sort: BSONDocument, traverse: TraverseWindow): Enumerator[Event] = {
     val start = Deadline.now
     val collection = db(collectionName)
-     val enumerator = collection.queryAlm(query, projectionFilter, sort, rwMode.readPreference).traverse(traverse).enumerate[BSONDocument]
+    val enumerator = collection.queryAlm(query, projectionFilter, sort, rwMode.readPreference).traverse(traverse).enumerate[BSONDocument]
 
     val enumeratorWithCallback = enumerator.through(fromBsonDocToEvent).onDoneEnumerating({
       val lap = start.lap
@@ -259,7 +261,7 @@ private[almhirt] class MongoEventLogImpl(
   private case object Initialized
   private case class InitializeFailed(prob: Problem)
 
-  def uninitializedReadWrite: Receive = {
+  def uninitializedReadWrite: Receive = startup() {
     case Initialize ⇒
       logInfo("Initializing(read/write)")
 
@@ -295,7 +297,7 @@ private[almhirt] class MongoEventLogImpl(
       logWarning(s"""Received event log message ${m.getClass().getSimpleName()} while uninitialized.""")
   }
 
-  def uninitializedReadOnly: Receive = {
+  def uninitializedReadOnly: Receive = startup() {
     case Initialize ⇒
       logInfo("Initializing(read-only)")
 
@@ -339,7 +341,7 @@ private[almhirt] class MongoEventLogImpl(
       sender() ! FetchEventsFailed(ServiceNotReadyProblem("I'm still initializing."))
   }
 
-  def receiveEventLogMsg: Receive = {
+  def receiveEventLogMsg: Receive = running() {
     case LogEvent(event, acknowledge) ⇒
       commitEvent(event, if (acknowledge) Some(sender()) else None)
 
@@ -368,16 +370,13 @@ private[almhirt] class MongoEventLogImpl(
 
     case m: FetchEvents ⇒
       fetchAndDispatchEvents(m, sender())
-      
-    case m: ActorMessages.ComponentControlMessage =>
-      runningHandler(m)
   }
 
   override def receive =
     if (rwMode.supportsWriting)
-      uninitializedReadWrite orElse startupTerminator
+      uninitializedReadWrite
     else
-      uninitializedReadOnly orElse startupTerminator
+      uninitializedReadOnly
 
   override def preStart() {
     super.preStart()

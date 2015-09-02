@@ -34,9 +34,7 @@ object HerderMessages {
     final case object ReportComponentStates extends ComponentControlMessage
     final case class ComponentStates(states: Seq[(ComponentId, ComponentState)]) extends ComponentControlMessage
   
-    final case class AttemptPause(id: ComponentId) extends ComponentControlMessage
-    final case class AttemptResume(id: ComponentId) extends ComponentControlMessage
-    final case class AttemptRestart(id: ComponentId) extends ComponentControlMessage
+    final case class AttemptComponentControlAction(id: ComponentId, action: almhirt.akkax.ActorMessages.ComponentControlAction) extends ComponentControlMessage
      
   }
 
