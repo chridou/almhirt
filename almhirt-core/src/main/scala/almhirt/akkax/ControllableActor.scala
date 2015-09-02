@@ -11,7 +11,7 @@ trait ControllableActor { me: AlmActor with AlmActorLogging ⇒
   protected implicit class ControllableActorReceiveOps(val rec: Receive) {
     def terminateStartup: Receive = rec orElse startupTerminator
     def terminateStartup(onPrepareShutDownBecome: ⇒ Receive, transitionAction: () ⇒ Unit = () ⇒ {}): Receive = rec orElse startupTerminator(onPrepareShutDownBecome, transitionAction)
-    def terminateRunning: Receive = runningTerminator
+    def terminateRunning: Receive = rec orElse runningTerminator
     def terminateRunningWithPause(onPause: ⇒ Receive): Receive = rec orElse runningTerminatorWithPause(onPause)
     def terminateRunningWithPauseAndPrepareShutdown(onPause: ⇒ Receive, onPrepareShutdown: ⇒ Receive): Receive = rec orElse runningTerminatorWithPauseAndPrepareShutdown(onPause, onPrepareShutdown)
     def terminateRunningWithPauseAndPrepareShutdown(onPause: ⇒ Receive, onPrepareShutdown: ⇒ Receive, transitionAction: () ⇒ Unit): Receive = rec orElse runningTerminatorWithPauseAndPrepareShutdown(onPause, onPrepareShutdown)
