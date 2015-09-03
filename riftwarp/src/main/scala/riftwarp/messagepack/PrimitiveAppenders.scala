@@ -6,7 +6,7 @@ import almhirt.io.BinaryWriter
 object RiftWarpPrimitiveAppenders {
   @inline
   def appendString(v: String, writer: BinaryWriter): BinaryWriter = {
-    val bytes = v.getBytes()
+    val bytes = v.getBytes("UTF-8")
     if (bytes.length < 32) {
       val h = 0xa0 | bytes.length
       writer.writeUnsignedByte(h).writeByteArray(bytes)
