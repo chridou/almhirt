@@ -11,6 +11,8 @@ trait ControllableActor { me: AlmActor with AlmActorLogging ⇒
   protected implicit class ControllableActorReceiveOps(val rec: Receive) {
     def terminateStartup: Receive = rec orElse startupTerminator
     def terminateStartup(onPrepareShutDownBecome: ⇒ Receive, transitionAction: () ⇒ Unit = () ⇒ {}): Receive = rec orElse startupTerminator(onPrepareShutDownBecome, transitionAction)
+    def terminateWaitingForStartSignal: Receive = rec orElse waitingForStartSignalTerminator
+    def terminateWaitingForStartSignal(onPrepareShutDownBecome: ⇒ Receive, transitionAction: () ⇒ Unit = () ⇒ {}): Receive = rec orElse waitingForStartSignalTerminator(onPrepareShutDownBecome, transitionAction)
     def terminateRunning: Receive = rec orElse runningTerminator
     def terminateRunningWithPause(onPause: ⇒ Receive): Receive = rec orElse runningTerminatorWithPause(onPause)
     def terminateRunningWithPauseAndPrepareShutdown(onPause: ⇒ Receive, onPrepareShutdown: ⇒ Receive): Receive = rec orElse runningTerminatorWithPauseAndPrepareShutdown(onPause, onPrepareShutdown)
@@ -23,6 +25,13 @@ trait ControllableActor { me: AlmActor with AlmActorLogging ⇒
     def terminatePauseWithPrepareShutdown2(onResume: ⇒ Receive, onPrepareShutdown: ⇒ Receive, onPrepareShutdownTransitionAction: () ⇒ Unit): Receive = rec orElse pauseTerminatorWithPrepareShutdown2(onResume, onPrepareShutdown, onPrepareShutdownTransitionAction)
     def terminatePauseWithPrepareShutdown3(onResume: ⇒ Receive, onResumeTransitionAction: () ⇒ Unit, onPrepareShutdown: ⇒ Receive): Receive = rec orElse pauseTerminatorWithPrepareShutdown3(onResume, onResumeTransitionAction, onPrepareShutdown)
     def terminatePauseWithPrepareShutdown4(onResume: ⇒ Receive, onPrepareShutdown: ⇒ Receive): Receive = rec orElse pauseTerminatorWithPrepareShutdown4(onResume, onPrepareShutdown)
+    def terminatePreparingForPause: Receive = rec orElse preparingForPauseTerminator
+    def terminatePreparingForPause(onResume: ⇒ Receive): Receive = rec orElse preparingForPauseTerminator(onResume)
+    def terminatePreparingForPause(onResume: ⇒ Receive, onResumeTransitionAction: () ⇒ Unit): Receive = rec orElse preparingForPauseTerminator(onResume, onResumeTransitionAction)
+    def terminatePreparingForPauseWithPrepareShutdown1(onResume: ⇒ Receive, onResumeTransitionAction: () ⇒ Unit, onPrepareShutdown: ⇒ Receive, onPrepareShutdownTransitionAction: () ⇒ Unit): Receive = rec orElse preparingForPauseTerminatorWithPrepareShutdown1(onResume, onResumeTransitionAction, onPrepareShutdown, onPrepareShutdownTransitionAction)
+    def terminatePreparingForPauseWithPrepareShutdown2(onResume: ⇒ Receive, onPrepareShutdown: ⇒ Receive, onPrepareShutdownTransitionAction: () ⇒ Unit): Receive = rec orElse preparingForPauseTerminatorWithPrepareShutdown2(onResume, onPrepareShutdown, onPrepareShutdownTransitionAction)
+    def terminatePreparingForPauseWithPrepareShutdown3(onResume: ⇒ Receive, onResumeTransitionAction: () ⇒ Unit, onPrepareShutdown: ⇒ Receive): Receive = rec orElse preparingForPauseTerminatorWithPrepareShutdown3(onResume, onResumeTransitionAction, onPrepareShutdown)
+    def terminatePreparingForPauseWithPrepareShutdown4(onResume: ⇒ Receive, onPrepareShutdown: ⇒ Receive): Receive = rec orElse preparingForPauseTerminatorWithPrepareShutdown4(onResume, onPrepareShutdown)
     def createTerminateErrorFactory: (almhirt.problem.ProblemCause) ⇒ Receive = problem ⇒ {
       rec orElse createErrorTerminatorFactory(problem)
     }
@@ -56,7 +65,7 @@ trait ControllableActor { me: AlmActor with AlmActorLogging ⇒
   def deregisterComponentControl()(implicit cnp: ActorComponentIdProvider): Unit =
     almhirtContext.tellHerder(HerderMessages.ComponentControlMessages.DeregisterComponentControl(cnp.componentId))
 
-  def startUpHandlerScaffolding(onPrepareShutdown: Option[(ReceiveFun, () ⇒ Unit)]): PartialFunction[ActorMessages.ComponentControlMessage, Unit] = {
+  def startupHandlerScaffolding(onPrepareShutdown: Option[(ReceiveFun, () ⇒ Unit)]): PartialFunction[ActorMessages.ComponentControlMessage, Unit] = {
     case ActorMessages.Pause ⇒
       if (!componentControl.supports(ActorMessages.Pause))
         logWarning("Pause is not supported.")
@@ -88,6 +97,39 @@ trait ControllableActor { me: AlmActor with AlmActorLogging ⇒
       sender() ! ComponentState.Startup
   }
 
+  def waitingForStartSignalHandlerScaffolding(onPrepareShutdown: Option[(ReceiveFun, () ⇒ Unit)]): PartialFunction[ActorMessages.ComponentControlMessage, Unit] = {
+    case ActorMessages.Pause ⇒
+      if (!componentControl.supports(ActorMessages.Pause))
+        logWarning("Pause is not supported.")
+      else
+        logDebug("Pause not possible in state WaitingForStartSignal")
+    case ActorMessages.Resume ⇒
+      if (!componentControl.supports(ActorMessages.Resume))
+        logWarning("Resume is not supported.")
+      else
+        logDebug("Resume not possible in state WaitingForStartSignal")
+    case ActorMessages.Restart ⇒
+      if (!componentControl.supports(ActorMessages.Restart))
+        logWarning("Restart is not supported.")
+      else
+        logDebug("Restart not possible in state WaitingForStartSignal")
+    case ActorMessages.PrepareForShutdown ⇒
+      if (!componentControl.supports(ActorMessages.PrepareForShutdown))
+        logWarning("PrepareForShutdown is not supported.")
+      else {
+        onPrepareShutdown match {
+          case Some((rec, act)) ⇒
+            me.context.become(rec())
+            act()
+          case None ⇒
+            logWarning("Received a supported PrepareForShutdown but there is no handler in state WaitingForStartSignal")
+        }
+      }
+    case ActorMessages.ReportComponentState ⇒
+      sender() ! ComponentState.WaitingForStartSignal
+  }
+
+  
   def runningHandlerScaffolding(onPause: Option[ReceiveFun], onPrepareShutdown: Option[(ReceiveFun, () ⇒ Unit)]): PartialFunction[ActorMessages.ComponentControlMessage, Unit] = {
     case ActorMessages.Pause ⇒
       if (!componentControl.supports(ActorMessages.Pause))
@@ -163,6 +205,45 @@ trait ControllableActor { me: AlmActor with AlmActorLogging ⇒
       sender() ! ComponentState.Paused
   }
 
+  def preparingForPauseHandlerScaffolding(onResume: Option[(ReceiveFun, () ⇒ Unit)], onPrepareShutdown: Option[(ReceiveFun, () ⇒ Unit)]): PartialFunction[ActorMessages.ComponentControlMessage, Unit] = {
+    case ActorMessages.Pause ⇒
+      if (!componentControl.supports(ActorMessages.Pause))
+        logWarning("Pause is not supported.")
+      else
+        logDebug("Pause not possible in state PreparingForPause")
+    case ActorMessages.Resume ⇒
+      if (!componentControl.supports(ActorMessages.Resume))
+        logWarning("Resume is not supported.")
+      else {
+        onResume match {
+          case Some((rec, act)) ⇒
+            me.context.become(rec())
+            act()
+          case None ⇒
+            logWarning("Received a supported Resume but there is no handler in state PreparingForPause")
+        }
+      }
+    case ActorMessages.Restart ⇒
+      if (!componentControl.supports(ActorMessages.Restart))
+        logWarning("Restart is not supported.")
+      else
+        logDebug("Restart not possible in state PreparingForPause")
+    case ActorMessages.PrepareForShutdown ⇒
+      if (!componentControl.supports(ActorMessages.PrepareForShutdown))
+        logWarning("PrepareForShutdown is not supported.")
+      else {
+        onPrepareShutdown match {
+          case Some((rec, act)) ⇒
+            me.context.become(rec())
+            act()
+          case None ⇒
+            logWarning("Received a supported PrepareForShutdown but there is no handler in state PreparingForPause")
+        }
+      }
+    case ActorMessages.ReportComponentState ⇒
+      sender() ! ComponentState.PreparingForPause
+  }
+  
   def errorHandlerScaffolding(onPrepareShutdown: Option[(ReceiveFun, () ⇒ Unit)], onRestart: Option[(ReceiveFun, () ⇒ Unit)])(error: almhirt.problem.ProblemCause): PartialFunction[ActorMessages.ComponentControlMessage, Unit] = {
     case ActorMessages.Pause ⇒
       if (!componentControl.supports(ActorMessages.Pause))
@@ -252,21 +333,36 @@ trait ControllableActor { me: AlmActor with AlmActorLogging ⇒
       sender() ! ComponentState.ReadyForShutdown
   }
 
-  val startUpHandler: PartialFunction[ActorMessages.ComponentControlMessage, Unit] = startUpHandlerScaffolding(None)
-  def startUpHandler(onPrepareShutDownBecome: ReceiveFun, transitionAction: () ⇒ Unit = () ⇒ {}) = startUpHandlerScaffolding(Some(onPrepareShutDownBecome, transitionAction))
+  val startupHandler: PartialFunction[ActorMessages.ComponentControlMessage, Unit] = startupHandlerScaffolding(None)
+  def startupHandler(onPrepareShutDownBecome: ReceiveFun, transitionAction: () ⇒ Unit = () ⇒ {}) = startupHandlerScaffolding(Some(onPrepareShutDownBecome, transitionAction))
   val startupTerminator: Receive = {
     case m: ActorMessages.ComponentControlMessage ⇒
-      startUpHandler(m)
+      startupHandler(m)
   }
   def startupTerminator(onPrepareShutDownBecome: ⇒ Receive, transitionAction: () ⇒ Unit = () ⇒ {}): Receive = {
     case m: ActorMessages.ComponentControlMessage ⇒
-      startUpHandler(() ⇒ onPrepareShutDownBecome, transitionAction)(m)
+      startupHandler(() ⇒ onPrepareShutDownBecome, transitionAction)(m)
   }
 
   def startup()(receive: Receive): Receive = receive.terminateStartup
   def startup(onPrepareShutDownBecome: ⇒ Receive)(receive: Receive): Receive = receive.terminateStartup(onPrepareShutDownBecome)
   def startup(onPrepareShutDownBecome: ⇒ Receive, transitionAction: () ⇒ Unit)(receive: Receive): Receive = receive.terminateStartup(onPrepareShutDownBecome, transitionAction)
 
+  val waitingForStartSignalHandler: PartialFunction[ActorMessages.ComponentControlMessage, Unit] = waitingForStartSignalHandlerScaffolding(None)
+  def waitingForStartSignalHandler(onPrepareShutDownBecome: ReceiveFun, transitionAction: () ⇒ Unit = () ⇒ {}) = waitingForStartSignalHandlerScaffolding(Some(onPrepareShutDownBecome, transitionAction))
+  val waitingForStartSignalTerminator: Receive = {
+    case m: ActorMessages.ComponentControlMessage ⇒
+      waitingForStartSignalHandler(m)
+  }
+  def waitingForStartSignalTerminator(onPrepareShutDownBecome: ⇒ Receive, transitionAction: () ⇒ Unit = () ⇒ {}): Receive = {
+    case m: ActorMessages.ComponentControlMessage ⇒
+      waitingForStartSignalHandler(() ⇒ onPrepareShutDownBecome, transitionAction)(m)
+  }
+
+  def waitingForStartSignal()(receive: Receive): Receive = receive.terminateWaitingForStartSignal
+  def waitingForStartSignal(onPrepareShutDownBecome: ⇒ Receive)(receive: Receive): Receive = receive.terminateWaitingForStartSignal(onPrepareShutDownBecome)
+  def waitingForStartSignal(onPrepareShutDownBecome: ⇒ Receive, transitionAction: () ⇒ Unit)(receive: Receive): Receive = receive.terminateWaitingForStartSignal(onPrepareShutDownBecome, transitionAction)
+  
   val runningHandler: PartialFunction[ActorMessages.ComponentControlMessage, Unit] = runningHandlerScaffolding(None, None)
   def runningHandlerWithPause(onPause: ReceiveFun): PartialFunction[ActorMessages.ComponentControlMessage, Unit] = runningHandlerScaffolding(Some(onPause), None)
   def runningHandlerWithPauseAndPrepareShutdown(onPause: ReceiveFun, onPrepareShutdown: ReceiveFun): PartialFunction[ActorMessages.ComponentControlMessage, Unit] = runningHandlerScaffolding(Some(onPause), Some(onPrepareShutdown, () ⇒ {}))
@@ -295,6 +391,45 @@ trait ControllableActor { me: AlmActor with AlmActorLogging ⇒
   def runningWithPrepareShutdown(onPrepareShutdown: ⇒ Receive)(receive: Receive): Receive = receive.terminateRunningWithPrepareShutdown(onPrepareShutdown, () ⇒ {})
   def runningWithPrepareShutdown(onPrepareShutdown: ⇒ Receive, transitionAction: () ⇒ Unit)(receive: Receive): Receive = receive.terminateRunningWithPrepareShutdown(onPrepareShutdown, transitionAction)
 
+  val preparingForPauseHandler: PartialFunction[ActorMessages.ComponentControlMessage, Unit] = preparingForPauseHandlerScaffolding(None, None)
+  def preparingForPauseHandler(onResume: ⇒ Receive): PartialFunction[ActorMessages.ComponentControlMessage, Unit] = preparingForPauseHandlerScaffolding(Some(() ⇒ onResume, () ⇒ {}), None)
+  def preparingForPauseHandler(onResume: ⇒ Receive, onResumeTransitionAction: () ⇒ Unit): PartialFunction[ActorMessages.ComponentControlMessage, Unit] = preparingForPauseHandlerScaffolding(Some(() ⇒ onResume, onResumeTransitionAction), None)
+  def preparingForPauseHandlerWithPrepareShutdown1(onResume: ⇒ Receive, onResumeTransitionAction: () ⇒ Unit, onPrepareShutdown: ⇒ Receive, onPrepareShutdownTransitionAction: () ⇒ Unit): PartialFunction[ActorMessages.ComponentControlMessage, Unit] = preparingForPauseHandlerScaffolding(Some(() ⇒ onResume, onResumeTransitionAction), Some(() ⇒ onPrepareShutdown, onPrepareShutdownTransitionAction))
+  def preparingForPauseHandlerWithPrepareShutdown2(onResume: ⇒ Receive, onPrepareShutdown: ⇒ Receive, onPrepareShutdownTransitionAction: () ⇒ Unit): PartialFunction[ActorMessages.ComponentControlMessage, Unit] = preparingForPauseHandlerScaffolding(Some(() ⇒ onResume, () ⇒ {}), Some(() ⇒ onPrepareShutdown, onPrepareShutdownTransitionAction))
+  def preparingForPauseHandlerWithPrepareShutdown3(onResume: ⇒ Receive, onResumeTransitionAction: () ⇒ Unit, onPrepareShutdown: ⇒ Receive): PartialFunction[ActorMessages.ComponentControlMessage, Unit] = preparingForPauseHandlerScaffolding(Some(() ⇒ onResume, onResumeTransitionAction), Some(() ⇒ onPrepareShutdown, () ⇒ {}))
+  def preparingForPauseHandlerWithPrepareShutdown4(onResume: ⇒ Receive, onPrepareShutdown: ⇒ Receive): PartialFunction[ActorMessages.ComponentControlMessage, Unit] = preparingForPauseHandlerScaffolding(Some(() ⇒ onResume, () ⇒ {}), Some(() ⇒ onPrepareShutdown, () ⇒ {}))
+
+  val preparingForPauseTerminator: Receive = {
+    case m: ActorMessages.ComponentControlMessage ⇒ preparingForPauseHandlerScaffolding(None, None)(m)
+  }
+  def preparingForPauseTerminator(onResume: ⇒ Receive): Receive = {
+    case m: ActorMessages.ComponentControlMessage ⇒ preparingForPauseHandlerScaffolding(Some(() ⇒ onResume, () ⇒ {}), None)(m)
+  }
+  def preparingForPauseTerminator(onResume: ⇒ Receive, onResumeTransitionAction: () ⇒ Unit): Receive = {
+    case m: ActorMessages.ComponentControlMessage ⇒ preparingForPauseHandlerScaffolding(Some(() ⇒ onResume, onResumeTransitionAction), None)(m)
+  }
+  def preparingForPauseTerminatorWithPrepareShutdown1(onResume: ⇒ Receive, onResumeTransitionAction: () ⇒ Unit, onPrepareShutdown: ⇒ Receive, onPrepareShutdownTransitionAction: () ⇒ Unit): Receive = {
+    case m: ActorMessages.ComponentControlMessage ⇒ preparingForPauseHandlerScaffolding(Some(() ⇒ onResume, onResumeTransitionAction), Some(() ⇒ onPrepareShutdown, onPrepareShutdownTransitionAction))(m)
+  }
+  def preparingForPauseTerminatorWithPrepareShutdown2(onResume: ⇒ Receive, onPrepareShutdown: ⇒ Receive, onPrepareShutdownTransitionAction: () ⇒ Unit): Receive = {
+    case m: ActorMessages.ComponentControlMessage ⇒ preparingForPauseHandlerScaffolding(Some(() ⇒ onResume, () ⇒ {}), Some(() ⇒ onPrepareShutdown, onPrepareShutdownTransitionAction))(m)
+  }
+  def preparingForPauseTerminatorWithPrepareShutdown3(onResume: ⇒ Receive, onResumeTransitionAction: () ⇒ Unit, onPrepareShutdown: ⇒ Receive): Receive = {
+    case m: ActorMessages.ComponentControlMessage ⇒ preparingForPauseHandlerScaffolding(Some(() ⇒ onResume, onResumeTransitionAction), Some(() ⇒ onPrepareShutdown, () ⇒ {}))(m)
+  }
+  def preparingForPauseTerminatorWithPrepareShutdown4(onResume: ⇒ Receive, onPrepareShutdown: ⇒ Receive): Receive = {
+    case m: ActorMessages.ComponentControlMessage ⇒ preparingForPauseHandlerScaffolding(Some(() ⇒ onResume, () ⇒ {}), Some(() ⇒ onPrepareShutdown, () ⇒ {}))(m)
+  }
+
+  def preparingForPause()(receive: Receive): Receive = receive.terminatePreparingForPause
+  def preparingForPause(onResume: ⇒ Receive)(receive: Receive): Receive = receive.terminatePreparingForPause(onResume)
+  def preparingForPause(onResume: ⇒ Receive, onResumeTransitionAction: () ⇒ Unit)(receive: Receive): Receive = receive.terminatePreparingForPause(onResume, onResumeTransitionAction)
+  def preparingForPauseWithPrepareShutdown1(onResume: ⇒ Receive, onResumeTransitionAction: () ⇒ Unit, onPrepareShutdown: ⇒ Receive, onPrepareShutdownTransitionAction: () ⇒ Unit)(receive: Receive): Receive = receive.terminatePreparingForPauseWithPrepareShutdown1(onResume, onResumeTransitionAction, onPrepareShutdown, onPrepareShutdownTransitionAction)
+  def preparingForPauseWithPrepareShutdown2(onResume: ⇒ Receive, onPrepareShutdown: ⇒ Receive, onPrepareShutdownTransitionAction: () ⇒ Unit)(receive: Receive): Receive = receive.terminatePreparingForPauseWithPrepareShutdown2(onResume, onPrepareShutdown, onPrepareShutdownTransitionAction)
+  def preparingForPauseWithPrepareShutdown3(onResume: ⇒ Receive, onResumeTransitionAction: () ⇒ Unit, onPrepareShutdown: ⇒ Receive)(receive: Receive): Receive = receive.terminatePreparingForPauseWithPrepareShutdown3(onResume, onResumeTransitionAction, onPrepareShutdown)
+  def preparingForPauseWithPrepareShutdown4(onResume: ⇒ Receive, onPrepareShutdown: ⇒ Receive)(receive: Receive): Receive = receive.terminatePreparingForPauseWithPrepareShutdown4(onResume, onPrepareShutdown)
+  
+  
   val pauseHandler: PartialFunction[ActorMessages.ComponentControlMessage, Unit] = pauseHandlerScaffolding(None, None)
   def pauseHandler(onResume: ⇒ Receive): PartialFunction[ActorMessages.ComponentControlMessage, Unit] = pauseHandlerScaffolding(Some(() ⇒ onResume, () ⇒ {}), None)
   def pauseHandler(onResume: ⇒ Receive, onResumeTransitionAction: () ⇒ Unit): PartialFunction[ActorMessages.ComponentControlMessage, Unit] = pauseHandlerScaffolding(Some(() ⇒ onResume, onResumeTransitionAction), None)
