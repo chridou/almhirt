@@ -48,10 +48,10 @@ trait ControllableActor { me: AlmActor with AlmActorLogging ⇒
     def terminateReadyForShutdown: Receive = rec orElse readyForShutdownTerminator
   }
 
-  def componentControl: ComponentControl 
+  def componentControl: LocalComponentControl 
 
   def registerComponentControl()(implicit cnp: ActorComponentIdProvider): Unit =
-    almhirtContext.tellHerder(HerderMessages.ComponentControlMessages.RegisterComponentControl(cnp.componentId, componentControl))
+    almhirtContext.tellHerder(HerderMessages.ComponentControlMessages.RegisterComponentControl(cnp.componentId, componentControl.toRestrictedComponentControl))
 
   def deregisterComponentControl()(implicit cnp: ActorComponentIdProvider): Unit =
     almhirtContext.tellHerder(HerderMessages.ComponentControlMessages.DeregisterComponentControl(cnp.componentId))
