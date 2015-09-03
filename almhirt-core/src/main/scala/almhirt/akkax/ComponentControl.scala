@@ -11,7 +11,9 @@ sealed trait ComponentState
 
 object ComponentState {
   case object Startup extends ComponentState
+  case object WaitingForStartSignal extends ComponentState
   case object Running extends ComponentState
+  case object PreparingForPaused extends ComponentState
   case object Paused extends ComponentState
   final case class Error(cause: almhirt.problem.ProblemCause) extends ComponentState
   case object PreparingForShutdown extends ComponentState

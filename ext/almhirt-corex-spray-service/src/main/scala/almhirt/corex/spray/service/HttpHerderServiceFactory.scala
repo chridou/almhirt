@@ -163,7 +163,7 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
               }
             }
           }
-        }  ~ pathPrefix("component-controls") {
+        } ~ pathPrefix("component-controls") {
           pathEnd {
             parameter('ui.?) { uiEnabledP ⇒
               val isUiEnabled =
@@ -214,7 +214,7 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
                 get { ctx ⇒
                   val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
                   herder ! ComponentControlMessages.AttemptComponentControlAction(ComponentId(AppName(appName), ComponentName(componentName)), ActorMessages.Restart)
-                 ctx.complete(StatusCodes.Accepted, s"attempting to restart $componentName")
+                  ctx.complete(StatusCodes.Accepted, s"attempting to restart $componentName")
                 }
               }
             }
@@ -480,18 +480,22 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
       </body>
     </html>
   }
-  
+
   private def createComponentsContent(state: Seq[(ComponentId, ComponentState)], isReport: Boolean) = {
     def createStateItem(state: ComponentState) = {
       state match {
         case ComponentState.Startup ⇒
           <td style="background-color:yellow">Startup</td>
+        case ComponentState.WaitingForStartSignal ⇒
+          <td style="background-color:yellowgreen">Waiting for start signal</td>
         case ComponentState.Running ⇒
           <td style="background-color:green">Running</td>
+        case ComponentState.PreparingForPaused ⇒
+          <td style="background-color:orange">Preparing for pause</td>
         case ComponentState.Paused ⇒
-          <td style="background-color:orange">Paused</td>
+          <td style="background-color:orangered">Paused</td>
         case ComponentState.PreparingForShutdown ⇒
-          <td style="background-color:MediumBlue">Preparing for shutdown</td>
+          <td style="background-color:mediumblue">Preparing for shutdown</td>
         case ComponentState.ReadyForShutdown ⇒
           <td style="background-color:LightBlue">READY FOR SHUTDOWN</td>
         case ComponentState.Error(cause) ⇒
@@ -501,9 +505,13 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
 
     def createPauseAction(component: ComponentId, state: ComponentState) = {
       state match {
+        case ComponentState.PreparingForPaused ⇒
+          <td>no action</td>
         case ComponentState.Paused ⇒
           <td>no action</td>
         case ComponentState.Startup ⇒
+          <td>no action</td>
+        case ComponentState.WaitingForStartSignal ⇒
           <td>no action</td>
         case ComponentState.Running ⇒
           val att = new UnprefixedAttribute("href", s"./component-controls/${component.app.value}/${component.component.value}/attempt-pause", xml.Null)
@@ -520,10 +528,16 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
 
     def createResumeAction(component: ComponentId, state: ComponentState) = {
       state match {
+        case ComponentState.PreparingForPaused ⇒
+          val att = new UnprefixedAttribute("href", s"./component-controls/${component.app.value}/${component.component.value}/attempt-resume", xml.Null)
+          val anchor = Elem(null, "a", att, TopScope, true, Text("resume"))
+          <td>{ anchor }</td>
         case ComponentState.Paused ⇒
           val att = new UnprefixedAttribute("href", s"./component-controls/${component.app.value}/${component.component.value}/attempt-resume", xml.Null)
           val anchor = Elem(null, "a", att, TopScope, true, Text("resume"))
           <td>{ anchor }</td>
+        case ComponentState.WaitingForStartSignal ⇒
+          <td>no action</td>
         case ComponentState.Startup ⇒
           <td>no action</td>
         case ComponentState.Running ⇒
@@ -539,9 +553,13 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
 
     def createRestartAction(component: ComponentId, state: ComponentState) = {
       state match {
+        case ComponentState.PreparingForPaused ⇒
+          <td>no action</td>
         case ComponentState.Paused ⇒
           <td>no action</td>
         case ComponentState.Startup ⇒
+          <td>no action</td>
+        case ComponentState.WaitingForStartSignal ⇒
           <td>no action</td>
         case ComponentState.Running ⇒
           <td>no action</td>
@@ -556,13 +574,21 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
       }
     }
 
-   def createPrepareForShutdownAction(component: ComponentId, state: ComponentState) = {
+    def createPrepareForShutdownAction(component: ComponentId, state: ComponentState) = {
       state match {
+        case ComponentState.PreparingForPaused ⇒
+          val att = new UnprefixedAttribute("href", s"./component-controls/${component.app.value}/${component.component.value}/attempt-prepare-shutdown", xml.Null)
+          val anchor = Elem(null, "a", att, TopScope, true, Text("prepare shutdown"))
+          <td>{ anchor }</td>
         case ComponentState.Paused ⇒
           val att = new UnprefixedAttribute("href", s"./component-controls/${component.app.value}/${component.component.value}/attempt-prepare-shutdown", xml.Null)
           val anchor = Elem(null, "a", att, TopScope, true, Text("prepare shutdown"))
           <td>{ anchor }</td>
         case ComponentState.Startup ⇒
+          val att = new UnprefixedAttribute("href", s"./component-controls/${component.app.value}/${component.component.value}/attempt-prepare-shutdown", xml.Null)
+          val anchor = Elem(null, "a", att, TopScope, true, Text("prepare shutdown"))
+          <td>{ anchor }</td>
+        case ComponentState.WaitingForStartSignal ⇒
           val att = new UnprefixedAttribute("href", s"./component-controls/${component.app.value}/${component.component.value}/attempt-prepare-shutdown", xml.Null)
           val anchor = Elem(null, "a", att, TopScope, true, Text("prepare shutdown"))
           <td>{ anchor }</td>
@@ -580,8 +606,8 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
           <td>{ anchor }</td>
       }
     }
-    
-   def createRow(component: ComponentId, state: ComponentState, isReport: Boolean) = {
+
+    def createRow(component: ComponentId, state: ComponentState, isReport: Boolean) = {
       if (!isReport) {
         <tr>
           <td>{ component.app.value }</td>
@@ -600,7 +626,7 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
         </tr>
       }
     }
-   
+
     if (isReport) {
       <table border="1">
         <tr>
