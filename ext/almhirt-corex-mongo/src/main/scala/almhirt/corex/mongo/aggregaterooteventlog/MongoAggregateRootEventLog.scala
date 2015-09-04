@@ -31,7 +31,6 @@ object MongoAggregateRootEventLog {
     deserializeAggregateRootEvent: BSONDocument ⇒ AlmValidation[AggregateRootEvent],
     writeWarnThreshold: FiniteDuration,
     readWarnThreshold: FiniteDuration,
-    circuitControlSettings: CircuitControlSettings,
     retrySettings: RetrySettings,
     rwMode: ReadWriteMode.SupportsReading)(implicit ctx: AlmhirtContext): Props =
     Props(new MongoAggregateRootEventLogImpl(
@@ -41,7 +40,6 @@ object MongoAggregateRootEventLog {
       deserializeAggregateRootEvent,
       writeWarnThreshold,
       readWarnThreshold,
-      circuitControlSettings,
       retrySettings,
       rwMode))
 
@@ -58,7 +56,6 @@ object MongoAggregateRootEventLog {
       collectionName ← section.v[String]("collection-name")
       writeWarnThreshold ← section.v[FiniteDuration]("write-warn-threshold")
       readWarnThreshold ← section.v[FiniteDuration]("read-warn-threshold")
-      circuitControlSettings ← section.v[CircuitControlSettings]("circuit-control")
       retrySettings ← section.v[RetrySettings]("retry-settings")
       readOnly ← section.v[Boolean]("read-only")
       rwMode ← section.v[ReadWriteMode.SupportsReading]("read-write-mode")
@@ -69,7 +66,6 @@ object MongoAggregateRootEventLog {
       deserializeAggregateRootEvent,
       writeWarnThreshold,
       readWarnThreshold,
-      circuitControlSettings,
       retrySettings,
       rwMode)).leftMap(p ⇒ ConfigurationProblem(s"""Failed to configure MongoAggregateRootEventLog @$path.""", cause = Some(p)))
   }
@@ -103,7 +99,6 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
     deserializeAggregateRootEvent: BSONDocument ⇒ AlmValidation[AggregateRootEvent],
     writeWarnThreshold: FiniteDuration,
     readWarnThreshold: FiniteDuration,
-    circuitControlSettings: CircuitControlSettings,
     retrySettings: RetrySettings,
     rwMode: ReadWriteMode.SupportsReading)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging with ControllableActor {
 
@@ -116,8 +111,6 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
 
   implicit val defaultExecutor = almhirtContext.futuresContext
   val serializationExecutor = almhirtContext.futuresContext
-
-  val circuitBreaker = AlmCircuitBreaker(circuitControlSettings, almhirtContext.futuresContext, context.system.scheduler)
 
   val projectionFilter = BSONDocument("event" → 1)
 
@@ -175,7 +168,7 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
   def commitEvent(event: AggregateRootEvent, respondTo: ActorRef) {
     (for {
       serialized ← AlmFuture { aggregateRootEventToDocument(event: AggregateRootEvent) }(serializationExecutor)
-      storeRes ← circuitBreaker.fused(storeEvent(serialized))
+      storeRes ← storeEvent(serialized)
     } yield storeRes) onComplete (
       fail ⇒ {
         logError(s"Could not commit aggregate root event:\n$fail")
@@ -276,7 +269,6 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
 
     case Initialized ⇒
       logInfo("Initialized")
-      registerCircuitControl(circuitBreaker)
       context.become(receiveAggregateRootEventLogMsg)
 
     case InitializeFailed(prob) ⇒
@@ -325,7 +317,6 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
 
     case Initialized ⇒
       logInfo("Initialized")
-      registerCircuitControl(circuitBreaker)
       context.become(receiveAggregateRootEventLogMsg)
 
     case InitializeFailed(prob) ⇒
@@ -390,7 +381,6 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
 
   override def postStop() {
     super.postStop()
-    deregisterCircuitControl()
     deregisterComponentControl()
   }
 
