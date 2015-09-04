@@ -139,35 +139,41 @@ private[almhirt] class MongoEventLogImpl(
   def storeEvent(document: BSONDocument, writeConcern: WriteConcernAlm): AlmFuture[Deadline] = {
     val collection = db(collectionName)
     val start = Deadline.now
-    for {
-      writeResult ← collection.insert(document, writeConcern = writeConcern).toAlmFuture
-      _ ← if (writeResult.ok)
-        AlmFuture.successful(())
-      else {
-        val msg = writeResult.errmsg.getOrElse("unknown error")
-        AlmFuture.failed(PersistenceProblem(msg))
-      }
-    } yield start
+    collection.insert(document, writeConcern = writeConcern).map(_ ⇒ start)
   }
 
-  def commitEvent(event: Event, respondTo: Option[ActorRef]) {
+  def commitEvent(event: Event, respondTo: Option[ActorRef]): Unit = {
+    def handleFailure(problem: Problem): Problem = {
+      reportMissedEvent(event, MajorSeverity, problem)
+      reportMajorFailure(problem)
+      PersistenceProblem(s"Could not log event with id ${event.eventId.value}.", cause = Some(problem))
+    }
+
+    import almhirt.problem._
     (for {
       serialized ← AlmFuture { eventToDocument(event: Event) }(serializationExecutor)
       storeRes ← rwMode.useForWriteOp { writeConcern ⇒ storeEvent(serialized, writeConcern) }
     } yield storeRes) onComplete (
       fail ⇒ {
-        val msg = s"Could not log event with id ${event.eventId.value}:\n$fail"
-
-        reportMissedEvent(event, MajorSeverity, fail)
-        reportMajorFailure(fail)
-
-        respondTo match {
-          case Some(r) ⇒
-            logWarning(msg)
-            r ! EventNotLogged(event.eventId, PersistenceProblem(msg, cause = Some(fail)))
-          case None ⇒
-            logError(msg)
+        val resProb = fail match {
+          case ExceptionCaughtProblem(p) ⇒
+            p.cause match {
+              case Some(CauseIsThrowable(HasAThrowable(dbexn: reactivemongo.core.errors.DatabaseException))) ⇒
+                if (dbexn.code == Some(11000)) {
+                  logWarning(s"Event already exists(${event.eventId.value})")
+                  AlreadyExistsProblem(s"Event already exists(${event.eventId.value})", cause = Some(p))
+                } else {
+                  handleFailure(p)
+                }
+              case _ ⇒ {
+                handleFailure(p)
+              }
+            }
+          case p ⇒ {
+            handleFailure(p)
+          }
         }
+        respondTo.foreach(_ ! EventNotLogged(event.eventId, resProb))
       },
       start ⇒ {
         val lap = start.lap
