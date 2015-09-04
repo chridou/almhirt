@@ -190,7 +190,7 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
                 get { ctx ⇒
                   val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
                   herder ! ComponentControlMessages.AttemptComponentControlAction(ComponentId(AppName(appName), ComponentName(componentName)), ActorMessages.Pause)
-                  ctx.complete(StatusCodes.Accepted, s"attempting to pause $componentName")
+                  ctx.complete(StatusCodes.Accepted, <div><br>s"attempting to pause $componentName"</br><br><a href="/herder">Dashboard</a></br></div>)
                 }
               }
             } ~ pathPrefix("attempt-resume") {
@@ -198,7 +198,7 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
                 get { ctx ⇒
                   val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
                   herder ! ComponentControlMessages.AttemptComponentControlAction(ComponentId(AppName(appName), ComponentName(componentName)), ActorMessages.Resume)
-                  ctx.complete(StatusCodes.Accepted, s"attempting to resume $componentName")
+                  ctx.complete(StatusCodes.Accepted, <div><br>s"attempting to resume $componentName"</br><br><a href="/herder">Dashboard</a></br></div>)
                 }
               }
             } ~ pathPrefix("attempt-prepare-shutdown") {
@@ -206,7 +206,7 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
                 get { ctx ⇒
                   val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
                   herder ! ComponentControlMessages.AttemptComponentControlAction(ComponentId(AppName(appName), ComponentName(componentName)), ActorMessages.PrepareForShutdown)
-                  ctx.complete(StatusCodes.Accepted, s"attempting to resume $componentName")
+                  ctx.complete(StatusCodes.Accepted, <div><br>s"attempting to shutdown $componentName"</br><br><a href="/herder">Dashboard</a></br></div>)
                 }
               }
             } ~ pathPrefix("attempt-restart") {
@@ -214,7 +214,7 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
                 get { ctx ⇒
                   val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
                   herder ! ComponentControlMessages.AttemptComponentControlAction(ComponentId(AppName(appName), ComponentName(componentName)), ActorMessages.Restart)
-                  ctx.complete(StatusCodes.Accepted, s"attempting to restart $componentName")
+                  ctx.complete(StatusCodes.Accepted, <div><br>s"attempting to restart $componentName"</br><br><a href="/herder">Dashboard</a></br></div>)
                 }
               }
             }
@@ -608,6 +608,7 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
     }
 
     def createRow(component: ComponentId, state: ComponentState, isReport: Boolean) = {
+      // Yes, they do the same...  
       if (!isReport) {
         <tr>
           <td>{ component.app.value }</td>
@@ -623,10 +624,15 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
           <td>{ component.app.value }</td>
           <td>{ component.component.value }</td>
           { createStateItem(state) }
+          { createPauseAction(component, state) }
+          { createResumeAction(component, state) }
+          { createRestartAction(component, state) }
+          { createPrepareForShutdownAction(component, state) }
         </tr>
       }
     }
 
+    // Yes, they do the same... 
     if (isReport) {
       <table border="1">
         <tr>
@@ -641,9 +647,9 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
         <tr>
           <th>App</th>
           <th>Component</th>
-          <th colspan="4">Actions</th>
+          <th>Component State</th>
         </tr>
-        { state.map { case (component, state) ⇒ createRow(component, state, false) } }
+        { state.map { case (component, state) ⇒ createRow(component, state, true) } }
       </table>
     }
   }
