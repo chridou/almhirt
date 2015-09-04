@@ -22,8 +22,6 @@ object EventLogWriter {
     eventLogToResolve: ToResolve,
     resolveSettings: ResolveSettings,
     warningThreshold: FiniteDuration,
-    circuitControlSettings: CircuitControlSettings,
-    circuitStateReportingInterval: Option[FiniteDuration],
     eventlogCallTimeout: FiniteDuration,
     storeEventRetrySettings: RetryPolicyExt,
     autoConnect: Boolean = false)(implicit ctx: AlmhirtContext): Props = {
@@ -32,8 +30,6 @@ object EventLogWriter {
       resolveSettings,
       warningThreshold,
       autoConnect,
-      circuitControlSettings,
-      circuitStateReportingInterval,
       eventlogCallTimeout,
       storeEventRetrySettings))
   }
@@ -49,11 +45,9 @@ object EventLogWriter {
         for {
           warningThreshold ← section.v[FiniteDuration]("warning-threshold")
           resolveSettings ← section.v[ResolveSettings]("resolve-settings")
-          circuitControlSettings ← section.v[CircuitControlSettings]("circuit-control")
-          circuitStateReportingInterval ← section.magicOption[FiniteDuration]("circuit-state-reporting-interval")
           storeEventRetrySettings ← section.v[RetryPolicyExt]("store-event-retry-settings")
           eventlogCallTimeout ← section.v[FiniteDuration]("event-log-call-timeout")
-        } yield propsRaw(ResolvePath(eventlogPath), resolveSettings, warningThreshold, circuitControlSettings, circuitStateReportingInterval, eventlogCallTimeout, storeEventRetrySettings, autoConnect)
+        } yield propsRaw(ResolvePath(eventlogPath), resolveSettings, warningThreshold, eventlogCallTimeout, storeEventRetrySettings, autoConnect)
       } else {
         ActorDevNullSubscriberWithAutoSubscribe.props[Event](1, if (autoConnect) Some(ctx.eventStream) else None).success
       }
@@ -72,8 +66,6 @@ private[almhirt] class EventLogWriterImpl(
     resolveSettings: ResolveSettings,
     warningThreshold: FiniteDuration,
     autoConnect: Boolean,
-    circuitControlSettings: CircuitControlSettings,
-    circuitStateReportingInterval: Option[FiniteDuration],
     eventlogCallTimeout: FiniteDuration,
     storeEventRetrySettings: RetryPolicyExt)(implicit override val almhirtContext: AlmhirtContext) extends ActorSubscriber with AlmActor with AlmActorLogging with ActorLogging with ControllableActor {
   import almhirt.eventlog.EventLog
@@ -85,21 +77,15 @@ private[almhirt] class EventLogWriterImpl(
 
   override val requestStrategy = ZeroRequestStrategy
 
-  val circuitBreaker = AlmCircuitBreaker(circuitControlSettings, almhirtContext.futuresContext, context.system.scheduler)
-
   private case object AutoConnect
   private case object Resolve
-  private case object DisplayCircuitState
 
   def receiveResolve: Receive = startup() {
     case Resolve ⇒
-      registerComponentControl()
       context.resolveSingle(eventLogToResolve, resolveSettings, None, Some("event-log-resolver"))
 
     case ActorMessages.ResolvedSingle(eventlog, _) ⇒
       logInfo("Found event log.")
-
-      registerCircuitControl(circuitBreaker)
 
       if (autoConnect)
         self ! AutoConnect
@@ -122,9 +108,19 @@ private[almhirt] class EventLogWriterImpl(
     case ActorSubscriberMessage.OnNext(event: Event) ⇒
       if (!event.header.noLoggingSuggested) {
         val start = Deadline.now
-        val f = circuitBreaker.fused {
+        val f = {
           this.retryFuture(storeEventRetrySettings) {
-            (eventLog ? EventLog.LogEvent(event, true))(eventlogCallTimeout).mapCastTo[EventLog.LogEventResponse]
+            (eventLog ? EventLog.LogEvent(event, true))(eventlogCallTimeout).mapCastTo[EventLog.LogEventResponse].foldV(
+              fail ⇒ {
+                fail match {
+                  case AlreadyExistsProblem(p) ⇒
+                    logWarning(s"Event event ${event.eventId} already existed. This can happen when a write operation timed out but the event was stored afterwards by the storage.")
+                    EventLog.EventLogged(event.eventId).success
+                  case _ ⇒
+                    fail.failure
+                }
+              },
+              succ ⇒ succ.success)
           }
         }.onComplete({
           case scalaz.Failure(problem) ⇒
@@ -152,52 +148,18 @@ private[almhirt] class EventLogWriterImpl(
       logError(s"Could not log event '${id.value}':\n$problem")
       reportMajorFailure(problem)
       request(1)
-
-    case m: ActorMessages.CircuitAllWillFail ⇒
-      context.become(receiveCircuitOpen(eventLog))
-      self ! DisplayCircuitState
-
-    case DisplayCircuitState ⇒
-      if (log.isInfoEnabled)
-        circuitBreaker.state.onSuccess(s ⇒ log.info(s"Circuit state: $s"))
-  }
-
-  def receiveCircuitOpen(eventLog: ActorRef): Receive = running() {
-    case ActorSubscriberMessage.OnNext(event: Event) ⇒
-      reportMissedEvent(event, MajorSeverity, CircuitOpenProblem())
-      request(1)
-
-    case EventLog.EventLogged(id) ⇒
-      request(1)
-
-    case EventLog.EventNotLogged(id, problem) ⇒
-      logError(s"Could not log event '${id.value}':\n$problem")
-      reportMajorFailure(problem)
-      request(1)
-
-    case m: ActorMessages.CircuitNotAllWillFail ⇒
-      context.become(receiveCircuitClosed(eventLog))
-      self ! DisplayCircuitState
-
-    case DisplayCircuitState ⇒
-      if (log.isInfoEnabled) {
-        circuitBreaker.state.onSuccess(s ⇒ logInfo(s"Circuit state: $s"))
-        circuitStateReportingInterval.foreach(interval ⇒
-          context.system.scheduler.scheduleOnce(interval, self, DisplayCircuitState))
-      }
   }
 
   override def receive: Receive = receiveResolve
 
   override def preStart() {
-    circuitBreaker.defaultActorListeners(self)
-      .onWarning((n, max) ⇒ logWarning(s"$n failures in a row. $max will cause the circuit to open."))
-
+    super.preStart()
+    registerComponentControl()
     self ! Resolve
   }
 
   override def postStop() {
+    super.postStop()
     deregisterComponentControl()
-    deregisterCircuitControl()
   }
 } 
