@@ -29,7 +29,6 @@ object MongoEventLog {
     deserializeEvent: BSONDocument ⇒ AlmValidation[Event],
     writeWarnThreshold: FiniteDuration,
     readWarnThreshold: FiniteDuration,
-    circuitControlSettings: CircuitControlSettings,
     initializeRetrySettings: RetryPolicyExt,
     rwMode: ReadWriteMode.SupportsReading)(implicit ctx: AlmhirtContext): Props =
     Props(new MongoEventLogImpl(
@@ -39,7 +38,6 @@ object MongoEventLog {
       deserializeEvent,
       writeWarnThreshold,
       readWarnThreshold,
-      circuitControlSettings,
       initializeRetrySettings,
       rwMode))
 
@@ -56,7 +54,6 @@ object MongoEventLog {
       collectionName ← section.v[String]("collection-name")
       writeWarnThreshold ← section.v[FiniteDuration]("write-warn-threshold")
       readWarnThreshold ← section.v[FiniteDuration]("read-warn-threshold")
-      circuitControlSettings ← section.v[CircuitControlSettings]("circuit-control")
       initializeRetrySettings ← section.v[RetryPolicyExt]("initialize-retry-settings")
       rwMode ← section.v[ReadWriteMode.SupportsReading]("read-write-mode")
     } yield propsRaw(
@@ -66,7 +63,6 @@ object MongoEventLog {
       deserializeEvent,
       writeWarnThreshold,
       readWarnThreshold,
-      circuitControlSettings,
       initializeRetrySettings,
       rwMode)).leftMap(p ⇒ ConfigurationProblem(s"""Failed to configure MongoEventLog @$path.""", cause = Some(p)))
   }
@@ -99,7 +95,6 @@ private[almhirt] class MongoEventLogImpl(
     deserializeEvent: BSONDocument ⇒ AlmValidation[Event],
     writeWarnThreshold: FiniteDuration,
     readWarnThreshold: FiniteDuration,
-    circuitControlSettings: CircuitControlSettings,
     initializeRetrySettings: RetryPolicyExt,
     rwMode: ReadWriteMode.SupportsReading)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging with ControllableActor {
   import EventLog._
@@ -112,8 +107,6 @@ private[almhirt] class MongoEventLogImpl(
 
   implicit val defaultExecutor = almhirtContext.futuresContext
   val serializationExecutor = almhirtContext.futuresContext
-
-  val circuitBreaker = AlmCircuitBreaker(circuitControlSettings, almhirtContext.futuresContext, context.system.scheduler)
 
   val projectionFilter = BSONDocument("event" → 1)
 
@@ -160,7 +153,7 @@ private[almhirt] class MongoEventLogImpl(
   def commitEvent(event: Event, respondTo: Option[ActorRef]) {
     (for {
       serialized ← AlmFuture { eventToDocument(event: Event) }(serializationExecutor)
-      storeRes ← rwMode.useForWriteOp { writeConcern ⇒ circuitBreaker.fused(storeEvent(serialized, writeConcern)) }
+      storeRes ← rwMode.useForWriteOp { writeConcern ⇒ storeEvent(serialized, writeConcern) }
     } yield storeRes) onComplete (
       fail ⇒ {
         val msg = s"Could not log event with id ${event.eventId.value}:\n$fail"
@@ -282,7 +275,6 @@ private[almhirt] class MongoEventLogImpl(
 
     case Initialized ⇒
       logInfo("Initialized")
-      registerCircuitControl(circuitBreaker)
       context.become(receiveEventLogMsg)
 
     case InitializeFailed(prob) ⇒
@@ -319,7 +311,6 @@ private[almhirt] class MongoEventLogImpl(
 
     case Initialized ⇒
       logInfo("Initialized")
-      registerCircuitControl(circuitBreaker)
       context.become(receiveEventLogMsg)
 
     case InitializeFailed(prob) ⇒
@@ -385,7 +376,6 @@ private[almhirt] class MongoEventLogImpl(
   }
 
   override def postStop() {
-    deregisterCircuitControl()
     deregisterComponentControl()
   }
 
