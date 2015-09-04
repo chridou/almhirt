@@ -1556,18 +1556,18 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
 
   def createSeverityItem(severity: almhirt.problem.Severity) = {
     severity match {
-      case almhirt.problem.Minor    ⇒ <div style="background-color:#F2D30C;height:100%">Minor</div>
-      case almhirt.problem.Major    ⇒ <div style="background-color:#F2960C;height:100%">Major</div>
-      case almhirt.problem.Critical ⇒ <div style="background-color:#F22B0C;height:100%">Critical</div>
+      case almhirt.problem.Minor    ⇒ <div style="background-color:yellow;height:100%">Minor</div>
+      case almhirt.problem.Major    ⇒ <div style="background-color:orange;height:100%">Major</div>
+      case almhirt.problem.Critical ⇒ <div style="background-color:red;height:100%">Critical</div>
     }
   }
 
   def createImportanceItem(importance: Importance) = {
     importance match {
-      case Importance.NotWorthMentioning ⇒ <div style="background-color:#D2E3A1;height:100%">NotWorthMentioning</div>
-      case Importance.Mentionable        ⇒ <div style="background-color:#F2D30C;height:100%">Mentionable</div>
-      case Importance.Important          ⇒ <div style="background-color:#F2960C;height:100%">Important</div>
-      case Importance.VeryImportant      ⇒ <div style="background-color:#F22B0C;height:100%">VeryImportant</div>
+      case Importance.NotWorthMentioning ⇒ <div style="background-color:lightgray;height:100%">NotWorthMentioning</div>
+      case Importance.Mentionable        ⇒ <div style="background-color:lightgreen;height:100%">Mentionable</div>
+      case Importance.Important          ⇒ <div style="background-color:orange;height:100%">Important</div>
+      case Importance.VeryImportant      ⇒ <div style="background-color:red;height:100%">VeryImportant</div>
     }
   }
 
