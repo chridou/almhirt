@@ -15,7 +15,7 @@ object BuildSettings {
   val scalatestVersion = "2.2.5"
   val sprayVersion = "1.3.3"
   val scalazVersion = "7.1.3"
-  val reactiveMongoVersion = "0.11.6"
+  val reactiveMongoVersion = "0.11.7"
    
   val buildSettings = Defaults.defaultSettings ++ releaseSettings ++ Seq (
 	organization := buildOrganization,
