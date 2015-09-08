@@ -17,10 +17,19 @@ object ResolveSettings {
 }
 
 sealed trait ToResolve
-final case class NoResolvingRequired(actorRef: ActorRef) extends ToResolve
+final case class NoResolvingRequired(actorRef: ActorRef) extends ToResolve {
+  override def toString() =
+    s"NoResolvingRequired(${actorRef.path})"
+}
 sealed trait ToReallyResolve extends ToResolve
-final case class ResolvePath(path: ActorPath) extends ToReallyResolve
-final case class ResolveSelection(selection: ActorSelection) extends ToReallyResolve
+final case class ResolvePath(path: ActorPath) extends ToReallyResolve {
+  override def toString() =
+    s"ResolvePath(${path})"
+}
+final case class ResolveSelection(selection: ActorSelection) extends ToReallyResolve {
+  override def toString() =
+    s"ResolveSelection(${selection.pathString})"
+}
 
 object SingleResolver {
   def props(toResolve: ToResolve, settings: ResolveSettings, correlationId: Option[CorrelationId]): Props =
@@ -36,7 +45,7 @@ private[almhirt] class SingleResolverImpl(toResolve: ToResolve, resolveWait: Fin
 
   implicit val execCtx = context.dispatcher
 
-  private object Resolve
+  private case object Resolve
   private case class Resolved(actor: ActorRef)
   private case class NotResolved(ex: Throwable)
 
@@ -47,12 +56,12 @@ private[almhirt] class SingleResolverImpl(toResolve: ToResolve, resolveWait: Fin
       case r: ToReallyResolve ⇒
         val selection =
           r match {
-            case ResolvePath(path) ⇒ context.actorSelection(path)
+            case ResolvePath(path)           ⇒ context.actorSelection(path)
             case ResolveSelection(selection) ⇒ selection
           }
         selection.resolveOne(resolveWait).onComplete {
           case scala.util.Success(actor) ⇒ self ! Resolved(actor)
-          case scala.util.Failure(exn) ⇒ handleFailedAttempt(started, attempt, exn)
+          case scala.util.Failure(exn)   ⇒ handleFailedAttempt(started, attempt, exn)
         }(context.dispatcher)
     }
   }
@@ -71,8 +80,11 @@ private[almhirt] class SingleResolverImpl(toResolve: ToResolve, resolveWait: Fin
       context.stop(self)
   }
 
-
   def handleFailedAttempt(started: Deadline, attempt: Int, exn: Throwable) {
+    if (log.isWarningEnabled) {
+      log.warning(s"An attempt(#$attempt) to resolve ${toResolve} failed: ${exn.getMessage}")
+    }
+
     val isLoopFinalFailure =
       retrySettings match {
         case TimeLimitedRetrySettings(_, limit, _) ⇒
@@ -86,8 +98,8 @@ private[almhirt] class SingleResolverImpl(toResolve: ToResolve, resolveWait: Fin
         case None ⇒
           self ! NotResolved(exn)
         case Some(pause) ⇒
-          if (log.isWarningEnabled)
-            log.warning(s"""	|Resolve $toResolve:
+          if (log.isErrorEnabled)
+            log.error(s"""	|Resolve $toResolve:
 								|Failed after $attempt attempts and ${started.lap.defaultUnitString}
 								|Will pause for ${retrySettings.infiniteLoopPause.map(_.defaultUnitString).getOrElse("?")}
 								|The exception was:
@@ -98,7 +110,7 @@ private[almhirt] class SingleResolverImpl(toResolve: ToResolve, resolveWait: Fin
       context.system.scheduler.scheduleOnce(retrySettings.pause, self, Resolve)
     }
   }
-  
+
   def receive: Receive = receiveResolve(Deadline.now, 1)
 
   override def preStart() {
@@ -107,7 +119,7 @@ private[almhirt] class SingleResolverImpl(toResolve: ToResolve, resolveWait: Fin
 }
 
 private[almhirt] class MultiResolverImpl(toResolve: Map[String, ToResolve], settings: ResolveSettings, correlationId: Option[CorrelationId]) extends Actor with ActorLogging {
-  private object Resolve
+  private case object Resolve
 
   var resolvedActors: Map[String, ActorRef] = Map.empty
 

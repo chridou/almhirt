@@ -25,9 +25,9 @@ private[almhirt] class RetryActorImpl[T](
   onFinalFailure: (FiniteDuration, Int, Problem) ⇒ Unit) extends Actor {
 
   implicit val execCtx = context.dispatcher
-  private object Retry
-  private object RetrySucceeded
-  private object RetryFinallyFailed
+  private case object Retry
+  private case object RetrySucceeded
+  private case object RetryFinallyFailed
 
   def handleFailedAttempt(started: Deadline, attempt: Int)(problem: Problem) {
     val isLoopFinalFailure =
