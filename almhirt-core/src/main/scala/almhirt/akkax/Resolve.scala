@@ -18,15 +18,18 @@ object ResolveSettings {
 
 sealed trait ToResolve
 final case class NoResolvingRequired(actorRef: ActorRef) extends ToResolve {
+  require(actorRef != null)
   override def toString() =
     s"NoResolvingRequired(${actorRef.path})"
 }
 sealed trait ToReallyResolve extends ToResolve
 final case class ResolvePath(path: ActorPath) extends ToReallyResolve {
+  require(path != null)
   override def toString() =
     s"ResolvePath(${path})"
 }
 final case class ResolveSelection(selection: ActorSelection) extends ToReallyResolve {
+  require(selection != null)
   override def toString() =
     s"ResolveSelection(${selection.pathString})"
 }
