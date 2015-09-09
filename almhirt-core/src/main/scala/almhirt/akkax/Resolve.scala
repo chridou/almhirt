@@ -68,6 +68,8 @@ private[almhirt] class SingleResolverImpl(toResolve: ToResolve, resolveWait: Fin
 
   def receiveResolve(started: Deadline, attempt: Int): Receive = {
     case Resolve ⇒
+      if(log.isDebugEnabled)
+        log.debug(s"Resolve ${toResolve}")
       resolve(started, attempt)
       context.become(receiveResolve(started, attempt + 1))
 
@@ -125,12 +127,17 @@ private[almhirt] class MultiResolverImpl(toResolve: Map[String, ToResolve], sett
 
   def receiveResolve: Receive = {
     case Resolve ⇒
+      if(log.isDebugEnabled)
+        log.debug(s"Resolve ${toResolve}")
       toResolve.zipWithIndex.foreach {
         case ((name, toResolve), index) ⇒
           context.resolveSingle(toResolve, settings, Some(CorrelationId(name)), Some(s"resolver-$index"))
       }
 
     case ActorMessages.ResolvedSingle(resolved, correlationIdOpt) ⇒
+      if(log.isDebugEnabled)
+        log.debug(s"Resolved ${resolved.path}")
+      
       resolvedActors = resolvedActors + (correlationIdOpt.get.value → resolved)
       if (resolvedActors.size == toResolve.size) {
         context.parent ! ActorMessages.ManyResolved(resolvedActors, correlationId)
