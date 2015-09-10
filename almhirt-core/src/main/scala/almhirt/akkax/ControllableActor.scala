@@ -57,7 +57,31 @@ trait ControllableActor { me: AlmActor with AlmActorLogging ⇒
     def terminateReadyForShutdown: Receive = rec orElse readyForShutdownTerminator
   }
 
-  def componentControl: LocalComponentControl 
+  private var _currentComponentState: ComponentState = ComponentState.Startup
+
+  def componentState: ComponentState = _currentComponentState
+  def onComponentStateChanged(oldState: ComponentState, newState: ComponentState): Unit = {}
+  final def componentStateTransitionTo(newState: ComponentState) {
+
+    val oldState = _currentComponentState
+    val changed = (oldState, newState) match {
+      case (ComponentState.Startup, ComponentState.Startup) ⇒ false
+      case (ComponentState.WaitingForStartSignal, ComponentState.WaitingForStartSignal) ⇒ false
+      case (ComponentState.Running, ComponentState.Running) ⇒ false
+      case (ComponentState.PreparingForPause, ComponentState.PreparingForPause) ⇒ false
+      case (ComponentState.Paused, ComponentState.Paused) ⇒ false
+      case (ComponentState.PreparingForShutdown, ComponentState.PreparingForShutdown) ⇒ false
+      case (ComponentState.ReadyForShutdown, ComponentState.ReadyForShutdown) ⇒ false
+      case (ComponentState.Error(_), ComponentState.Error(_)) ⇒ false
+      case _ ⇒ true
+    }
+    if (changed) {
+      _currentComponentState = newState
+      onComponentStateChanged(oldState, newState)
+    }
+  }
+
+  def componentControl: LocalComponentControl
 
   def registerComponentControl()(implicit cnp: ActorComponentIdProvider): Unit =
     almhirtContext.tellHerder(HerderMessages.ComponentControlMessages.RegisterComponentControl(cnp.componentId, componentControl.toRestrictedComponentControl))
@@ -129,7 +153,6 @@ trait ControllableActor { me: AlmActor with AlmActorLogging ⇒
       sender() ! ComponentState.WaitingForStartSignal
   }
 
-  
   def runningHandlerScaffolding(onPause: Option[ReceiveFun], onPrepareShutdown: Option[(ReceiveFun, () ⇒ Unit)]): PartialFunction[ActorMessages.ComponentControlMessage, Unit] = {
     case ActorMessages.Pause ⇒
       if (!componentControl.supports(ActorMessages.Pause))
@@ -243,7 +266,7 @@ trait ControllableActor { me: AlmActor with AlmActorLogging ⇒
     case ActorMessages.ReportComponentState ⇒
       sender() ! ComponentState.PreparingForPause
   }
-  
+
   def errorHandlerScaffolding(onPrepareShutdown: Option[(ReceiveFun, () ⇒ Unit)], onRestart: Option[(ReceiveFun, () ⇒ Unit)])(error: almhirt.problem.ProblemCause): PartialFunction[ActorMessages.ComponentControlMessage, Unit] = {
     case ActorMessages.Pause ⇒
       if (!componentControl.supports(ActorMessages.Pause))
@@ -344,9 +367,18 @@ trait ControllableActor { me: AlmActor with AlmActorLogging ⇒
       startupHandler(() ⇒ onPrepareShutDownBecome, transitionAction)(m)
   }
 
-  def startup()(receive: Receive): Receive = receive.terminateStartup
-  def startup(onPrepareShutDownBecome: ⇒ Receive)(receive: Receive): Receive = receive.terminateStartup(onPrepareShutDownBecome)
-  def startup(onPrepareShutDownBecome: ⇒ Receive, transitionAction: () ⇒ Unit)(receive: Receive): Receive = receive.terminateStartup(onPrepareShutDownBecome, transitionAction)
+  def startup()(receive: Receive): Receive = {
+    componentStateTransitionTo(ComponentState.Startup)
+    receive.terminateStartup
+  }
+  def startup(onPrepareShutDownBecome: ⇒ Receive)(receive: Receive): Receive = {
+    componentStateTransitionTo(ComponentState.Startup)
+    receive.terminateStartup(onPrepareShutDownBecome)
+  }
+  def startup(onPrepareShutDownBecome: ⇒ Receive, transitionAction: () ⇒ Unit)(receive: Receive): Receive = {
+    componentStateTransitionTo(ComponentState.Startup)
+    receive.terminateStartup(onPrepareShutDownBecome, transitionAction)
+  }
 
   val waitingForStartSignalHandler: PartialFunction[ActorMessages.ComponentControlMessage, Unit] = waitingForStartSignalHandlerScaffolding(None)
   def waitingForStartSignalHandler(onPrepareShutDownBecome: ReceiveFun, transitionAction: () ⇒ Unit = () ⇒ {}) = waitingForStartSignalHandlerScaffolding(Some(onPrepareShutDownBecome, transitionAction))
@@ -359,10 +391,19 @@ trait ControllableActor { me: AlmActor with AlmActorLogging ⇒
       waitingForStartSignalHandler(() ⇒ onPrepareShutDownBecome, transitionAction)(m)
   }
 
-  def waitingForStartSignal()(receive: Receive): Receive = receive.terminateWaitingForStartSignal
-  def waitingForStartSignal(onPrepareShutDownBecome: ⇒ Receive)(receive: Receive): Receive = receive.terminateWaitingForStartSignal(onPrepareShutDownBecome)
-  def waitingForStartSignal(onPrepareShutDownBecome: ⇒ Receive, transitionAction: () ⇒ Unit)(receive: Receive): Receive = receive.terminateWaitingForStartSignal(onPrepareShutDownBecome, transitionAction)
-  
+  def waitingForStartSignal()(receive: Receive): Receive = {
+    componentStateTransitionTo(ComponentState.WaitingForStartSignal)
+    receive.terminateWaitingForStartSignal
+  }
+  def waitingForStartSignal(onPrepareShutDownBecome: ⇒ Receive)(receive: Receive): Receive = {
+    componentStateTransitionTo(ComponentState.WaitingForStartSignal)
+    receive.terminateWaitingForStartSignal(onPrepareShutDownBecome)
+  }
+  def waitingForStartSignal(onPrepareShutDownBecome: ⇒ Receive, transitionAction: () ⇒ Unit)(receive: Receive): Receive = {
+    componentStateTransitionTo(ComponentState.WaitingForStartSignal)
+    receive.terminateWaitingForStartSignal(onPrepareShutDownBecome, transitionAction)
+  }
+
   val runningHandler: PartialFunction[ActorMessages.ComponentControlMessage, Unit] = runningHandlerScaffolding(None, None)
   def runningHandlerWithPause(onPause: ReceiveFun): PartialFunction[ActorMessages.ComponentControlMessage, Unit] = runningHandlerScaffolding(Some(onPause), None)
   def runningHandlerWithPauseAndPrepareShutdown(onPause: ReceiveFun, onPrepareShutdown: ReceiveFun): PartialFunction[ActorMessages.ComponentControlMessage, Unit] = runningHandlerScaffolding(Some(onPause), Some(onPrepareShutdown, () ⇒ {}))
@@ -384,12 +425,30 @@ trait ControllableActor { me: AlmActor with AlmActorLogging ⇒
     case m: ActorMessages.ComponentControlMessage ⇒ runningHandlerWithPrepareShutdown(() ⇒ onPrepareShutdown, transitionAction)(m)
   }
 
-  def running()(receive: Receive): Receive = receive.terminateRunning
-  def runningWithPause(onPause: ⇒ Receive)(receive: Receive): Receive = receive.terminateRunningWithPause(onPause)
-  def runningWithPauseAndPrepareShutdown(onPause: ⇒ Receive, onPrepareShutdown: ⇒ Receive)(receive: Receive): Receive = receive.terminateRunningWithPauseAndPrepareShutdown(onPause, onPrepareShutdown)
-  def runningWithPauseAndPrepareShutdown(onPause: ⇒ Receive, onPrepareShutdown: ⇒ Receive, transitionAction: () ⇒ Unit)(receive: Receive): Receive = receive.terminateRunningWithPauseAndPrepareShutdown(onPause, onPrepareShutdown, transitionAction)
-  def runningWithPrepareShutdown(onPrepareShutdown: ⇒ Receive)(receive: Receive): Receive = receive.terminateRunningWithPrepareShutdown(onPrepareShutdown, () ⇒ {})
-  def runningWithPrepareShutdown(onPrepareShutdown: ⇒ Receive, transitionAction: () ⇒ Unit)(receive: Receive): Receive = receive.terminateRunningWithPrepareShutdown(onPrepareShutdown, transitionAction)
+  def running()(receive: Receive): Receive = {
+    componentStateTransitionTo(ComponentState.Running)
+    receive.terminateRunning
+  }
+  def runningWithPause(onPause: ⇒ Receive)(receive: Receive): Receive = {
+    componentStateTransitionTo(ComponentState.Running)
+    receive.terminateRunningWithPause(onPause)
+  }
+  def runningWithPauseAndPrepareShutdown(onPause: ⇒ Receive, onPrepareShutdown: ⇒ Receive)(receive: Receive): Receive = {
+    componentStateTransitionTo(ComponentState.Running)
+    receive.terminateRunningWithPauseAndPrepareShutdown(onPause, onPrepareShutdown)
+  }
+  def runningWithPauseAndPrepareShutdown(onPause: ⇒ Receive, onPrepareShutdown: ⇒ Receive, transitionAction: () ⇒ Unit)(receive: Receive): Receive = {
+    componentStateTransitionTo(ComponentState.Running)
+    receive.terminateRunningWithPauseAndPrepareShutdown(onPause, onPrepareShutdown, transitionAction)
+  }
+  def runningWithPrepareShutdown(onPrepareShutdown: ⇒ Receive)(receive: Receive): Receive = {
+    componentStateTransitionTo(ComponentState.Running)
+    receive.terminateRunningWithPrepareShutdown(onPrepareShutdown, () ⇒ {})
+  }
+  def runningWithPrepareShutdown(onPrepareShutdown: ⇒ Receive, transitionAction: () ⇒ Unit)(receive: Receive): Receive = {
+    componentStateTransitionTo(ComponentState.Running)
+    receive.terminateRunningWithPrepareShutdown(onPrepareShutdown, transitionAction)
+  }
 
   val preparingForPauseHandler: PartialFunction[ActorMessages.ComponentControlMessage, Unit] = preparingForPauseHandlerScaffolding(None, None)
   def preparingForPauseHandler(onResume: ⇒ Receive): PartialFunction[ActorMessages.ComponentControlMessage, Unit] = preparingForPauseHandlerScaffolding(Some(() ⇒ onResume, () ⇒ {}), None)
@@ -421,15 +480,35 @@ trait ControllableActor { me: AlmActor with AlmActorLogging ⇒
     case m: ActorMessages.ComponentControlMessage ⇒ preparingForPauseHandlerScaffolding(Some(() ⇒ onResume, () ⇒ {}), Some(() ⇒ onPrepareShutdown, () ⇒ {}))(m)
   }
 
-  def preparingForPause()(receive: Receive): Receive = receive.terminatePreparingForPause
-  def preparingForPause(onResume: ⇒ Receive)(receive: Receive): Receive = receive.terminatePreparingForPause(onResume)
-  def preparingForPause(onResume: ⇒ Receive, onResumeTransitionAction: () ⇒ Unit)(receive: Receive): Receive = receive.terminatePreparingForPause(onResume, onResumeTransitionAction)
-  def preparingForPauseWithPrepareShutdown1(onResume: ⇒ Receive, onResumeTransitionAction: () ⇒ Unit, onPrepareShutdown: ⇒ Receive, onPrepareShutdownTransitionAction: () ⇒ Unit)(receive: Receive): Receive = receive.terminatePreparingForPauseWithPrepareShutdown1(onResume, onResumeTransitionAction, onPrepareShutdown, onPrepareShutdownTransitionAction)
-  def preparingForPauseWithPrepareShutdown2(onResume: ⇒ Receive, onPrepareShutdown: ⇒ Receive, onPrepareShutdownTransitionAction: () ⇒ Unit)(receive: Receive): Receive = receive.terminatePreparingForPauseWithPrepareShutdown2(onResume, onPrepareShutdown, onPrepareShutdownTransitionAction)
-  def preparingForPauseWithPrepareShutdown3(onResume: ⇒ Receive, onResumeTransitionAction: () ⇒ Unit, onPrepareShutdown: ⇒ Receive)(receive: Receive): Receive = receive.terminatePreparingForPauseWithPrepareShutdown3(onResume, onResumeTransitionAction, onPrepareShutdown)
-  def preparingForPauseWithPrepareShutdown4(onResume: ⇒ Receive, onPrepareShutdown: ⇒ Receive)(receive: Receive): Receive = receive.terminatePreparingForPauseWithPrepareShutdown4(onResume, onPrepareShutdown)
-  
-  
+  def preparingForPause()(receive: Receive): Receive = {
+    componentStateTransitionTo(ComponentState.PreparingForPause)
+    receive.terminatePreparingForPause
+  }
+  def preparingForPause(onResume: ⇒ Receive)(receive: Receive): Receive = {
+    componentStateTransitionTo(ComponentState.PreparingForPause)
+    receive.terminatePreparingForPause(onResume)
+  }
+  def preparingForPause(onResume: ⇒ Receive, onResumeTransitionAction: () ⇒ Unit)(receive: Receive): Receive = {
+    componentStateTransitionTo(ComponentState.PreparingForPause)
+    receive.terminatePreparingForPause(onResume, onResumeTransitionAction)
+  }
+  def preparingForPauseWithPrepareShutdown1(onResume: ⇒ Receive, onResumeTransitionAction: () ⇒ Unit, onPrepareShutdown: ⇒ Receive, onPrepareShutdownTransitionAction: () ⇒ Unit)(receive: Receive): Receive = {
+    componentStateTransitionTo(ComponentState.PreparingForPause)
+    receive.terminatePreparingForPauseWithPrepareShutdown1(onResume, onResumeTransitionAction, onPrepareShutdown, onPrepareShutdownTransitionAction)
+  }
+  def preparingForPauseWithPrepareShutdown2(onResume: ⇒ Receive, onPrepareShutdown: ⇒ Receive, onPrepareShutdownTransitionAction: () ⇒ Unit)(receive: Receive): Receive = {
+    componentStateTransitionTo(ComponentState.PreparingForPause)
+    receive.terminatePreparingForPauseWithPrepareShutdown2(onResume, onPrepareShutdown, onPrepareShutdownTransitionAction)
+  }
+  def preparingForPauseWithPrepareShutdown3(onResume: ⇒ Receive, onResumeTransitionAction: () ⇒ Unit, onPrepareShutdown: ⇒ Receive)(receive: Receive): Receive = {
+    componentStateTransitionTo(ComponentState.PreparingForPause)
+    receive.terminatePreparingForPauseWithPrepareShutdown3(onResume, onResumeTransitionAction, onPrepareShutdown)
+  }
+  def preparingForPauseWithPrepareShutdown4(onResume: ⇒ Receive, onPrepareShutdown: ⇒ Receive)(receive: Receive): Receive = {
+    componentStateTransitionTo(ComponentState.PreparingForPause)
+    receive.terminatePreparingForPauseWithPrepareShutdown4(onResume, onPrepareShutdown)
+  }
+
   val pauseHandler: PartialFunction[ActorMessages.ComponentControlMessage, Unit] = pauseHandlerScaffolding(None, None)
   def pauseHandler(onResume: ⇒ Receive): PartialFunction[ActorMessages.ComponentControlMessage, Unit] = pauseHandlerScaffolding(Some(() ⇒ onResume, () ⇒ {}), None)
   def pauseHandler(onResume: ⇒ Receive, onResumeTransitionAction: () ⇒ Unit): PartialFunction[ActorMessages.ComponentControlMessage, Unit] = pauseHandlerScaffolding(Some(() ⇒ onResume, onResumeTransitionAction), None)
@@ -460,13 +539,34 @@ trait ControllableActor { me: AlmActor with AlmActorLogging ⇒
     case m: ActorMessages.ComponentControlMessage ⇒ pauseHandlerScaffolding(Some(() ⇒ onResume, () ⇒ {}), Some(() ⇒ onPrepareShutdown, () ⇒ {}))(m)
   }
 
-  def pause()(receive: Receive): Receive = receive.terminatePause
-  def pause(onResume: ⇒ Receive)(receive: Receive): Receive = receive.terminatePause(onResume)
-  def pause(onResume: ⇒ Receive, onResumeTransitionAction: () ⇒ Unit)(receive: Receive): Receive = receive.terminatePause(onResume, onResumeTransitionAction)
-  def pauseWithPrepareShutdown1(onResume: ⇒ Receive, onResumeTransitionAction: () ⇒ Unit, onPrepareShutdown: ⇒ Receive, onPrepareShutdownTransitionAction: () ⇒ Unit)(receive: Receive): Receive = receive.terminatePauseWithPrepareShutdown1(onResume, onResumeTransitionAction, onPrepareShutdown, onPrepareShutdownTransitionAction)
-  def pauseWithPrepareShutdown2(onResume: ⇒ Receive, onPrepareShutdown: ⇒ Receive, onPrepareShutdownTransitionAction: () ⇒ Unit)(receive: Receive): Receive = receive.terminatePauseWithPrepareShutdown2(onResume, onPrepareShutdown, onPrepareShutdownTransitionAction)
-  def pauseWithPrepareShutdown3(onResume: ⇒ Receive, onResumeTransitionAction: () ⇒ Unit, onPrepareShutdown: ⇒ Receive)(receive: Receive): Receive = receive.terminatePauseWithPrepareShutdown3(onResume, onResumeTransitionAction, onPrepareShutdown)
-  def pauseWithPrepareShutdown4(onResume: ⇒ Receive, onPrepareShutdown: ⇒ Receive)(receive: Receive): Receive = receive.terminatePauseWithPrepareShutdown4(onResume, onPrepareShutdown)
+  def pause()(receive: Receive): Receive = {
+    componentStateTransitionTo(ComponentState.Paused)
+    receive.terminatePause
+  }
+  def pause(onResume: ⇒ Receive)(receive: Receive): Receive = {
+    componentStateTransitionTo(ComponentState.Paused)
+    receive.terminatePause(onResume)
+  }
+  def pause(onResume: ⇒ Receive, onResumeTransitionAction: () ⇒ Unit)(receive: Receive): Receive = {
+    componentStateTransitionTo(ComponentState.Paused)
+    receive.terminatePause(onResume, onResumeTransitionAction)
+  }
+  def pauseWithPrepareShutdown1(onResume: ⇒ Receive, onResumeTransitionAction: () ⇒ Unit, onPrepareShutdown: ⇒ Receive, onPrepareShutdownTransitionAction: () ⇒ Unit)(receive: Receive): Receive = {
+    componentStateTransitionTo(ComponentState.Paused)
+    receive.terminatePauseWithPrepareShutdown1(onResume, onResumeTransitionAction, onPrepareShutdown, onPrepareShutdownTransitionAction)
+  }
+  def pauseWithPrepareShutdown2(onResume: ⇒ Receive, onPrepareShutdown: ⇒ Receive, onPrepareShutdownTransitionAction: () ⇒ Unit)(receive: Receive): Receive = {
+    componentStateTransitionTo(ComponentState.Paused)
+    receive.terminatePauseWithPrepareShutdown2(onResume, onPrepareShutdown, onPrepareShutdownTransitionAction)
+  }
+  def pauseWithPrepareShutdown3(onResume: ⇒ Receive, onResumeTransitionAction: () ⇒ Unit, onPrepareShutdown: ⇒ Receive)(receive: Receive): Receive = {
+    componentStateTransitionTo(ComponentState.Paused)
+    receive.terminatePauseWithPrepareShutdown3(onResume, onResumeTransitionAction, onPrepareShutdown)
+  }
+  def pauseWithPrepareShutdown4(onResume: ⇒ Receive, onPrepareShutdown: ⇒ Receive)(receive: Receive): Receive = {
+    componentStateTransitionTo(ComponentState.Paused)
+    receive.terminatePauseWithPrepareShutdown4(onResume, onPrepareShutdown)
+  }
 
   def createErrorHandlerFactory: (almhirt.problem.ProblemCause) ⇒ PartialFunction[ActorMessages.ComponentControlMessage, Unit] = errorHandlerScaffolding(None, None)
   def createErrorHandlerFactory(onPrepareShutdown: ⇒ Receive): (almhirt.problem.ProblemCause) ⇒ PartialFunction[ActorMessages.ComponentControlMessage, Unit] = errorHandlerScaffolding(Some(() ⇒ onPrepareShutdown, () ⇒ {}), None)
@@ -498,22 +598,49 @@ trait ControllableActor { me: AlmActor with AlmActorLogging ⇒
     case m: ActorMessages.ComponentControlMessage ⇒ errorHandlerScaffolding(Some(() ⇒ onPrepareShutdown, () ⇒ {}), Some(() ⇒ onRestart, () ⇒ {}))(problem)(m)
   }
 
-  def error(error: almhirt.problem.ProblemCause)(receive: Receive): Receive = receive.createTerminateErrorFactory(error)
-  def error(onPrepareShutdown:  ⇒ Receive, error: almhirt.problem.ProblemCause)(receive: Receive): Receive = receive.createTerminateErrorFactory(onPrepareShutdown)(error)
-  def error(onPrepareShutdown:  ⇒ Receive, onPrepareShutdownTransitionAction: () ⇒ Unit, error: almhirt.problem.ProblemCause)(receive: Receive): Receive = receive.createTerminateErrorFactory(onPrepareShutdown, onPrepareShutdownTransitionAction)(error)
-  def errorWithRestart1(onPrepareShutdown:  ⇒ Receive, onPrepareShutdownTransitionAction: () ⇒ Unit, onRestart:  ⇒ Receive, onRestartTransitionAction: () ⇒ Unit, error: almhirt.problem.ProblemCause)(receive: Receive): Receive = receive.createTerminateErrorWithRestartFactory1(onPrepareShutdown, onPrepareShutdownTransitionAction, onRestart, onRestartTransitionAction)(error)
-  def errorWithRestart2(onPrepareShutdown:  ⇒ Receive, onRestart:  ⇒ Receive, onRestartTransitionAction: () ⇒ Unit, error: almhirt.problem.ProblemCause)(receive: Receive): Receive = receive.createTerminateErrorWithRestartFactory2(onPrepareShutdown, onRestart, onRestartTransitionAction)(error)
-  def errorWithRestart3(onPrepareShutdown:  ⇒ Receive, onPrepareShutdownTransitionAction: () ⇒ Unit, onRestart:  ⇒ Receive, error: almhirt.problem.ProblemCause)(receive: Receive): Receive = receive.createTerminateErrorWithRestartFactory3(onPrepareShutdown, onPrepareShutdownTransitionAction, onRestart)(error)
-  def errorWithRestart4(onPrepareShutdown:  ⇒ Receive, onRestart:  ⇒ Receive, error: almhirt.problem.ProblemCause)(receive: Receive): Receive = receive.createTerminateErrorWithRestartFactory4(onPrepareShutdown, onRestart)(error)
+  def error(error: almhirt.problem.ProblemCause)(receive: Receive): Receive = {
+    componentStateTransitionTo(ComponentState.Error(error))
+    receive.createTerminateErrorFactory(error)
+  }
+  def error(onPrepareShutdown: ⇒ Receive, error: almhirt.problem.ProblemCause)(receive: Receive): Receive = {
+    componentStateTransitionTo(ComponentState.Error(error))
+    receive.createTerminateErrorFactory(onPrepareShutdown)(error)
+  }
+  def error(onPrepareShutdown: ⇒ Receive, onPrepareShutdownTransitionAction: () ⇒ Unit, error: almhirt.problem.ProblemCause)(receive: Receive): Receive = {
+    componentStateTransitionTo(ComponentState.Error(error))
+    receive.createTerminateErrorFactory(onPrepareShutdown, onPrepareShutdownTransitionAction)(error)
+  }
+  def errorWithRestart1(onPrepareShutdown: ⇒ Receive, onPrepareShutdownTransitionAction: () ⇒ Unit, onRestart: ⇒ Receive, onRestartTransitionAction: () ⇒ Unit, error: almhirt.problem.ProblemCause)(receive: Receive): Receive = {
+    componentStateTransitionTo(ComponentState.Error(error))
+    receive.createTerminateErrorWithRestartFactory1(onPrepareShutdown, onPrepareShutdownTransitionAction, onRestart, onRestartTransitionAction)(error)
+  }
+  def errorWithRestart2(onPrepareShutdown: ⇒ Receive, onRestart: ⇒ Receive, onRestartTransitionAction: () ⇒ Unit, error: almhirt.problem.ProblemCause)(receive: Receive): Receive = {
+    componentStateTransitionTo(ComponentState.Error(error))
+    receive.createTerminateErrorWithRestartFactory2(onPrepareShutdown, onRestart, onRestartTransitionAction)(error)
+  }
+  def errorWithRestart3(onPrepareShutdown: ⇒ Receive, onPrepareShutdownTransitionAction: () ⇒ Unit, onRestart: ⇒ Receive, error: almhirt.problem.ProblemCause)(receive: Receive): Receive = {
+    componentStateTransitionTo(ComponentState.Error(error))
+    receive.createTerminateErrorWithRestartFactory3(onPrepareShutdown, onPrepareShutdownTransitionAction, onRestart)(error)
+  }
+  def errorWithRestart4(onPrepareShutdown: ⇒ Receive, onRestart: ⇒ Receive, error: almhirt.problem.ProblemCause)(receive: Receive): Receive = {
+    componentStateTransitionTo(ComponentState.Error(error))
+    receive.createTerminateErrorWithRestartFactory4(onPrepareShutdown, onRestart)(error)
+  }
 
   val preparingForShutdownTerminator: Receive = {
     case m: ActorMessages.ComponentControlMessage ⇒ preparingForShutdownHandler(m)
   }
-  def preparingForShutdown(receive: Receive): Receive = receive.terminatePreparingForShutdown
+  def preparingForShutdown(receive: Receive): Receive = {
+    componentStateTransitionTo(ComponentState.PreparingForShutdown)
+    receive.terminatePreparingForShutdown
+  }
 
   val readyForShutdownTerminator: Receive = {
     case m: ActorMessages.ComponentControlMessage ⇒ readyForShutdownHandler(m)
   }
-  def readyForShutdown(receive: Receive): Receive = receive.terminateReadyForShutdown
+  def readyForShutdown(receive: Receive): Receive = {
+    componentStateTransitionTo(ComponentState.ReadyForShutdown)
+    receive.terminateReadyForShutdown
+  }
 
 }
