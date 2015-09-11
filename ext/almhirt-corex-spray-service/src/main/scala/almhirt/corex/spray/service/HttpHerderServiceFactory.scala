@@ -84,7 +84,7 @@ private[almhirt] class HttpHerderServiceActor(params: HttpHerderServiceFactory.H
   override def receive = runRoute(route)
 }
 
-trait JsonReportFactory extends Directives with spray.httpx.Json4sSupport { me: AlmActor with AlmActorLogging with Directives ⇒
+class JsonReportFactory(context: ActorContext)(implicit almhirtContext: AlmhirtContext) extends Directives with spray.httpx.Json4sSupport {
   implicit override val json4sFormats = org.json4s.native.Serialization.formats(NoTypeHints) + new Json4SComponentStateSerializer
 
   def createJsonReportRoute(maxCallDuration: FiniteDuration)(implicit executor: ExecutionContext): RequestContext ⇒ Unit = {
@@ -106,9 +106,11 @@ trait JsonReportFactory extends Directives with spray.httpx.Json4sSupport { me: 
 
 }
 
-trait HttpHerderServiceFactory extends Directives with JsonReportFactory { me: AlmActor with AlmActorLogging ⇒
+trait HttpHerderServiceFactory extends Directives  { me: AlmActor with AlmActorLogging ⇒
   import almhirt.components.EventSinkHubMessage
 
+  val reportFactory = new JsonReportFactory(this.context)
+  
   def createHerderServiceEndpoint(params: HttpHerderServiceFactory.HttpHerderServiceParams): RequestContext ⇒ Unit = {
 
     implicit val execCtx = selectExecutionContext(params.exectionContextSelector)
@@ -213,7 +215,7 @@ trait HttpHerderServiceFactory extends Directives with JsonReportFactory { me: A
                 reporters ⇒
                   ctx.complete(StatusCodes.OK, createReporters(reporters)))
             }
-          } ~ createJsonReportRoute(maxCallDuration)
+          } ~ reportFactory.createJsonReportRoute(maxCallDuration)
         } ~ pathPrefix("component-controls") {
           pathEnd {
             parameter('ui.?) { uiEnabledP ⇒
