@@ -1,6 +1,8 @@
 package almhirt.corex.spray.service
 
 import java.time.LocalDateTime
+import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext
 import scalaz.Validation.FlatMap._
 import akka.actor._
 import akka.pattern._
@@ -82,10 +84,30 @@ private[almhirt] class HttpHerderServiceActor(params: HttpHerderServiceFactory.H
   override def receive = runRoute(route)
 }
 
-trait HttpHerderServiceFactory extends Directives with spray.httpx.Json4sSupport { me: AlmActor with AlmActorLogging ⇒
-  import almhirt.components.EventSinkHubMessage
+trait JsonReportFactory extends Directives with spray.httpx.Json4sSupport { me: AlmActor with AlmActorLogging with Directives ⇒
+  implicit override val json4sFormats = org.json4s.native.Serialization.formats(NoTypeHints) + new Json4SComponentStateSerializer
 
-  implicit override def json4sFormats = org.json4s.native.Serialization.formats(NoTypeHints) + new Json4SComponentStateSerializer
+  def createJsonReportRoute(maxCallDuration: FiniteDuration)(implicit executor: ExecutionContext): RequestContext ⇒ Unit = {
+    pathPrefix(Segment / Segment) { (appName, componentName) ⇒
+      get { ctx ⇒
+        val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
+        val fut = (herder ? ReportMessages.GetReportFor(ComponentId(AppName(appName), ComponentName(componentName))))(maxCallDuration).mapCastTo[ReportMessages.GetReportForRsp].mapV {
+          case ReportMessages.ReportFor(_, report) ⇒
+            scalaz.Success(report)
+          case ReportMessages.GetReportForFailed(_, prob) ⇒
+            scalaz.Failure(prob)
+        }
+        fut.fold(
+          problem ⇒ implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, problem),
+          report ⇒ ctx.complete(StatusCodes.OK, report))
+      }
+    }
+  }
+
+}
+
+trait HttpHerderServiceFactory extends Directives with JsonReportFactory { me: AlmActor with AlmActorLogging ⇒
+  import almhirt.components.EventSinkHubMessage
 
   def createHerderServiceEndpoint(params: HttpHerderServiceFactory.HttpHerderServiceParams): RequestContext ⇒ Unit = {
 
@@ -191,20 +213,7 @@ trait HttpHerderServiceFactory extends Directives with spray.httpx.Json4sSupport
                 reporters ⇒
                   ctx.complete(StatusCodes.OK, createReporters(reporters)))
             }
-          } ~ pathPrefix(Segment / Segment) { (appName, componentName) ⇒
-            get { ctx ⇒
-              val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
-              val fut = (herder ? ReportMessages.GetReportFor(ComponentId(AppName(appName), ComponentName(componentName))))(maxCallDuration).mapCastTo[ReportMessages.GetReportForRsp].mapV {
-                case ReportMessages.ReportFor(_, report) ⇒
-                  scalaz.Success(report)
-                case ReportMessages.GetReportForFailed(_, prob) ⇒
-                  scalaz.Failure(prob)
-              }
-              fut.fold(
-                problem ⇒ implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, problem),
-                report ⇒ ctx.complete(StatusCodes.OK, report))
-            }
-          }
+          } ~ createJsonReportRoute(maxCallDuration)
         } ~ pathPrefix("component-controls") {
           pathEnd {
             parameter('ui.?) { uiEnabledP ⇒
