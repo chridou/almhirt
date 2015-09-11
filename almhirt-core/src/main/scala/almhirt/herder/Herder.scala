@@ -13,7 +13,12 @@ import almhirt.components.EventSinkHubMessage
 import almhirt.herder.herdingdogs._
 
 object Herder {
-  def propsRaw(failuresHerdingDogProps: Props, rejectedCommandsHerdingDogProps: Props, missedEventsHerdingDogProps: Props, informationHerdingDogProps: Props, runtimeHerdingDogProps: Props)(implicit ctx: AlmhirtContext): Props =
+  def propsRaw(
+      failuresHerdingDogProps: Props, 
+      rejectedCommandsHerdingDogProps: Props, 
+      missedEventsHerdingDogProps: Props,
+      informationHerdingDogProps: Props, 
+      runtimeHerdingDogProps: Props)(implicit ctx: AlmhirtContext): Props =
     Props(new Pastor(failuresHerdingDogProps, rejectedCommandsHerdingDogProps, missedEventsHerdingDogProps, informationHerdingDogProps, runtimeHerdingDogProps))
 
   def props(address: Address)(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
@@ -52,6 +57,7 @@ private[almhirt] class Pastor(
   val missedEventsHerdingDog: ActorRef = context.actorOf(missedEventsHerdingDogProps, MissedEventsHerdingDog.actorname)
   val informationHerdingDog: ActorRef = context.actorOf(informationHerdingDogProps, InformationHerdingDog.actorname)
   val runtimeHerdingDog: ActorRef = context.actorOf(runtimeHerdingDogProps, RuntimeHerdingDog.actorname)
+  val reportHerdingDog: ActorRef = context.actorOf(Props(new ReportsHerdingDog()), ReportsHerdingDog.actorname)
 
   val eventBrokerId = ComponentId(AppName("almhirt-streams"), ComponentName("event-broker"))
   val commandBrokerId = ComponentId(AppName("almhirt-streams"), ComponentName("command-broker"))
@@ -74,6 +80,8 @@ private[almhirt] class Pastor(
     case m: HerderMessages.EventMessages.EventsMessage                      ⇒ missedEventsHerdingDog forward m
 
     case m: HerderMessages.InformationMessages.InformationMessage           ⇒ informationHerdingDog forward m
+
+    case m: HerderMessages.ReportMessages.ReportMessage                     ⇒ reportHerdingDog forward m
   }
 
   def receive = receiveRunning

@@ -16,6 +16,7 @@ object BuildSettings {
   val sprayVersion = "1.3.3"
   val scalazVersion = "7.1.3"
   val reactiveMongoVersion = "0.11.7"
+  val json4sVersion = "3.2.11"
    
   val buildSettings = Defaults.defaultSettings ++ releaseSettings ++ Seq (
 	organization := buildOrganization,
@@ -52,11 +53,14 @@ object Resolvers {
 }
 
 object Dependencies {
+  import BuildSettings._
 	lazy val scala_reflect = "org.scala-lang" % "scala-reflect" % BuildSettings.buildScalaVersion
 
 	lazy val scalaz       = "org.scalaz" %% "scalaz-core" % BuildSettings.scalazVersion 
 
 	lazy val play2_iteratees   = "com.typesafe.play" %% "play-iteratees" % "2.3.9" 
+
+  lazy val json4s   = "org.json4s" %% "json4s-native" % json4sVersion % "compile"
 	
 	lazy val akka_actor  = "com.typesafe.akka" %% "akka-actor" % BuildSettings.akkaVersion % "provided"
 	lazy val akka_agent  = "com.typesafe.akka" %% "akka-agent" % BuildSettings.akkaVersion % "provided"
@@ -236,6 +240,7 @@ trait CorexSprayServiceBuild {
 	  libraryDependencies += spray_routing,
 	  libraryDependencies += spray_testkit,
 	  libraryDependencies += spray_can,
+	  libraryDependencies += json4s,
 	  libraryDependencies += scalatest,
     libraryDependencies += pegdown
 	  )

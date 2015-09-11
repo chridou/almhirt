@@ -5,6 +5,7 @@ import scalaz.Validation.FlatMap._
 import akka.actor._
 import akka.pattern._
 import almhirt.common._
+import almhirt.almvalidation.kit._
 import almhirt.problem._
 import almhirt.almfuture.all._
 import almhirt.akkax._
@@ -19,6 +20,9 @@ import spray.httpx.marshalling.Marshaller
 import spray.http.StatusCodes
 import spray.routing.RequestContext
 import spray.routing.HttpService
+import org.json4s.CustomSerializer
+import org.json4s._
+import org.json4s.native.JsonMethods._
 
 object HttpHerderServiceFactory {
   final case class HttpHerderServiceParams(
@@ -40,6 +44,16 @@ object HttpHerderServiceFactory {
   }
 
 }
+
+class Json4SComponentStateSerializer extends CustomSerializer[ComponentState](format ⇒ (
+  {
+    case JString(toParse) ⇒
+      ComponentState.fromString(toParse).resultOrEscalate
+  },
+  {
+    case x: ComponentState ⇒
+      JString(x.parsableString)
+  }))
 
 object HttpHerderService {
   def propsRaw(
@@ -68,8 +82,10 @@ private[almhirt] class HttpHerderServiceActor(params: HttpHerderServiceFactory.H
   override def receive = runRoute(route)
 }
 
-trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLogging ⇒
+trait HttpHerderServiceFactory extends Directives with spray.httpx.Json4sSupport { me: AlmActor with AlmActorLogging ⇒
   import almhirt.components.EventSinkHubMessage
+
+  implicit override def json4sFormats = org.json4s.native.Serialization.formats(NoTypeHints) + new Json4SComponentStateSerializer
 
   def createHerderServiceEndpoint(params: HttpHerderServiceFactory.HttpHerderServiceParams): RequestContext ⇒ Unit = {
 
@@ -94,6 +110,7 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
             val futRejectedCommands = (herder ? CommandMessages.ReportRejectedCommands)(maxCallDuration).mapCastTo[CommandMessages.RejectedCommands].map(_.rejectedCommands)
             val futMissedEvents = (herder ? EventMessages.ReportMissedEvents)(maxCallDuration).mapCastTo[EventMessages.MissedEvents].map(_.missedEvents)
             val futInfos = (herder ? InformationMessages.ReportInformation)(maxCallDuration).mapCastTo[InformationMessages.ReportedInformation].map(_.information)
+            val futReporters = (herder ? ReportMessages.GetReporters)(maxCallDuration).mapCastTo[ReportMessages.Reporters].map(_.reporters)
             val futHtml =
               for {
                 circuitStates ← futCircuits
@@ -102,7 +119,8 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
                 rejectedCommands ← futRejectedCommands
                 missedEvents ← futMissedEvents
                 information ← futInfos
-              } yield createStatusReport(circuitStates, componentStates, failures, rejectedCommands, missedEvents, information, "./herder")
+                reporters ← futReporters
+              } yield createStatusReport(circuitStates, componentStates, failures, rejectedCommands, missedEvents, information, reporters, "./herder")
             futHtml.fold(
               problem ⇒ implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, problem),
               html ⇒ ctx.complete(StatusCodes.OK, html))
@@ -161,6 +179,30 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
                   ctx.complete(StatusCodes.Accepted, s"attempting to circumvent circuit $componentName")
                 }
               }
+            }
+          }
+        } ~ pathPrefix("reports") {
+          pathEnd {
+            get { ctx ⇒
+              val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
+              val fut = (herder ? ReportMessages.GetReporters)(maxCallDuration).mapCastTo[ReportMessages.Reporters].map(_.reporters)
+              fut.fold(
+                problem ⇒ implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, problem),
+                reporters ⇒
+                  ctx.complete(StatusCodes.OK, createReporters(reporters)))
+            }
+          } ~ pathPrefix(Segment / Segment) { (appName, componentName) ⇒
+            get { ctx ⇒
+              val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
+              val fut = (herder ? ReportMessages.GetReportFor(ComponentId(AppName(appName), ComponentName(componentName))))(maxCallDuration).mapCastTo[ReportMessages.GetReportForRsp].mapV {
+                case ReportMessages.ReportFor(_, report) ⇒
+                  scalaz.Success(report)
+                case ReportMessages.GetReportForFailed(_, prob) ⇒
+                  scalaz.Failure(prob)
+              }
+              fut.fold(
+                problem ⇒ implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, problem),
+                report ⇒ ctx.complete(StatusCodes.OK, report))
             }
           }
         } ~ pathPrefix("component-controls") {
@@ -316,6 +358,27 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
   }
 
   import scala.xml._
+
+  private def createReporters(reporters: Seq[(ComponentId, Reporter)]) = {
+    <html>
+      <head>
+        <title>Reporters</title>
+      </head>
+      <body>
+        {
+          reporters.map {
+            case (component, reporter) ⇒
+              val att = new UnprefixedAttribute("href", s"/herder/reports/${component.app.value}/${component.component.value}", xml.Null)
+              val anchor = Elem(null, "a", att, TopScope, true, Text(s"Report for $component"))
+              <td>{ anchor }</td>
+          }
+        }
+        <br><a href="../herder">Dashboard</a></br>
+        <br>{ almhirtContext.getUtcTimestamp.toString }</br>
+      </body>
+    </html>
+  }
+
   private def createCircuitsUi(state: Seq[(ComponentId, CircuitState)]) = {
     <html>
       <head>
@@ -1509,6 +1572,7 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
     rejectedCommands: Seq[(ComponentId, BadThingsHistory[RejectedCommandsEntry])],
     missedEvents: Seq[(ComponentId, BadThingsHistory[MissedEventsEntry])],
     information: Seq[(ComponentId, ImportantThingsHistory[InformationEntry])],
+    reporters: Seq[(ComponentId, Reporter)],
     pathToHerder: String) = {
     <html>
       <head>
@@ -1530,12 +1594,23 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
             <td>{ createComponentsContent(componentStates, true) }</td>
           </tr>
           <tr>
-            <th colspan="2">
+            <th>
               <h2>Reported Failures</h2><br/><a href="./herder/failures">Failures report</a>
+            </th>
+            <th>
+              <h2>Reports</h2>
             </th>
           </tr>
           <tr>
-            <td colspan="2">{ createFailuresReportContent(failures, true, pathToHerder) }</td>
+            <td>{ createFailuresReportContent(failures, true, pathToHerder) }</td>
+            <td>{
+              reporters.map {
+                case (component, reporter) ⇒
+                  val att = new UnprefixedAttribute("href", s"/herder/reports/${component.app.value}/${component.component.value}", xml.Null)
+                  val anchor = Elem(null, "a", att, TopScope, true, Text(s"Report for $component"))
+                  <td>{ anchor }</td>
+              }
+            }</td>
           </tr>
           <tr>
             <th><h2>Rejected Commands</h2><br/><a href="./herder/rejected-commands">Rejected commands report</a></th>
@@ -1590,5 +1665,4 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
       }
     </span>
   }
-
 }

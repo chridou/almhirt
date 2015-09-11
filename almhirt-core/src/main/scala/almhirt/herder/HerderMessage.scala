@@ -38,6 +38,21 @@ object HerderMessages {
      
   }
 
+  object ReportMessages {
+    sealed trait ReportMessage
+    final case class RegisterReporter(id: ComponentId, reporter: almhirt.herder.Reporter) extends ReportMessage with HerderNotificicationMessage
+    final case class DeregisterReporter(id: ComponentId) extends ReportMessage with HerderNotificicationMessage
+ 
+    final case class GetReportFor(componentId: ComponentId) extends ReportMessage
+    sealed trait GetReportForRsp extends ReportMessage
+    final case class ReportFor(componentId: ComponentId, report: Any) extends GetReportForRsp
+    final case class GetReportForFailed(componentId: ComponentId, problem: Problem) extends GetReportForRsp
+     
+    case object GetReporters extends ReportMessage 
+    final case class Reporters(reporters: Seq[(ComponentId, Reporter)]) extends ReportMessage
+    
+  }
+  
   object EventMessages {
     sealed trait EventsMessage
 
