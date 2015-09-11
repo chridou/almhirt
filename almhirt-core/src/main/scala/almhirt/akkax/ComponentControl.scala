@@ -10,14 +10,14 @@ import almhirt.almfuture.all._
 sealed trait ComponentState
 
 object ComponentState {
-  case object Startup extends ComponentState
-  case object WaitingForStartSignal extends ComponentState
-  case object Running extends ComponentState
-  case object PreparingForPause extends ComponentState
-  case object Paused extends ComponentState
-  final case class Error(cause: almhirt.problem.ProblemCause) extends ComponentState
-  case object PreparingForShutdown extends ComponentState
-  case object ReadyForShutdown extends ComponentState
+  case object Startup extends ComponentState { override def toString = "Startup" }
+  case object WaitingForStartSignal extends ComponentState { override def toString = "WaitingForStartSignal" }
+  case object Running extends ComponentState { override def toString = "Running" }
+  case object PreparingForPause extends ComponentState { override def toString = "PreparingForPause" }
+  case object Paused extends ComponentState { override def toString = "Paused" }
+  final case class Error(cause: almhirt.problem.ProblemCause) extends ComponentState { override def toString = s"Error: ${cause.message}" }
+  case object PreparingForShutdown extends ComponentState { override def toString = "PreparingForShutdown" }
+  case object ReadyForShutdown extends ComponentState { override def toString = "ReadyForShutdown" }
 }
 
 trait ComponentControl {
