@@ -18,6 +18,33 @@ object ComponentState {
   final case class Error(cause: almhirt.problem.ProblemCause) extends ComponentState { override def toString = s"Error: ${cause.message}" }
   case object PreparingForShutdown extends ComponentState { override def toString = "PreparingForShutdown" }
   case object ReadyForShutdown extends ComponentState { override def toString = "ReadyForShutdown" }
+
+  implicit class ComponentStateOps(val self: ComponentState) extends AnyVal {
+    def parsableString: String = self.toString
+  }
+
+  def fromString(toParse: String): AlmValidation[ComponentState] = {
+    toParse.split(":") match {
+      case Array(onePart) ⇒
+        onePart.toLowerCase match {
+          case "startup"              ⇒ scalaz.Success(Startup)
+          case "running"              ⇒ scalaz.Success(Running)
+          case "preparingforpause"    ⇒ scalaz.Success(PreparingForPause)
+          case "paused"               ⇒ scalaz.Success(Paused)
+          case "preparingforshutdown" ⇒ scalaz.Success(PreparingForShutdown)
+          case "readyforshutdown"     ⇒ scalaz.Success(ReadyForShutdown)
+          case x                      ⇒ scalaz.Failure(ParsingProblem(s""""x" is not a valid component state."""))
+        }
+      case Array(first, second) ⇒
+        if (first.toLowerCase() == "error") {
+          scalaz.Success(Error(UnspecifiedProblem(second.trim())))
+        } else {
+          scalaz.Failure(ParsingProblem(s""""x" is not a valid component state."""))
+        }
+      case _ ⇒ scalaz.Failure(ParsingProblem(s""""x" is not a valid component state."""))
+
+    }
+  }
 }
 
 trait ComponentControl {
