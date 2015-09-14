@@ -84,7 +84,7 @@ private[almhirt] class HttpHerderServiceActor(params: HttpHerderServiceFactory.H
   override def receive = runRoute(route)
 }
 
-class JsonStatusReportFactory(private val context: ActorContext)(implicit almhirtContext: AlmhirtContext) extends Directives with spray.httpx.Json4sSupport {
+class JsonStatusReportFactory(private val context: ActorContext)(implicit almhirtContext: AlmhirtContext, problemMarshaller: Marshaller[Problem]) extends Directives with spray.httpx.Json4sSupport {
   implicit override val json4sFormats = org.json4s.native.Serialization.formats(NoTypeHints) + new Json4SComponentStateSerializer
 
   def createJsonStatusReportRoute(maxCallDuration: FiniteDuration)(implicit executor: ExecutionContext): RequestContext ⇒ Unit = {
