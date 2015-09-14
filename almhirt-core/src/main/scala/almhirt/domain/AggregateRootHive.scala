@@ -366,8 +366,13 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
       reportMajorFailure(cause.mapProblem { _.withArg("hive", hiveDescriptor.value) })
 
     case ReportDroneWarning(msg, causeOpt) ⇒
-      logWarning(s"Drone ${sender().path.name} reported a warning: $msg")
-      causeOpt.foreach(cause ⇒ reportMinorFailure(cause.mapProblem { _.withArg("hive", hiveDescriptor.value) }))
+      causeOpt match {
+        case None ⇒
+          logWarning(s"""Drone ${sender().path.name} reported a warning with message "$msg".""")
+        case Some(cause) ⇒
+          logWarning(s"""Drone ${sender().path.name} reported a warning with message "$msg" and and a problem with message "${cause.message}".""")
+          reportMinorFailure(cause.mapProblem { _.withArg("hive", hiveDescriptor.value) })
+      }
 
     case AggregateRootHiveInternals.CargoJettisoned(id) ⇒
       this.numJettisonedSinceLastReport += 1
