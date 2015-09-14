@@ -45,7 +45,7 @@ object HerderMessages {
  
     final case class GetReportFor(componentId: ComponentId) extends ReportMessage
     sealed trait GetReportForRsp extends ReportMessage
-    final case class ReportFor(componentId: ComponentId, report: Any) extends GetReportForRsp
+    final case class ReportFor(componentId: ComponentId, report: Report) extends GetReportForRsp
     final case class GetReportForFailed(componentId: ComponentId, problem: Problem) extends GetReportForRsp
      
     case object GetReporters extends ReportMessage 

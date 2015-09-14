@@ -84,7 +84,7 @@ private[almhirt] class HttpHerderServiceActor(params: HttpHerderServiceFactory.H
   override def receive = runRoute(route)
 }
 
-class JsonReportFactory(context: ActorContext)(implicit almhirtContext: AlmhirtContext) extends Directives with spray.httpx.Json4sSupport {
+class JsonReportFactory(private val context: ActorContext)(implicit almhirtContext: AlmhirtContext) extends Directives with spray.httpx.Json4sSupport {
   implicit override val json4sFormats = org.json4s.native.Serialization.formats(NoTypeHints) + new Json4SComponentStateSerializer
 
   def createJsonReportRoute(maxCallDuration: FiniteDuration)(implicit executor: ExecutionContext): RequestContext ⇒ Unit = {
@@ -99,23 +99,23 @@ class JsonReportFactory(context: ActorContext)(implicit almhirtContext: AlmhirtC
         }
         fut.fold(
           problem ⇒ implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, problem),
-          report ⇒ ctx.complete(StatusCodes.OK, report))
+          report ⇒ ctx.complete(report))
       }
     }
   }
 
 }
 
-trait HttpHerderServiceFactory extends Directives  { me: AlmActor with AlmActorLogging ⇒
+trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLogging ⇒
   import almhirt.components.EventSinkHubMessage
 
-  val reportFactory = new JsonReportFactory(this.context)
-  
   def createHerderServiceEndpoint(params: HttpHerderServiceFactory.HttpHerderServiceParams): RequestContext ⇒ Unit = {
 
     implicit val execCtx = selectExecutionContext(params.exectionContextSelector)
     implicit val problemMarshaller = params.problemMarshaller
     val maxCallDuration = params.maxCallDuration
+    val reportFactory = new JsonReportFactory(this.context)
+    val reportTerminator = reportFactory.createJsonReportRoute(maxCallDuration)
 
     pathPrefix("herder") {
       pathPrefix("ui") {
@@ -215,7 +215,7 @@ trait HttpHerderServiceFactory extends Directives  { me: AlmActor with AlmActorL
                 reporters ⇒
                   ctx.complete(StatusCodes.OK, createReporters(reporters)))
             }
-          } ~ reportFactory.createJsonReportRoute(maxCallDuration)
+          } ~ reportTerminator
         } ~ pathPrefix("component-controls") {
           pathEnd {
             parameter('ui.?) { uiEnabledP ⇒
@@ -1619,7 +1619,7 @@ trait HttpHerderServiceFactory extends Directives  { me: AlmActor with AlmActorL
                 case (component, reporter) ⇒
                   val att = new UnprefixedAttribute("href", s"/herder/reports/${component.app.value}/${component.component.value}", xml.Null)
                   val anchor = Elem(null, "a", att, TopScope, true, Text(s"Report for $component"))
-                  <td>{ anchor }</td>
+                  <p>{ anchor }</p>
               }
             }</td>
           </tr>
