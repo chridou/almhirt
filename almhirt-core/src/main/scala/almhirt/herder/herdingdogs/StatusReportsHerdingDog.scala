@@ -8,12 +8,12 @@ import almhirt.herder.HerderMessages
 import akka.actor.ActorRef
 import almhirt.akkax._
 
-object ReportsHerdingDog {
+object StatusReportsHerdingDog {
 
-  val actorname = "reports-herdingdog"
+  val actorname = "status-reports-herdingdog"
 }
 
-private[almhirt] class ReportsHerdingDog()(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with HasAlmhirtContext with AlmActorLogging {
+private[almhirt] class StatusReportsHerdingDog()(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with HasAlmhirtContext with AlmActorLogging {
   import HerderMessages.StatusReportMessages._
 
   implicit val executor = almhirtContext.futuresContext
@@ -50,7 +50,7 @@ private[almhirt] class ReportsHerdingDog()(implicit override val almhirtContext:
       }
     
     case GetStatusReporters =>
-      sender() ! StatusReporters(reporters.toList)
+      sender() ! StatusReporters(reporters.toList.sortBy(_._1))
   }
 
   override def receive: Receive = receiveRunning

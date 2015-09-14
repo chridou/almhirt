@@ -57,7 +57,7 @@ private[almhirt] class Pastor(
   val missedEventsHerdingDog: ActorRef = context.actorOf(missedEventsHerdingDogProps, MissedEventsHerdingDog.actorname)
   val informationHerdingDog: ActorRef = context.actorOf(informationHerdingDogProps, InformationHerdingDog.actorname)
   val runtimeHerdingDog: ActorRef = context.actorOf(runtimeHerdingDogProps, RuntimeHerdingDog.actorname)
-  val reportHerdingDog: ActorRef = context.actorOf(Props(new ReportsHerdingDog()), ReportsHerdingDog.actorname)
+  val reportHerdingDog: ActorRef = context.actorOf(Props(new StatusReportsHerdingDog()), StatusReportsHerdingDog.actorname)
 
   val eventBrokerId = ComponentId(AppName("almhirt-streams"), ComponentName("event-broker"))
   val commandBrokerId = ComponentId(AppName("almhirt-streams"), ComponentName("command-broker"))
