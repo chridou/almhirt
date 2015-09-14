@@ -22,8 +22,4 @@ trait StatusReportingActor { me: AlmActor ⇒
 
   final def deregisterStatusReporter()(implicit cnp: ActorComponentIdProvider): Unit =
     almhirtContext.tellHerder(StatusReportMessages.DeregisterStatusReporter(cnp.componentId))
-
-  @deprecated(message = "This one has a typo. Use deregisterStatusReporter", since = "0.7.17")
-  final def degisterStatusReporter()(implicit cnp: ActorComponentIdProvider): Unit =
-    almhirtContext.tellHerder(StatusReportMessages.DeregisterStatusReporter(cnp.componentId))
 }
