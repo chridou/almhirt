@@ -98,7 +98,7 @@ class JsonStatusReportFactory(private val context: ActorContext)(implicit almhir
             scalaz.Failure(prob)
         }
         fut.fold(
-          problem ⇒ implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, problem),
+          problem ⇒ implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, problem)(problemMarshaller),
           report ⇒ ctx.complete(report))
       }
     }
