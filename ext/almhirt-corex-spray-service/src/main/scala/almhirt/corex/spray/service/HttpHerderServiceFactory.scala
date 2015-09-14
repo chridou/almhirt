@@ -116,7 +116,7 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
     implicit val problemMarshaller = params.problemMarshaller
     val maxCallDuration = params.maxCallDuration
     val reportFactory = new JsonStatusReportFactory(this.context)
-    val reportTerminator = reportFactory.createJsonStatusReportRoute(maxCallDuration)
+    val reportTerminator = reportFactory.createJsonStatusReportRoute(15.seconds)
 
     pathPrefix("herder") {
       pathPrefix("ui") {
