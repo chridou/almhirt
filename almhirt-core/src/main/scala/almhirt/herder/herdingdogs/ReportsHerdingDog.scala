@@ -14,14 +14,14 @@ object ReportsHerdingDog {
 }
 
 private[almhirt] class ReportsHerdingDog()(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with HasAlmhirtContext with AlmActorLogging {
-  import HerderMessages.ReportMessages._
+  import HerderMessages.StatusReportMessages._
 
   implicit val executor = almhirtContext.futuresContext
 
-  var reporters: Map[ComponentId, almhirt.herder.Reporter] = Map.empty
+  var reporters: Map[ComponentId, almhirt.herder.StatusReporter] = Map.empty
 
   def receiveRunning: Receive = {
-    case RegisterReporter(ownerId, reporter) ⇒
+    case RegisterStatusReporter(ownerId, reporter) ⇒
       if (ownerId == null) {
         logError(s"$ownerId is null! Sender: ${sender()}")
         reportMajorFailure(UnspecifiedProblem(s"$ownerId is null!. Sender: ${sender()}"))
@@ -33,24 +33,24 @@ private[almhirt] class ReportsHerdingDog()(implicit override val almhirtContext:
         reporters = reporters + (ownerId → reporter)
       }
 
-    case DeregisterReporter(ownerId) ⇒
+    case DeregisterStatusReporter(ownerId) ⇒
       logInfo(s"""Reporter deregistered for "${ownerId}".""")
       reporters = reporters - ownerId
 
-    case GetReportFor(componentId) ⇒
+    case GetStatusReportFor(componentId) ⇒
       val pinnedSender = sender()
 
       reporters.get(componentId) match {
         case Some(reporter) ⇒
           reporter.report.mapOrRecoverThenPipeTo(
-            map = report ⇒ ReportFor(componentId, report),
-            recover = prob ⇒ GetReportForFailed(componentId, prob))(receiver = sender())
+            map = report ⇒ StatusReportFor(componentId, report),
+            recover = prob ⇒ GetStatusReportForFailed(componentId, prob))(receiver = sender())
         case None ⇒
-          sender() ! GetReportForFailed(componentId, NotFoundProblem(s"No reporter for $componentId"))
+          sender() ! GetStatusReportForFailed(componentId, NotFoundProblem(s"No reporter for $componentId"))
       }
     
-    case GetReporters =>
-      sender() ! Reporters(reporters.toList)
+    case GetStatusReporters =>
+      sender() ! StatusReporters(reporters.toList)
   }
 
   override def receive: Receive = receiveRunning

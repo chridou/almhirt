@@ -84,17 +84,17 @@ private[almhirt] class HttpHerderServiceActor(params: HttpHerderServiceFactory.H
   override def receive = runRoute(route)
 }
 
-class JsonReportFactory(private val context: ActorContext)(implicit almhirtContext: AlmhirtContext) extends Directives with spray.httpx.Json4sSupport {
+class JsonStatusReportFactory(private val context: ActorContext)(implicit almhirtContext: AlmhirtContext) extends Directives with spray.httpx.Json4sSupport {
   implicit override val json4sFormats = org.json4s.native.Serialization.formats(NoTypeHints) + new Json4SComponentStateSerializer
 
-  def createJsonReportRoute(maxCallDuration: FiniteDuration)(implicit executor: ExecutionContext): RequestContext ⇒ Unit = {
+  def createJsonStatusReportRoute(maxCallDuration: FiniteDuration)(implicit executor: ExecutionContext): RequestContext ⇒ Unit = {
     pathPrefix(Segment / Segment) { (appName, componentName) ⇒
       get { ctx ⇒
         val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
-        val fut = (herder ? ReportMessages.GetReportFor(ComponentId(AppName(appName), ComponentName(componentName))))(maxCallDuration).mapCastTo[ReportMessages.GetReportForRsp].mapV {
-          case ReportMessages.ReportFor(_, report) ⇒
+        val fut = (herder ? StatusReportMessages.GetStatusReportFor(ComponentId(AppName(appName), ComponentName(componentName))))(maxCallDuration).mapCastTo[StatusReportMessages.GetStatusReportForRsp].mapV {
+          case StatusReportMessages.StatusReportFor(_, report) ⇒
             scalaz.Success(report)
-          case ReportMessages.GetReportForFailed(_, prob) ⇒
+          case StatusReportMessages.GetStatusReportForFailed(_, prob) ⇒
             scalaz.Failure(prob)
         }
         fut.fold(
@@ -114,8 +114,8 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
     implicit val execCtx = selectExecutionContext(params.exectionContextSelector)
     implicit val problemMarshaller = params.problemMarshaller
     val maxCallDuration = params.maxCallDuration
-    val reportFactory = new JsonReportFactory(this.context)
-    val reportTerminator = reportFactory.createJsonReportRoute(maxCallDuration)
+    val reportFactory = new JsonStatusReportFactory(this.context)
+    val reportTerminator = reportFactory.createJsonStatusReportRoute(maxCallDuration)
 
     pathPrefix("herder") {
       pathPrefix("ui") {
@@ -134,7 +134,7 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
             val futRejectedCommands = (herder ? CommandMessages.ReportRejectedCommands)(maxCallDuration).mapCastTo[CommandMessages.RejectedCommands].map(_.rejectedCommands)
             val futMissedEvents = (herder ? EventMessages.ReportMissedEvents)(maxCallDuration).mapCastTo[EventMessages.MissedEvents].map(_.missedEvents)
             val futInfos = (herder ? InformationMessages.ReportInformation)(maxCallDuration).mapCastTo[InformationMessages.ReportedInformation].map(_.information)
-            val futReporters = (herder ? ReportMessages.GetReporters)(maxCallDuration).mapCastTo[ReportMessages.Reporters].map(_.reporters)
+            val futReporters = (herder ? StatusReportMessages.GetStatusReporters)(maxCallDuration).mapCastTo[StatusReportMessages.StatusReporters].map(_.reporters)
             val futHtml =
               for {
                 circuitStates ← futCircuits
@@ -205,15 +205,15 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
               }
             }
           }
-        } ~ pathPrefix("reports") {
+        } ~ pathPrefix("status-reports") {
           pathEnd {
             get { ctx ⇒
               val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
-              val fut = (herder ? ReportMessages.GetReporters)(maxCallDuration).mapCastTo[ReportMessages.Reporters].map(_.reporters)
+              val fut = (herder ? StatusReportMessages.GetStatusReporters)(maxCallDuration).mapCastTo[StatusReportMessages.StatusReporters].map(_.reporters)
               fut.fold(
                 problem ⇒ implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, problem),
                 reporters ⇒
-                  ctx.complete(StatusCodes.OK, createReporters(reporters)))
+                  ctx.complete(StatusCodes.OK, createStatusReporters(reporters)))
             }
           } ~ reportTerminator
         } ~ pathPrefix("component-controls") {
@@ -370,16 +370,16 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
 
   import scala.xml._
 
-  private def createReporters(reporters: Seq[(ComponentId, Reporter)]) = {
+  private def createStatusReporters(reporters: Seq[(ComponentId, StatusReporter)]) = {
     <html>
       <head>
-        <title>Reporters</title>
+        <title>Status Reporters</title>
       </head>
       <body>
         {
           reporters.map {
             case (component, reporter) ⇒
-              val att = new UnprefixedAttribute("href", s"/herder/reports/${component.app.value}/${component.component.value}", xml.Null)
+              val att = new UnprefixedAttribute("href", s"/herder/status-reports/${component.app.value}/${component.component.value}", xml.Null)
               val anchor = Elem(null, "a", att, TopScope, true, Text(s"Report for $component"))
               <td>{ anchor }</td>
           }
@@ -1583,7 +1583,7 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
     rejectedCommands: Seq[(ComponentId, BadThingsHistory[RejectedCommandsEntry])],
     missedEvents: Seq[(ComponentId, BadThingsHistory[MissedEventsEntry])],
     information: Seq[(ComponentId, ImportantThingsHistory[InformationEntry])],
-    reporters: Seq[(ComponentId, Reporter)],
+    statusReporters: Seq[(ComponentId, StatusReporter)],
     pathToHerder: String) = {
     <html>
       <head>
@@ -1615,9 +1615,9 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
           <tr>
             <td>{ createFailuresReportContent(failures, true, pathToHerder) }</td>
             <td>{
-              reporters.map {
+              statusReporters.map {
                 case (component, reporter) ⇒
-                  val att = new UnprefixedAttribute("href", s"/herder/reports/${component.app.value}/${component.component.value}", xml.Null)
+                  val att = new UnprefixedAttribute("href", s"/herder/status-reports/${component.app.value}/${component.component.value}", xml.Null)
                   val anchor = Elem(null, "a", att, TopScope, true, Text(s"Report for $component"))
                   <p>{ anchor }</p>
               }

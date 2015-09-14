@@ -38,18 +38,18 @@ object HerderMessages {
      
   }
 
-  object ReportMessages {
-    sealed trait ReportMessage
-    final case class RegisterReporter(id: ComponentId, reporter: almhirt.herder.Reporter) extends ReportMessage with HerderNotificicationMessage
-    final case class DeregisterReporter(id: ComponentId) extends ReportMessage with HerderNotificicationMessage
+  object StatusReportMessages {
+    sealed trait StatusReportMessage
+    final case class RegisterStatusReporter(id: ComponentId, reporter: almhirt.herder.StatusReporter) extends StatusReportMessage with HerderNotificicationMessage
+    final case class DeregisterStatusReporter(id: ComponentId) extends StatusReportMessage with HerderNotificicationMessage
  
-    final case class GetReportFor(componentId: ComponentId) extends ReportMessage
-    sealed trait GetReportForRsp extends ReportMessage
-    final case class ReportFor(componentId: ComponentId, report: Report) extends GetReportForRsp
-    final case class GetReportForFailed(componentId: ComponentId, problem: Problem) extends GetReportForRsp
+    final case class GetStatusReportFor(componentId: ComponentId) extends StatusReportMessage
+    sealed trait GetStatusReportForRsp extends StatusReportMessage
+    final case class StatusReportFor(componentId: ComponentId, report: StatusReport) extends GetStatusReportForRsp
+    final case class GetStatusReportForFailed(componentId: ComponentId, problem: Problem) extends GetStatusReportForRsp
      
-    case object GetReporters extends ReportMessage 
-    final case class Reporters(reporters: Seq[(ComponentId, Reporter)]) extends ReportMessage
+    case object GetStatusReporters extends StatusReportMessage 
+    final case class StatusReporters(reporters: Seq[(ComponentId, StatusReporter)]) extends StatusReportMessage
     
   }
   

@@ -2,17 +2,17 @@ package almhirt.herder
 
 import almhirt.common._
 
-trait Report {
+trait StatusReport {
   def name: String
 }
 
-trait Reporter {
-  def report: AlmFuture[Report]
+trait StatusReporter {
+  def report: AlmFuture[StatusReport]
 }
 
-object Reporter {
-  def apply(getReport: () ⇒ AlmFuture[Report]): Reporter =
-    new Reporter {
+object StatusReporter {
+  def apply(getReport: () ⇒ AlmFuture[StatusReport]): StatusReporter =
+    new StatusReporter {
       def report = getReport()
     }
 }

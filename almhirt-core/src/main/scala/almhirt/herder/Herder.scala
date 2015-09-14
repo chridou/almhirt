@@ -81,7 +81,7 @@ private[almhirt] class Pastor(
 
     case m: HerderMessages.InformationMessages.InformationMessage           ⇒ informationHerdingDog forward m
 
-    case m: HerderMessages.ReportMessages.ReportMessage                     ⇒ reportHerdingDog forward m
+    case m: HerderMessages.StatusReportMessages.StatusReportMessage                     ⇒ reportHerdingDog forward m
   }
 
   def receive = receiveRunning
