@@ -13,7 +13,7 @@ trait StatusReportingActor { me: AlmActor ⇒
   final def registerStatusReporter(reporter: almhirt.herder.StatusReporter)(implicit cnp: ActorComponentIdProvider): Unit =
     almhirtContext.tellHerder(StatusReportMessages.RegisterStatusReporter(cnp.componentId, reporter))
 
-  final def registerStatusReporterPF[T: ClassTag](requestReportMsg: Any, extractReportPF: PartialFunction[T, AlmValidation[almhirt.herder.StatusReport]])(implicit cnp: ActorComponentIdProvider, executor: ExecutionContext): Unit = {
+  final def registerStatusReporterPF[T: ClassTag](requestReportMsg: Any, extractReportPF: PartialFunction[T, AlmValidation[almhirt.akkax.reporting.StatusReport]])(implicit cnp: ActorComponentIdProvider, executor: ExecutionContext): Unit = {
     val reporter = almhirt.herder.StatusReporter(getReport = () ⇒ {
       (self ? requestReportMsg)(5.seconds).mapCastTo[T].mapV(extractReportPF)
     })

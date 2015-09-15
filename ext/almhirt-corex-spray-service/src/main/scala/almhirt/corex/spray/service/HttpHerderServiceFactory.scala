@@ -22,9 +22,6 @@ import spray.httpx.marshalling.Marshaller
 import spray.http.StatusCodes
 import spray.routing.RequestContext
 import spray.routing.HttpService
-import org.json4s.CustomSerializer
-import org.json4s._
-import org.json4s.native.JsonMethods._
 
 object HttpHerderServiceFactory {
   final case class HttpHerderServiceParams(
@@ -47,15 +44,6 @@ object HttpHerderServiceFactory {
 
 }
 
-class Json4SComponentStateSerializer extends CustomSerializer[ComponentState](format ⇒ (
-  {
-    case JString(toParse) ⇒
-      ComponentState.fromString(toParse).resultOrEscalate
-  },
-  {
-    case x: ComponentState ⇒
-      JString(x.parsableString)
-  }))
 
 object HttpHerderService {
   def propsRaw(
@@ -84,28 +72,6 @@ private[almhirt] class HttpHerderServiceActor(params: HttpHerderServiceFactory.H
   override def receive = runRoute(route)
 }
 
-class JsonStatusReportFactory(private val context: ActorContext)(implicit almhirtContext: AlmhirtContext, problemMarshaller: Marshaller[Problem]) extends Directives with spray.httpx.Json4sSupport {
-  implicit override val json4sFormats = org.json4s.native.Serialization.formats(NoTypeHints) + new Json4SComponentStateSerializer
-  //implicit override val json4sFormats = org.json4s.DefaultFormats + new Json4SComponentStateSerializer
-
-  def createJsonStatusReportRoute(maxCallDuration: FiniteDuration)(implicit executor: ExecutionContext): RequestContext ⇒ Unit = {
-    pathPrefix(Segment / Segment) { (appName, componentName) ⇒
-      get { ctx ⇒
-        val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
-        val fut = (herder ? StatusReportMessages.GetStatusReportFor(ComponentId(AppName(appName), ComponentName(componentName))))(maxCallDuration).mapCastTo[StatusReportMessages.GetStatusReportForRsp].mapV {
-          case StatusReportMessages.StatusReportFor(_, report) ⇒
-            scalaz.Success(report)
-          case StatusReportMessages.GetStatusReportForFailed(_, prob) ⇒
-            scalaz.Failure(prob)
-        }
-        fut.fold(
-          problem ⇒ implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, problem)(problemMarshaller),
-          report ⇒ ctx.complete(report))
-      }
-    }
-  }
-
-}
 
 trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLogging ⇒
   import almhirt.components.EventSinkHubMessage

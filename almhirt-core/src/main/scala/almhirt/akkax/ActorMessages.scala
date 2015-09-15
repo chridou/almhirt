@@ -53,6 +53,11 @@ object ActorMessages {
     val shutdownRestart = Set[ComponentControlAction](PrepareForShutdown, Restart)
   }
 
+  sealed trait StatusReportMessage
+  case object ReportStatus extends StatusReportMessage
+  sealed trait ReportStatusRsp extends StatusReportMessage
+  final case class CurrentStatusReport(status: almhirt.akkax.reporting.StatusReport) extends ReportStatusRsp
+  final case class ReportStatusFailed(cause: almhirt.problem.ProblemCause) extends ReportStatusRsp
 }
 
 object CreateChildActorHelper {

@@ -45,7 +45,7 @@ object HerderMessages {
  
     final case class GetStatusReportFor(componentId: ComponentId) extends StatusReportMessage
     sealed trait GetStatusReportForRsp extends StatusReportMessage
-    final case class StatusReportFor(componentId: ComponentId, report: StatusReport) extends GetStatusReportForRsp
+    final case class StatusReportFor(componentId: ComponentId, report: almhirt.akkax.reporting.StatusReport) extends GetStatusReportForRsp
     final case class GetStatusReportForFailed(componentId: ComponentId, problem: Problem) extends GetStatusReportForRsp
      
     case object GetStatusReporters extends StatusReportMessage 
