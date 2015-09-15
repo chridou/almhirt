@@ -46,23 +46,24 @@ trait RValueConverters {
 }
 
 trait RValueOptionConverters { self: RValueConverters ⇒
-  private def createOptionSomeConverterWrapperInst[T](implicit converter: RValueConverter[T]): RValueConverter[Some[T]] = new RValueConverter[Some[T]] {
-    def convert(value: Some[T]): AST.RValue = converter.convert(value.get)
+  private def createOptionSomeConverterWrapperInst[T](implicit converter: RValueConverter[T]): RValueConverter[Option[T]] = new RValueConverter[Option[T]] {
+    def convert(value: Option[T]): AST.RValue = 
+      value match {
+      case Some(t) => converter.convert(t)
+       case None => AST.RNotAvailable
+    }
+      
   }
 
-  implicit val SomeRVAlueConverterIdentityInst: RValueConverter[Some[AST.RValue]] = createOptionSomeConverterWrapperInst[AST.RValue]
-  implicit val SomeRVAlueConverterComponentStateInst: RValueConverter[Some[ComponentState]] = createOptionSomeConverterWrapperInst[ComponentState]
-  implicit val SomeRVAlueConverterStringInst: RValueConverter[Some[String]] = createOptionSomeConverterWrapperInst[String]
-  implicit val SomeRVAlueConverterIntInst: RValueConverter[Some[Int]] = createOptionSomeConverterWrapperInst[Int]
-  implicit val SomeRVAlueConverterLongInst: RValueConverter[Some[Long]] = createOptionSomeConverterWrapperInst[Long]
-  implicit val SomeRVAlueConverterFloatInst: RValueConverter[Some[Float]] = createOptionSomeConverterWrapperInst[Float]
-  implicit val SomeRVAlueConverterDoubleInst: RValueConverter[Some[Double]] = createOptionSomeConverterWrapperInst[Double]
-  implicit val SomeRVAlueConverterrBooleanInst: RValueConverter[Some[Boolean]] = createOptionSomeConverterWrapperInst[Boolean]
-  implicit val SomeRVAlueConverterLocalDateTimeInst: RValueConverter[Some[LocalDateTime]] = createOptionSomeConverterWrapperInst[LocalDateTime]
-  implicit val SomeRVAlueConverterZonedDateTimeInst: RValueConverter[Some[ZonedDateTime]] = createOptionSomeConverterWrapperInst[ZonedDateTime]
-  implicit val SomeRVAlueConverterProblemCauseInst: RValueConverter[Some[ProblemCause]] = createOptionSomeConverterWrapperInst[ProblemCause]
-
-  implicit val NoneRVAlueConverterWrapperInst: RValueConverter[None.type] = new RValueConverter[None.type] {
-    def convert(value: None.type): AST.RValue = AST.RNotAvailable
-  }
+  implicit val SomeRVAlueConverterIdentityInst: RValueConverter[Option[AST.RValue]] = createOptionSomeConverterWrapperInst[AST.RValue]
+  implicit val SomeRVAlueConverterComponentStateInst: RValueConverter[Option[ComponentState]] = createOptionSomeConverterWrapperInst[ComponentState]
+  implicit val SomeRVAlueConverterStringInst: RValueConverter[Option[String]] = createOptionSomeConverterWrapperInst[String]
+  implicit val SomeRVAlueConverterIntInst: RValueConverter[Option[Int]] = createOptionSomeConverterWrapperInst[Int]
+  implicit val SomeRVAlueConverterLongInst: RValueConverter[Option[Long]] = createOptionSomeConverterWrapperInst[Long]
+  implicit val SomeRVAlueConverterFloatInst: RValueConverter[Option[Float]] = createOptionSomeConverterWrapperInst[Float]
+  implicit val SomeRVAlueConverterDoubleInst: RValueConverter[Option[Double]] = createOptionSomeConverterWrapperInst[Double]
+  implicit val SomeRVAlueConverterrBooleanInst: RValueConverter[Option[Boolean]] = createOptionSomeConverterWrapperInst[Boolean]
+  implicit val SomeRVAlueConverterLocalDateTimeInst: RValueConverter[Option[LocalDateTime]] = createOptionSomeConverterWrapperInst[LocalDateTime]
+  implicit val SomeRVAlueConverterZonedDateTimeInst: RValueConverter[Option[ZonedDateTime]] = createOptionSomeConverterWrapperInst[ZonedDateTime]
+  implicit val SomeRVAlueConverterProblemCauseInst: RValueConverter[Option[ProblemCause]] = createOptionSomeConverterWrapperInst[ProblemCause]
 }

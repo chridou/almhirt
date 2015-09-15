@@ -10,8 +10,3 @@ object StatusReport {
 
 }
 
-object XX {
-  import DefaultAppenders._
-  
-  val x = StatusReport().add("a", "1") + ("b" -> None) + ("c" -> Some("sss"))
-}

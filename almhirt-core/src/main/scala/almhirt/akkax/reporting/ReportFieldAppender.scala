@@ -49,26 +49,25 @@ trait BasicTypeAppenders {
 }
 
 trait OptionAppenders { self: BasicTypeAppenders with IdentityAppenders ⇒
-  private def createOptionSomeAppenderWrapperInst[T](implicit basicAppender: ReportFieldAppender[T]): ReportFieldAppender[Some[T]] = new ReportFieldAppender[Some[T]] {
-    def append(label: String, value: Some[T], current: ReportFields): ReportFields =
-      basicAppender.append(label, value.get, current)
+  private def createOptionSomeAppenderWrapperInst[T](implicit basicAppender: ReportFieldAppender[T]): ReportFieldAppender[Option[T]] = new ReportFieldAppender[Option[T]] {
+    def append(label: String, value: Option[T], current: ReportFields): ReportFields =
+      value match {
+        case Some(v) ⇒ basicAppender.append(label, value.get, current)
+        case None    ⇒ current :+ AST.RField(label, AST.RNotAvailable)
+      }
+
   }
 
-  implicit val SomeReportFieldAppenderIdentityInst: ReportFieldAppender[Some[AST.RValue]] = createOptionSomeAppenderWrapperInst[AST.RValue]
-  implicit val SomeReportFieldAppenderComponentStateInst: ReportFieldAppender[Some[ComponentState]] = createOptionSomeAppenderWrapperInst[ComponentState]
-  implicit val SomeReportFieldAppenderStringInst: ReportFieldAppender[Some[String]] = createOptionSomeAppenderWrapperInst[String]
-  implicit val SomeReportFieldAppenderIntInst: ReportFieldAppender[Some[Int]] = createOptionSomeAppenderWrapperInst[Int]
-  implicit val SomeReportFieldAppenderLongInst: ReportFieldAppender[Some[Long]] = createOptionSomeAppenderWrapperInst[Long]
-  implicit val SomeReportFieldAppenderFloatInst: ReportFieldAppender[Some[Float]] = createOptionSomeAppenderWrapperInst[Float]
-  implicit val SomeReportFieldAppenderDoubleInst: ReportFieldAppender[Some[Double]] = createOptionSomeAppenderWrapperInst[Double]
-  implicit val SomeReportFieldAppenderBooleanInst: ReportFieldAppender[Some[Boolean]] = createOptionSomeAppenderWrapperInst[Boolean]
-  implicit val SomeReportFieldAppenderLocalDateTimeInst: ReportFieldAppender[Some[LocalDateTime]] = createOptionSomeAppenderWrapperInst[LocalDateTime]
-  implicit val SomeReportFieldAppenderZonedDateTimeInst: ReportFieldAppender[Some[ZonedDateTime]] = createOptionSomeAppenderWrapperInst[ZonedDateTime]
-  implicit val SomeReportFieldAppenderProblemCauseInst: ReportFieldAppender[Some[ProblemCause]] = createOptionSomeAppenderWrapperInst[ProblemCause]
+  implicit val SomeReportFieldAppenderIdentityInst: ReportFieldAppender[Option[AST.RValue]] = createOptionSomeAppenderWrapperInst[AST.RValue]
+  implicit val SomeReportFieldAppenderComponentStateInst: ReportFieldAppender[Option[ComponentState]] = createOptionSomeAppenderWrapperInst[ComponentState]
+  implicit val SomeReportFieldAppenderStringInst: ReportFieldAppender[Option[String]] = createOptionSomeAppenderWrapperInst[String]
+  implicit val SomeReportFieldAppenderIntInst: ReportFieldAppender[Option[Int]] = createOptionSomeAppenderWrapperInst[Int]
+  implicit val SomeReportFieldAppenderLongInst: ReportFieldAppender[Option[Long]] = createOptionSomeAppenderWrapperInst[Long]
+  implicit val SomeReportFieldAppenderFloatInst: ReportFieldAppender[Option[Float]] = createOptionSomeAppenderWrapperInst[Float]
+  implicit val SomeReportFieldAppenderDoubleInst: ReportFieldAppender[Option[Double]] = createOptionSomeAppenderWrapperInst[Double]
+  implicit val SomeReportFieldAppenderBooleanInst: ReportFieldAppender[Option[Boolean]] = createOptionSomeAppenderWrapperInst[Boolean]
+  implicit val SomeReportFieldAppenderLocalDateTimeInst: ReportFieldAppender[Option[LocalDateTime]] = createOptionSomeAppenderWrapperInst[LocalDateTime]
+  implicit val SomeReportFieldAppenderZonedDateTimeInst: ReportFieldAppender[Option[ZonedDateTime]] = createOptionSomeAppenderWrapperInst[ZonedDateTime]
+  implicit val SomeReportFieldAppenderProblemCauseInst: ReportFieldAppender[Option[ProblemCause]] = createOptionSomeAppenderWrapperInst[ProblemCause]
 
-
-  implicit val OptionNoneAppenderWrapperInst: ReportFieldAppender[None.type] = new ReportFieldAppender[None.type] {
-    def append(label: String, value: None.type, current: ReportFields): ReportFields =
-     current :+ AST.RField(label, AST.RNotAvailable)
-  }
 }
