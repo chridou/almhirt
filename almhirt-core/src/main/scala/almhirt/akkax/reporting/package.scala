@@ -7,10 +7,13 @@ package object reporting {
 
   type ReportFields = Vector[AST.RField]
 
-  object DefaultAppenders extends IdentityAppenders with BasicTypeAppenders with OptionAppenders
-  object DefaultConverters extends RValueConverters with RValueOptionConverters
-  
-  def tuple2RField[T](v: (String, T))(implicit converter: RValueConverter[T]): AST.RField = AST.RField(v._1, converter.convert(v._2)) 
+  object Implicits {
+    object DefaultAppenders extends IdentityAppenders with BasicTypeAppenders with OptionAppenders
+    object DefaultConverters extends RValueConverters with RValueOptionConverters
+    object All extends IdentityAppenders with BasicTypeAppenders with OptionAppenders with RValueConverters with RValueOptionConverters
+  }
+
+  def tuple2RField[T](v: (String, T))(implicit converter: RValueConverter[T]): AST.RField = AST.RField(v._1, converter.convert(v._2))
 
   implicit class StatusReportOps(val self: AST.RReport) extends AnyVal {
     def add[T](label: String, value: T)(implicit appender: ReportFieldAppender[T]): AST.RReport =

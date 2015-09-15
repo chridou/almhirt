@@ -77,4 +77,37 @@ trait StatusReportingActor { me: AlmActor ⇒
       case ActorMessages.ReportStatusFailed(cause)   ⇒ scalaz.Failure(cause.toProblem)
     }
 
+  def queryReportFromActorOpt(fromActorOpt: Option[ActorRef], timeout: FiniteDuration = 5.seconds)(implicit executor: ExecutionContext): AlmFuture[Option[StatusReport]] =
+    fromActorOpt match {
+      case Some(from) ⇒
+        (from ? ActorMessages.ReportStatus)(timeout).mapCastTo[ActorMessages.ReportStatusRsp].mapV {
+          case ActorMessages.CurrentStatusReport(report) ⇒ scalaz.Success(Some(report))
+          case ActorMessages.ReportStatusFailed(cause)   ⇒ scalaz.Failure(cause.toProblem)
+        }
+      case None ⇒
+        AlmFuture.successful(None)
+    }
+
+  def queryReportFromActorSelectionOpt(fromActorSelectionOpt: Option[ActorSelection], timeout: FiniteDuration = 5.seconds)(implicit executor: ExecutionContext): AlmFuture[Option[StatusReport]] =
+    fromActorSelectionOpt match {
+      case Some(from) ⇒
+        (from ? ActorMessages.ReportStatus)(timeout).mapCastTo[ActorMessages.ReportStatusRsp].mapV {
+          case ActorMessages.CurrentStatusReport(report) ⇒ scalaz.Success(Some(report))
+          case ActorMessages.ReportStatusFailed(cause)   ⇒ scalaz.Failure(cause.toProblem)
+        }
+      case None ⇒
+        AlmFuture.successful(None)
+    }
+
+  def queryReportFromPathOpt(fromPathOpt: Option[ActorPath], timeout: FiniteDuration = 5.seconds)(implicit executor: ExecutionContext): AlmFuture[Option[StatusReport]] =
+    fromPathOpt match {
+      case Some(from) ⇒
+        (this.context.actorSelection(from) ? ActorMessages.ReportStatus)(timeout).mapCastTo[ActorMessages.ReportStatusRsp].mapV {
+          case ActorMessages.CurrentStatusReport(report) ⇒ scalaz.Success(Some(report))
+          case ActorMessages.ReportStatusFailed(cause)   ⇒ scalaz.Failure(cause.toProblem)
+        }
+      case None ⇒
+        AlmFuture.successful(None)
+    }
+
 }
