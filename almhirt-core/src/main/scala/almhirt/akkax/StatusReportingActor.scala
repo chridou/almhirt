@@ -3,6 +3,7 @@ package almhirt.akkax
 import scala.reflect.ClassTag
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
+import akka.actor._
 import akka.pattern._
 import almhirt.common._
 import almhirt.almfuture.all._
@@ -57,5 +58,23 @@ trait StatusReportingActor { me: AlmActor ⇒
 
   def reportsStatusF(onReportRequested: () ⇒ AlmFuture[StatusReport])(receive: Receive)(implicit executor: ExecutionContext) =
     receive.termininateStatusReportingF(onReportRequested)
+
+  def queryReportFromActor(fromActor: ActorRef, timeout: FiniteDuration = 5.seconds)(implicit executor: ExecutionContext): AlmFuture[StatusReport] =
+    (fromActor ? ActorMessages.ReportStatus)(timeout).mapCastTo[ActorMessages.ReportStatusRsp].mapV {
+      case ActorMessages.CurrentStatusReport(report) ⇒ scalaz.Success(report)
+      case ActorMessages.ReportStatusFailed(cause)   ⇒ scalaz.Failure(cause.toProblem)
+    }
+
+  def queryReportFromActorSelection(fromActorSelection: ActorSelection, timeout: FiniteDuration = 5.seconds)(implicit executor: ExecutionContext): AlmFuture[StatusReport] =
+    (fromActorSelection ? ActorMessages.ReportStatus)(timeout).mapCastTo[ActorMessages.ReportStatusRsp].mapV {
+      case ActorMessages.CurrentStatusReport(report) ⇒ scalaz.Success(report)
+      case ActorMessages.ReportStatusFailed(cause)   ⇒ scalaz.Failure(cause.toProblem)
+    }
+
+  def queryReportFromPath(fromPath: ActorPath, timeout: FiniteDuration = 5.seconds)(implicit executor: ExecutionContext): AlmFuture[StatusReport] =
+    (this.context.actorSelection(fromPath) ? ActorMessages.ReportStatus)(timeout).mapCastTo[ActorMessages.ReportStatusRsp].mapV {
+      case ActorMessages.CurrentStatusReport(report) ⇒ scalaz.Success(report)
+      case ActorMessages.ReportStatusFailed(cause)   ⇒ scalaz.Failure(cause.toProblem)
+    }
 
 }
