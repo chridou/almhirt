@@ -3,14 +3,15 @@ package almhirt.akkax.reporting
 import java.time.{ LocalDateTime, ZonedDateTime }
 import almhirt.problem.ProblemCause
 import almhirt.akkax.ComponentState
+import almhirt.akkax.reporting.AST.RReport
 
 trait ReportFieldAppender[T] {
   def append(label: String, value: T, current: ReportFields): ReportFields
 }
 
 trait IdentityAppenders {
-  implicit val ReportFieldAppenderReportBasicValueInst: ReportFieldAppender[AST.RBasicValue] = new ReportFieldAppender[AST.RBasicValue] {
-    def append(label: String, value: AST.RBasicValue, current: ReportFields): ReportFields = current :+ AST.RField(label, value)
+  implicit val ReportFieldAppenderIdentityInst: ReportFieldAppender[AST.RValue] = new ReportFieldAppender[AST.RValue] {
+    def append(label: String, value: AST.RValue, current: ReportFields): ReportFields = current :+ AST.RField(label, value)
   }
 }
 
@@ -53,6 +54,7 @@ trait OptionAppenders { self: BasicTypeAppenders with IdentityAppenders ⇒
       basicAppender.append(label, value.get, current)
   }
 
+  implicit val SomeReportFieldAppenderIdentityInst: ReportFieldAppender[Some[AST.RValue]] = createOptionSomeAppenderWrapperInst[AST.RValue]
   implicit val SomeReportFieldAppenderComponentStateInst: ReportFieldAppender[Some[ComponentState]] = createOptionSomeAppenderWrapperInst[ComponentState]
   implicit val SomeReportFieldAppenderStringInst: ReportFieldAppender[Some[String]] = createOptionSomeAppenderWrapperInst[String]
   implicit val SomeReportFieldAppenderIntInst: ReportFieldAppender[Some[Int]] = createOptionSomeAppenderWrapperInst[Int]

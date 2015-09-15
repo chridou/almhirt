@@ -9,6 +9,9 @@ trait RValueConverter[T] {
 }
 
 trait RValueConverters {
+  implicit val RValueConverterIdentityInst: RValueConverter[AST.RValue] = new RValueConverter[AST.RValue] {
+    def convert(value: AST.RValue): AST.RValue = value
+  }
   implicit val RValueConverterComponentStateInst: RValueConverter[ComponentState] = new RValueConverter[ComponentState] {
     def convert(value: ComponentState): AST.RValue = AST.RComponentState(value)
   }
@@ -47,6 +50,7 @@ trait RValueOptionConverters { self: RValueConverters ⇒
     def convert(value: Some[T]): AST.RValue = converter.convert(value.get)
   }
 
+  implicit val SomeRVAlueConverterIdentityInst: RValueConverter[Some[AST.RValue]] = createOptionSomeConverterWrapperInst[AST.RValue]
   implicit val SomeRVAlueConverterComponentStateInst: RValueConverter[Some[ComponentState]] = createOptionSomeConverterWrapperInst[ComponentState]
   implicit val SomeRVAlueConverterStringInst: RValueConverter[Some[String]] = createOptionSomeConverterWrapperInst[String]
   implicit val SomeRVAlueConverterIntInst: RValueConverter[Some[Int]] = createOptionSomeConverterWrapperInst[Int]
