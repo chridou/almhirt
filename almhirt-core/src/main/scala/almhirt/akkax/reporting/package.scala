@@ -70,8 +70,8 @@ package object reporting {
     def bornUtc(when: java.time.LocalDateTime): AST.RReport =
       AST.RReport(self.fields :+ AST.RField("date-of-birth-utc", AST.RLocalDateTime(when)))
 
-    def age(duration: scala.concurrent.duration.FiniteDuration): AST.RReport =
-      AST.RReport(self.fields :+ AST.RField("age", AST.RDuration(duration)))
+    def age(duration: java.time.Duration): AST.RReport =
+      AST.RReport(self.fields :+ AST.RField("age", AST.RJDuration(duration)))
 
     def removeNotAvailable: AST.RReport =
       AST.RReport(self.fields.filter {

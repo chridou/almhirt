@@ -33,6 +33,9 @@ trait RValueIdentityConverters {
   implicit val RValueIdentityConverterDurationInst: RValueConverter[AST.RDuration] = new RValueConverter[AST.RDuration] {
     def convert(value: AST.RDuration): AST.RValue = value
   }
+  implicit val RValueIdentityConverterJDurationInst: RValueConverter[AST.RJDuration] = new RValueConverter[AST.RJDuration] {
+    def convert(value: AST.RJDuration): AST.RValue = value
+  }
   implicit val RValueIdentityConverterErrorInst: RValueConverter[AST.RError] = new RValueConverter[AST.RError] {
     def convert(value: AST.RError): AST.RValue = value
   }
@@ -73,6 +76,9 @@ trait RValueConverters {
   implicit val RValueConverterDurationInst: RValueConverter[scala.concurrent.duration.FiniteDuration] = new RValueConverter[scala.concurrent.duration.FiniteDuration] {
     def convert(value: scala.concurrent.duration.FiniteDuration): AST.RValue = AST.RDuration(value)
   }
+  implicit val RValueConverterJDurationInst: RValueConverter[java.time.Duration] = new RValueConverter[java.time.Duration] {
+    def convert(value: java.time.Duration): AST.RValue = AST.RJDuration(value)
+  }
   implicit val RValueConverterProblemInst: RValueConverter[almhirt.common.Problem] = new RValueConverter[almhirt.common.Problem] {
     def convert(value: almhirt.common.Problem): AST.RValue = AST.RError(value.message)
   }
@@ -100,6 +106,7 @@ trait RValueOptionConverters { self: RValueConverters with RValueIdentityConvert
   implicit val OptionRValueIdentityConverterLocalDateTimeInst: RValueConverter[Option[AST.RLocalDateTime]] = createOptionSomeConverterWrapperInst[AST.RLocalDateTime]
   implicit val OptionRValueIdentityConverterZonedDateTimeInst: RValueConverter[Option[AST.RZonedDateTime]] = createOptionSomeConverterWrapperInst[AST.RZonedDateTime]
   implicit val OptionRValueIdentityConverterDurationInst: RValueConverter[Option[AST.RDuration]] = createOptionSomeConverterWrapperInst[AST.RDuration]
+  implicit val OptionRValueIdentityConverterJDurationInst: RValueConverter[Option[AST.RJDuration]] = createOptionSomeConverterWrapperInst[AST.RJDuration]
   implicit val OptionRValueIdentityConverterErrorInst: RValueConverter[Option[AST.RError]] = createOptionSomeConverterWrapperInst[AST.RError]
   implicit val OptionRValueIdentityConverterReportInst: RValueConverter[Option[AST.RReport]] = createOptionSomeConverterWrapperInst[AST.RReport]
 
@@ -114,4 +121,5 @@ trait RValueOptionConverters { self: RValueConverters with RValueIdentityConvert
   implicit val OptionRVAlueConverterLocalDateTimeInst: RValueConverter[Option[LocalDateTime]] = createOptionSomeConverterWrapperInst[LocalDateTime]
   implicit val OptionRVAlueConverterZonedDateTimeInst: RValueConverter[Option[ZonedDateTime]] = createOptionSomeConverterWrapperInst[ZonedDateTime]
   implicit val OptionRVAlueConverterDurationInst: RValueConverter[Option[scala.concurrent.duration.FiniteDuration]] = createOptionSomeConverterWrapperInst[scala.concurrent.duration.FiniteDuration]
+  implicit val OptionRVAlueConverterJDurationInst: RValueConverter[Option[java.time.Duration]] = createOptionSomeConverterWrapperInst[java.time.Duration]
 }

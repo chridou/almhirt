@@ -15,6 +15,7 @@ object AST {
   final case class RLocalDateTime(value: java.time.LocalDateTime) extends RBasicValue
   final case class RZonedDateTime(value: java.time.ZonedDateTime) extends RBasicValue
   final case class RDuration(value: scala.concurrent.duration.FiniteDuration) extends RBasicValue
+  final case class RJDuration(value: java.time.Duration) extends RBasicValue
   final case class RError(message: String) extends RBasicValue
   case object RNotAvailable extends RBasicValue
 

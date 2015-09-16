@@ -39,6 +39,7 @@ class JsonStatusReportFactory(private val context: ActorContext)(implicit almhir
       case AST.RLocalDateTime(value)  ⇒ JString(value.toString)
       case AST.RZonedDateTime(value)  ⇒ JString(value.toString)
       case AST.RDuration(value)       ⇒ JString(value.defaultUnitString)
+      case AST.RJDuration(value)      ⇒ JString(value.toString)
       case AST.RError(message)        ⇒ JString(s"ERROR: $message")
       case AST.RNotAvailable          ⇒ JString("N/A")
       case AST.RReport(fields) ⇒
