@@ -29,11 +29,8 @@ import org.json4s.native.JsonMethods._
 class JsonStatusReportFactory(private val context: ActorContext)(implicit almhirtContext: AlmhirtContext, problemMarshaller: Marshaller[Problem]) extends Directives with spray.httpx.Json4sSupport {
   import almhirt.akkax.reporting._
 
-  class Json4SRBasicValueSerializer extends CustomSerializer[AST.RBasicValue](format ⇒ (
-    {
-      case _ ⇒ ???
-    },
-    {
+  def serializeAst(what: AST.RValue): JValue =
+    what match {
       case AST.RComponentState(state) ⇒ JString(state.parsableString)
       case AST.RString(value)         ⇒ JString(value)
       case AST.RInteger(value)        ⇒ JInt(value)
@@ -44,18 +41,12 @@ class JsonStatusReportFactory(private val context: ActorContext)(implicit almhir
       case AST.RDuration(value)       ⇒ JString(value.defaultUnitString)
       case AST.RError(message)        ⇒ JString(s"ERROR: $message")
       case AST.RNotAvailable          ⇒ JString("N/A")
-    }))
-
-  class Json4SReportSerializer extends CustomSerializer[AST.RReport](format ⇒ (
-    {
-      case _ ⇒ ???
-    },
-    {
       case AST.RReport(fields) ⇒
-        JObject(fields.map(field ⇒ JField(field.label, Extraction.decompose(field.value))): _*)
-    }))
+        JObject(fields.map(field ⇒ JField(field.label, serializeAst(field.value))): _*)
 
-  implicit override val json4sFormats = org.json4s.native.Serialization.formats(NoTypeHints) + new Json4SRBasicValueSerializer
+    }
+
+  implicit override val json4sFormats = org.json4s.native.Serialization.formats(NoTypeHints)
   //implicit override val json4sFormats = org.json4s.DefaultFormats + new Json4SComponentStateSerializer
 
   def createJsonStatusReportRoute(maxCallDuration: FiniteDuration)(implicit executor: ExecutionContext): RequestContext ⇒ Unit = {
@@ -70,7 +61,7 @@ class JsonStatusReportFactory(private val context: ActorContext)(implicit almhir
         }
         fut.fold(
           problem ⇒ implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, problem)(problemMarshaller),
-          report ⇒ ctx.complete(report))
+          report ⇒ ctx.complete(serializeAst(report)))
       }
     }
   }
