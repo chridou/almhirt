@@ -25,8 +25,8 @@ trait AlmActor extends Actor with HasAlmhirtContext with AlmActorSupport {
   implicit def CommandToCommandRepresentation(cmd: Command): CommandRepresentation = CommandRepresentation.FullCommand(cmd)
   implicit def CommandIdToCommandRepresentation(id: CommandId): CommandRepresentation = CommandRepresentation.CommandIdOnly(id)
 
-  protected val born = this.almhirtContext.getDateTime()
-  protected val bornUtc = this.almhirtContext.getUtcTimestamp
+  protected val born = java.time.ZonedDateTime.now()
+  protected val bornUtc = java.time.LocalDateTime.now(java.time.ZoneOffset.UTC)
  // protected final def livingFor:  = this.almhirtContext.getUtcTimestamp
   
   def selectExecutionContext(implicit selector: ExtendedExecutionContextSelector): ExecutionContext =
