@@ -12,7 +12,7 @@ package object reporting {
 
   object Implicits extends RValueConverters with RValueOptionConverters
   
-  def toAST[T](what: T)(implicit converter: RValueConverter[T]) = converter.convert(what)
+  implicit def toAST[T](what: T)(implicit converter: RValueConverter[T]): AST.RValue = converter.convert(what)
 
   implicit def almValidation2RValue[T](v: AlmValidation[T])(implicit converter: RValueConverter[T], pconv: RValueConverter[Problem]): AST.RValue =
     v.fold(
