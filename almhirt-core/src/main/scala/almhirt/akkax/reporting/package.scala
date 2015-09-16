@@ -8,16 +8,30 @@ package object reporting {
 
   type ReportFields = Vector[AST.RField]
 
+  type ProblematicOption[T] = AlmValidation[Option[T]]
+
   object Implicits extends RValueConverters with RValueOptionConverters
 
-  implicit def tuple2RField[T](v: (String, T))(implicit converter: RValueConverter[T]): AST.RField = AST.RField(v._1, converter.convert(v._2))
-  implicit def almValidation2RValue[T](v: AlmValidation[T])(implicit converter: RValueConverter[T]): AST.RValue =
+  implicit def almValidation2RValue[T](v: AlmValidation[T])(implicit converter: RValueConverter[T], pconv: RValueConverter[Problem]): AST.RValue =
     v.fold(
-      fail ⇒ Implicits.RValueConverterProblemCauseInst.convert(fail),
+      fail ⇒ pconv.convert(fail),
       succ ⇒ converter.convert(succ))
-  implicit def tupleAlmValidation2RField[T](v: (String, AlmValidation[T]))(implicit converter: RValueConverter[T]): AST.RField =
+
+  implicit def almValidationOption2RValue[T](v: ProblematicOption[T])(implicit converter: RValueConverter[Option[T]], pconv: RValueConverter[Problem]): AST.RValue =
+    v.fold(
+      fail ⇒ pconv.convert(fail),
+      succ ⇒ converter.convert(succ))
+
+  implicit def tuple2RField[T](v: (String, T))(implicit converter: RValueConverter[T]): AST.RField = AST.RField(v._1, converter.convert(v._2))
+
+  implicit def tupleAlmValidation2RField[T](v: (String, AlmValidation[T]))(implicit converter: RValueConverter[T], pconv: RValueConverter[Problem]): AST.RField =
     AST.RField(v._1, v._2.fold(
-      fail ⇒ Implicits.RValueConverterProblemCauseInst.convert(fail),
+      fail ⇒ pconv.convert(fail),
+      succ ⇒ converter.convert(succ)))
+
+  implicit def tupleAlmValidationOption2RField[T](v: (String, ProblematicOption[T]))(implicit converter: RValueConverter[Option[T]], pconv: RValueConverter[Problem]): AST.RField =
+    AST.RField(v._1, v._2.fold(
+      fail ⇒ pconv.convert(fail),
       succ ⇒ converter.convert(succ)))
 
   implicit class StatusReportOps(val self: AST.RReport) extends AnyVal {
