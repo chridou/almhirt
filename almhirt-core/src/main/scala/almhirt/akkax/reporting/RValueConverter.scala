@@ -42,6 +42,9 @@ trait RValueConverters {
   implicit val RValueConverterDurationInst: RValueConverter[scala.concurrent.duration.FiniteDuration] = new RValueConverter[scala.concurrent.duration.FiniteDuration] {
     def convert(value: scala.concurrent.duration.FiniteDuration): AST.RValue = AST.RDuration(value)
   }
+  implicit val RValueConverterProblemInst: RValueConverter[almhirt.common.Problem] = new RValueConverter[almhirt.common.Problem] {
+    def convert(value: almhirt.common.Problem): AST.RValue = AST.RError(value.message)
+  }
   implicit val RValueConverterProblemCauseInst: RValueConverter[ProblemCause] = new RValueConverter[ProblemCause] {
     def convert(value: ProblemCause): AST.RValue = AST.RError(value.message)
   }
