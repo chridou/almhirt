@@ -10,9 +10,9 @@ package object reporting {
 
   type ProblematicOption[T] = AlmValidation[Option[T]]
 
-  object Implicits extends RValueConverters with RValueOptionConverters
+  object Implicits extends RValueIdentityConverters with RValueConverters with RValueOptionConverters
   
-  implicit def toAST[T](what: T)(implicit converter: RValueConverter[T]): AST.RValue = converter.convert(what)
+  def toAST[T](what: T)(implicit converter: RValueConverter[T]): AST.RValue = converter.convert(what)
 
   implicit def almValidation2RValue[T](v: AlmValidation[T])(implicit converter: RValueConverter[T], pconv: RValueConverter[Problem]): AST.RValue =
     v.fold(
