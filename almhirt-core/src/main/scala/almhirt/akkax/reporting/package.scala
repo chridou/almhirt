@@ -25,14 +25,14 @@ package object reporting {
       succ ⇒ converter.convert(succ)))
 
   implicit class StatusReportOps(val self: AST.RReport) extends AnyVal {
-    def add[T](label: String, value: T)(implicit appender: ReportFieldAppender[T]): AST.RReport =
-      AST.RReport(appender.append(label, value, self.fields))
+    def add(field: AST.RField): AST.RReport =
+      AST.RReport(self.fields :+ field)
 
-    def addMany[T](fields: AST.RField*)(implicit appender: ReportFieldAppender[T]): AST.RReport =
+    def addMany(fields: AST.RField*): AST.RReport =
       self ++ fields
-      
-    def +[T](what: (String, T))(implicit appender: ReportFieldAppender[T]): AST.RReport =
-      AST.RReport(appender.append(what._1, what._2, self.fields))
+
+    def +(field: AST.RField): AST.RReport =
+      AST.RReport(self.fields :+ field)
 
     def ++(fields: Iterable[AST.RField]): AST.RReport =
       AST.RReport(self.fields ++ fields)
