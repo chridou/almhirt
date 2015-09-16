@@ -28,10 +28,13 @@ package object reporting {
     def add[T](label: String, value: T)(implicit appender: ReportFieldAppender[T]): AST.RReport =
       AST.RReport(appender.append(label, value, self.fields))
 
+    def addMany[T](fields: AST.RField*)(implicit appender: ReportFieldAppender[T]): AST.RReport =
+      self ++ fields
+      
     def +[T](what: (String, T))(implicit appender: ReportFieldAppender[T]): AST.RReport =
       AST.RReport(appender.append(what._1, what._2, self.fields))
 
-    def ++(fields: AST.RField*): AST.RReport =
+    def ++(fields: Iterable[AST.RField]): AST.RReport =
       AST.RReport(self.fields ++ fields)
 
     def withReportName(name: String): AST.RReport =
