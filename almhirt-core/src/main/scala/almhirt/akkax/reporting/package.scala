@@ -11,7 +11,7 @@ package object reporting {
   type ProblematicOption[T] = AlmValidation[Option[T]]
 
   object Implicits extends RValueIdentityConverters with RValueConverters with RValueOptionConverters
-  
+
   def toAST[T](what: T)(implicit converter: RValueConverter[T]): AST.RValue = converter.convert(what)
 
   implicit def almValidation2RValue[T](v: AlmValidation[T])(implicit converter: RValueConverter[T], pconv: RValueConverter[Problem]): AST.RValue =
@@ -60,6 +60,18 @@ package object reporting {
 
     def createdNow(implicit ccdt: CanCreateDateTime): AST.RReport =
       AST.RReport(self.fields :+ AST.RField("created-on", AST.RZonedDateTime(ccdt.getDateTime())))
+
+    def currentlyIAm(doing: String): AST.RReport =
+      AST.RReport(self.fields :+ AST.RField("currently-i-am", AST.RString(doing)))
+
+    def runningSince(since: java.time.ZonedDateTime): AST.RReport =
+      AST.RReport(self.fields :+ AST.RField("running-since", AST.RZonedDateTime(since)))
+
+    def runningSinceUtc(sinceUtc: java.time.LocalDateTime): AST.RReport =
+      AST.RReport(self.fields :+ AST.RField("running-since-utc", AST.RLocalDateTime(sinceUtc)))
+
+    def runningFor(duration: scala.concurrent.duration.FiniteDuration): AST.RReport =
+      AST.RReport(self.fields :+ AST.RField("running-for", AST.RDuration(duration)))
 
     def removeNotAvailable: AST.RReport =
       AST.RReport(self.fields.filter {
