@@ -56,10 +56,10 @@ package object reporting {
       AST.RReport(self.fields :+ AST.RField("component-state", AST.RComponentState(state)))
 
     def createdNowUtc(implicit ccdt: CanCreateDateTime): AST.RReport =
-      AST.RReport(self.fields :+ AST.RField("created-on-utc", AST.RLocalDateTime(ccdt.getUtcTimestamp)))
+      AST.RReport(self.fields :+ AST.RField("report-created-on-utc", AST.RLocalDateTime(ccdt.getUtcTimestamp)))
 
     def createdNow(implicit ccdt: CanCreateDateTime): AST.RReport =
-      AST.RReport(self.fields :+ AST.RField("created-on", AST.RZonedDateTime(ccdt.getDateTime())))
+      AST.RReport(self.fields :+ AST.RField("report-created-on", AST.RZonedDateTime(ccdt.getDateTime())))
 
     def currentlyIAm(doing: String): AST.RReport =
       AST.RReport(self.fields :+ AST.RField("currently-i-am", AST.RString(doing)))
