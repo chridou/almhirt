@@ -13,8 +13,8 @@ import almhirt.akkax.reporting.StatusReport
 
 trait StatusReportingActor { me: AlmActor ⇒
   
-  def autoAddRunningSince: Boolean = true
-  def autoAddRunningSinceUtc: Boolean = false
+  def autoAddDateOfBirth: Boolean = true
+  def autoAddDateOfBirthUtc: Boolean = false
   
   final def registerExplicitStatusReporter(reporter: almhirt.herder.StatusReporter)(implicit cnp: ActorComponentIdProvider): Unit =
     almhirtContext.tellHerder(StatusReportMessages.RegisterStatusReporter(cnp.componentId, reporter))
@@ -27,10 +27,10 @@ trait StatusReportingActor { me: AlmActor ⇒
   }
 
   final def registerStatusReporter(timeout: FiniteDuration = 5.seconds)(implicit cnp: ActorComponentIdProvider, executor: ExecutionContext): Unit = {
-    val _autoAddRunningSince = me.autoAddRunningSince
-    val _autoAddRunningSinceUtc = me.autoAddRunningSinceUtc
-    val _runningSince = me.runningSince
-    val _runningSinceUtc = me.runningSinceUtc
+    val _autoAddRunningSince = me.autoAddDateOfBirth
+    val _autoAddRunningSinceUtc = me.autoAddDateOfBirthUtc
+    val _runningSince = me.born
+    val _runningSinceUtc = me.bornUtc
     val reporter = almhirt.herder.StatusReporter(getReport = () ⇒ {
       (self ? ActorMessages.ReportStatus)(timeout).mapCastTo[ActorMessages.ReportStatusRsp].mapV {
         case ActorMessages.CurrentStatusReport(report) ⇒ {

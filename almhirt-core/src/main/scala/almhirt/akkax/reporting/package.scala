@@ -65,13 +65,13 @@ package object reporting {
       AST.RReport(self.fields :+ AST.RField("currently-i-am", AST.RString(doing)))
 
     def born(when: java.time.ZonedDateTime): AST.RReport =
-      AST.RReport(self.fields :+ AST.RField("born", AST.RZonedDateTime(when)))
+      AST.RReport(self.fields :+ AST.RField("date-of-birth", AST.RZonedDateTime(when)))
 
     def bornUtc(when: java.time.LocalDateTime): AST.RReport =
-      AST.RReport(self.fields :+ AST.RField("born-utc", AST.RLocalDateTime(when)))
+      AST.RReport(self.fields :+ AST.RField("date-of-birth-utc", AST.RLocalDateTime(when)))
 
-    def livingFor(duration: scala.concurrent.duration.FiniteDuration): AST.RReport =
-      AST.RReport(self.fields :+ AST.RField("living-for", AST.RDuration(duration)))
+    def age(duration: scala.concurrent.duration.FiniteDuration): AST.RReport =
+      AST.RReport(self.fields :+ AST.RField("age", AST.RDuration(duration)))
 
     def removeNotAvailable: AST.RReport =
       AST.RReport(self.fields.filter {
