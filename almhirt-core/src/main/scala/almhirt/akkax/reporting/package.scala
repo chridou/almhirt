@@ -40,7 +40,7 @@ package object reporting {
       AST.RReport(self.fields :+ AST.RField("created-on", AST.RComponentState(state)))
 
     def createdNowUtc(implicit ccdt: CanCreateDateTime): AST.RReport =
-      AST.RReport(self.fields :+ AST.RField("created-on", AST.RLocalDateTime(ccdt.getUtcTimestamp)))
+      AST.RReport(self.fields :+ AST.RField("created-on-utc", AST.RLocalDateTime(ccdt.getUtcTimestamp)))
 
     def createdNow(implicit ccdt: CanCreateDateTime): AST.RReport =
       AST.RReport(self.fields :+ AST.RField("component-state", AST.RZonedDateTime(ccdt.getDateTime())))
