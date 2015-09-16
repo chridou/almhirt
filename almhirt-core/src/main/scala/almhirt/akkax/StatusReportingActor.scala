@@ -37,7 +37,8 @@ trait StatusReportingActor { me: AlmActor ⇒
         case ActorMessages.CurrentStatusReport(report) ⇒ {
           val rep1 = if (_autoAddRunningSince) report.born(_runningSince) else report
           val rep2 = if (_autoAddRunningSinceUtc) rep1.bornUtc(_runningSinceUtc) else rep1
-          val res = if (report.fields.exists { x ⇒ x.label == "report-created-on" || x.label == "report-created-on-utc" }) rep2 else rep2.createdNow(ccdt)
+          val rep3 = if (report.fields.exists { x ⇒ x.label == "report-created-on" || x.label == "report-created-on-utc" }) rep2 else rep2.createdNow(ccdt)
+          val res = if (report.fields.exists { x ⇒ x.label == "age" }) rep3 else rep3.age(java.time.Duration.between(java.time.ZonedDateTime.now(), _runningSinceUtc))
           scalaz.Success(res)
         }
         case ActorMessages.ReportStatusFailed(cause) ⇒ scalaz.Failure(cause.toProblem)
