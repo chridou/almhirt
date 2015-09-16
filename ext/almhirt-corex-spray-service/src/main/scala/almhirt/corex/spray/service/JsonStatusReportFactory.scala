@@ -34,15 +34,16 @@ class JsonStatusReportFactory(private val context: ActorContext)(implicit almhir
       case _ ⇒ ???
     },
     {
-      case AST.RComponentState(state: ComponentState)         ⇒ JString(state.parsableString)
-      case AST.RString(value: String)                         ⇒ JString(value)
-      case AST.RInteger(value: Long)                          ⇒ JInt(value)
-      case AST.RFloat(value: Double)                          ⇒ JDouble(value)
-      case AST.RBool(value: Boolean)                          ⇒ JBool(value)
-      case AST.RLocalDateTime(value: java.time.LocalDateTime) ⇒ JString(value.toString)
-      case AST.RZonedDateTime(value: java.time.ZonedDateTime) ⇒ JString(value.toString)
-      case AST.RError(message: String)                        ⇒ JString(s"ERROR: $message")
-      case AST.RNotAvailable                                  ⇒ JString("N/A")
+      case AST.RComponentState(state) ⇒ JString(state.parsableString)
+      case AST.RString(value)         ⇒ JString(value)
+      case AST.RInteger(value)        ⇒ JInt(value)
+      case AST.RFloat(value)          ⇒ JDouble(value)
+      case AST.RBool(value)           ⇒ JBool(value)
+      case AST.RLocalDateTime(value)  ⇒ JString(value.toString)
+      case AST.RZonedDateTime(value)  ⇒ JString(value.toString)
+      case AST.RDuration(value)       ⇒ JString(value.defaultUnitString)
+      case AST.RError(message)        ⇒ JString(s"ERROR: $message")
+      case AST.RNotAvailable          ⇒ JString("N/A")
     }))
 
   class Json4SReportSerializer extends CustomSerializer[AST.RReport](format ⇒ (
@@ -50,10 +51,10 @@ class JsonStatusReportFactory(private val context: ActorContext)(implicit almhir
       case _ ⇒ ???
     },
     {
-      case AST.RReport(fields)         ⇒ 
-        JObject(fields.map(field => JField(field.label, Extraction.decompose(field.value))): _*)
+      case AST.RReport(fields) ⇒
+        JObject(fields.map(field ⇒ JField(field.label, Extraction.decompose(field.value))): _*)
     }))
-    
+
   implicit override val json4sFormats = org.json4s.native.Serialization.formats(NoTypeHints) + new Json4SRBasicValueSerializer
   //implicit override val json4sFormats = org.json4s.DefaultFormats + new Json4SComponentStateSerializer
 

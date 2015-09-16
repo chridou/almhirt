@@ -1,6 +1,8 @@
-package almhirt.akkax.reporting
+package almhirt.akkax.reporting.builders
 
 import almhirt.common._
+import almhirt.akkax.reporting._
+import scala.Vector
 
 object ValidationBuilders {
   private def vali2Field[T](label: String, v: AlmValidation[T])(implicit converter: RValueConverter[T]): AST.RField =

@@ -1,7 +1,9 @@
-package almhirt.akkax.reporting
+package almhirt.akkax.reporting.builders
 
 import scala.concurrent.ExecutionContext
 import almhirt.common._
+import almhirt.akkax.reporting._
+import scala.Vector
 
 object FutureBuilders {
   private def fut2Field[T](label: String, f: AlmFuture[T])(implicit executor: ExecutionContext, converter: RValueConverter[T]): AlmFuture[AST.RField] =

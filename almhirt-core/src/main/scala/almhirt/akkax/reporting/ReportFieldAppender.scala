@@ -43,6 +43,9 @@ trait BasicTypeAppenders {
   implicit val ReportFieldAppenderZonedDateTimeInst: ReportFieldAppender[ZonedDateTime] = new ReportFieldAppender[ZonedDateTime] {
     def append(label: String, value: ZonedDateTime, current: ReportFields): ReportFields = current :+ AST.RField(label, AST.RZonedDateTime(value))
   }
+  implicit val ReportFieldAppenderDurationInst: ReportFieldAppender[scala.concurrent.duration.FiniteDuration] = new ReportFieldAppender[scala.concurrent.duration.FiniteDuration] {
+    def append(label: String, value: scala.concurrent.duration.FiniteDuration, current: ReportFields): ReportFields = current :+ AST.RField(label, AST.RDuration(value))
+  }
   implicit val ReportFieldAppenderProblemCauseInst: ReportFieldAppender[ProblemCause] = new ReportFieldAppender[ProblemCause] {
     def append(label: String, value: ProblemCause, current: ReportFields): ReportFields = current :+ AST.RField(label, AST.RError(value.message))
   }
@@ -68,6 +71,7 @@ trait OptionAppenders { self: BasicTypeAppenders with IdentityAppenders ⇒
   implicit val SomeReportFieldAppenderBooleanInst: ReportFieldAppender[Option[Boolean]] = createOptionSomeAppenderWrapperInst[Boolean]
   implicit val SomeReportFieldAppenderLocalDateTimeInst: ReportFieldAppender[Option[LocalDateTime]] = createOptionSomeAppenderWrapperInst[LocalDateTime]
   implicit val SomeReportFieldAppenderZonedDateTimeInst: ReportFieldAppender[Option[ZonedDateTime]] = createOptionSomeAppenderWrapperInst[ZonedDateTime]
+  implicit val SomeReportFieldAppenderDurationInst: ReportFieldAppender[Option[scala.concurrent.duration.FiniteDuration]] = createOptionSomeAppenderWrapperInst[scala.concurrent.duration.FiniteDuration]
   implicit val SomeReportFieldAppenderProblemCauseInst: ReportFieldAppender[Option[ProblemCause]] = createOptionSomeAppenderWrapperInst[ProblemCause]
 
 }

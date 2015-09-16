@@ -39,6 +39,9 @@ trait RValueConverters {
   implicit val RValueConverterZonedDateTimeInst: RValueConverter[ZonedDateTime] = new RValueConverter[ZonedDateTime] {
     def convert(value: ZonedDateTime): AST.RValue = AST.RZonedDateTime(value)
   }
+  implicit val RValueConverterDurationInst: RValueConverter[scala.concurrent.duration.FiniteDuration] = new RValueConverter[scala.concurrent.duration.FiniteDuration] {
+    def convert(value: scala.concurrent.duration.FiniteDuration): AST.RValue = AST.RDuration(value)
+  }
   implicit val RValueConverterProblemCauseInst: RValueConverter[ProblemCause] = new RValueConverter[ProblemCause] {
     def convert(value: ProblemCause): AST.RValue = AST.RError(value.message)
   }
@@ -65,5 +68,6 @@ trait RValueOptionConverters { self: RValueConverters ⇒
   implicit val SomeRVAlueConverterrBooleanInst: RValueConverter[Option[Boolean]] = createOptionSomeConverterWrapperInst[Boolean]
   implicit val SomeRVAlueConverterLocalDateTimeInst: RValueConverter[Option[LocalDateTime]] = createOptionSomeConverterWrapperInst[LocalDateTime]
   implicit val SomeRVAlueConverterZonedDateTimeInst: RValueConverter[Option[ZonedDateTime]] = createOptionSomeConverterWrapperInst[ZonedDateTime]
+  implicit val SomeRVAlueConverterDurationInst: RValueConverter[Option[scala.concurrent.duration.FiniteDuration]] = createOptionSomeConverterWrapperInst[scala.concurrent.duration.FiniteDuration]
   implicit val SomeRVAlueConverterProblemCauseInst: RValueConverter[Option[ProblemCause]] = createOptionSomeConverterWrapperInst[ProblemCause]
 }
