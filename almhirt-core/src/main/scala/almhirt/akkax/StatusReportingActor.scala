@@ -12,10 +12,10 @@ import almhirt.herder.HerderMessages
 import almhirt.akkax.reporting.StatusReport
 
 trait StatusReportingActor { me: AlmActor ⇒
-  
+
   def autoAddDateOfBirth: Boolean = true
   def autoAddDateOfBirthUtc: Boolean = false
-  
+
   final def registerExplicitStatusReporter(reporter: almhirt.herder.StatusReporter)(implicit cnp: ActorComponentIdProvider): Unit =
     almhirtContext.tellHerder(StatusReportMessages.RegisterStatusReporter(cnp.componentId, reporter))
 
@@ -31,14 +31,16 @@ trait StatusReportingActor { me: AlmActor ⇒
     val _autoAddRunningSinceUtc = me.autoAddDateOfBirthUtc
     val _runningSince = me.born
     val _runningSinceUtc = me.bornUtc
+    val ccdt = almhirtContext
     val reporter = almhirt.herder.StatusReporter(getReport = () ⇒ {
       (self ? ActorMessages.ReportStatus)(timeout).mapCastTo[ActorMessages.ReportStatusRsp].mapV {
         case ActorMessages.CurrentStatusReport(report) ⇒ {
-          val rep1 = if(_autoAddRunningSince) report.born(_runningSince) else report
-          val rep2 = if(_autoAddRunningSinceUtc) rep1.bornUtc(_runningSinceUtc) else rep1
-          scalaz.Success(rep2)
+          val rep1 = if (_autoAddRunningSince) report.born(_runningSince) else report
+          val rep2 = if (_autoAddRunningSinceUtc) rep1.bornUtc(_runningSinceUtc) else rep1
+          val res = if (report.fields.exists { x ⇒ x.label == "report-created-on" || x.label == "report-created-on-utc" }) rep2 else rep2.createdNow(ccdt)
+          scalaz.Success(res)
         }
-        case ActorMessages.ReportStatusFailed(cause)   ⇒ scalaz.Failure(cause.toProblem)
+        case ActorMessages.ReportStatusFailed(cause) ⇒ scalaz.Failure(cause.toProblem)
       }
     })
     this.registerExplicitStatusReporter(reporter)(cnp)
