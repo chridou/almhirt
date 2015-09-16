@@ -333,6 +333,18 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
     new AlmFuture(p.future)
   }
 
+  /** Convert this future to a successful future containing the underlying validation that might also be a failure */
+  def materializedValidation(implicit executionContext: ExecutionContext): AlmFuture[AlmValidation[R]] = {
+    val p = Promise[AlmValidation[AlmValidation[R]]]
+    underlying.onComplete {
+      case scala.util.Failure(exn) ⇒
+        p complete (scala.util.Success(handleThrowable(exn).failure.success))
+      case scala.util.Success(validation) ⇒
+        p complete (scala.util.Success(validation.success))
+    }
+    new AlmFuture(p.future)
+  }
+
   /** Convert this future to a future of the std lib */
   def std(implicit executionContext: ExecutionContext): Future[R] = {
     val p = Promise[R]
