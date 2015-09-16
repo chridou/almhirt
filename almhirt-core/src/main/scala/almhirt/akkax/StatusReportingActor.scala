@@ -12,6 +12,10 @@ import almhirt.herder.HerderMessages
 import almhirt.akkax.reporting.StatusReport
 
 trait StatusReportingActor { me: AlmActor ⇒
+  
+  def autoAddRunningSince: Boolean = true
+  def autoAddRunningSinceUtc: Boolean = false
+  
   final def registerExplicitStatusReporter(reporter: almhirt.herder.StatusReporter)(implicit cnp: ActorComponentIdProvider): Unit =
     almhirtContext.tellHerder(StatusReportMessages.RegisterStatusReporter(cnp.componentId, reporter))
 
@@ -23,9 +27,17 @@ trait StatusReportingActor { me: AlmActor ⇒
   }
 
   final def registerStatusReporter(timeout: FiniteDuration = 5.seconds)(implicit cnp: ActorComponentIdProvider, executor: ExecutionContext): Unit = {
+    val _autoAddRunningSince = me.autoAddRunningSince
+    val _autoAddRunningSinceUtc = me.autoAddRunningSinceUtc
+    val _runningSince = me.runningSince
+    val _runningSinceUtc = me.runningSinceUtc
     val reporter = almhirt.herder.StatusReporter(getReport = () ⇒ {
       (self ? ActorMessages.ReportStatus)(timeout).mapCastTo[ActorMessages.ReportStatusRsp].mapV {
-        case ActorMessages.CurrentStatusReport(report) ⇒ scalaz.Success(report)
+        case ActorMessages.CurrentStatusReport(report) ⇒ {
+          val rep1 = if(_autoAddRunningSince) report.runningSince(_runningSince) else report
+          val rep2 = if(_autoAddRunningSinceUtc) rep1.runningSinceUtc(_runningSinceUtc) else rep1
+          scalaz.Success(rep2)
+        }
         case ActorMessages.ReportStatusFailed(cause)   ⇒ scalaz.Failure(cause.toProblem)
       }
     })
