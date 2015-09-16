@@ -34,8 +34,8 @@ trait StatusReportingActor { me: AlmActor ⇒
     val reporter = almhirt.herder.StatusReporter(getReport = () ⇒ {
       (self ? ActorMessages.ReportStatus)(timeout).mapCastTo[ActorMessages.ReportStatusRsp].mapV {
         case ActorMessages.CurrentStatusReport(report) ⇒ {
-          val rep1 = if(_autoAddRunningSince) report.runningSince(_runningSince) else report
-          val rep2 = if(_autoAddRunningSinceUtc) rep1.runningSinceUtc(_runningSinceUtc) else rep1
+          val rep1 = if(_autoAddRunningSince) report.born(_runningSince) else report
+          val rep2 = if(_autoAddRunningSinceUtc) rep1.bornUtc(_runningSinceUtc) else rep1
           scalaz.Success(rep2)
         }
         case ActorMessages.ReportStatusFailed(cause)   ⇒ scalaz.Failure(cause.toProblem)

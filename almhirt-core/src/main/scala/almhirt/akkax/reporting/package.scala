@@ -64,14 +64,14 @@ package object reporting {
     def currentlyIAm(doing: String): AST.RReport =
       AST.RReport(self.fields :+ AST.RField("currently-i-am", AST.RString(doing)))
 
-    def runningSince(since: java.time.ZonedDateTime): AST.RReport =
-      AST.RReport(self.fields :+ AST.RField("running-since", AST.RZonedDateTime(since)))
+    def born(when: java.time.ZonedDateTime): AST.RReport =
+      AST.RReport(self.fields :+ AST.RField("born", AST.RZonedDateTime(when)))
 
-    def runningSinceUtc(sinceUtc: java.time.LocalDateTime): AST.RReport =
-      AST.RReport(self.fields :+ AST.RField("running-since-utc", AST.RLocalDateTime(sinceUtc)))
+    def bornUtc(when: java.time.LocalDateTime): AST.RReport =
+      AST.RReport(self.fields :+ AST.RField("born-utc", AST.RLocalDateTime(when)))
 
-    def runningFor(duration: scala.concurrent.duration.FiniteDuration): AST.RReport =
-      AST.RReport(self.fields :+ AST.RField("running-for", AST.RDuration(duration)))
+    def livingFor(duration: scala.concurrent.duration.FiniteDuration): AST.RReport =
+      AST.RReport(self.fields :+ AST.RField("living-for", AST.RDuration(duration)))
 
     def removeNotAvailable: AST.RReport =
       AST.RReport(self.fields.filter {
