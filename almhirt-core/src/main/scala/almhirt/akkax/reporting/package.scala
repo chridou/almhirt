@@ -41,12 +41,12 @@ package object reporting {
       AST.RReport(self.fields :+ field)
 
     def addMany(fields: AST.RField*): AST.RReport =
-      self ++ fields
+      self ~~ fields
 
-    def +(field: AST.RField): AST.RReport =
+    def ~(field: AST.RField): AST.RReport =
       AST.RReport(self.fields :+ field)
 
-    def ++(fields: Iterable[AST.RField]): AST.RReport =
+    def ~~(fields: Iterable[AST.RField]): AST.RReport =
       AST.RReport(self.fields ++ fields)
 
     def withReportName(name: String): AST.RReport =
