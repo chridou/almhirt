@@ -20,10 +20,7 @@ trait StatusReportingActor { me: AlmActor ⇒
 
   class PipeableAlmFutureReport(future: AlmFuture[StatusReport]) extends AnyRef {
     def pipeReportTo(receiver: ActorRef, unwrapProblem: Boolean = true)(implicit executionContext: ExecutionContext): AlmFuture[StatusReport] = {
-      import almhirt.problem._
-      future.onComplete(
-        problem ⇒ receiver ! ActorMessages.ReportStatusFailed(problem),
-        succ ⇒ receiver ! ActorMessages.CurrentStatusReport(succ))
+      respondForStatusReportResultAsync(future)(receiver)
       future
     }
   }
@@ -87,13 +84,13 @@ trait StatusReportingActor { me: AlmActor ⇒
     receiver ! ActorMessages.CurrentStatusReport(report)
   }
 
-  def respondForStatusReportResultAsync(report: AlmValidation[StatusReport])(receiver: ActorRef) {
+  def respondForStatusReportResult(report: AlmValidation[StatusReport])(receiver: ActorRef) {
     report.fold(
       fail ⇒ receiver ! ActorMessages.ReportStatusFailed(fail),
       succ ⇒ receiver ! ActorMessages.CurrentStatusReport(succ))
   }
 
-  def respondForStatusReportResult(report: AlmFuture[StatusReport])(receiver: ActorRef)(implicit executor: ExecutionContext) {
+  def respondForStatusReportResultAsync(report: AlmFuture[StatusReport])(receiver: ActorRef)(implicit executor: ExecutionContext) {
     report.onComplete(
       fail ⇒ receiver ! ActorMessages.ReportStatusFailed(fail),
       succ ⇒ receiver ! ActorMessages.CurrentStatusReport(succ))
