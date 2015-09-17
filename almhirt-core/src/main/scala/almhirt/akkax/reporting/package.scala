@@ -81,6 +81,14 @@ package object reporting {
       })
   }
 
+  implicit class RValueQueryOps(val self: AST.RValue) extends AnyVal {
+    def /(label: String): AST.RValue =
+      self match {
+        case r: AST.RReport ⇒ r.get(label)
+        case _              ⇒ AST.RNotAvailable
+      }
+  }
+
   implicit class StatusReportQueryOps(val self: AST.RReport) extends AnyVal {
     def contains(label: String): Boolean = get(label) != AST.RNotAvailable
 
