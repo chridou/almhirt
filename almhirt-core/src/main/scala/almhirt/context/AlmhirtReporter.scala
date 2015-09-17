@@ -45,7 +45,7 @@ private[almhirt] class AlmhirtReporter()(implicit override val almhirtContext: A
 
   override def preStart() {
     super.preStart()
-    registerStatusReporter(description = None)
+    registerStatusReporter(description = Some("All system reports"))
     registerComponentControl()
     logInfo("Starting..")
   }

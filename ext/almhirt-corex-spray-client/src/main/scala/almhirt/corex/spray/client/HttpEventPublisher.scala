@@ -7,6 +7,8 @@ import scalaz.Validation.FlatMap._
 import akka.actor._
 import almhirt.common._
 import almhirt.akkax._
+import almhirt.akkax.reporting._
+import almhirt.akkax.reporting.Implicits._
 import almhirt.http._
 import almhirt.configuration._
 import almhirt.almvalidation.kit._
@@ -86,5 +88,11 @@ private[almhirt] class HttpEventPublisherImpl(
       Uri(s"""$endpointUri/${event.eventId.value}""")
     else
       Uri(endpointUri)
+  }
+  
+  override def onReportStatus(baseReport: StatusReport): AlmValidation[StatusReport] = {
+    (baseReport addMany(
+    "endpoint-uri" -> endpointUri,    
+    "content-media-type" -> contentMediaType.value)).success
   }
 }

@@ -39,6 +39,7 @@ abstract class ActorConsumerHttpPublisher[T](
   val circuitBreaker = AlmCircuitBreaker(circuitControlSettings, almhirtContext.futuresContext, context.system.scheduler)
 
   def onFailure(item: T, problem: Problem): Unit = Unit
+  def onReportStatus(baseReport: StatusReport): AlmValidation[StatusReport]
   def filter(item: T): Boolean = true
 
   case object IncreaseFailedRequests
@@ -125,7 +126,7 @@ abstract class ActorConsumerHttpPublisher[T](
   def receive: Receive = receiveCircuitClosed
 
   def createStatusReport(options: ReportOptions): AlmValidation[StatusReport] = {
-    val rep = StatusReport("HttpEventPublisher-Status").withComponentState(componentState) addMany (
+    val baseReport = StatusReport("HttpEventPublisher-Status").withComponentState(componentState) addMany (
       "actor-name" -> this.self.path.name,
       "number-of-successful-requests" -> numsuccessfulRequests,
       "number-of-failed-requests" -> numFailedRequests,
@@ -134,7 +135,9 @@ abstract class ActorConsumerHttpPublisher[T](
       "number-of-received-events" -> numReceivedEvents,
       "number-of-filtered-events" -> numFilteredEvents)
 
-    scalaz.Success(rep)
+    scalaz.Success(onReportStatus(baseReport).fold(
+      fail ⇒ baseReport ~ ("error-occured" -> fail),
+      succ ⇒ succ))
   }
 
   private def handleProcessed(currentProblem: Option[Problem]) {

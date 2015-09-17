@@ -7,6 +7,8 @@ import scalaz.Validation.FlatMap._
 import akka.actor._
 import almhirt.common._
 import almhirt.akkax._
+import almhirt.akkax.reporting._
+import almhirt.akkax.reporting.Implicits._
 import almhirt.http._
 import almhirt.configuration._
 import almhirt.context._
@@ -94,6 +96,13 @@ private[almhirt] class ElasticSearchEventPublisherImpl(
       case None ⇒
         Uri(s"""$uriprefix/$typeName/${event.eventId}?op_type=create&timestamp=${event.timestamp}""")
     }
+  }
+
+  override def onReportStatus(baseReport: StatusReport): AlmValidation[StatusReport] = {
+    (baseReport addMany (
+      "host" -> host,
+      "index" -> index,
+      "ttl" -> ttl)).success
   }
 
 }
