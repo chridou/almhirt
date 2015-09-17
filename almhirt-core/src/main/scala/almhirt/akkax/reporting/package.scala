@@ -36,7 +36,7 @@ package object reporting {
       fail ⇒ toAST(fail),
       succ ⇒ toAST(succ)))
 
-  implicit class StatusReportOps(val self: AST.RReport) extends AnyVal {
+  implicit class StatusReportManipulationOps(val self: AST.RReport) extends AnyVal {
     def add(field: AST.RField): AST.RReport =
       AST.RReport(self.fields :+ field)
 
@@ -80,5 +80,27 @@ package object reporting {
 
       })
   }
+
+  implicit class StatusReportQueryOps(val self: AST.RReport) extends AnyVal {
+    def contains(label: String): Boolean = get(label) != AST.RNotAvailable
+
+    def get(label: String): AST.RValue = self.fields.find { _.label == label }.map(_.value) getOrElse AST.RNotAvailable
+
+    @scala.annotation.tailrec
+    def getByPath(path: List[String]): AST.RValue =
+      path match {
+        case Nil ⇒
+          AST.RNotAvailable
+        case label :: Nil ⇒
+          get(label)
+        case label :: rest ⇒
+          get(label) match {
+            case r: AST.RReport ⇒
+              getByPath(rest)
+            case _ ⇒ AST.RNotAvailable
+          }
+      }
+  }
+
 }
 
