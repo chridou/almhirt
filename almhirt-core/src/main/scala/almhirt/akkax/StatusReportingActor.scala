@@ -66,17 +66,13 @@ trait StatusReportingActor { me: AlmActor ⇒
     def termininateStatusReporting(onReportRequested: ReportOptions ⇒ AlmValidation[StatusReport]) =
       self orElse ({
         case ActorMessages.SendStatusReport(options) ⇒
-          onReportRequested(options).fold(
-            fail ⇒ sender() ! ActorMessages.ReportStatusFailed(fail),
-            succ ⇒ sender ! ActorMessages.CurrentStatusReport(succ))
+          respondForStatusReportResult(onReportRequested(options))(sender())
       }: Receive)
 
     def termininateStatusReportingF(onReportRequested: ReportOptions ⇒ AlmFuture[StatusReport])(implicit executor: ExecutionContext) =
       self orElse ({
         case ActorMessages.SendStatusReport(options) ⇒
-          onReportRequested(options).mapOrRecoverThenPipeTo(
-            map = ActorMessages.CurrentStatusReport(_),
-            recover = ActorMessages.ReportStatusFailed(_))(sender())
+          onReportRequested(options).pipeReportTo(sender())
       }: Receive)
   }
 
