@@ -409,6 +409,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
       "number-of-commands-succeeded" -> numSucceeded,
       "number-of-commands-failed" -> numFailed,
       "number-of-buffered-command-status-changed-events" -> bufferedEvents.size,
+      "command-buffer-size" -> commandBuffersize,
       "amount-of-jettisoned-cargo-since-last-report" -> numJet,
       "throttled" -> throttled)
     scalaz.Success(rep)

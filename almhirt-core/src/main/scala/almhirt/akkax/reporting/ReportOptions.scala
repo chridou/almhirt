@@ -17,6 +17,7 @@ object ReportOptions {
     "currently-i-am",
     "date-of-birth",
     "date-of-birth-utc",
+    "actor-path",
     "age")
 
   val everything = ReportOptions(false, false, Set.empty, Set.empty)

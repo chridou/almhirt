@@ -44,6 +44,7 @@ trait StatusReportingActor { me: AlmActor ⇒
     val _runningSince = me.born
     val _runningSinceUtc = me.bornUtc
     val ccdt = almhirtContext
+    val actorPath = self.path
     val reporter = almhirt.herder.StatusReporter.make(getReport = options ⇒ {
       (self ? ActorMessages.SendStatusReport(options))(timeout).mapCastTo[ActorMessages.SendStatusReportRsp].mapV {
         case ActorMessages.CurrentStatusReport(report) ⇒ {
@@ -51,7 +52,7 @@ trait StatusReportingActor { me: AlmActor ⇒
           val rep2 = if (_autoAddRunningSinceUtc) rep1.bornUtc(_runningSinceUtc) else rep1
           val rep3 = if (report.fields.exists { x ⇒ x.label == "report-created-on" || x.label == "report-created-on-utc" }) rep2 else rep2.createdNow(ccdt)
           val res = if (report.fields.exists { x ⇒ x.label == "age" }) rep3 else rep3.age(java.time.Duration.between(java.time.ZonedDateTime.now(), _runningSince))
-          scalaz.Success(res)
+          scalaz.Success(res.actorPath(actorPath))
         }
         case ActorMessages.ReportStatusFailed(cause) ⇒ scalaz.Failure(cause.toProblem)
       }

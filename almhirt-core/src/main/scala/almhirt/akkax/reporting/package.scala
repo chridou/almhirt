@@ -73,6 +73,9 @@ package object reporting {
     def age(duration: java.time.Duration): AST.RReport =
       AST.RReport(self.fields :+ AST.RField("age", AST.RJDuration(duration)))
 
+    def actorPath(path: akka.actor.ActorPath): AST.RReport =
+      AST.RReport(self.fields :+ AST.RField("actor-path", AST.RString(path.toString())))
+      
     def removeNotAvailable: AST.RReport =
       AST.RReport(self.fields.filter {
         case AST.RField(_, AST.RNotAvailable) ⇒ false
