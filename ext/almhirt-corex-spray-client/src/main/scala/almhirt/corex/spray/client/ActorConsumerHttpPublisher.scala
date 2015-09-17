@@ -7,6 +7,8 @@ import almhirt.common._
 import almhirt.almvalidation.kit._
 import almhirt.context._
 import almhirt.akkax._
+import almhirt.akkax.reporting._
+import almhirt.akkax.reporting.Implicits._
 import almhirt.http._
 import akka.stream.actor._
 import akka.stream.scaladsl._
@@ -22,14 +24,15 @@ abstract class ActorConsumerHttpPublisher[T](
     contentMediaType: MediaType,
     method: HttpMethod,
     circuitControlSettings: CircuitControlSettings,
-    circuitStateReportingInterval: Option[FiniteDuration])(implicit serializer: HttpSerializer[T], problemDeserializer: HttpDeserializer[Problem], entityTag: ClassTag[T]) extends ActorSubscriber with ActorLogging with AlmActor with HttpExternalConnector with RequestsWithEntity with HttpExternalPublisher {
+    circuitStateReportingInterval: Option[FiniteDuration])(implicit serializer: HttpSerializer[T], problemDeserializer: HttpDeserializer[Problem], entityTag: ClassTag[T]) extends ActorSubscriber with ActorLogging with AlmActor with AlmActorLogging with HttpExternalConnector with RequestsWithEntity with HttpExternalPublisher with ControllableActor with StatusReportingActor {
 
   implicit def implicitFlowMaterializer = akka.stream.ActorMaterializer()(this.context)
+
+  override val componentControl = LocalComponentControl(self, ActorMessages.ComponentControlActions.none, Some(logWarning))
 
   def createUri(entity: T): Uri
 
   private final case class Processed(lastProblem: Option[Problem])
-  private case object DisplayCircuitState
 
   final override val requestStrategy = ZeroRequestStrategy
 
@@ -38,70 +41,101 @@ abstract class ActorConsumerHttpPublisher[T](
   def onFailure(item: T, problem: Problem): Unit = Unit
   def filter(item: T): Boolean = true
 
+  case object IncreaseFailedRequests
+  case object IncreaseSuccessfulRequests
+
+  private var numReceivedEvents = 0L
+  private var numFilteredEvents = 0L
+  private var numFailedRequests = 0L
+  private var numsuccessfulRequests = 0L
+  private var numMistypedInput = 0L
+
   private case object Start
-  def receiveCircuitClosed: Receive = {
-    case Start ⇒
-      autoConnectTo.foreach(pub ⇒ Source[Event](pub).to(Sink(ActorSubscriber[Event](self))).run())
-      request(1)
+  def receiveCircuitClosed: Receive = running() {
+    reportsStatus(onReportRequested = createStatusReport) {
+      case Start ⇒
+        autoConnectTo.foreach(pub ⇒ Source[Event](pub).to(Sink(ActorSubscriber[Event](self))).run())
+        request(1)
 
-    case ActorSubscriberMessage.OnNext(element) ⇒
-      element.castTo[T].fold(
-        fail ⇒ {
-          log.warning(s"Received unprocessable item $element")
-          self ! Processed(None)
-        },
-        typedElem ⇒ {
-          if (filter(typedElem)) {
-            circuitBreaker.fused(publishOverWire(typedElem)).onComplete(
-              problem ⇒ {
-                self ! Processed(Some(problem))
-                onFailure(typedElem, problem)
-              },
-              _ ⇒ self ! Processed(None))
-          } else {
+      case ActorSubscriberMessage.OnNext(element) ⇒
+        numReceivedEvents = numReceivedEvents + 1L
+        element.castTo[T].fold(
+          fail ⇒ {
+            logWarning(s"Received unprocessable item $element")
+            numMistypedInput = numMistypedInput + 1L
             self ! Processed(None)
-          }
-        })
+          },
+          typedElem ⇒ {
+            if (filter(typedElem)) {
+              numFilteredEvents = numFilteredEvents + 1l
+              circuitBreaker.fused(publishOverWire(typedElem)).onComplete(
+                problem ⇒ {
+                  self ! Processed(Some(problem))
+                  self ! IncreaseFailedRequests
+                  onFailure(typedElem, problem)
+                },
+                _ ⇒ {
+                  self ! Processed(None)
+                  self ! IncreaseSuccessfulRequests
+                })
+            } else {
+              self ! Processed(None)
+            }
+          })
 
-    case Processed(currentProblem) ⇒
-      handleProcessed(currentProblem)
+      case Processed(currentProblem) ⇒
+        handleProcessed(currentProblem)
 
-    case ActorMessages.CircuitOpened ⇒
-      context.become(receiveCircuitOpen)
-      self ! DisplayCircuitState
+      case ActorMessages.CircuitOpened ⇒
+        context.become(receiveCircuitOpen)
 
-    case m: ActorMessages.CircuitAllWillFail ⇒
-      context.become(receiveCircuitOpen)
-      self ! DisplayCircuitState
+      case m: ActorMessages.CircuitAllWillFail ⇒
+        context.become(receiveCircuitOpen)
 
-    case DisplayCircuitState ⇒
-      if (log.isInfoEnabled)
-        circuitBreaker.state.onSuccess(s ⇒ log.info(s"Circuit state: $s"))
+      case IncreaseFailedRequests ⇒
+        this.numFailedRequests = this.numFailedRequests + 1L
+
+      case IncreaseSuccessfulRequests ⇒
+        this.numsuccessfulRequests = this.numsuccessfulRequests + 1L
+    }
   }
 
-  def receiveCircuitOpen: Receive = {
-    case ActorSubscriberMessage.OnNext(element) ⇒
-      element.castTo[T].fold(
-        fail ⇒ log.warning(s"Received unprocessable item $element"),
-        typedElem ⇒ onFailure(typedElem, CircuitOpenProblem()))
-      request(1)
+  def receiveCircuitOpen: Receive = error(CircuitOpenProblem("The circuit breaker is open.")) {
+    reportsStatus(onReportRequested = createStatusReport) {
+      case ActorSubscriberMessage.OnNext(element) ⇒
+        element.castTo[T].fold(
+          fail ⇒ logWarning(s"Received unprocessable item $element"),
+          typedElem ⇒ onFailure(typedElem, CircuitOpenProblem()))
+        request(1)
 
-    case Processed(currentProblem) ⇒
-      handleProcessed(currentProblem)
+      case Processed(currentProblem) ⇒
+        handleProcessed(currentProblem)
 
-    case m: ActorMessages.CircuitNotAllWillFail ⇒
-      context.become(receiveCircuitClosed)
-      self ! DisplayCircuitState
+      case m: ActorMessages.CircuitNotAllWillFail ⇒
+        context.become(receiveCircuitClosed)
 
-    case DisplayCircuitState ⇒
-      if (log.isInfoEnabled) {
-        circuitBreaker.state.onSuccess(s ⇒ log.info(s"Circuit state: $s"))
-        circuitStateReportingInterval.foreach(interval ⇒
-          context.system.scheduler.scheduleOnce(interval, self, DisplayCircuitState))
-      }
+      case IncreaseFailedRequests ⇒
+        this.numFailedRequests = this.numFailedRequests + 1L
+
+      case IncreaseSuccessfulRequests ⇒
+        this.numsuccessfulRequests = this.numsuccessfulRequests + 1L
+    }
   }
 
   def receive: Receive = receiveCircuitClosed
+
+  def createStatusReport(options: ReportOptions): AlmValidation[StatusReport] = {
+    val rep = StatusReport("HttpEventPublisher-Status").withComponentState(componentState) addMany (
+      "actor-name" -> this.self.path.name,
+      "number-of-successful-requests" -> numsuccessfulRequests,
+      "number-of-failed-requests" -> numFailedRequests,
+      "number-of-failed-requests" -> numFailedRequests,
+      "number-of-mistyped-input-elemets" -> numMistypedInput,
+      "number-of-received-events" -> numReceivedEvents,
+      "number-of-filtered-events" -> numFilteredEvents)
+
+    scalaz.Success(rep)
+  }
 
   private def handleProcessed(currentProblem: Option[Problem]) {
     currentProblem match {
@@ -123,8 +157,9 @@ abstract class ActorConsumerHttpPublisher[T](
   override def preStart() {
     super.preStart()
     circuitBreaker.defaultActorListeners(self)
-      .onWarning((n, max) ⇒ log.warning(s"$n failures in a row. $max will cause the circuit to open."))
+      .onWarning((n, max) ⇒ logWarning(s"$n failures in a row. $max will cause the circuit to open."))
 
+    registerStatusReporter(description = None)
     registerCircuitControl(circuitBreaker)
 
     self ! Start
@@ -132,5 +167,6 @@ abstract class ActorConsumerHttpPublisher[T](
 
   override def postStop() {
     deregisterCircuitControl()
+    deregisterStatusReporter()
   }
 }

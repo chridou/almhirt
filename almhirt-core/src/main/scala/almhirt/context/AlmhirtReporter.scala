@@ -30,24 +30,7 @@ private[almhirt] class AlmhirtReporter()(implicit override val almhirtContext: A
   def receiveRunning: Receive = running() {
     reportsStatusF(onReportRequested = createStatusReport)(Actor.emptyBehavior)
   }
-  //    case ActorMessages.ReportStatus ⇒
-  //      implicit val executor = almhirtContext.futuresContext
-  //      val cState = componentState
-  //
-  //      (for {
-  //        brandLuminaireReportingStatus ← queryReportFromActor(brandLuminaireReporting).materializedValidation
-  //        brandPatcherStatus ← queryReportFromActor(brandPatcher).materializedValidation
-  //        luminairePatcherStatus ← queryReportFromActor(luminairePatcher).materializedValidation
-  //        arChangedObserverStatus ← queryReportFromActor(arChangedObserver).materializedValidation
-  //      } yield ActorMessages.CurrentStatusReport(ZeusReporter.createStatusReport(
-  //        componentState = cState,
-  //        brandToLuminairesReportingStatus = brandLuminaireReportingStatus.map(Some(_)),
-  //        brandPatcherStatus = brandPatcherStatus.map(Some(_)),
-  //        luminairePatcherStatus = luminairePatcherStatus.map(Some(_)),
-  //        aggregateRootChangedObserverStatus = arChangedObserverStatus.map(Some(_))))).recoverThenPipeTo(
-  //        recover = prob ⇒ ActorMessages.ReportStatusFailed(prob))(sender())
-  //  }
-
+ 
   override def receive: Receive = receiveRunning
 
   def createStatusReport(options: ReportOptions): AlmFuture[StatusReport] = {
