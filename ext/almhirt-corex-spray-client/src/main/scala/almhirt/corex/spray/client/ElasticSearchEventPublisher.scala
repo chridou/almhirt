@@ -26,7 +26,7 @@ object ElasticSearchEventPublisher {
     host: String,
     index: String,
     fixedTypeName: Option[String],
-    ttl: FiniteDuration,
+    ttl: Option[FiniteDuration],
     autoConnectTo: Option[Publisher[Event]],
     circuitControlSettings: CircuitControlSettings,
     circuitStateReportingInterval: Option[FiniteDuration],
@@ -44,7 +44,7 @@ object ElasticSearchEventPublisher {
           host ← section.v[String]("host")
           index ← section.v[String]("index")
           fixedTypeName ← section.magicOption[String]("index")
-          ttl ← section.v[FiniteDuration]("ttl")
+          ttl ← section.magicOption[FiniteDuration]("ttl")
           missedEventSeverity ← section.v[almhirt.problem.Severity]("missed-event-severity")
           circuitControlSettings ← section.v[CircuitControlSettings]("circuit-control")
           circuitStateReportingInterval ← section.magicOption[FiniteDuration]("circuit-state-reporting-interval")
@@ -65,13 +65,13 @@ private[almhirt] class ElasticSearchEventPublisherImpl(
   host: String,
   index: String,
   fixedTypeName: Option[String],
-  ttl: FiniteDuration,
+  ttl: Option[FiniteDuration],
   autoConnectTo: Option[Publisher[Event]],
   circuitControlSettings: CircuitControlSettings,
   circuitStateReportingInterval: Option[FiniteDuration],
   missedEventSeverity: almhirt.problem.Severity)(implicit serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem], executionContexts: HasExecutionContexts, override val almhirtContext: AlmhirtContext)
-  extends ActorConsumerHttpPublisher[Event](autoConnectTo, Set(StatusCodes.Accepted, StatusCodes.Created), MediaTypes.`application/json`, HttpMethods.PUT, circuitControlSettings, circuitStateReportingInterval)(serializer, problemDeserializer, implicitly[ClassTag[Event]])
-  with HasAlmhirtContext {
+    extends ActorConsumerHttpPublisher[Event](autoConnectTo, Set(StatusCodes.Accepted, StatusCodes.Created), MediaTypes.`application/json`, HttpMethods.PUT, circuitControlSettings, circuitStateReportingInterval)(serializer, problemDeserializer, implicitly[ClassTag[Event]])
+    with HasAlmhirtContext {
   val uriprefix = s"""http://$host/$index"""
 
   override def onFailure(item: Event, problem: Problem): Unit = {
@@ -88,7 +88,12 @@ private[almhirt] class ElasticSearchEventPublisherImpl(
 
   override def createUri(event: Event): Uri = {
     val typeName = fixedTypeName.getOrElse(event.getClass().getSimpleName())
-    Uri(s"""$uriprefix/$typeName/${event.eventId}?op_type=create&ttl=${ttl.toMillis}""")
+    ttl match {
+      case Some(timeToLive) ⇒
+        Uri(s"""$uriprefix/$typeName/${event.eventId}?op_type=create&ttl=${timeToLive.toMillis}""")
+      case None ⇒
+        Uri(s"""$uriprefix/$typeName/${event.eventId}?op_type=create""")
+    }
   }
 
 }
