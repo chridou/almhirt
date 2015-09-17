@@ -44,7 +44,6 @@ object HttpHerderServiceFactory {
 
 }
 
-
 object HttpHerderService {
   def propsRaw(
     maxCallDuration: scala.concurrent.duration.FiniteDuration,
@@ -71,7 +70,6 @@ private[almhirt] class HttpHerderServiceActor(params: HttpHerderServiceFactory.H
 
   override def receive = runRoute(route)
 }
-
 
 trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLogging ⇒
   import almhirt.components.EventSinkHubMessage
@@ -180,7 +178,7 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
               fut.fold(
                 problem ⇒ implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, problem),
                 reporters ⇒
-                  ctx.complete(StatusCodes.OK, createStatusReporters(reporters)))
+                  ctx.complete(StatusCodes.OK, createStatusReporters(reporters, "../../../../herder")))
             }
           } ~ reportTerminator
         } ~ pathPrefix("component-controls") {
@@ -337,20 +335,44 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
 
   import scala.xml._
 
-  private def createStatusReporters(reporters: Seq[(ComponentId, StatusReporter)]) = {
+  private def createStatusReporters(reporters: Seq[(ComponentId, StatusReporter)], pathToHerder: String) = {
+    def createRow(cid: ComponentId, reporter: StatusReporter) = {
+      <tr>
+        <td>{ cid.app.value }</td>
+        <td>{ cid.component.value }</td>
+        <td>{ reporter.description getOrElse "No description" }</td>
+        <td>
+          {
+            val att = new UnprefixedAttribute("href", s"$pathToHerder/status-reports/${cid.app.value}/${cid.component.value}", xml.Null)
+            Elem(null, "a", att, TopScope, true, Text("Full report"))
+          }
+        </td>
+         <td>
+          {
+            val att = new UnprefixedAttribute("href", s"$pathToHerder/status-reports/${cid.app.value}/${cid.component.value}?no-noise=true", xml.Null)
+            Elem(null, "a", att, TopScope, true, Text("No noise report"))
+          }
+        </td>
+     </tr>
+    }
+
     <html>
       <head>
         <title>Status Reporters</title>
       </head>
       <body>
-        {
-          reporters.map {
-            case (component, reporter) ⇒
-              val att = new UnprefixedAttribute("href", s"/herder/status-reports/${component.app.value}/${component.component.value}", xml.Null)
-              val anchor = Elem(null, "a", att, TopScope, true, Text(s"Report for $component"))
-              <td>{ anchor }</td>
+        <table border="1">
+          <tr>
+            <th>App</th>
+            <th>Component</th>
+            <th>Description</th>
+            <th>Full report</th>
+            <th>No noise report</th>
+          </tr>
+          {
+            reporters.map { case (cid, rep) ⇒ createRow(cid, rep) }
           }
-        }
+        </table>
         <br><a href="../herder">Dashboard</a></br>
         <br>{ almhirtContext.getUtcTimestamp.toString }</br>
       </body>
@@ -1576,7 +1598,8 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
               <h2>Reported Failures</h2><br/><a href="./herder/failures">Failures report</a>
             </th>
             <th>
-              <h2>Reports</h2>
+              <h2>Status Reports</h2>
+              <a href="./herder/status-reports">Status reports(detailed)</a>
             </th>
           </tr>
           <tr>

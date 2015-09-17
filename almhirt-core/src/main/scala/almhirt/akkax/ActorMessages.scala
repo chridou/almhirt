@@ -54,10 +54,10 @@ object ActorMessages {
   }
 
   sealed trait StatusReportMessage
-  case object ReportStatus extends StatusReportMessage
-  sealed trait ReportStatusRsp extends StatusReportMessage
-  final case class CurrentStatusReport(status: almhirt.akkax.reporting.StatusReport) extends ReportStatusRsp
-  final case class ReportStatusFailed(cause: almhirt.problem.ProblemCause) extends ReportStatusRsp
+  final case class SendStatusReport(options: reporting.ReportOptions) extends StatusReportMessage
+  sealed trait SendStatusReportRsp extends StatusReportMessage
+  final case class CurrentStatusReport(status: almhirt.akkax.reporting.StatusReport) extends SendStatusReportRsp
+  final case class ReportStatusFailed(cause: almhirt.problem.ProblemCause) extends SendStatusReportRsp
 }
 
 object CreateChildActorHelper {

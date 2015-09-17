@@ -52,17 +52,20 @@ class JsonStatusReportFactory(private val context: ActorContext)(implicit almhir
 
   def createJsonStatusReportRoute(maxCallDuration: FiniteDuration)(implicit executor: ExecutionContext): RequestContext ⇒ Unit = {
     pathPrefix(Segment / Segment) { (appName, componentName) ⇒
-      get { ctx ⇒
-        val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
-        val fut = (herder ? StatusReportMessages.GetStatusReportFor(ComponentId(AppName(appName), ComponentName(componentName))))(maxCallDuration).mapCastTo[StatusReportMessages.GetStatusReportForRsp].mapV {
-          case StatusReportMessages.StatusReportFor(_, report) ⇒
-            scalaz.Success(report)
-          case StatusReportMessages.GetStatusReportForFailed(_, prob) ⇒
-            scalaz.Failure(prob)
+      parameters("no-noise".as[Boolean] ? false, "exclude-not-available".as[Boolean] ? false) { (noNoise, excludeNotAvailable) ⇒
+        get { ctx ⇒
+          val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
+          val options = ReportOptions.makeWithDefaults(noNoise, excludeNotAvailable)
+          val fut = (herder ? StatusReportMessages.GetStatusReportFor(ComponentId(AppName(appName), ComponentName(componentName)), options))(maxCallDuration).mapCastTo[StatusReportMessages.GetStatusReportForRsp].mapV {
+            case StatusReportMessages.StatusReportFor(_, report) ⇒
+              scalaz.Success(report)
+            case StatusReportMessages.GetStatusReportForFailed(_, prob) ⇒
+              scalaz.Failure(prob)
+          }
+          fut.fold(
+            problem ⇒ implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, problem)(problemMarshaller),
+            report ⇒ ctx.complete(serializeAst(options.filter(report))))
         }
-        fut.fold(
-          problem ⇒ implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, problem)(problemMarshaller),
-          report ⇒ ctx.complete(serializeAst(report)))
       }
     }
   }

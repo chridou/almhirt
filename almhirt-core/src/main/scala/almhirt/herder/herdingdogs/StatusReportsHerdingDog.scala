@@ -37,12 +37,12 @@ private[almhirt] class StatusReportsHerdingDog()(implicit override val almhirtCo
       logInfo(s"""Reporter deregistered for "${ownerId}".""")
       reporters = reporters - ownerId
 
-    case GetStatusReportFor(componentId) ⇒
+    case GetStatusReportFor(componentId, options) ⇒
       val pinnedSender = sender()
 
       reporters.get(componentId) match {
         case Some(reporter) ⇒
-          reporter.report.mapOrRecoverThenPipeTo(
+          reporter.report(options).mapOrRecoverThenPipeTo(
             map = report ⇒ StatusReportFor(componentId, report),
             recover = prob ⇒ GetStatusReportForFailed(componentId, prob))(receiver = sender())
         case None ⇒
