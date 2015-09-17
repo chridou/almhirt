@@ -24,14 +24,14 @@ package object reporting {
       fail ⇒ toAST(fail),
       succ ⇒ toAST(succ))
 
-  implicit def tuple2RField[T: RValueConverter](v: (String, T)): AST.RField = AST.RField(v._1, toAST(v._2))
+  implicit def toField[T: RValueConverter](v: (String, T)): AST.RField = AST.RField(v._1, toAST(v._2))
 
-  implicit def tupleAlmValidation2RField[T](v: (String, AlmValidation[T]))(implicit converter: RValueConverter[T], pconv: RValueConverter[Problem]): AST.RField =
+  implicit def toFieldFromValidation[T](v: (String, AlmValidation[T]))(implicit converter: RValueConverter[T], pconv: RValueConverter[Problem]): AST.RField =
     AST.RField(v._1, v._2.fold(
       fail ⇒ toAST(fail),
       succ ⇒ toAST(succ)))
 
-  implicit def tupleAlmValidationOption2RField[T](v: (String, ProblematicOption[T]))(implicit converter: RValueConverter[Option[T]], pconv: RValueConverter[Problem]): AST.RField =
+  implicit def toFieldFromProblematicOptionn[T](v: (String, ProblematicOption[T]))(implicit converter: RValueConverter[Option[T]], pconv: RValueConverter[Problem]): AST.RField =
     AST.RField(v._1, v._2.fold(
       fail ⇒ toAST(fail),
       succ ⇒ toAST(succ)))

@@ -5,6 +5,8 @@ import akka.actor._
 import org.reactivestreams.Publisher
 import almhirt.common._
 import almhirt.akkax._
+import almhirt.akkax.reporting._
+import almhirt.akkax.reporting.Implicits._
 import almhirt.almvalidation.kit._
 import almhirt.context.AlmhirtContext
 import org.reactivestreams.Subscriber
@@ -35,9 +37,13 @@ object AggregateRootNexus {
 private[almhirt] class AggregateRootNexus(
     commandsPublisher: Option[Publisher[Command]],
     hiveSelector: HiveSelector,
-    hiveFactory: AggregateRootHiveFactory)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging with ActorSubscriber with ActorPublisher[AggregateRootCommand] with ActorLogging {
+    hiveFactory: AggregateRootHiveFactory)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging with ActorSubscriber with ActorPublisher[AggregateRootCommand] with ActorLogging with ControllableActor with StatusReportingActor {
 
   implicit def implicitFlowMaterializer = akka.stream.ActorMaterializer()(this.context)
+
+  implicit val executor = almhirtContext.futuresContext
+
+  override val componentControl = LocalComponentControl(self, ActorMessages.ComponentControlActions.none, Some(logWarning))
 
   import akka.actor.SupervisorStrategy._
 
@@ -49,73 +55,106 @@ private[almhirt] class AggregateRootNexus(
         Escalate
     }
 
+  private var hives: List[ActorRef] = Nil
+
   override val requestStrategy = ZeroRequestStrategy
 
   case object Start
 
-  def receiveInitialize: Receive = {
-    case Start ⇒
-      commandsPublisher.foreach(cmdPub ⇒
-        Source[Command](cmdPub).collect { case e: AggregateRootCommand ⇒ e }.to(Sink(ActorSubscriber[AggregateRootCommand](self))).run())
+  private var commandsReceived = 0L
 
-      createInitialHives()
-      request(1)
-      context.become(receiveRunning(None))
+  def receiveInitialize: Receive = startup() {
+    reportsStatusF(onReportRequested = createStatusReport) {
+      case Start ⇒
+        commandsPublisher.foreach(cmdPub ⇒
+          Source[Command](cmdPub).collect { case e: AggregateRootCommand ⇒ e }.to(Sink(ActorSubscriber[AggregateRootCommand](self))).run())
+
+        hives = createInitialHives()
+        request(1)
+        context.become(receiveRunning(None))
+    }
   }
 
-  def receiveRunning(inFlight: Option[AggregateRootCommand]): Receive = {
-    case ActorSubscriberMessage.OnNext(next: AggregateRootCommand) ⇒
-      inFlight match {
-        case None if totalDemand > 0 ⇒
-          onNext(next)
-          request(1)
-        case None ⇒
-          context.become(receiveRunning(Some(next)))
-        case Some(buff) ⇒
-          val msg = "Received an element even though my buffer is full."
-          onError(new Exception(msg))
-          cancel()
-      }
+  def receiveRunning(inFlight: Option[AggregateRootCommand]): Receive = running() {
+    reportsStatusF(onReportRequested = createStatusReport) {
+      case ActorSubscriberMessage.OnNext(next: AggregateRootCommand) ⇒
+        commandsReceived = commandsReceived + 1
+        inFlight match {
+          case None if totalDemand > 0 ⇒
+            onNext(next)
+            request(1)
+          case None ⇒
+            context.become(receiveRunning(Some(next)))
+          case Some(buff) ⇒
+            val msg = "Received an element even though my buffer is full."
+            onError(new Exception(msg))
+            cancel()
+        }
 
-    case ActorPublisherMessage.Request(amount) ⇒
-      inFlight match {
-        case Some(buf) if totalDemand > 0 ⇒
-          request(1)
-          onNext(buf)
-          context.become(receiveRunning(None))
-        case _ ⇒
-          ()
-      }
+      case ActorPublisherMessage.Request(amount) ⇒
+        inFlight match {
+          case Some(buf) if totalDemand > 0 ⇒
+            request(1)
+            onNext(buf)
+            context.become(receiveRunning(None))
+          case _ ⇒
+            ()
+        }
 
-    case ActorSubscriberMessage.OnError(exn) ⇒
-      logError("Received an error via the stream.", exn)
-      throw exn
+      case ActorSubscriberMessage.OnError(exn) ⇒
+        logError("Received an error via the stream.", exn)
+        throw exn
 
-    case ActorPublisherMessage.Cancel ⇒
-      logWarning("The fanout publisher cancelled it's subscription. Propagating cancellation.")
-      cancel()
+      case ActorPublisherMessage.Cancel ⇒
+        logWarning("The fanout publisher cancelled it's subscription. Propagating cancellation.")
+        cancel()
 
-    case Terminated(actor) ⇒
-      logWarning(s"Hive ${actor.path.name} terminated.")
+      case Terminated(actor) ⇒
+        logWarning(s"Hive ${actor.path.name} terminated.")
+    }
   }
 
   def receive: Receive = receiveInitialize
 
-  private def createInitialHives() {
+  private def createInitialHives(): List[ActorRef] = {
     import akka.stream.OverflowStrategy
     val commandsSource = Source(ActorPublisher[AggregateRootCommand](self)).runWith(Sink.fanoutPublisher[AggregateRootCommand](1, AlmMath.nextPowerOf2(hiveSelector.size)))
-    hiveSelector.foreach {
+    hiveSelector.map {
       case (descriptor, f) ⇒
         val props = hiveFactory.props(descriptor).resultOrEscalate
         val actor = context.actorOf(props, s"hive-${descriptor.value}")
         context watch actor
         val hive = Sink(ActorSubscriber[AggregateRootCommand](actor))
         Source(commandsSource).buffer(16, OverflowStrategy.backpressure).filter(cmd ⇒ f(cmd)).to(hive).run()
+        actor
+    }.toList
+  }
+
+  def createStatusReport(options: ReportOptions): AlmFuture[StatusReport] = {
+    val rep = StatusReport(s"AggregateRootNexus-Report") ~
+      ("number-of-commands-received" -> commandsReceived)
+
+    val hiveReportsFs = hives.map(hive ⇒ queryReportFromActor(hive, options).materializedValidation.map(res ⇒ (s"${hive.path.name}-status", res)))
+    for {
+      hivesResults ← AlmFuture.sequence(hiveReportsFs)
+    } yield {
+      rep ~~ (hivesResults.map { tuple ⇒ toFieldFromValidation(tuple) })
     }
   }
 
   override def preStart() {
     super.preStart()
+    logInfo("Start")
+    registerComponentControl()
+    registerStatusReporter(description = None)
     self ! Start
   }
+
+  override def postStop() {
+    super.postStop()
+    deregisterStatusReporter()
+    deregisterComponentControl()
+    logWarning("Stopped.")
+  }
+
 }

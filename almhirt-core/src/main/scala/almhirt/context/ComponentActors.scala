@@ -48,7 +48,7 @@ private[almhirt] object componentactors {
    * This is all a bit hacky since I don't know yet, how I want this to behave like...
    */
   class ComponentsSupervisor(
-    dedicatedAppsFuturesExecutor: Option[String])(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging {
+      dedicatedAppsFuturesExecutor: Option[String])(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging {
     import akka.actor.SupervisorStrategy._
     override val supervisorStrategy = OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1.minute) {
       case exn ⇒
@@ -186,6 +186,13 @@ private[almhirt] object componentactors {
         factories.buildViews.foreach(factoryEntry ⇒ views ! UnfoldFactory(factoryEntry))
         factories.buildMisc.foreach(factoryEntry ⇒ misc ! UnfoldFactory(factoryEntry))
         factories.buildApps.foreach(factoryEntry ⇒ apps ! UnfoldFactory(factoryEntry))
+
+        AlmhirtReporter.componentFactory().fold(
+          problem ⇒ {
+            logError(s"Failed to create AlmhirtReporter:\$problem")
+            reportCriticalFailure(problem)
+          },
+          factory ⇒ self ! ActorMessages.CreateChildActor(factory, true, None))
 
       case ActorMessages.CreateChildActor(componentFactory, returnActorRef, correlationId) ⇒
         context.childFrom(componentFactory).fold(
