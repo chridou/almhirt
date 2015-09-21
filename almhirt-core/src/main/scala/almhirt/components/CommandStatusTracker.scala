@@ -9,6 +9,8 @@ import almhirt.common._
 import almhirt.tracking.{ CommandStatus, CommandStatusChanged, CommandResult }
 import almhirt.context.AlmhirtContext
 import almhirt.akkax._
+import almhirt.akkax.reporting._
+import almhirt.akkax.reporting.Implicits._
 import akka.stream.actor._
 import org.reactivestreams.Subscriber
 import akka.stream.scaladsl._
@@ -73,7 +75,8 @@ private[almhirt] class MyCommandStatusTracker(
     with AlmActorLogging
     with ActorSubscriber
     with ActorLogging
-    with ControllableActor {
+    with ControllableActor
+    with StatusReportingActor {
   import CommandStatusTracker._
   import almhirt.storages._
 
@@ -113,6 +116,13 @@ private[almhirt] class MyCommandStatusTracker(
 
   private[this] val shrinkSize = (shrinkCacheAt - targetCacheSize) + 1
 
+  private var numTimedOutCommands = 0L
+  private var numReceivedStatusChangedEvents = 0L
+  private var numReceivedInitiatedStatusChangedEvents = 0L
+  private var numReceivedExecutedStatusChangedEvents = 0L
+  private var numReceivedNotExecutedStatusChangedEvents = 0L
+  private var numReceivedTrackingRequests = 0L
+
   private def addStatusToCache(id: CommandId, status: CommandResult) {
     if (cachedStatusSeq.size >= shrinkCacheAt) {
       val (remove, keep) = cachedStatusSeq.splitAt(shrinkSize)
@@ -127,13 +137,14 @@ private[almhirt] class MyCommandStatusTracker(
 
   private case object AutoConnect
 
-  def receiveRunning(): Receive = running(){
+  def receiveRunning(): Receive = running() {
     case AutoConnect ⇒
       logInfo("Subscribing to event stream.")
       Source(almhirtContext.eventStream).collect { case e: CommandStatusChanged ⇒ e }.to(Sink(CommandStatusTracker(self))).run()
       request(1)
 
     case TrackCommand(commandId, callback, deadline) ⇒
+      numReceivedTrackingRequests = numReceivedTrackingRequests + 1L
       cachedStatusLookUp.get(commandId) match {
         case Some(res) ⇒
           callback(res.success)
@@ -147,15 +158,20 @@ private[almhirt] class MyCommandStatusTracker(
       }
 
     case ActorSubscriberMessage.OnNext(next: CommandStatusChanged) ⇒
+      numReceivedStatusChangedEvents = numReceivedStatusChangedEvents + 1L
+
       next.status match {
         case r: CommandResult ⇒
           trackingSubscriptions.get(next.commandHeader.id).foreach { entries ⇒
+            r match {
+              case CommandStatus.Executed       ⇒ numReceivedExecutedStatusChangedEvents = numReceivedExecutedStatusChangedEvents + 1L
+              case CommandStatus.NotExecuted(_) ⇒ numReceivedNotExecutedStatusChangedEvents = numReceivedNotExecutedStatusChangedEvents + 1L
+            }
             AlmFuture.compute(entries.foreach(_._2.callback(r.success)))
             trackingSubscriptions = trackingSubscriptions - next.commandHeader.id
           }
           addStatusToCache(next.commandHeader.id, r)
-        case _ ⇒
-          ()
+        case CommandStatus.Initiated ⇒ numReceivedInitiatedStatusChangedEvents = numReceivedInitiatedStatusChangedEvents + 1L
       }
       request(1)
 
@@ -183,6 +199,7 @@ private[almhirt] class MyCommandStatusTracker(
       }
 
     case RemoveTimedOut(timedOut) ⇒
+      numTimedOutCommands = numTimedOutCommands + 1L
       val currentSubscriptions = trackingSubscriptions.toMap
 
       // Notify timed out
@@ -225,6 +242,22 @@ private[almhirt] class MyCommandStatusTracker(
 
   override def receive: Receive = receiveRunning()
 
+  private def createReport(options: StatusReportOptions): AlmValidation[StatusReport] = {
+    val eventDetails = StatusReport().addMany(
+      "number-of-received-initiated-status-changed-events" -> numReceivedInitiatedStatusChangedEvents,
+      "number-of-received-executed-status-changed-events" -> numReceivedExecutedStatusChangedEvents,
+      "number-of-received-not-executed-status-changed-events" -> numReceivedNotExecutedStatusChangedEvents)
+    val rep =
+      StatusReport("CommandStatusTracker-Report").withComponentState(componentState) addMany (
+        "number-of-tracked-commands" -> trackingSubscriptions.size,
+        "number-of-subscriptions" -> trackingSubscriptions.values.map { _.size }.sum,
+        "number-of-received-status-changed-events" -> numReceivedStatusChangedEvents,
+        "number-of-received-tracking-requests" -> numReceivedTrackingRequests,
+        "number-of-timed-out-commands" -> numTimedOutCommands,
+        "status-changed-events-details" -> eventDetails)
+    rep.success
+  }
+
   override def preStart() {
     super.preStart()
     if (autoConnect)
@@ -232,6 +265,7 @@ private[almhirt] class MyCommandStatusTracker(
     else
       request(1)
     context.system.scheduler.scheduleOnce(checkTimeoutInterval, self, CheckTimeouts)
+    registerStatusReporter(description = Some("Stats about tracked commands"))
     registerComponentControl()
   }
 
