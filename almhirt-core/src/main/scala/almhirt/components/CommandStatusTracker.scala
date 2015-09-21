@@ -138,111 +138,113 @@ private[almhirt] class MyCommandStatusTracker(
   private case object AutoConnect
 
   def receiveRunning(): Receive = running() {
-    case AutoConnect ⇒
-      logInfo("Subscribing to event stream.")
-      Source(almhirtContext.eventStream).collect { case e: CommandStatusChanged ⇒ e }.to(Sink(CommandStatusTracker(self))).run()
-      request(1)
+    reportsStatus(onReportRequested = createStatusReport) {
+      case AutoConnect ⇒
+        logInfo("Subscribing to event stream.")
+        Source(almhirtContext.eventStream).collect { case e: CommandStatusChanged ⇒ e }.to(Sink(CommandStatusTracker(self))).run()
+        request(1)
 
-    case TrackCommand(commandId, callback, deadline) ⇒
-      numReceivedTrackingRequests = numReceivedTrackingRequests + 1L
-      cachedStatusLookUp.get(commandId) match {
-        case Some(res) ⇒
-          callback(res.success)
-        case None ⇒
-          trackingSubscriptions.get(commandId) match {
-            case Some(entries) ⇒
-              trackingSubscriptions = trackingSubscriptions + ((commandId, entries + (nextId → Entry(callback, deadline))))
-            case None ⇒
-              trackingSubscriptions = trackingSubscriptions + (commandId → Map(nextId → Entry(callback, deadline)))
-          }
-      }
-
-    case ActorSubscriberMessage.OnNext(next: CommandStatusChanged) ⇒
-      numReceivedStatusChangedEvents = numReceivedStatusChangedEvents + 1L
-
-      next.status match {
-        case r: CommandResult ⇒
-          trackingSubscriptions.get(next.commandHeader.id).foreach { entries ⇒
-            r match {
-              case CommandStatus.Executed       ⇒ numReceivedExecutedStatusChangedEvents = numReceivedExecutedStatusChangedEvents + 1L
-              case CommandStatus.NotExecuted(_) ⇒ numReceivedNotExecutedStatusChangedEvents = numReceivedNotExecutedStatusChangedEvents + 1L
-            }
-            AlmFuture.compute(entries.foreach(_._2.callback(r.success)))
-            trackingSubscriptions = trackingSubscriptions - next.commandHeader.id
-          }
-          addStatusToCache(next.commandHeader.id, r)
-        case CommandStatus.Initiated ⇒ numReceivedInitiatedStatusChangedEvents = numReceivedInitiatedStatusChangedEvents + 1L
-      }
-      request(1)
-
-    case ActorSubscriberMessage.OnNext(x) ⇒
-      log.warning(s"Received unprocessable element $x")
-      request(1)
-
-    case CheckTimeouts ⇒
-      val currentSubscriptions = trackingSubscriptions
-      val currentRemoveDueToShrinking = removedDueToShrinking.toSet
-
-      removedDueToShrinking = Vector.empty
-
-      if (!currentRemoveDueToShrinking.isEmpty)
-        logDebug(s"${currentRemoveDueToShrinking.size} commands will be removed due to shrinking. Subscribers will be notified with a timeout.")
-
-      AlmFuture.compute {
-        val deadline = Deadline.now
-        val timedOut = currentSubscriptions.map {
-          case (id, entries) ⇒
-            val timedOutEntries = entries.filter { case (entryId, entry) ⇒ entry.due < deadline || currentRemoveDueToShrinking(id) }.map(x ⇒ x._1)
-            (id, timedOutEntries.toSet)
-        }
-        self ! RemoveTimedOut(timedOut)
-      }
-
-    case RemoveTimedOut(timedOut) ⇒
-      numTimedOutCommands = numTimedOutCommands + 1L
-      val currentSubscriptions = trackingSubscriptions.toMap
-
-      // Notify timed out
-      AlmFuture.compute {
-        timedOut.foreach {
-          case (commandId, timedOutEntryIds) ⇒
-            currentSubscriptions.get(commandId) match {
-              case Some(activeSubscriptionsForCommand) ⇒
-                activeSubscriptionsForCommand.view
-                  .filter { case (id, entry) ⇒ timedOutEntryIds.contains(id) }
-                  .foreach {
-                    case (id, entry) ⇒ {
-                      entry.callback(OperationTimedOutProblem("The tracking timed out. No assumptions can be mede about the progress or result.", Map("tracking-error" -> true, "command-id" -> commandId.value)).failure)
-                      reportMinorFailure(OperationTimedOutProblem(s"""Tracking timed out for command id "${commandId.value}"."""))
-                    }
-                  }
+      case TrackCommand(commandId, callback, deadline) ⇒
+        numReceivedTrackingRequests = numReceivedTrackingRequests + 1L
+        cachedStatusLookUp.get(commandId) match {
+          case Some(res) ⇒
+            callback(res.success)
+          case None ⇒
+            trackingSubscriptions.get(commandId) match {
+              case Some(entries) ⇒
+                trackingSubscriptions = trackingSubscriptions + ((commandId, entries + (nextId → Entry(callback, deadline))))
               case None ⇒
-                ()
+                trackingSubscriptions = trackingSubscriptions + (commandId → Map(nextId → Entry(callback, deadline)))
             }
         }
-      }.onFailure { p ⇒
-        reportMajorFailure(p)
-      }
 
-      //Adjust current subscriptions
-      trackingSubscriptions = trackingSubscriptions.map {
-        case (commandId, entries) ⇒
-          (commandId, entries -- (timedOut.get(commandId).toSeq.flatten))
-      }
+      case ActorSubscriberMessage.OnNext(next: CommandStatusChanged) ⇒
+        numReceivedStatusChangedEvents = numReceivedStatusChangedEvents + 1L
 
-      logDebug(s"""|Stats after removing timed outs:
+        next.status match {
+          case r: CommandResult ⇒
+            trackingSubscriptions.get(next.commandHeader.id).foreach { entries ⇒
+              r match {
+                case CommandStatus.Executed       ⇒ numReceivedExecutedStatusChangedEvents = numReceivedExecutedStatusChangedEvents + 1L
+                case CommandStatus.NotExecuted(_) ⇒ numReceivedNotExecutedStatusChangedEvents = numReceivedNotExecutedStatusChangedEvents + 1L
+              }
+              AlmFuture.compute(entries.foreach(_._2.callback(r.success)))
+              trackingSubscriptions = trackingSubscriptions - next.commandHeader.id
+            }
+            addStatusToCache(next.commandHeader.id, r)
+          case CommandStatus.Initiated ⇒ numReceivedInitiatedStatusChangedEvents = numReceivedInitiatedStatusChangedEvents + 1L
+        }
+        request(1)
+
+      case ActorSubscriberMessage.OnNext(x) ⇒
+        log.warning(s"Received unprocessable element $x")
+        request(1)
+
+      case CheckTimeouts ⇒
+        val currentSubscriptions = trackingSubscriptions
+        val currentRemoveDueToShrinking = removedDueToShrinking.toSet
+
+        removedDueToShrinking = Vector.empty
+
+        if (!currentRemoveDueToShrinking.isEmpty)
+          logDebug(s"${currentRemoveDueToShrinking.size} commands will be removed due to shrinking. Subscribers will be notified with a timeout.")
+
+        AlmFuture.compute {
+          val deadline = Deadline.now
+          val timedOut = currentSubscriptions.map {
+            case (id, entries) ⇒
+              val timedOutEntries = entries.filter { case (entryId, entry) ⇒ entry.due < deadline || currentRemoveDueToShrinking(id) }.map(x ⇒ x._1)
+              (id, timedOutEntries.toSet)
+          }
+          self ! RemoveTimedOut(timedOut)
+        }
+
+      case RemoveTimedOut(timedOut) ⇒
+        numTimedOutCommands = numTimedOutCommands + 1L
+        val currentSubscriptions = trackingSubscriptions.toMap
+
+        // Notify timed out
+        AlmFuture.compute {
+          timedOut.foreach {
+            case (commandId, timedOutEntryIds) ⇒
+              currentSubscriptions.get(commandId) match {
+                case Some(activeSubscriptionsForCommand) ⇒
+                  activeSubscriptionsForCommand.view
+                    .filter { case (id, entry) ⇒ timedOutEntryIds.contains(id) }
+                    .foreach {
+                      case (id, entry) ⇒ {
+                        entry.callback(OperationTimedOutProblem("The tracking timed out. No assumptions can be mede about the progress or result.", Map("tracking-error" -> true, "command-id" -> commandId.value)).failure)
+                        reportMinorFailure(OperationTimedOutProblem(s"""Tracking timed out for command id "${commandId.value}"."""))
+                      }
+                    }
+                case None ⇒
+                  ()
+              }
+          }
+        }.onFailure { p ⇒
+          reportMajorFailure(p)
+        }
+
+        //Adjust current subscriptions
+        trackingSubscriptions = trackingSubscriptions.map {
+          case (commandId, entries) ⇒
+            (commandId, entries -- (timedOut.get(commandId).toSeq.flatten))
+        }
+
+        logDebug(s"""|Stats after removing timed outs:
                    |Number of tracked commands: ${trackingSubscriptions.size}
                    |Number of subscriptions: ${trackingSubscriptions.values.map { _.size }.sum}
                    |To remove due to shrinking: ${removedDueToShrinking.size}(after removal)
                    |""".stripMargin)
 
-      context.system.scheduler.scheduleOnce(checkTimeoutInterval, self, CheckTimeouts)
+        context.system.scheduler.scheduleOnce(checkTimeoutInterval, self, CheckTimeouts)
 
+    }
   }
 
   override def receive: Receive = receiveRunning()
 
-  private def createReport(options: StatusReportOptions): AlmValidation[StatusReport] = {
+  private def createStatusReport(options: StatusReportOptions): AlmValidation[StatusReport] = {
     val eventDetails = StatusReport().addMany(
       "number-of-received-initiated-status-changed-events" -> numReceivedInitiatedStatusChangedEvents,
       "number-of-received-executed-status-changed-events" -> numReceivedExecutedStatusChangedEvents,
