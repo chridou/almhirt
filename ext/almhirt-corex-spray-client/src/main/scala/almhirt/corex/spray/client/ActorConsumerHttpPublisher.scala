@@ -125,7 +125,7 @@ abstract class ActorConsumerHttpPublisher[T](
 
   def receive: Receive = receiveCircuitClosed
 
-  def createStatusReport(options: ReportOptions): AlmValidation[StatusReport] = {
+  def createStatusReport(options: StatusReportOptions): AlmValidation[StatusReport] = {
     val baseReport = StatusReport("HttpEventPublisher-Status").withComponentState(componentState) addMany (
       "actor-name" -> this.self.path.name,
       "number-of-successful-requests" -> numsuccessfulRequests,

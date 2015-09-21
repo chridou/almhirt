@@ -17,7 +17,7 @@ object BuildSettings {
   val scalazVersion = "7.1.3"
   val reactiveMongoVersion = "0.11.7"
   val json4sVersion = "3.2.11"
-  val ezRepsVersion = "0.2"
+  val ezRepsVersion = "0.4"
    
   val buildSettings = Defaults.defaultSettings ++ releaseSettings ++ Seq (
 	organization := buildOrganization,
@@ -142,6 +142,7 @@ trait CorexSprayClientBuild {
 	  libraryDependencies += akka_streams,
 	  libraryDependencies += spray_httpx,
 	  libraryDependencies += spray_client,
+	  libraryDependencies += ezReps,
 	  libraryDependencies += typesafe_config,
 	  libraryDependencies += scalaz,
 	  libraryDependencies += scalatest,
@@ -158,6 +159,7 @@ trait HttpxSprayServiceBuild {
 	  libraryDependencies += akka_actor,
 	  libraryDependencies += spray_httpx,
 	  libraryDependencies += spray_routing,
+	  libraryDependencies += ezReps,
 	  libraryDependencies += typesafe_config,
 	  libraryDependencies += scalaz,
 	  libraryDependencies += scalatest,

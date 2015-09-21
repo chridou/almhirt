@@ -29,23 +29,7 @@ import org.json4s.native.JsonMethods._
 class JsonStatusReportFactory(private val context: ActorContext)(implicit almhirtContext: AlmhirtContext, problemMarshaller: Marshaller[Problem]) extends Directives with spray.httpx.Json4sSupport {
   import almhirt.akkax.reporting._
 
-  def serializeAst(what: AST.RValue): JValue =
-    what match {
-      case AST.RComponentState(state) ⇒ JString(state.parsableString)
-      case AST.RString(value)         ⇒ JString(value)
-      case AST.RInteger(value)        ⇒ JInt(value)
-      case AST.RFloat(value)          ⇒ JDouble(value)
-      case AST.RBool(value)           ⇒ JBool(value)
-      case AST.RLocalDateTime(value)  ⇒ JString(value.toString)
-      case AST.RZonedDateTime(value)  ⇒ JString(value.toString)
-      case AST.RDuration(value)       ⇒ JString(value.defaultUnitString)
-      case AST.RJDuration(value)      ⇒ JString(value.toString)
-      case AST.RError(message)        ⇒ JString(s"ERROR: $message")
-      case AST.RNotAvailable          ⇒ JString("N/A")
-      case AST.RReport(fields) ⇒
-        JObject(fields.map(field ⇒ JField(field.label, serializeAst(field.value))): _*)
-
-    }
+  def serializeAst(what: ezreps.ast.EzValue): JValue = ezreps.json4sx.SerializeJson4s.serializeAst(what)
 
   implicit override val json4sFormats = org.json4s.native.Serialization.formats(NoTypeHints)
   //implicit override val json4sFormats = org.json4s.DefaultFormats + new Json4SComponentStateSerializer
@@ -55,7 +39,7 @@ class JsonStatusReportFactory(private val context: ActorContext)(implicit almhir
       parameters("no-noise".as[Boolean] ? false, "exclude-not-available".as[Boolean] ? false) { (noNoise, excludeNotAvailable) ⇒
         get { ctx ⇒
           val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
-          val options = ReportOptions.makeWithDefaults(noNoise, excludeNotAvailable)
+          val options = almhirt.akkax.reporting.StatusReportOptions.makeWithDefaults(noNoise, excludeNotAvailable)
           val fut = (herder ? StatusReportMessages.GetStatusReportFor(ComponentId(AppName(appName), ComponentName(componentName)), options))(maxCallDuration).mapCastTo[StatusReportMessages.GetStatusReportForRsp].mapV {
             case StatusReportMessages.StatusReportFor(_, report) ⇒
               scalaz.Success(report)

@@ -399,7 +399,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
 
   override def receive: Receive = receiveResolve
 
-  def createStatusReport(options: ReportOptions): AlmValidation[StatusReport] = {
+  def createStatusReport(options: StatusReportOptions): AlmValidation[StatusReport] = {
     val numJet = numJettisonedSinceLastReport
     this.numJettisonedSinceLastReport = 0
 

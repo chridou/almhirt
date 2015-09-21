@@ -10,16 +10,17 @@ import almhirt.common._
 import almhirt.almfuture.all._
 import almhirt.herder.HerderMessages.StatusReportMessages
 import almhirt.herder.HerderMessages
-import almhirt.akkax.reporting.{ StatusReport, ReportOptions }
-import almhirt.akkax.reporting.ReportOptions
+import almhirt.akkax.reporting._
+import ezreps.{ EzReport, EzOptions }
+import ezreps.ast._
 
 trait StatusReportingActor { me: AlmActor ⇒
 
-  implicit def almFuture2PipeableFutureReport(future: AlmFuture[StatusReport]): PipeableAlmFutureReport = new PipeableAlmFutureReport(future)
-  implicit def future2PipeableFutureReport(future: scala.concurrent.Future[StatusReport])(implicit executor: ExecutionContext): PipeableAlmFutureReport = new PipeableAlmFutureReport(future.toAlmFuture)
+  implicit def almFuture2PipeableFutureReport(future: AlmFuture[EzReport]): PipeableAlmFutureReport = new PipeableAlmFutureReport(future)
+  implicit def future2PipeableFutureReport(future: scala.concurrent.Future[EzReport])(implicit executor: ExecutionContext): PipeableAlmFutureReport = new PipeableAlmFutureReport(future.toAlmFuture)
 
-  class PipeableAlmFutureReport(future: AlmFuture[StatusReport]) extends AnyRef {
-    def pipeReportTo(receiver: ActorRef, unwrapProblem: Boolean = true)(implicit executionContext: ExecutionContext): AlmFuture[StatusReport] = {
+  class PipeableAlmFutureReport(future: AlmFuture[EzReport]) extends AnyRef {
+    def pipeReportTo(receiver: ActorRef, unwrapProblem: Boolean = true)(implicit executionContext: ExecutionContext): AlmFuture[EzReport] = {
       respondForStatusReportResultAsync(future)(receiver)
       future
     }
@@ -31,7 +32,7 @@ trait StatusReportingActor { me: AlmActor ⇒
   final def registerExplicitStatusReporter(reporter: almhirt.herder.StatusReporter)(implicit cnp: ActorComponentIdProvider): Unit =
     almhirtContext.tellHerder(StatusReportMessages.RegisterStatusReporter(cnp.componentId, reporter))
 
-  final def registerStatusReporterPF[T: ClassTag](makeRequestReportMsg: ReportOptions ⇒ Any, extractReportPF: PartialFunction[T, AlmValidation[almhirt.akkax.reporting.StatusReport]], description: Option[String] = None)(implicit cnp: ActorComponentIdProvider, executor: ExecutionContext): Unit = {
+  final def registerStatusReporterPF[T: ClassTag](makeRequestReportMsg: EzOptions ⇒ Any, extractReportPF: PartialFunction[T, AlmValidation[EzReport]], description: Option[String] = None)(implicit cnp: ActorComponentIdProvider, executor: ExecutionContext): Unit = {
     val reporter = almhirt.herder.StatusReporter.make(getReport = options ⇒ {
       (self ? makeRequestReportMsg(options))(5.seconds).mapCastTo[T].mapV(extractReportPF)
     }, description)
@@ -39,23 +40,10 @@ trait StatusReportingActor { me: AlmActor ⇒
   }
 
   final def registerStatusReporter(description: Option[String], timeout: FiniteDuration = 5.seconds)(implicit cnp: ActorComponentIdProvider, executor: ExecutionContext): Unit = {
-    val _autoAddRunningSince = me.autoAddDateOfBirth
-    val _autoAddRunningSinceUtc = me.autoAddDateOfBirthUtc
-    val _runningSince = me.born
-    val _runningSinceUtc = me.bornUtc
-    val ccdt = almhirtContext
-    val actorPath = self.path
     val reporter = almhirt.herder.StatusReporter.make(getReport = options ⇒ {
       (self ? ActorMessages.SendStatusReport(options))(timeout).mapCastTo[ActorMessages.SendStatusReportRsp].mapV {
-        case ActorMessages.CurrentStatusReport(report) ⇒ {
-          val rep1 = if (_autoAddRunningSince) report.born(_runningSince) else report
-          val rep2 = if (_autoAddRunningSinceUtc) rep1.bornUtc(_runningSinceUtc) else rep1
-          val rep3 = if (report.fields.exists { x ⇒ x.label == "report-created-on" || x.label == "report-created-on-utc" }) rep2 else rep2.createdNow(ccdt)
-          val rep4 = if (report.fields.exists { x ⇒ x.label == "age" }) rep3 else rep3.age(java.time.Duration.between(java.time.ZonedDateTime.now(), _runningSince))
-          val res = if (report.fields.exists { x ⇒ x.label == "actor-path" }) rep4 else rep4.actorPath(actorPath)
-          scalaz.Success(res)
-        }
-        case ActorMessages.ReportStatusFailed(cause) ⇒ scalaz.Failure(cause.toProblem)
+        case ActorMessages.CurrentStatusReport(report) ⇒ scalaz.Success(report)
+        case ActorMessages.ReportStatusFailed(cause)   ⇒ scalaz.Failure(cause.toProblem)
       }
     }, description)
     this.registerExplicitStatusReporter(reporter)(cnp)
@@ -65,60 +53,83 @@ trait StatusReportingActor { me: AlmActor ⇒
     almhirtContext.tellHerder(StatusReportMessages.DeregisterStatusReporter(cnp.componentId))
 
   implicit class StatusReportingActorRecieveOps(val self: Receive) {
-    def termininateStatusReporting(onReportRequested: ReportOptions ⇒ AlmValidation[StatusReport]) =
+    def termininateStatusReporting(onReportRequested: EzOptions ⇒ AlmValidation[EzReport]) =
       self orElse ({
         case ActorMessages.SendStatusReport(options) ⇒
           respondForStatusReportResult(onReportRequested(options))(sender())
       }: Receive)
 
-    def termininateStatusReportingF(onReportRequested: ReportOptions ⇒ AlmFuture[StatusReport])(implicit executor: ExecutionContext) =
+    def termininateStatusReportingF(onReportRequested: EzOptions ⇒ AlmFuture[EzReport])(implicit executor: ExecutionContext) =
       self orElse ({
         case ActorMessages.SendStatusReport(options) ⇒
           onReportRequested(options).pipeReportTo(sender())
       }: Receive)
   }
 
-  def sendStatusReport(report: StatusReport)(receiver: ActorRef) {
-    receiver ! ActorMessages.CurrentStatusReport(report)
+  def enrichReport(report: EzReport): EzReport = {
+    val rep1 = if (me.autoAddDateOfBirth) report.born(me.born) else report
+    val rep2 = if (me.autoAddDateOfBirthUtc) rep1.bornUtc(me.bornUtc) else rep1
+    val rep3 = if (report.fields.exists { x ⇒ x.label == "report-created-on" || x.label == "report-created-on-utc" }) rep2 else rep2.createdNow(this.almhirtContext)
+    val rep4 = if (report.fields.exists { x ⇒ x.label == "age" }) rep3 else rep3.age(java.time.Duration.between(this.almhirtContext.getUtcTimestamp, me.bornUtc))
+    val res = if (report.fields.exists { x ⇒ x.label == "actor-path" }) rep4 else rep4.actorPath(self.path)
+    res
   }
 
-  def respondForStatusReportResult(report: AlmValidation[StatusReport])(receiver: ActorRef) {
+  def sendStatusReport(report: EzReport)(receiver: ActorRef) {
+    receiver ! ActorMessages.CurrentStatusReport(enrichReport(report))
+  }
+
+  def respondForStatusReportResult(report: AlmValidation[EzReport])(receiver: ActorRef) {
     report.fold(
       fail ⇒ receiver ! ActorMessages.ReportStatusFailed(fail),
-      succ ⇒ receiver ! ActorMessages.CurrentStatusReport(succ))
+      reportSucc ⇒ sendStatusReport(reportSucc)(receiver))
   }
 
-  def respondForStatusReportResultAsync(report: AlmFuture[StatusReport])(receiver: ActorRef)(implicit executor: ExecutionContext) {
+  def respondForStatusReportResultAsync(report: AlmFuture[EzReport])(receiver: ActorRef)(implicit executor: ExecutionContext): Unit = {
+    val _autoAddRunningSince = me.autoAddDateOfBirth
+    val _autoAddRunningSinceUtc = me.autoAddDateOfBirthUtc
+    val _runningSince = me.born
+    val _runningSinceUtc = me.bornUtc
+    val ccdt = almhirtContext
+    val actorPath = self.path
+
     report.onComplete(
       fail ⇒ receiver ! ActorMessages.ReportStatusFailed(fail),
-      succ ⇒ receiver ! ActorMessages.CurrentStatusReport(succ))
+      reportSucc ⇒ {
+        val rep1 = if (_autoAddRunningSince) reportSucc.born(_runningSince) else reportSucc
+        val rep2 = if (_autoAddRunningSinceUtc) rep1.bornUtc(_runningSinceUtc) else rep1
+        val rep3 = if (reportSucc.fields.exists { x ⇒ x.label == "report-created-on" || x.label == "report-created-on-utc" }) rep2 else rep2.createdNow(this.almhirtContext)
+        val rep4 = if (reportSucc.fields.exists { x ⇒ x.label == "age" }) rep3 else rep3.age(java.time.Duration.between(this.almhirtContext.getUtcTimestamp, me.bornUtc))
+        val res = if (reportSucc.fields.exists { x ⇒ x.label == "actor-path" }) rep4 else rep4.actorPath(self.path)
+        receiver ! ActorMessages.CurrentStatusReport(res)
+      })
   }
 
-  def reportsStatus(onReportRequested: ReportOptions ⇒ AlmValidation[StatusReport])(receive: Receive) =
+  def reportsStatus(onReportRequested: EzOptions ⇒ AlmValidation[EzReport])(receive: Receive) =
     receive.termininateStatusReporting(onReportRequested)
 
-  def reportsStatusF(onReportRequested: ReportOptions ⇒ AlmFuture[StatusReport])(receive: Receive)(implicit executor: ExecutionContext) =
+  def reportsStatusF(onReportRequested: EzOptions ⇒ AlmFuture[EzReport])(receive: Receive)(implicit executor: ExecutionContext) =
     receive.termininateStatusReportingF(onReportRequested)
 
-  def queryReportFromActor(fromActor: ActorRef, options: ReportOptions, timeout: FiniteDuration = 5.seconds)(implicit executor: ExecutionContext): AlmFuture[StatusReport] =
+  def queryReportFromActor(fromActor: ActorRef, options: EzOptions, timeout: FiniteDuration = 5.seconds)(implicit executor: ExecutionContext): AlmFuture[EzReport] =
     (fromActor ? ActorMessages.SendStatusReport(options))(timeout).mapCastTo[ActorMessages.SendStatusReportRsp].mapV {
       case ActorMessages.CurrentStatusReport(report) ⇒ scalaz.Success(report)
       case ActorMessages.ReportStatusFailed(cause)   ⇒ scalaz.Failure(cause.toProblem)
     }
 
-  def queryReportFromActorSelection(fromActorSelection: ActorSelection, options: ReportOptions, timeout: FiniteDuration = 5.seconds)(implicit executor: ExecutionContext): AlmFuture[StatusReport] =
+  def queryReportFromActorSelection(fromActorSelection: ActorSelection, options: EzOptions, timeout: FiniteDuration = 5.seconds)(implicit executor: ExecutionContext): AlmFuture[EzReport] =
     (fromActorSelection ? ActorMessages.SendStatusReport(options))(timeout).mapCastTo[ActorMessages.SendStatusReportRsp].mapV {
       case ActorMessages.CurrentStatusReport(report) ⇒ scalaz.Success(report)
       case ActorMessages.ReportStatusFailed(cause)   ⇒ scalaz.Failure(cause.toProblem)
     }
 
-  def queryReportFromPath(fromPath: ActorPath, options: ReportOptions, timeout: FiniteDuration = 5.seconds)(implicit executor: ExecutionContext): AlmFuture[StatusReport] =
+  def queryReportFromPath(fromPath: ActorPath, options: EzOptions, timeout: FiniteDuration = 5.seconds)(implicit executor: ExecutionContext): AlmFuture[EzReport] =
     (this.context.actorSelection(fromPath) ? ActorMessages.SendStatusReport(options))(timeout).mapCastTo[ActorMessages.SendStatusReportRsp].mapV {
       case ActorMessages.CurrentStatusReport(report) ⇒ scalaz.Success(report)
       case ActorMessages.ReportStatusFailed(cause)   ⇒ scalaz.Failure(cause.toProblem)
     }
 
-  def queryReportFromActorOpt(fromActorOpt: Option[ActorRef], options: ReportOptions, timeout: FiniteDuration = 5.seconds)(implicit executor: ExecutionContext): AlmFuture[Option[StatusReport]] =
+  def queryReportFromActorOpt(fromActorOpt: Option[ActorRef], options: EzOptions, timeout: FiniteDuration = 5.seconds)(implicit executor: ExecutionContext): AlmFuture[Option[EzReport]] =
     fromActorOpt match {
       case Some(from) ⇒
         (from ? ActorMessages.SendStatusReport(options))(timeout).mapCastTo[ActorMessages.SendStatusReportRsp].mapV {
@@ -129,7 +140,7 @@ trait StatusReportingActor { me: AlmActor ⇒
         AlmFuture.successful(None)
     }
 
-  def queryReportFromActorSelectionOpt(fromActorSelectionOpt: Option[ActorSelection], options: ReportOptions, timeout: FiniteDuration = 5.seconds)(implicit executor: ExecutionContext): AlmFuture[Option[StatusReport]] =
+  def queryReportFromActorSelectionOpt(fromActorSelectionOpt: Option[ActorSelection], options: EzOptions, timeout: FiniteDuration = 5.seconds)(implicit executor: ExecutionContext): AlmFuture[Option[EzReport]] =
     fromActorSelectionOpt match {
       case Some(from) ⇒
         (from ? ActorMessages.SendStatusReport(options))(timeout).mapCastTo[ActorMessages.SendStatusReportRsp].mapV {
@@ -140,7 +151,7 @@ trait StatusReportingActor { me: AlmActor ⇒
         AlmFuture.successful(None)
     }
 
-  def queryReportFromPathOpt(fromPathOpt: Option[ActorPath], options: ReportOptions, timeout: FiniteDuration = 5.seconds)(implicit executor: ExecutionContext): AlmFuture[Option[StatusReport]] =
+  def queryReportFromPathOpt(fromPathOpt: Option[ActorPath], options: EzOptions, timeout: FiniteDuration = 5.seconds)(implicit executor: ExecutionContext): AlmFuture[Option[EzReport]] =
     fromPathOpt match {
       case Some(from) ⇒
         (this.context.actorSelection(from) ? ActorMessages.SendStatusReport(options))(timeout).mapCastTo[ActorMessages.SendStatusReportRsp].mapV {

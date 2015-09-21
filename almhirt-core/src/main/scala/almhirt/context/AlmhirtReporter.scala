@@ -33,8 +33,8 @@ private[almhirt] class AlmhirtReporter()(implicit override val almhirtContext: A
  
   override def receive: Receive = receiveRunning
 
-  def createStatusReport(options: ReportOptions): AlmFuture[StatusReport] = {
-    val rep = StatusReport(s"Almhirt-Report")
+  def createStatusReport(options: StatusReportOptions): AlmFuture[StatusReport] = {
+    val rep = StatusReport("Almhirt-Report")
     for {
       nexusRef <- context.actorSelection(almhirtContext.localActorPaths.components / almhirt.domain.AggregateRootNexus.actorname).resolveOne(1.second).map(Some(_)).recover({case _ => None})
       nexusReport ← queryReportFromActorOpt(nexusRef, options, timeout = 2.seconds)

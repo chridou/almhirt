@@ -130,7 +130,7 @@ private[almhirt] class AggregateRootNexus(
     }.toList
   }
 
-  def createStatusReport(options: ReportOptions): AlmFuture[StatusReport] = {
+  def createStatusReport(options: StatusReportOptions): AlmFuture[StatusReport] = {
     val rep = StatusReport(s"AggregateRootNexus-Report") ~
       ("number-of-commands-received" -> commandsReceived)
 
