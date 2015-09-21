@@ -17,6 +17,7 @@ object BuildSettings {
   val scalazVersion = "7.1.3"
   val reactiveMongoVersion = "0.11.7"
   val json4sVersion = "3.2.11"
+  val ezRepsVersion = "0.2"
    
   val buildSettings = Defaults.defaultSettings ++ releaseSettings ++ Seq (
 	organization := buildOrganization,
@@ -61,6 +62,9 @@ object Dependencies {
 	lazy val play2_iteratees   = "com.typesafe.play" %% "play-iteratees" % "2.3.9" 
 
   lazy val json4s   = "org.json4s" %% "json4s-native" % json4sVersion % "compile"
+
+  lazy val ezReps = "org.chridou" %% "ezreps-core" % ezRepsVersion % "compile"
+  lazy val ezRepsJson4s = "org.chridou" %% "ezreps-json4s" % ezRepsVersion % "compile"
 	
 	lazy val akka_actor  = "com.typesafe.akka" %% "akka-actor" % BuildSettings.akkaVersion % "provided"
 	lazy val akka_agent  = "com.typesafe.akka" %% "akka-agent" % BuildSettings.akkaVersion % "provided"
@@ -185,6 +189,7 @@ trait CoreBuild {
 	  libraryDependencies += play2_iteratees,
 	  libraryDependencies += akka_streams,
 	  libraryDependencies += akka_actor,
+	  libraryDependencies += ezReps,
 	  libraryDependencies += logback,
 	  libraryDependencies += akka_testkit,
 	  libraryDependencies += scalatest,
@@ -240,6 +245,7 @@ trait CorexSprayServiceBuild {
 	  libraryDependencies += spray_routing,
 	  libraryDependencies += spray_testkit,
 	  libraryDependencies += spray_can,
+	  libraryDependencies += ezRepsJson4s,
 	  libraryDependencies += json4s,
 	  libraryDependencies += scalatest,
     libraryDependencies += pegdown
