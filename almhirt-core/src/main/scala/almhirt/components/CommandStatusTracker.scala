@@ -195,8 +195,8 @@ private[almhirt] class MyCommandStatusTracker(
                   .filter { case (id, entry) ⇒ timedOutEntryIds.contains(id) }
                   .foreach {
                     case (id, entry) ⇒ {
-                      entry.callback(OperationTimedOutProblem("The tracking timed out.").failure)
-                      reportMinorFailure(OperationTimedOutProblem("Tracking timed out."))
+                      entry.callback(OperationTimedOutProblem("The tracking timed out. No assumptions can be mede about the progress or result.", Map("tracking-error" -> true, "command-id" -> commandId.value)).failure)
+                      reportMinorFailure(OperationTimedOutProblem(s"""Tracking timed out for command id "${commandId.value}"."""))
                     }
                   }
               case None ⇒
