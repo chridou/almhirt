@@ -191,6 +191,7 @@ private[almhirt] class CommandEndpointImpl(
       "number-of-commands-dispatched" -> numCommandsDispatched)
     val rep = StatusReport("CommandEndpoint-Report").withComponentState(componentState) addMany (
       "current-command-demand" -> totalDemand,
+      "max-tracking-duration" -> maxTrackingDuration,
       "incoming" -> incoming,
       "outgoing" -> outgoing)
     rep.success
