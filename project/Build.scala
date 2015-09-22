@@ -8,7 +8,7 @@ import sbtunidoc.Plugin.UnidocKeys._
 
 object BuildSettings {
   val buildOrganization = "org.almhirt"
-  val buildScalaVersion = "2.11.6"
+  val buildScalaVersion = "2.11.7"
 
   val akkaVersion = "2.4.0-RC2"
   val akkaStreamsVersion = "1.0"
@@ -17,7 +17,7 @@ object BuildSettings {
   val scalazVersion = "7.1.3"
   val reactiveMongoVersion = "0.11.7"
   val json4sVersion = "3.2.11"
-  val ezRepsVersion = "0.4"
+  val ezRepsVersion = "0.5"
    
   val buildSettings = Defaults.defaultSettings ++ releaseSettings ++ Seq (
 	organization := buildOrganization,
