@@ -36,9 +36,9 @@ private[almhirt] class AlmhirtReporter()(implicit override val almhirtContext: A
   def createComponentsStatusReport(options: StatusReportOptions): AlmFuture[StatusReport] = {
     val rep = StatusReport()
     for {
-      commandStatusTracker ← context.actorSelection(almhirtContext.localActorPaths.components / almhirt.components.CommandStatusTracker.actorname).resolveOne(1.second).map(Some(_)).recover({ case _ ⇒ None })
+      commandStatusTracker ← context.actorSelection(almhirtContext.localActorPaths.misc / almhirt.components.CommandStatusTracker.actorname).resolveOne(1.second).map(Some(_)).recover({ case _ ⇒ None })
       commandStatusTrackerReport ← queryReportFromActorOpt(commandStatusTracker, options, timeout = 2.seconds)
-      commandEndpoint ← context.actorSelection(almhirtContext.localActorPaths.components / almhirt.components.CommandEndpoint.actorname).resolveOne(1.second).map(Some(_)).recover({ case _ ⇒ None })
+      commandEndpoint ← context.actorSelection(almhirtContext.localActorPaths.misc / almhirt.components.CommandEndpoint.actorname).resolveOne(1.second).map(Some(_)).recover({ case _ ⇒ None })
       commandEndpointReport ← queryReportFromActorOpt(commandEndpoint, options, timeout = 2.seconds)
     } yield {
       rep addMany ("command-endpoint-report" -> commandEndpointReport, "command-status-tracker-report" -> commandStatusTrackerReport)
