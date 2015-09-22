@@ -297,6 +297,7 @@ private[almhirt] class MyCommandStatusTracker(
         "max-cached-commands" -> shrinkCacheAt,
         "number-of-tracked-commands" -> trackingSubscriptions.size,
         "number-of-received-tracking-requests" -> numReceivedTrackingRequests,
+        "subscriptions-details" -> subscriptionDetails,
         "status-changed-events-details" -> eventDetails)
     rep.success
   }

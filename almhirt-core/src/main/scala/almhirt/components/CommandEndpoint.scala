@@ -7,6 +7,8 @@ import akka.actor._
 import almhirt.common._
 import almhirt.tracking._
 import almhirt.akkax._
+import almhirt.akkax.reporting._
+import almhirt.akkax.reporting.Implicits._
 import almhirt.context.AlmhirtContext
 import almhirt.context.HasAlmhirtContext
 import akka.stream.actor._
@@ -47,51 +49,71 @@ private[almhirt] class CommandEndpointImpl(
     commandStatusTrackerToResolve: ToResolve,
     resolveSettings: ResolveSettings,
     maxTrackingDuration: FiniteDuration,
-    autoConnect: Boolean)(implicit override val almhirtContext: AlmhirtContext) extends ActorPublisher[Command] with AlmActor with AlmActorLogging with ActorLogging with ControllableActor {
+    autoConnect: Boolean)(implicit override val almhirtContext: AlmhirtContext) extends ActorPublisher[Command] with AlmActor with AlmActorLogging with ActorLogging with ControllableActor with StatusReportingActor {
   import CommandStatusTracker._
 
   override val componentControl = LocalComponentControl(self, ActorMessages.ComponentControlActions.pauseResume, Some(logWarning))
 
   implicit def implicitFlowMaterializer = akka.stream.ActorMaterializer()(this.context)
 
+  implicit val executor = almhirtContext.futuresContext
   private case object AutoConnect
   private case object Resolve
 
+  private var numCommandsReceived = 0L
+  private var numCommandsReceivedWhileInactive = 0L
+  private var numCommandsRejected = 0L
+  private var numCommandsRejectedDueToMissingDemand = 0L
+  private var numCommandsDispatched = 0L
+  private var numResponsesAccepted = 0L
+  private var numResponsesNotAccepted = 0L
+  private var numCommandsSentToTracker = 0L
+
   def receiveResolve: Receive = startup() {
-    case Resolve ⇒
-      context.resolveSingle(commandStatusTrackerToResolve, resolveSettings, None, Some("status-tracker-resolver"))
+    reportsStatus(onReportRequested = createStatusReport) {
+      case Resolve ⇒
+        context.resolveSingle(commandStatusTrackerToResolve, resolveSettings, None, Some("status-tracker-resolver"))
 
-    case ActorMessages.ResolvedSingle(commandStatusTracker, _) ⇒
-      logInfo("Found command status tracker.")
-      if (autoConnect) self ! AutoConnect
-      context.become(receiveRunning(commandStatusTracker))
+      case ActorMessages.ResolvedSingle(commandStatusTracker, _) ⇒
+        logInfo("Found command status tracker.")
+        if (autoConnect) self ! AutoConnect
+        context.become(receiveRunning(commandStatusTracker))
 
-    case ActorMessages.SingleNotResolved(problem, _) ⇒
-      logError(s"Could not resolve command status tracker @ ${commandStatusTrackerToResolve}:\n$problem")
-      sys.error(s"Could not resolve command status tracker log @ ${commandStatusTrackerToResolve}.")
-      reportCriticalFailure(problem)
+      case ActorMessages.SingleNotResolved(problem, _) ⇒
+        logError(s"Could not resolve command status tracker @ ${commandStatusTrackerToResolve}:\n$problem")
+        sys.error(s"Could not resolve command status tracker log @ ${commandStatusTrackerToResolve}.")
+        reportCriticalFailure(problem)
 
-    case cmd: Command ⇒
-      sender() ! CommandNotAccepted(cmd.commandId, ServiceNotAvailableProblem("Command endpoint not ready! Try again later."))
+      case cmd: Command ⇒
+        numCommandsReceivedWhileInactive = numCommandsReceivedWhileInactive + 1L
+        sender() ! CommandNotAccepted(cmd.commandId, ServiceNotAvailableProblem("Command endpoint not ready! Try again later."))
 
+    }
   }
 
   def receiveRunning(commandStatusTracker: ActorRef): Receive = runningWithPause(receivePause(commandStatusTracker)) {
-    case AutoConnect ⇒
-      logInfo("Connecting to command consumer.")
-      CommandEndpoint(self).subscribe(almhirtContext.commandBroker.newSubscriber)
+    reportsStatus(onReportRequested = createStatusReport) {
 
-    case cmd: Command ⇒
-      dispatchCommandResult(
-        cmd,
-        checkCommandDispatchable(cmd),
-        sender(),
-        commandStatusTracker)
+      case AutoConnect ⇒
+        logInfo("Connecting to command consumer.")
+        CommandEndpoint(self).subscribe(almhirtContext.commandBroker.newSubscriber)
+
+      case cmd: Command ⇒
+        numCommandsReceived = numCommandsReceived + 1L
+        dispatchCommandResult(
+          cmd,
+          checkCommandDispatchable(cmd),
+          sender(),
+          commandStatusTracker)
+    }
   }
 
   def receivePause(commandStatusTracker: ActorRef): Receive = pause(receiveRunning(commandStatusTracker)) {
-    case cmd: Command ⇒
-      sender() ! CommandNotAccepted(cmd.commandId, ServiceNotAvailableProblem("I'm taking a break. Try again later."))
+    reportsStatus(onReportRequested = createStatusReport) {
+      case cmd: Command ⇒
+        numCommandsReceivedWhileInactive = numCommandsReceivedWhileInactive + 1L
+        sender() ! CommandNotAccepted(cmd.commandId, ServiceNotAvailableProblem("I'm taking a break. Try again later."))
+    }
   }
 
   override def receive: Receive = receiveResolve
@@ -110,10 +132,12 @@ private[almhirt] class CommandEndpointImpl(
         } else if (isCompleted) {
           ServiceNotAvailableProblem("The service is not available any more. The commad stream was closed.")
         } else if (totalDemand == 0) {
+          numCommandsRejectedDueToMissingDemand = numCommandsRejectedDueToMissingDemand + 1L
           ServiceBusyProblem("Currently there is no demand for commands. Try again later.")
         } else {
           UnspecifiedProblem("Unknown cause.")
         }
+      numCommandsRejected = numCommandsRejected + 1L
       reason.failure
     }
 
@@ -125,6 +149,7 @@ private[almhirt] class CommandEndpointImpl(
         					|Reason:
         					|$problem""".stripMargin)
         receiver ! CommandNotAccepted(cmd.commandId, problem)
+        numResponsesNotAccepted = numResponsesNotAccepted + 1L
         reportMinorFailure(problem)
         reportRejectedCommand(cmd, MinorSeverity, problem)
       },
@@ -143,21 +168,44 @@ private[almhirt] class CommandEndpointImpl(
               },
               receiver ! TrackedCommandResult(dispatchableCmd.commandId, _)),
             deadline = maxTrackingDuration.fromNow)
+          numCommandsSentToTracker = numCommandsSentToTracker + 1L
         } else {
+          numResponsesAccepted = numResponsesAccepted + 1L
           receiver ! CommandAccepted(dispatchableCmd.commandId)
         }
+        numCommandsDispatched = numCommandsDispatched + 1L
         onNext(dispatchableCmd)
       })
+  }
+
+  private def createStatusReport(option: StatusReportOptions): AlmValidation[StatusReport] = {
+    val incoming = StatusReport() addMany (
+      "number-of-commands-received" -> numCommandsReceived,
+      "number-of-commands-received-while-inactive" -> numCommandsReceivedWhileInactive,
+      "number-of-commands-rejected" -> numCommandsRejected,
+      "number-of-commands-rejected-due-to-missing-demand" -> numCommandsRejectedDueToMissingDemand)
+    val outgoing = StatusReport() addMany (
+      "number-of-accepted-responses" -> numResponsesAccepted,
+      "number-of-not-accepted-responses" -> numResponsesNotAccepted,
+      "number-of-commands-sent-to-tracker" -> numCommandsSentToTracker,
+      "number-of-commands-dispatched" -> numCommandsDispatched)
+    val rep = StatusReport("CommandEndpoint-Report").withComponentState(componentState) addMany (
+      "current-command-demand" -> totalDemand,
+      "incoming" -> incoming,
+      "outgoing" -> outgoing)
+    rep.success
   }
 
   override def preStart() {
     logInfo("Starting...")
     registerComponentControl()
+    registerStatusReporter(description = Some("Internals from the command endpoint"))
     self ! Resolve
   }
 
   override def postStop() {
     deregisterComponentControl()
+    deregisterStatusReporter()
     logInfo("Stopped")
   }
 
