@@ -98,7 +98,7 @@ private[almhirt] class MyCommandStatusTracker(
   private case class Entry(callback: AlmValidation[CommandResult] ⇒ Unit, due: Deadline)
 
   private case object CheckTimeouts
-  private case class RemoveTimedOut(timedOut: Map[CommandId, Set[Long]])
+  private case class RemoveEntries(toRemove: Map[CommandId, Set[Long]])
 
   private[this] var currentId = 0L
   private[this] def nextId: Long = {
@@ -116,12 +116,19 @@ private[almhirt] class MyCommandStatusTracker(
 
   private[this] val shrinkSize = (shrinkCacheAt - targetCacheSize) + 1
 
-  private var numTimedOutCommands = 0L
+  private var numTimedOutSubscriptions = 0L
+  private var numSubscriptionsRemovedDueToShrinking = 0L
   private var numReceivedStatusChangedEvents = 0L
   private var numReceivedInitiatedStatusChangedEvents = 0L
   private var numReceivedExecutedStatusChangedEvents = 0L
   private var numReceivedNotExecutedStatusChangedEvents = 0L
   private var numReceivedTrackingRequests = 0L
+  private var numEffectivelyRemovedSubscriptions = 0L
+  private var numSubscriptionsRegularlyNotified = 0L
+
+  private case object IncNumTimedOutSubscriptions
+  private case object IncNumSubscriptionsRemovedDueToShrinking
+  private case object IncNumEffectivelyRemovedSubscriptions
 
   private def addStatusToCache(id: CommandId, status: CommandResult) {
     if (cachedStatusSeq.size >= shrinkCacheAt) {
@@ -149,6 +156,7 @@ private[almhirt] class MyCommandStatusTracker(
         cachedStatusLookUp.get(commandId) match {
           case Some(res) ⇒
             callback(res.success)
+            numSubscriptionsRegularlyNotified = numSubscriptionsRegularlyNotified + 1L
           case None ⇒
             trackingSubscriptions.get(commandId) match {
               case Some(entries) ⇒
@@ -169,6 +177,7 @@ private[almhirt] class MyCommandStatusTracker(
                 case CommandStatus.NotExecuted(_) ⇒ numReceivedNotExecutedStatusChangedEvents = numReceivedNotExecutedStatusChangedEvents + 1L
               }
               AlmFuture.compute(entries.foreach(_._2.callback(r.success)))
+              numSubscriptionsRegularlyNotified = numSubscriptionsRegularlyNotified + 1L
               trackingSubscriptions = trackingSubscriptions - next.commandHeader.id
             }
             addStatusToCache(next.commandHeader.id, r)
@@ -186,26 +195,42 @@ private[almhirt] class MyCommandStatusTracker(
 
         removedDueToShrinking = Vector.empty
 
-        if (!currentRemoveDueToShrinking.isEmpty)
+        if (!currentRemoveDueToShrinking.isEmpty) {
           logDebug(s"${currentRemoveDueToShrinking.size} commands will be removed due to shrinking. Subscribers will be notified with a timeout.")
+        }
 
         AlmFuture.compute {
           val deadline = Deadline.now
-          val timedOut = currentSubscriptions.map {
+          val toRemove = currentSubscriptions.map {
             case (id, entries) ⇒
-              val timedOutEntries = entries.filter { case (entryId, entry) ⇒ entry.due < deadline || currentRemoveDueToShrinking(id) }.map(x ⇒ x._1)
+              val timedOutEntries = entries.filter {
+                case (entryId, entry) ⇒
+                  if (entry.due < deadline) {
+                    self ! IncNumTimedOutSubscriptions
+                    true
+                  } else if (currentRemoveDueToShrinking(id)) {
+                    self ! IncNumSubscriptionsRemovedDueToShrinking
+                    true
+                  } else {
+                    false
+                  }
+              }.map(x ⇒ x._1)
               (id, timedOutEntries.toSet)
           }
-          self ! RemoveTimedOut(timedOut)
+          val removeBecauseOfShrinking = currentSubscriptions.map {
+            case (id, entries) ⇒
+              val timedOutEntries = entries.filter { case (entryId, entry) ⇒ currentRemoveDueToShrinking(id) }.map(x ⇒ x._1)
+              (id, timedOutEntries.toSet)
+          }
+          self ! RemoveEntries(toRemove)
         }
 
-      case RemoveTimedOut(timedOut) ⇒
-        numTimedOutCommands = numTimedOutCommands + 1L
+      case RemoveEntries(toRemove) ⇒
         val currentSubscriptions = trackingSubscriptions.toMap
 
         // Notify timed out
         AlmFuture.compute {
-          timedOut.foreach {
+          toRemove.foreach {
             case (commandId, timedOutEntryIds) ⇒
               currentSubscriptions.get(commandId) match {
                 case Some(activeSubscriptionsForCommand) ⇒
@@ -213,6 +238,7 @@ private[almhirt] class MyCommandStatusTracker(
                     .filter { case (id, entry) ⇒ timedOutEntryIds.contains(id) }
                     .foreach {
                       case (id, entry) ⇒ {
+                        self ! IncNumEffectivelyRemovedSubscriptions
                         entry.callback(OperationTimedOutProblem("The tracking timed out. No assumptions can be mede about the progress or result.", Map("tracking-error" -> true, "command-id" -> commandId.value)).failure)
                         reportMinorFailure(OperationTimedOutProblem(s"""Tracking timed out for command id "${commandId.value}"."""))
                       }
@@ -228,34 +254,49 @@ private[almhirt] class MyCommandStatusTracker(
         //Adjust current subscriptions
         trackingSubscriptions = trackingSubscriptions.map {
           case (commandId, entries) ⇒
-            (commandId, entries -- (timedOut.get(commandId).toSeq.flatten))
+            (commandId, entries -- (toRemove.get(commandId).toSeq.flatten))
         }
 
-        logDebug(s"""|Stats after removing timed outs:
-                   |Number of tracked commands: ${trackingSubscriptions.size}
-                   |Number of subscriptions: ${trackingSubscriptions.values.map { _.size }.sum}
-                   |To remove due to shrinking: ${removedDueToShrinking.size}(after removal)
-                   |""".stripMargin)
+        //        logDebug(s"""|Stats after removing timed outs:
+        //                   |Number of tracked commands: ${trackingSubscriptions.size}
+        //                   |Number of subscriptions: ${trackingSubscriptions.values.map { _.size }.sum}
+        //                   |To remove due to shrinking: ${removedDueToShrinking.size}(after removal)
+        //                   |""".stripMargin)
 
         context.system.scheduler.scheduleOnce(checkTimeoutInterval, self, CheckTimeouts)
 
+      case IncNumTimedOutSubscriptions ⇒
+        numTimedOutSubscriptions = numTimedOutSubscriptions + 1L
+
+      case IncNumSubscriptionsRemovedDueToShrinking ⇒
+        numSubscriptionsRemovedDueToShrinking = numSubscriptionsRemovedDueToShrinking + 1L
+
+      case IncNumEffectivelyRemovedSubscriptions ⇒
+        numEffectivelyRemovedSubscriptions = numEffectivelyRemovedSubscriptions + 1L
     }
+
   }
 
   override def receive: Receive = receiveRunning()
 
   private def createStatusReport(options: StatusReportOptions): AlmValidation[StatusReport] = {
     val eventDetails = StatusReport().addMany(
+      "number-of-received-status-changed-events" -> numReceivedStatusChangedEvents,
       "number-of-received-initiated-status-changed-events" -> numReceivedInitiatedStatusChangedEvents,
       "number-of-received-executed-status-changed-events" -> numReceivedExecutedStatusChangedEvents,
       "number-of-received-not-executed-status-changed-events" -> numReceivedNotExecutedStatusChangedEvents)
+    val subscriptionDetails = StatusReport().addMany(
+      "number-of-subscriptions" -> trackingSubscriptions.values.map { _.size }.sum,
+      "number-of-subscriptions-regularly-notified" -> numSubscriptionsRegularlyNotified,
+      "number-of-subscriptions-to-remove-due-to-time-out" -> numTimedOutSubscriptions,
+      "number-of-subscriptions-to-remove-due-to-cache-shrinking" -> numSubscriptionsRemovedDueToShrinking,
+      "number-of-removed-active-subscriptions" -> numEffectivelyRemovedSubscriptions)
+
     val rep =
       StatusReport("CommandStatusTracker-Report").withComponentState(componentState) addMany (
+        "max-cached-commands" -> shrinkCacheAt,
         "number-of-tracked-commands" -> trackingSubscriptions.size,
-        "number-of-subscriptions" -> trackingSubscriptions.values.map { _.size }.sum,
-        "number-of-received-status-changed-events" -> numReceivedStatusChangedEvents,
         "number-of-received-tracking-requests" -> numReceivedTrackingRequests,
-        "number-of-timed-out-commands" -> numTimedOutCommands,
         "status-changed-events-details" -> eventDetails)
     rep.success
   }
