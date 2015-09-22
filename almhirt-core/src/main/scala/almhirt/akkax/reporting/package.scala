@@ -28,16 +28,25 @@ package object reporting extends ezreps.util.EzFuns {
       fail ⇒ toAST(fail),
       succ ⇒ toAST(succ))
 
+  implicit def almOptionValidation2RValue[T](v: Option[AlmValidation[T]])(implicit converter: ezreps.util.EzValueConverter[T], pconv: ezreps.util.EzValueConverter[Problem]): ast.EzValue =
+    v match {
+    case None => ast.EzNotAvailable
+    case Some(something) => almValidation2RValue(something)
+  }
+      
   implicit def toFieldFromValidation[T](v: (String, AlmValidation[T]))(implicit converter: ezreps.util.EzValueConverter[T], pconv: ezreps.util.EzValueConverter[Problem]): ast.EzField =
     ast.EzField(v._1, v._2.fold(
       fail ⇒ toAST(fail),
       succ ⇒ toAST(succ)))
 
-  implicit def toFieldFromProblematicOptionn[T](v: (String, ProblematicOption[T]))(implicit converter: ezreps.util.EzValueConverter[Option[T]], pconv: ezreps.util.EzValueConverter[Problem]): ast.EzField =
+  implicit def toFieldFromProblematicOption[T](v: (String, ProblematicOption[T]))(implicit converter: ezreps.util.EzValueConverter[Option[T]], pconv: ezreps.util.EzValueConverter[Problem]): ast.EzField =
     ast.EzField(v._1, v._2.fold(
       fail ⇒ toAST(fail),
       succ ⇒ toAST(succ)))
 
+  implicit def toFieldFromOptionValidation[T](v: (String, Option[AlmValidation[T]]))(implicit converter: ezreps.util.EzValueConverter[T], pconv: ezreps.util.EzValueConverter[Problem]): ast.EzField =
+    ast.EzField(v._1, v._2)
+      
   implicit class EzValueOps(val self: ast.EzValue) extends ezreps.util.EzValueOps      
       
   implicit class StatusReportAlmhirtManipulationOps(val self: ast.EzReportValue) extends ezreps.util.EzReportManipulationOps with ezreps.util.EzReportQueryOps {

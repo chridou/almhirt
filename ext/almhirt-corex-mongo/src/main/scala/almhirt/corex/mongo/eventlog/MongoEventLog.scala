@@ -14,6 +14,8 @@ import almhirt.configuration._
 import almhirt.eventlog._
 import almhirt.context._
 import almhirt.akkax._
+import almhirt.akkax.reporting._
+import almhirt.akkax.reporting.Implicits._
 import reactivemongo.bson._
 import reactivemongo.api._
 import reactivemongo.api.indexes.{ Index ⇒ MIndex }
@@ -96,7 +98,7 @@ private[almhirt] class MongoEventLogImpl(
     writeWarnThreshold: FiniteDuration,
     readWarnThreshold: FiniteDuration,
     initializeRetrySettings: RetryPolicyExt,
-    rwMode: ReadWriteMode.SupportsReading)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging with ControllableActor {
+    rwMode: ReadWriteMode.SupportsReading)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging with ControllableActor with StatusReportingActor {
   import EventLog._
   import almhirt.corex.mongo.BsonConverter._
 
@@ -112,6 +114,12 @@ private[almhirt] class MongoEventLogImpl(
 
   val noSorting = BSONDocument()
   val sortByTimestamp = BSONDocument("timestamp" → 1)
+
+  private var numEventsReceived = 0L
+  private var numEventsReceivedWhileUninitialized = 0L
+  private val numDuplicateEventsReceived = new java.util.concurrent.atomic.AtomicLong(0L)
+  private val numEventsStored = new java.util.concurrent.atomic.AtomicLong(0L)
+  private val numEventsNotStored = new java.util.concurrent.atomic.AtomicLong(0L)
 
   private val fromBsonDocToEvent: Enumeratee[BSONDocument, Event] =
     Enumeratee.mapM[BSONDocument] { doc ⇒ scala.concurrent.Future { documentToEvent(doc).resultOrEscalate }(serializationExecutor) }
@@ -160,6 +168,7 @@ private[almhirt] class MongoEventLogImpl(
             p.cause match {
               case Some(CauseIsThrowable(HasAThrowable(dbexn: reactivemongo.core.errors.DatabaseException))) ⇒
                 if (dbexn.code == Some(11000)) {
+                  numDuplicateEventsReceived.incrementAndGet()
                   logWarning(s"Event already exists(${event.eventId.value})")
                   AlreadyExistsProblem(s"Event already exists(${event.eventId.value})", cause = Some(p))
                 } else {
@@ -173,6 +182,7 @@ private[almhirt] class MongoEventLogImpl(
             handleFailure(p)
           }
         }
+        numEventsNotStored.incrementAndGet()
         respondTo.foreach(_ ! EventNotLogged(event.eventId, resProb))
       },
       start ⇒ {
@@ -180,6 +190,7 @@ private[almhirt] class MongoEventLogImpl(
         if (lap > writeWarnThreshold)
           logWarning(s"""Storing event "${event.getClass().getSimpleName()}(${event.eventId})" took longer than ${writeWarnThreshold.defaultUnitString}(${lap.defaultUnitString}).""")
         respondTo.foreach(_ ! EventLogged(event.eventId))
+        numEventsStored.incrementAndGet()
       })
   }
 
@@ -261,112 +272,148 @@ private[almhirt] class MongoEventLogImpl(
   private case class InitializeFailed(prob: Problem)
 
   def uninitializedReadWrite: Receive = startup() {
-    case Initialize ⇒
-      logInfo("Initializing(read/write)")
+    reportsStatusF(onReportRequested = createStatusReport(None)) {
+      case Initialize ⇒
+        logInfo("Initializing(read/write)")
 
-      this.retryFuture(initializeRetrySettings) {
-        val collection = db(collectionName)
-        (for {
-          idxRes ← collection.indexesManager.ensure(MIndex(List("timestamp" → IndexType.Ascending), name = Some("idx_timestamp"), unique = false))
-        } yield (idxRes)).toAlmFuture
-      }.onComplete(
-        fail ⇒ {
-          val prob = MandatoryDataProblem(s"Initialize collection '$collectionName' failed.", cause = Some(fail))
-          self ! InitializeFailed(PersistenceProblem("Failed to initialize", cause = Some(prob)))
-        },
-        idxRes ⇒ {
-          log.info(s"""Index on "timestamp" created: $idxRes""")
-          self ! Initialized
-        })
+        this.retryFuture(initializeRetrySettings) {
+          val collection = db(collectionName)
+          (for {
+            idxRes ← collection.indexesManager.ensure(MIndex(List("timestamp" → IndexType.Ascending), name = Some("idx_timestamp"), unique = false))
+          } yield (idxRes)).toAlmFuture
+        }.onComplete(
+          fail ⇒ {
+            val prob = MandatoryDataProblem(s"Initialize collection '$collectionName' failed.", cause = Some(fail))
+            self ! InitializeFailed(PersistenceProblem("Failed to initialize", cause = Some(prob)))
+          },
+          idxRes ⇒ {
+            log.info(s"""Index on "timestamp" created: $idxRes""")
+            self ! Initialized
+          })
 
-    case Initialized ⇒
-      logInfo("Initialized")
-      context.become(receiveEventLogMsg)
+      case Initialized ⇒
+        logInfo("Initialized")
+        context.become(receiveEventLogMsg)
 
-    case InitializeFailed(prob) ⇒
-      logError(s"Initialize failed:\n$prob")
-      reportCriticalFailure(prob)
-      sys.error(prob.message)
+      case InitializeFailed(prob) ⇒
+        logError(s"Initialize failed:\n$prob")
+        reportCriticalFailure(prob)
+        sys.error(prob.message)
 
-    case LogEvent(event, acknowledge) ⇒
-      reportMissedEvent(event, MajorSeverity, ServiceNotAvailableProblem("Uninitialized."))
+      case m: LogEvent ⇒
+        numEventsReceivedWhileUninitialized = numEventsReceivedWhileUninitialized + 1L
+        logWarning(s"""Received event log message ${m.getClass().getSimpleName()} while uninitialized.""")
+        if (m.acknowledge)
+          sender() ! EventNotLogged(m.event.eventId, ServiceNotReadyProblem("I'm still initializing."))
 
-    case m: EventLogMessage ⇒
-      logWarning(s"""Received event log message ${m.getClass().getSimpleName()} while uninitialized.""")
+      case m: FindEvent ⇒
+        logWarning(s"""Received event log message ${m.getClass().getSimpleName()} while uninitialized.""")
+        sender() ! FindEventFailed(m.eventId, ServiceNotReadyProblem("I'm still initializing."))
+
+      case m: FetchEvents ⇒
+        logWarning(s"""Received event log message ${m.getClass().getSimpleName()} while uninitialized.""")
+        sender() ! FetchEventsFailed(ServiceNotReadyProblem("I'm still initializing."))
+      case m: EventLogMessage ⇒
+        logWarning(s"""Received event log message ${m.getClass().getSimpleName()} while uninitialized.""")
+    }
   }
 
   def uninitializedReadOnly: Receive = startup() {
-    case Initialize ⇒
-      logInfo("Initializing(read-only)")
+    reportsStatusF(onReportRequested = createStatusReport(None)) {
+      case Initialize ⇒
+        logInfo("Initializing(read-only)")
 
-      this.retryFuture(initializeRetrySettings) {
-        db.collectionNames.toAlmFuture.foldV(
-          fail ⇒ fail.failure,
-          collectionNames ⇒ {
-            if (collectionNames.contains(collectionName))
-              ().success
-            else
-              MandatoryDataProblem(s"""Collection "$collectionName" is not among [${collectionNames.mkString(", ")}] in database "${db.name}".""").failure
-          })
-      }.onComplete(
-        fail ⇒ {
-          val prob = MandatoryDataProblem(s"Look up collection '$collectionName' failed.", cause = Some(fail))
-          self ! InitializeFailed(PersistenceProblem("Failed to initialize", cause = Some(prob)))
-        },
-        idxRes ⇒ { self ! Initialized })
+        this.retryFuture(initializeRetrySettings) {
+          db.collectionNames.toAlmFuture.foldV(
+            fail ⇒ fail.failure,
+            collectionNames ⇒ {
+              if (collectionNames.contains(collectionName))
+                ().success
+              else
+                MandatoryDataProblem(s"""Collection "$collectionName" is not among [${collectionNames.mkString(", ")}] in database "${db.name}".""").failure
+            })
+        }.onComplete(
+          fail ⇒ {
+            val prob = MandatoryDataProblem(s"Look up collection '$collectionName' failed.", cause = Some(fail))
+            self ! InitializeFailed(PersistenceProblem("Failed to initialize", cause = Some(prob)))
+          },
+          idxRes ⇒ { self ! Initialized })
 
-    case Initialized ⇒
-      logInfo("Initialized")
-      context.become(receiveEventLogMsg)
+      case Initialized ⇒
+        logInfo("Initialized")
+        context.become(receiveEventLogMsg)
 
-    case InitializeFailed(prob) ⇒
-      logError(s"Initialize failed:\n$prob")
-      reportCriticalFailure(prob)
-      sys.error(prob.message)
+      case InitializeFailed(prob) ⇒
+        logError(s"Initialize failed:\n$prob")
+        reportCriticalFailure(prob)
+        sys.error(prob.message)
 
-    case m: LogEvent ⇒
-      logWarning(s"""Received event log message ${m.getClass().getSimpleName()} while uninitialized.""")
-      if (m.acknowledge)
-        sender() ! EventNotLogged(m.event.eventId, ServiceNotReadyProblem("I'm still initializing."))
+      case m: LogEvent ⇒
+        numEventsReceivedWhileUninitialized = numEventsReceivedWhileUninitialized + 1L
+        logWarning(s"""Received event log message ${m.getClass().getSimpleName()} while uninitialized.""")
+        if (m.acknowledge)
+          sender() ! EventNotLogged(m.event.eventId, ServiceNotReadyProblem("I'm still initializing."))
 
-    case m: FindEvent ⇒
-      logWarning(s"""Received event log message ${m.getClass().getSimpleName()} while uninitialized.""")
-      sender() ! FindEventFailed(m.eventId, ServiceNotReadyProblem("I'm still initializing."))
+      case m: FindEvent ⇒
+        logWarning(s"""Received event log message ${m.getClass().getSimpleName()} while uninitialized.""")
+        sender() ! FindEventFailed(m.eventId, ServiceNotReadyProblem("I'm still initializing."))
 
-    case m: FetchEvents ⇒
-      logWarning(s"""Received event log message ${m.getClass().getSimpleName()} while uninitialized.""")
-      sender() ! FetchEventsFailed(ServiceNotReadyProblem("I'm still initializing."))
+      case m: FetchEvents ⇒
+        logWarning(s"""Received event log message ${m.getClass().getSimpleName()} while uninitialized.""")
+        sender() ! FetchEventsFailed(ServiceNotReadyProblem("I'm still initializing."))
+    }
   }
 
   def receiveEventLogMsg: Receive = running() {
-    case LogEvent(event, acknowledge) ⇒
-      commitEvent(event, if (acknowledge) Some(sender()) else None)
+    reportsStatusF(onReportRequested = options => createStatusReport(Some(db.collection(collectionName).count().map(_.toLong)))(options)) {
 
-    case FindEvent(eventId) ⇒
-      val pinnedSender = sender
-      val collection = db(collectionName)
-      val query = BSONDocument("_id" → BSONString(eventId.value))
+      case LogEvent(event, acknowledge) ⇒
+        numEventsReceived = numEventsReceived + 1L
+        commitEvent(event, if (acknowledge) Some(sender()) else None)
 
-      val res: AlmFuture[Option[Event]] = for {
-        doc ← collection.find(query).cursor(readPreference = rwMode.readPreference).headOption
-        event ← AlmFuture {
-          doc match {
-            case None    ⇒ None.success
-            case Some(d) ⇒ documentToEvent(d).map(Some(_))
-          }
-        }(serializationExecutor)
-      } yield event
+      case FindEvent(eventId) ⇒
+        val pinnedSender = sender
+        val collection = db(collectionName)
+        val query = BSONDocument("_id" → BSONString(eventId.value))
 
-      res.onComplete(
-        problem ⇒ {
-          pinnedSender ! FindEventFailed(eventId, problem)
-          logError(problem.toString())
-          reportMajorFailure(problem)
-        },
-        eventOpt ⇒ pinnedSender ! FoundEvent(eventId, eventOpt))
+        val res: AlmFuture[Option[Event]] = for {
+          doc ← collection.find(query).cursor(readPreference = rwMode.readPreference).headOption
+          event ← AlmFuture {
+            doc match {
+              case None    ⇒ None.success
+              case Some(d) ⇒ documentToEvent(d).map(Some(_))
+            }
+          }(serializationExecutor)
+        } yield event
 
-    case m: FetchEvents ⇒
-      fetchAndDispatchEvents(m, sender())
+        res.onComplete(
+          problem ⇒ {
+            pinnedSender ! FindEventFailed(eventId, problem)
+            logError(problem.toString())
+            reportMajorFailure(problem)
+          },
+          eventOpt ⇒ pinnedSender ! FoundEvent(eventId, eventOpt))
+
+      case m: FetchEvents ⇒
+        fetchAndDispatchEvents(m, sender())
+    }
+  }
+
+  private def createStatusReport(numEvents: Option[AlmFuture[Long]])(options: StatusReportOptions): AlmFuture[StatusReport] = {
+    val baseRep = StatusReport("EventLog").withComponentState(componentState) addMany (
+      "number-of-events-received" -> numEventsReceived,
+      "number-of-events-received-while-uninitialized" -> numEventsReceivedWhileUninitialized,
+      "number-of-duplicate-events-received" -> numDuplicateEventsReceived.get,
+      "number-of-events-stored" -> numEventsStored.get,
+      "number-of-events-not-stored" -> numEventsNotStored.get,
+      "collection-name" -> collectionName)
+
+    for {
+      totalEvents ← numEvents match {
+        case None      ⇒ AlmFuture.successful(None)
+        case Some(fut) ⇒ fut.materializedValidation.map(Some(_))
+      }
+    } yield baseRep ~ ("events-persisted" -> totalEvents)
   }
 
   override def receive =
@@ -378,11 +425,13 @@ private[almhirt] class MongoEventLogImpl(
   override def preStart() {
     super.preStart()
     registerComponentControl()
+    registerStatusReporter(description = Some("EventLog based on MongoDB"))
     self ! Initialize
   }
 
   override def postStop() {
     deregisterComponentControl()
+    deregisterStatusReporter()
   }
 
 }

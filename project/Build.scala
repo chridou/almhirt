@@ -223,6 +223,7 @@ trait CorexMongoBuild {
 	  libraryDependencies += scalaz,
 	  libraryDependencies += akka_actor,
 	  libraryDependencies += akka_streams,
+	  libraryDependencies += ezReps,
 	  libraryDependencies += play2_iteratees,
 	  libraryDependencies += typesafe_config,
 	  libraryDependencies += snappy,

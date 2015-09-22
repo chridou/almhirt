@@ -14,6 +14,8 @@ import almhirt.converters.BinaryConverter
 import almhirt.configuration._
 import almhirt.context._
 import almhirt.akkax._
+import almhirt.akkax.reporting._
+import almhirt.akkax.reporting.Implicits._
 import reactivemongo.bson._
 import reactivemongo.api._
 import reactivemongo.api.indexes.{ Index ⇒ MIndex }
@@ -100,7 +102,7 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
     writeWarnThreshold: FiniteDuration,
     readWarnThreshold: FiniteDuration,
     retrySettings: RetrySettings,
-    rwMode: ReadWriteMode.SupportsReading)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging with ControllableActor {
+    rwMode: ReadWriteMode.SupportsReading)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging with ControllableActor with StatusReportingActor {
 
   import almhirt.eventlog.AggregateRootEventLog._
 
@@ -116,6 +118,12 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
 
   val noSorting = BSONDocument()
   val sortByVersion = BSONDocument("version" → 1)
+
+  private var numEventsReceived = 0L
+  private var numEventsReceivedWhileUninitialized = 0L
+  private val numDuplicateEventsReceived = new java.util.concurrent.atomic.AtomicLong(0L)
+  private val numEventsStored = new java.util.concurrent.atomic.AtomicLong(0L)
+  private val numEventsNotStored = new java.util.concurrent.atomic.AtomicLong(0L)
 
   private val fromBsonDocToAggregateRootEvent: Enumeratee[BSONDocument, AggregateRootEvent] =
     Enumeratee.mapM[BSONDocument] { doc ⇒ Future { documentToAggregateRootEvent(doc).resultOrEscalate }(serializationExecutor) }
@@ -166,18 +174,40 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
   }
 
   def commitEvent(event: AggregateRootEvent, respondTo: ActorRef) {
+    import almhirt.problem._
     (for {
       serialized ← AlmFuture { aggregateRootEventToDocument(event: AggregateRootEvent) }(serializationExecutor)
       storeRes ← storeEvent(serialized)
     } yield storeRes) onComplete (
       fail ⇒ {
-        logError(s"Could not commit aggregate root event:\n$fail")
-        reportMissedEvent(event, CriticalSeverity, fail)
-        reportMajorFailure(fail)
-        respondTo ! AggregateRootEventNotCommitted(event.eventId, fail)
+        fail match {
+          case ExceptionCaughtProblem(p) ⇒
+            p.cause match {
+              case Some(CauseIsThrowable(HasAThrowable(dbexn: reactivemongo.core.errors.DatabaseException))) ⇒
+                if (dbexn.code == Some(11000)) {
+                  logWarning(s"Event(${event.eventId.value}) for aggregate root ${event.aggId.value} already exists")
+                  val prob = AlreadyExistsProblem(s"Event(${event.eventId.value}) for aggregate root ${event.aggId.value} already exists", cause = Some(p))
+                  respondTo ! AggregateRootEventNotCommitted(event.eventId, prob)
+                  numDuplicateEventsReceived.incrementAndGet()
+                } else {
+                  logError(s"Could not commit aggregate root event:\n$fail")
+                  reportMissedEvent(event, CriticalSeverity, fail)
+                  reportMajorFailure(fail)
+                  respondTo ! AggregateRootEventNotCommitted(event.eventId, fail)
+                  numEventsNotStored.incrementAndGet()
+                }
+              case _ ⇒
+                logError(s"Could not commit aggregate root event:\n$fail")
+                reportMissedEvent(event, CriticalSeverity, fail)
+                reportMajorFailure(fail)
+                respondTo ! AggregateRootEventNotCommitted(event.eventId, fail)
+                numEventsNotStored.incrementAndGet()
+            }
+        }
       },
       start ⇒ {
         respondTo ! AggregateRootEventCommitted(event.eventId)
+        numEventsStored.incrementAndGet()
         val lap = start.lap
         if (lap > writeWarnThreshold)
           logWarning(s"""Storing aggregate root event "${event.getClass().getSimpleName()}(${event.eventId})" took longer than ${writeWarnThreshold.defaultUnitString}(${lap.defaultUnitString}).""")
@@ -238,133 +268,158 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
   private case class InitializeFailed(prob: Problem)
 
   def uninitializedReadWrite: Receive = startup() {
-    case Initialize ⇒
-      logInfo("Initializing(read/write)")
-      val toTry = () ⇒ (for {
-        collectinNames ← db.collectionNames
-        createonRes ← if (collectinNames.contains(collectionName)) {
-          logInfo(s"""Collection "$collectionName" already exists.""")
-          Future.successful(false)
-        } else {
-          logInfo(s"""Collection "$collectionName" does not yet exist.""")
-          val collection = db(collectionName)
-          collection.indexesManager.ensure(MIndex(List("aggid" → IndexType.Ascending, "version" → IndexType.Ascending), name = Some("idx_aggid_version"), unique = false))
+    reportsStatusF(onReportRequested = createStatusReport(None)) {
+      case Initialize ⇒
+        logInfo("Initializing(read/write)")
+        val toTry = () ⇒ (for {
+          collectinNames ← db.collectionNames
+          createonRes ← if (collectinNames.contains(collectionName)) {
+            logInfo(s"""Collection "$collectionName" already exists.""")
+            Future.successful(false)
+          } else {
+            logInfo(s"""Collection "$collectionName" does not yet exist.""")
+            val collection = db(collectionName)
+            collection.indexesManager.ensure(MIndex(List("aggid" → IndexType.Ascending, "version" → IndexType.Ascending), name = Some("idx_aggid_version"), unique = false))
+          }
+        } yield createonRes).toAlmFuture
+
+        context.retryWithLogging[Boolean](
+          retryContext = s"Initialize collection $collectionName",
+          toTry = toTry,
+          onSuccess = createRes ⇒ {
+            logInfo(s"""Index on "aggid, version" created: $createRes""")
+            self ! Initialized
+          },
+          onFinalFailure = (t, n, p) ⇒ {
+            val prob = MandatoryDataProblem(s"Initialize collection '$collectionName' finally failed after $n attempts and ${t.defaultUnitString}.", cause = Some(p))
+            self ! InitializeFailed(PersistenceProblem("Failed to initialize", cause = Some(prob)))
+          },
+          log = this.log,
+          settings = retrySettings,
+          actorName = Some("initializes-collection"))
+
+      case Initialized ⇒
+        logInfo("Initialized")
+        context.become(receiveAggregateRootEventLogMsg)
+
+      case InitializeFailed(prob) ⇒
+        logError(s"Initialize failed:\n$prob")
+        reportCriticalFailure(prob)
+        sys.error(prob.message)
+
+      case m: AggregateRootEventLogMessage ⇒
+        val msg = s"""Received domain event log message ${m.getClass().getSimpleName()} while uninitialized."""
+        logWarning(msg)
+        val problem = ServiceNotReadyProblem(msg)
+        m match {
+          case CommitAggregateRootEvent(event) ⇒
+            numEventsReceivedWhileUninitialized = numEventsReceivedWhileUninitialized + 1L
+            sender ! AggregateRootEventNotCommitted(event.eventId, problem)
+            reportMissedEvent(event, MajorSeverity, problem)
+          case m: GetAllAggregateRootEvents ⇒
+            sender ! GetAggregateRootEventsFailed(problem)
+          case GetAggregateRootEvent(eventId) ⇒
+            sender ! GetAggregateRootEventFailed(eventId, problem)
+          case m: GetAggregateRootEventsFor ⇒
+            sender ! GetAggregateRootEventsFailed(problem)
         }
-      } yield createonRes).toAlmFuture
-
-      context.retryWithLogging[Boolean](
-        retryContext = s"Initialize collection $collectionName",
-        toTry = toTry,
-        onSuccess = createRes ⇒ {
-          logInfo(s"""Index on "aggid, version" created: $createRes""")
-          self ! Initialized
-        },
-        onFinalFailure = (t, n, p) ⇒ {
-          val prob = MandatoryDataProblem(s"Initialize collection '$collectionName' finally failed after $n attempts and ${t.defaultUnitString}.", cause = Some(p))
-          self ! InitializeFailed(PersistenceProblem("Failed to initialize", cause = Some(prob)))
-        },
-        log = this.log,
-        settings = retrySettings,
-        actorName = Some("initializes-collection"))
-
-    case Initialized ⇒
-      logInfo("Initialized")
-      context.become(receiveAggregateRootEventLogMsg)
-
-    case InitializeFailed(prob) ⇒
-      logError(s"Initialize failed:\n$prob")
-      reportCriticalFailure(prob)
-      sys.error(prob.message)
-
-    case m: AggregateRootEventLogMessage ⇒
-      val msg = s"""Received domain event log message ${m.getClass().getSimpleName()} while uninitialized."""
-      logWarning(msg)
-      val problem = ServiceNotReadyProblem(msg)
-      m match {
-        case CommitAggregateRootEvent(event) ⇒
-          sender ! AggregateRootEventNotCommitted(event.eventId, problem)
-          reportMissedEvent(event, MajorSeverity, problem)
-        case m: GetAllAggregateRootEvents ⇒
-          sender ! GetAggregateRootEventsFailed(problem)
-        case GetAggregateRootEvent(eventId) ⇒
-          sender ! GetAggregateRootEventFailed(eventId, problem)
-        case m: GetAggregateRootEventsFor ⇒
-          sender ! GetAggregateRootEventsFailed(problem)
-      }
+    }
   }
 
   def uninitializedReadOnly: Receive = startup() {
-    case Initialize ⇒
-      logInfo("Initializing(read-only)")
-      context.retryWithLogging[Unit](
-        retryContext = s"Find collection $collectionName",
-        toTry = () ⇒ db.collectionNames.toAlmFuture.foldV(
-          fail ⇒ fail.failure,
-          collectionNames ⇒ {
-            if (collectionNames.contains(collectionName))
-              ().success
-            else
-              MandatoryDataProblem(s"""Collection "$collectionName" is not among [${collectionNames.mkString(", ")}] in database "${db.name}".""").failure
-          }),
-        onSuccess = _ ⇒ { self ! Initialized },
-        onFinalFailure = (t, n, p) ⇒ {
-          val prob = MandatoryDataProblem(s"Look up collection '$collectionName' finally failed after $n attempts and ${t.defaultUnitString}.", cause = Some(p))
-          self ! InitializeFailed(PersistenceProblem("Failed to initialize", cause = Some(prob)))
-        },
-        log = this.log,
-        settings = retrySettings,
-        actorName = Some("looks-for-collection"))
+    reportsStatusF(onReportRequested = createStatusReport(None)) {
+      case Initialize ⇒
+        logInfo("Initializing(read-only)")
+        context.retryWithLogging[Unit](
+          retryContext = s"Find collection $collectionName",
+          toTry = () ⇒ db.collectionNames.toAlmFuture.foldV(
+            fail ⇒ fail.failure,
+            collectionNames ⇒ {
+              if (collectionNames.contains(collectionName))
+                ().success
+              else
+                MandatoryDataProblem(s"""Collection "$collectionName" is not among [${collectionNames.mkString(", ")}] in database "${db.name}".""").failure
+            }),
+          onSuccess = _ ⇒ { self ! Initialized },
+          onFinalFailure = (t, n, p) ⇒ {
+            val prob = MandatoryDataProblem(s"Look up collection '$collectionName' finally failed after $n attempts and ${t.defaultUnitString}.", cause = Some(p))
+            self ! InitializeFailed(PersistenceProblem("Failed to initialize", cause = Some(prob)))
+          },
+          log = this.log,
+          settings = retrySettings,
+          actorName = Some("looks-for-collection"))
 
-    case Initialized ⇒
-      logInfo("Initialized")
-      context.become(receiveAggregateRootEventLogMsg)
+      case Initialized ⇒
+        logInfo("Initialized")
+        context.become(receiveAggregateRootEventLogMsg)
 
-    case InitializeFailed(prob) ⇒
-      logError(s"Initialize failed:\n$prob")
-      reportCriticalFailure(prob)
-      sys.error(prob.message)
+      case InitializeFailed(prob) ⇒
+        logError(s"Initialize failed:\n$prob")
+        reportCriticalFailure(prob)
+        sys.error(prob.message)
 
-    case m: AggregateRootEventLogMessage ⇒
-      val msg = s"""Received domain event log message ${m.getClass().getSimpleName()} while uninitialized in read only mode."""
-      logWarning(msg)
-      val problem = ServiceNotReadyProblem(msg)
-      m match {
-        case CommitAggregateRootEvent(event) ⇒
-          sender ! AggregateRootEventNotCommitted(event.eventId, problem)
-        case m: GetAllAggregateRootEvents ⇒
-          sender ! GetAggregateRootEventsFailed(problem)
-        case GetAggregateRootEvent(eventId) ⇒
-          sender ! GetAggregateRootEventFailed(eventId, problem)
-        case m: GetAggregateRootEventsFor ⇒
-          sender ! GetAggregateRootEventsFailed(problem)
-      }
+      case m: AggregateRootEventLogMessage ⇒
+        val msg = s"""Received domain event log message ${m.getClass().getSimpleName()} while uninitialized in read only mode."""
+        logWarning(msg)
+        val problem = ServiceNotReadyProblem(msg)
+        m match {
+          case CommitAggregateRootEvent(event) ⇒
+            numEventsReceivedWhileUninitialized = numEventsReceivedWhileUninitialized + 1L
+            sender ! AggregateRootEventNotCommitted(event.eventId, problem)
+          case m: GetAllAggregateRootEvents ⇒
+            sender ! GetAggregateRootEventsFailed(problem)
+          case GetAggregateRootEvent(eventId) ⇒
+            sender ! GetAggregateRootEventFailed(eventId, problem)
+          case m: GetAggregateRootEventsFor ⇒
+            sender ! GetAggregateRootEventsFailed(problem)
+        }
+    }
   }
 
   def receiveAggregateRootEventLogMsg: Receive = running() {
-    case CommitAggregateRootEvent(event) ⇒
-      commitEvent(event, sender())
+    reportsStatusF(onReportRequested = options ⇒ createStatusReport(Some(db.collection(collectionName).count().map(_.toLong)))(options)) {
+      case CommitAggregateRootEvent(event) ⇒
+        commitEvent(event, sender())
 
-    case m: AggregateRootEventLogQueryManyMessage ⇒
-      fetchAndDispatchAggregateRootEvents(m, sender())
+      case m: AggregateRootEventLogQueryManyMessage ⇒
+        fetchAndDispatchAggregateRootEvents(m, sender())
 
-    case GetAggregateRootEvent(eventId) ⇒
-      val collection = db(collectionName)
-      val query = BSONDocument("_id" → BSONString(eventId.value))
-      (for {
-        doc ← collection.find(query).cursor(readPreference = rwMode.readPreference).headOption.toAlmFuture
-        aggregateRootEvent ← AlmFuture {
-          doc match {
-            case None    ⇒ None.success
-            case Some(d) ⇒ documentToAggregateRootEvent(d).map(Some(_))
-          }
-        }(serializationExecutor)
-      } yield aggregateRootEvent).mapOrRecoverThenPipeTo(
-        eventOpt ⇒ FetchedAggregateRootEvent(eventId, eventOpt),
-        problem ⇒ {
-          logError(problem.toString())
-          reportMajorFailure(problem)
-          GetAggregateRootEventFailed(eventId, problem)
-        })(sender())
+      case GetAggregateRootEvent(eventId) ⇒
+        val collection = db(collectionName)
+        val query = BSONDocument("_id" → BSONString(eventId.value))
+        (for {
+          doc ← collection.find(query).cursor(readPreference = rwMode.readPreference).headOption.toAlmFuture
+          aggregateRootEvent ← AlmFuture {
+            doc match {
+              case None    ⇒ None.success
+              case Some(d) ⇒ documentToAggregateRootEvent(d).map(Some(_))
+            }
+          }(serializationExecutor)
+        } yield aggregateRootEvent).mapOrRecoverThenPipeTo(
+          eventOpt ⇒ FetchedAggregateRootEvent(eventId, eventOpt),
+          problem ⇒ {
+            logError(problem.toString())
+            reportMajorFailure(problem)
+            GetAggregateRootEventFailed(eventId, problem)
+          })(sender())
+    }
+  }
+
+  private def createStatusReport(numEvents: Option[AlmFuture[Long]])(options: StatusReportOptions): AlmFuture[StatusReport] = {
+    val baseRep = StatusReport("AggregateEventLog").withComponentState(componentState) addMany (
+      "number-of-events-received" -> numEventsReceived,
+      "number-of-events-received-while-uninitialized" -> numEventsReceivedWhileUninitialized,
+      "number-of-duplicate-events-received" -> numDuplicateEventsReceived.get,
+      "number-of-events-stored" -> numEventsStored.get,
+      "number-of-events-not-stored" -> numEventsNotStored.get,
+      "collection-name" -> collectionName)
+
+    for {
+      totalEvents ← numEvents match {
+        case None      ⇒ AlmFuture.successful(None)
+        case Some(fut) ⇒ fut.materializedValidation.map(Some(_))
+      }
+    } yield baseRep ~ ("events-persisted" -> totalEvents)
   }
 
   override def receive =
@@ -376,12 +431,14 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
   override def preStart() {
     super.preStart()
     registerComponentControl()
+    registerStatusReporter(description = Some("AggregateEventLog based on MongoDB"))
     self ! Initialize
   }
 
   override def postStop() {
     super.postStop()
     deregisterComponentControl()
+    deregisterStatusReporter()
   }
 
 }
