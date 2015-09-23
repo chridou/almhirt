@@ -421,12 +421,14 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
                  |
                  |command-buffer-size: $commandBuffersize
                  |enqueued-events-throttling-threshold: $enqueuedEventsThrottlingThreshold""".stripMargin)
+    context.parent ! ActorMessages.ConsiderMeForReporting
     self ! Resolve
   }
 
   override def preRestart(reason: Throwable, message: Option[Any]) {
     super.preRestart(reason, message)
     cancelContract()
+    context.parent ! ActorMessages.ConsiderMeForReporting
     reportCriticalFailure(reason)
     logWarning(s"[Restart]: Received $numReceived commands. $numSucceeded succeeded, $numFailed failed.")
   }
@@ -434,7 +436,6 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
   override def postRestart(reason: Throwable) {
     super.postRestart(reason)
     registerComponentControl()
-    context.parent ! ActorMessages.ConsiderMeForReporting
     self ! Resolve
   }
 

@@ -82,19 +82,21 @@ private[almhirt] class EventLogWriterImpl(
   private case object AutoConnect
   private case object Resolve
 
+  private var eventLog: ActorRef = null
+
   def receiveResolve: Receive = startup() {
     reportsStatusF(onReportRequested = createStatusReport) {
       case Resolve ⇒
         context.resolveSingle(eventLogToResolve, resolveSettings, None, Some("event-log-resolver"))
 
-      case ActorMessages.ResolvedSingle(eventlog, _) ⇒
+      case ActorMessages.ResolvedSingle(resolvedEventlog, _) ⇒
         logInfo("Found event log.")
-
+        this.eventLog = resolvedEventlog
         if (autoConnect)
           self ! AutoConnect
         else
           request(1)
-        context.become(receiveCircuitClosed(eventlog))
+        context.become(receiveCircuitClosed)
 
       case ActorMessages.SingleNotResolved(problem, _) ⇒
         logError(s"Could not resolve event log @${eventLogToResolve}:\n$problem")
@@ -103,7 +105,7 @@ private[almhirt] class EventLogWriterImpl(
     }
   }
 
-  def receiveCircuitClosed(eventLog: ActorRef): Receive = running() {
+  def receiveCircuitClosed: Receive = running() {
     reportsStatusF(onReportRequested = createStatusReport) {
       case AutoConnect ⇒
         logInfo("Subscribing to event stream.")
@@ -159,7 +161,7 @@ private[almhirt] class EventLogWriterImpl(
   override def receive: Receive = receiveResolve
 
   def createStatusReport(options: StatusReportOptions): AlmFuture[StatusReport] = {
-    val baseReport = StatusReport(s"${this.getClass.getSimpleName}-Report").withComponentState(componentState)
+    val baseReport = StatusReport(s"${this.getClass.getSimpleName}-Report").withComponentState(componentState) ~ ("event-log" -> eventLog.path.toStringWithoutAddress)
 
     AlmFuture.successful(baseReport)
   }
@@ -167,7 +169,7 @@ private[almhirt] class EventLogWriterImpl(
   override def preStart() {
     super.preStart()
     registerComponentControl()
-    registerStatusReporter(description = None)
+    registerStatusReporter(description = Some("Simpli writes to an event log."))
     context.parent ! ActorMessages.ConsiderMeForReporting
     self ! Resolve
   }

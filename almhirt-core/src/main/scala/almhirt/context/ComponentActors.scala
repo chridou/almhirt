@@ -229,7 +229,7 @@ private[almhirt] object componentactors {
     override def preStart() {
       super.preStart()
       registerComponentControl()
-      registerStatusReporter(description = None)
+      registerStatusReporter(description = Some("A report on ***ALL*** components(this might be pretty expensive...)"))
       logInfo("Starting...")
     }
 
