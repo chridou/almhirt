@@ -164,6 +164,7 @@ abstract class ActorConsumerHttpPublisher[T](
 
     registerStatusReporter(description = None)
     registerCircuitControl(circuitBreaker)
+    context.parent ! ActorMessages.ConsiderMeForReporting
 
     self ! Start
   }

@@ -44,6 +44,7 @@ private[almhirt] class AggregateRootNexus(
   implicit val executor = almhirtContext.futuresContext
 
   override val componentControl = LocalComponentControl(self, ActorMessages.ComponentControlActions.none, Some(logWarning))
+  override val statusReportsCollector = Some(StatusReportsCollector(this.context))
 
   import akka.actor.SupervisorStrategy._
 
@@ -134,19 +135,15 @@ private[almhirt] class AggregateRootNexus(
     val rep = StatusReport(s"AggregateRootNexus-Report") ~
       ("number-of-commands-received" -> commandsReceived)
 
-    val hiveReportsFs = hives.map(hive ⇒ queryReportFromActor(hive, options).materializedValidation.map(res ⇒ (s"${hive.path.name}-status", res)))
-    for {
-      hivesResults ← AlmFuture.sequence(hiveReportsFs)
-    } yield {
-      rep ~~ (hivesResults.map { tuple ⇒ toFieldFromValidation(tuple) })
-    }
+    appendToReportFromCollector(rep)(options)
   }
 
   override def preStart() {
     super.preStart()
     logInfo("Start")
     registerComponentControl()
-    registerStatusReporter(description = None)
+    registerStatusReporter(description = Some("The nexus that is the owner of the hives"))
+    context.parent ! ActorMessages.ConsiderMeForReporting
     self ! Start
   }
 

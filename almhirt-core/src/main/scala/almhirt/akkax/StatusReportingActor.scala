@@ -29,6 +29,8 @@ trait StatusReportingActor { me: AlmActor ⇒
   def autoAddDateOfBirth: Boolean = true
   def autoAddDateOfBirthUtc: Boolean = false
 
+  def statusReportsCollector: Option[StatusReportsCollector] = None
+
   final def registerExplicitStatusReporter(reporter: almhirt.herder.StatusReporter)(implicit cnp: ActorComponentIdProvider): Unit =
     almhirtContext.tellHerder(StatusReportMessages.RegisterStatusReporter(cnp.componentId, reporter))
 
@@ -57,13 +59,22 @@ trait StatusReportingActor { me: AlmActor ⇒
       self orElse ({
         case ActorMessages.SendStatusReport(options) ⇒
           respondForStatusReportResult(onReportRequested(options))(sender())
+        case ActorMessages.ConsiderMeForReporting ⇒
+          statusReportsCollector.foreach { _.register(NoResolvingRequired(sender())) }
       }: Receive)
 
     def termininateStatusReportingF(onReportRequested: EzOptions ⇒ AlmFuture[EzReport])(implicit executor: ExecutionContext) =
       self orElse ({
         case ActorMessages.SendStatusReport(options) ⇒
           onReportRequested(options).pipeReportTo(sender())
+        case ActorMessages.ConsiderMeForReporting ⇒
+          statusReportsCollector.foreach { _.register(NoResolvingRequired(sender())) }
       }: Receive)
+
+    def terminateRegisterForCollector = self orElse ({
+      case ActorMessages.ConsiderMeForReporting ⇒
+        statusReportsCollector.foreach { _.register(NoResolvingRequired(sender())) }
+    }: Receive)
   }
 
   def enrichReport(report: EzReport): EzReport = {
@@ -99,7 +110,7 @@ trait StatusReportingActor { me: AlmActor ⇒
         val rep1 = if (_autoAddRunningSince) reportSucc.born(_runningSince) else reportSucc
         val rep2 = if (_autoAddRunningSinceUtc) rep1.bornUtc(_runningSinceUtc) else rep1
         val rep3 = if (reportSucc.fields.exists { x ⇒ x.label == "report-created-on" || x.label == "report-created-on-utc" }) rep2 else rep2.createdNow(this.almhirtContext)
-        val rep4 = if (reportSucc.fields.exists { x ⇒ x.label == "age" }) rep3 else rep3.age(java.time.Duration.between(this.almhirtContext.getUtcTimestamp, me.bornUtc))
+        val rep4 = if (reportSucc.fields.exists { x ⇒ x.label == "age" }) rep3 else rep3.age(java.time.Duration.between(me.bornUtc, this.almhirtContext.getUtcTimestamp))
         val res = if (reportSucc.fields.exists { x ⇒ x.label == "actor-path" }) rep4 else rep4.actorPath(self.path)
         receiver ! ActorMessages.CurrentStatusReport(res)
       })
@@ -161,5 +172,18 @@ trait StatusReportingActor { me: AlmActor ⇒
       case None ⇒
         AlmFuture.successful(None)
     }
+  
+  def appendToReportFromCollector(report: StatusReport, maxQueryDurOverride: Option[FiniteDuration] = None)(options: StatusReportOptions): AlmFuture[StatusReport] =
+    statusReportsCollector match {
+    case Some(collector) => collector.appendToReport(report, maxQueryDurOverride)(options)
+    case None => AlmFuture.successful(report ~ ezreps.ast.EzField("collector-warning", ezreps.ast.EzString("There was no collector to collect status reports")))
+  }
+
+  def addAsSubReportFromCollector(report: StatusReport, subreportLabel: String = "subreports", maxQueryDurOverride: Option[FiniteDuration] = None)(options: StatusReportOptions): AlmFuture[StatusReport] =
+    statusReportsCollector match {
+    case Some(collector) => collector.addAsSubReport(report, subreportLabel, maxQueryDurOverride)(options)
+    case None => AlmFuture.successful(report ~ ezreps.ast.EzField("collector-warning", ezreps.ast.EzString("There was no collector to collect status reports")))
+  }
+  
 
 }

@@ -432,6 +432,7 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
     super.preStart()
     registerComponentControl()
     registerStatusReporter(description = Some("AggregateEventLog based on MongoDB"))
+    context.parent ! ActorMessages.ConsiderMeForReporting
     self ! Initialize
   }
 

@@ -434,7 +434,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
   override def postRestart(reason: Throwable) {
     super.postRestart(reason)
     registerComponentControl()
-    registerStatusReporter(description = None)
+    context.parent ! ActorMessages.ConsiderMeForReporting
     self ! Resolve
   }
 
@@ -442,7 +442,6 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
     super.postStop()
     cancelContract()
     deregisterComponentControl()
-    deregisterStatusReporter()
     logWarning(s"Stopped. Received $numReceived commands. $numSucceeded succeeded, $numFailed failed.")
   }
 

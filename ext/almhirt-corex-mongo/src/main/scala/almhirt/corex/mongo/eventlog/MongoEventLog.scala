@@ -426,6 +426,7 @@ private[almhirt] class MongoEventLogImpl(
     super.preStart()
     registerComponentControl()
     registerStatusReporter(description = Some("EventLog based on MongoDB"))
+    context.parent ! ActorMessages.ConsiderMeForReporting
     self ! Initialize
   }
 

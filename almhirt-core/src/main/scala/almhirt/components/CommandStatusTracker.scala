@@ -311,6 +311,7 @@ private[almhirt] class MyCommandStatusTracker(
     context.system.scheduler.scheduleOnce(checkTimeoutInterval, self, CheckTimeouts)
     registerStatusReporter(description = Some("Stats about tracked commands"))
     registerComponentControl()
+    context.parent ! ActorMessages.ConsiderMeForReporting
   }
 
   override def postStop() {

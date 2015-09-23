@@ -10,6 +10,8 @@ import almhirt.almfuture.all._
 import almhirt.tracking.CorrelationId
 import almhirt.context.AlmhirtContext
 import almhirt.akkax._
+import almhirt.akkax.reporting._
+import almhirt.akkax.reporting.Implicits._
 import almhirt.streaming.ActorDevNullSubscriberWithAutoSubscribe
 import org.reactivestreams.Publisher
 import akka.stream.scaladsl._
@@ -41,28 +43,36 @@ object EventSinkHub {
   def path(root: RootActorPath) = almhirt.context.ContextActorPaths.misc(root) / actorname
 }
 
-private[almhirt] class EventSinksSupervisorImpl(factories: EventSinkHub.EventSinkHubMemberFactories, buffersize: Option[Int], withBlackHoleIfEmpty: Boolean)(implicit ctx: AlmhirtContext) extends ActorSubscriber with ActorLogging {
+private[almhirt] class EventSinksSupervisorImpl(factories: EventSinkHub.EventSinkHubMemberFactories, buffersize: Option[Int], withBlackHoleIfEmpty: Boolean)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging with ActorSubscriber with ActorLogging with ControllableActor with StatusReportingActor {
   implicit def implicitFlowMaterializer = akka.stream.ActorMaterializer()(this.context)
+
+  implicit val executor = almhirtContext.futuresContext
+  override val componentControl = LocalComponentControl(self, ActorMessages.ComponentControlActions.none, Some(logWarning))
+  override val statusReportsCollector = Some(StatusReportsCollector(this.context))
 
   override val requestStrategy = ZeroRequestStrategy
   case object Start
 
-  def receiveInitialize: Receive = {
-    case Start ⇒
-      createInitialMembers()
-      context.become(receiveRunning)
+  def receiveInitialize: Receive = startup() {
+    reportsStatusF(onReportRequested = createStatusReport) {
+      case Start ⇒
+        createInitialMembers()
+        context.become(receiveRunning)
+    }
   }
 
-  def receiveRunning: Receive = {
-    case Terminated(actor) ⇒
-      log.info(s"Member ${actor.path.name} terminated.")
+  def receiveRunning: Receive = running() {
+    reportsStatusF(onReportRequested = createStatusReport) {
+      case Terminated(actor) ⇒
+        logInfo(s"Member ${actor.path.name} terminated.")
+    }
   }
 
   def receive: Receive = receiveInitialize
 
   private def createInitialMembers() {
     if (!factories.isEmpty) {
-      val eventsSourceFannedOut = Source(ctx.eventStream).runWith(Sink.fanoutPublisher[Event](1, AlmMath.nextPowerOf2(factories.size)))
+      val eventsSourceFannedOut = Source(almhirtContext.eventStream).runWith(Sink.fanoutPublisher[Event](1, AlmMath.nextPowerOf2(factories.size)))
       val flow =
         buffersize match {
           case Some(bfs) if bfs > 0 ⇒
@@ -74,7 +84,7 @@ private[almhirt] class EventSinksSupervisorImpl(factories: EventSinkHub.EventSin
         case (name, (props, filterOpt)) ⇒
           val actor = context.actorOf(props, name)
           context watch actor
-          log.info(s"""Create subscriber "$name".""")
+          logInfo(s"""Create subscriber "$name".""")
           val subscriber = ActorSubscriber[Event](actor)
           filterOpt match {
             case Some(filter) ⇒
@@ -84,15 +94,31 @@ private[almhirt] class EventSinksSupervisorImpl(factories: EventSinkHub.EventSin
           }
       }
     } else if (factories.isEmpty && withBlackHoleIfEmpty) {
-      log.warning("No members, but I created a black hole!")
-      Source(ctx.eventStream).runForeach(_ ⇒ ())
+      logWarning("No members, but I created a black hole!")
+      Source(almhirtContext.eventStream).runForeach(_ ⇒ ())
     } else {
-      log.warning("No members. Nothing will be subscribed")
+      logWarning("No members. Nothing will be subscribed")
     }
   }
 
+  def createStatusReport(options: StatusReportOptions): AlmFuture[StatusReport] = {
+    val baseReport = StatusReport(s"${this.getClass.getSimpleName}-Report").withComponentState(componentState)
+
+    appendToReportFromCollector(baseReport)(options)
+  }
+
   override def preStart() {
+    super.preStart()
+    registerComponentControl()
+    registerStatusReporter(description = None)
+    context.parent ! ActorMessages.ConsiderMeForReporting
     self ! Start
+  }
+
+  override def postStop() {
+    super.postStop()
+    deregisterComponentControl()
+    deregisterStatusReporter()
   }
 
 }

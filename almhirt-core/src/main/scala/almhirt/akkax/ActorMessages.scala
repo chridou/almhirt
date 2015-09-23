@@ -58,6 +58,8 @@ object ActorMessages {
   sealed trait SendStatusReportRsp extends StatusReportMessage
   final case class CurrentStatusReport(status: ezreps.EzReport) extends SendStatusReportRsp
   final case class ReportStatusFailed(cause: almhirt.problem.ProblemCause) extends SendStatusReportRsp
+  
+  case object ConsiderMeForReporting
 }
 
 object CreateChildActorHelper {

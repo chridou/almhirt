@@ -10,6 +10,8 @@ import almhirt.aggregates.AggregateRootId
 import almhirt.almfuture.all._
 import almhirt.context.AlmhirtContext
 import almhirt.akkax._
+import almhirt.akkax.reporting._
+import almhirt.akkax.reporting.Implicits._
 import almhirt.snapshots.SnapshotMarshaller
 import reactivemongo.bson._
 import reactivemongo.api._
@@ -118,7 +120,7 @@ private[snapshots] class BinarySnapshotRepositoryActor(
     storageRetryPolicy: RetryPolicyExt,
     circuitControlSettings: CircuitControlSettings,
     futuresExecutionContextSelector: ExtendedExecutionContextSelector,
-    marshallingExecutionContextSelector: ExtendedExecutionContextSelector)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging with ControllableActor {
+    marshallingExecutionContextSelector: ExtendedExecutionContextSelector)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging with ControllableActor with StatusReportingActor {
   import almhirt.snapshots.SnapshotRepository
 
   override val componentControl = LocalComponentControl(self, ActorMessages.ComponentControlActions.none, Some(logWarning))
@@ -127,6 +129,11 @@ private[snapshots] class BinarySnapshotRepositoryActor(
   val marshallingContext = selectExecutionContext(marshallingExecutionContextSelector)
 
   val circuitBreaker = AlmCircuitBreaker(circuitControlSettings, futuresContext, context.system.scheduler)
+
+  private var numSnapshotsReceived = 0L
+  private var numSnapshotsReceivedWhileUninitialized = 0L
+  private val numSnapshotsStored = new java.util.concurrent.atomic.AtomicLong(0L)
+  private val numSnapshotsNotStored = new java.util.concurrent.atomic.AtomicLong(0L)
 
   private case object Initialize
   private case object Initialized
@@ -162,6 +169,7 @@ private[snapshots] class BinarySnapshotRepositoryActor(
     //throw cause.toThrowable
 
     case SnapshotRepository.StoreSnapshot(ar) ⇒
+      numSnapshotsReceivedWhileUninitialized = numSnapshotsReceivedWhileUninitialized + 1L
       logWarning("Received storage message StoreSnapshot while initializing")
       sender() ! SnapshotRepository.StoreSnapshotFailed(ar.id, ServiceNotReadyProblem("The storage is not yet initialized."))
 
@@ -206,6 +214,7 @@ private[snapshots] class BinarySnapshotRepositoryActor(
     //throw cause.toThrowable
 
     case SnapshotRepository.StoreSnapshot(ar) ⇒
+      numSnapshotsReceivedWhileUninitialized = numSnapshotsReceivedWhileUninitialized + 1L
       logWarning("Received storage message StoreSnapshot while initializing")
       sender() ! SnapshotRepository.StoreSnapshotFailed(ar.id, ServiceNotReadyProblem("The storage is not yet initialized."))
 
@@ -224,13 +233,20 @@ private[snapshots] class BinarySnapshotRepositoryActor(
 
   def receiveRunning: Receive = running() {
     case SnapshotRepository.StoreSnapshot(ar) ⇒
+      numSnapshotsReceived = numSnapshotsReceived + 1L
       val f = measureWrite {
         for {
           snapshot ← marshal(ar)
           storedAggId ← circuitBreaker.fused(storeSnapshot(snapshot))
-        } yield SnapshotRepository.SnapshotStored(storedAggId)
+        } yield {
+          numSnapshotsStored.incrementAndGet()
+          SnapshotRepository.SnapshotStored(storedAggId)
+        }
       }
-      f.recoverThenPipeTo(fail ⇒ SnapshotRepository.StoreSnapshotFailed(ar.id, fail))(sender())
+      f.recoverThenPipeTo(fail ⇒ { 
+        numSnapshotsNotStored.incrementAndGet()
+        SnapshotRepository.StoreSnapshotFailed(ar.id, fail) }
+      )(sender())
 
     case SnapshotRepository.MarkAggregateRootMortuus(id, version) ⇒
       val f = measureWrite { circuitBreaker.fused(markSnapshotMortuus(PersistableMortuusSnapshotState(id, version))).map(SnapshotRepository.AggregateRootMarkedMortuus(_)) }
@@ -341,6 +357,23 @@ private[snapshots] class BinarySnapshotRepositoryActor(
       } yield rsp))
   }
 
+  private def createStatusReport(numSnapshots: Option[AlmFuture[Long]])(options: StatusReportOptions): AlmFuture[StatusReport] = {
+    val baseRep = StatusReport("SnapshotRepository-Report").withComponentState(componentState) addMany (
+      "number-of-snapshots-received" -> numSnapshotsReceived,
+      "number-of-snapshots-received-while-uninitialized" -> numSnapshotsReceivedWhileUninitialized,
+      "number-of-snapshots-stored" -> numSnapshotsNotStored.get,
+      "number-of-snapshots-not-stored" -> numSnapshotsNotStored.get) subReport ("config",
+        "collection-name" -> collectionName,
+        "compress" -> (if (compress) "snappy" else "no"))
+
+    for {
+      totalSnapshots ← numSnapshots match {
+        case None      ⇒ AlmFuture.successful(None)
+        case Some(fut) ⇒ fut.materializedValidation.map(Some(_))
+      }
+    } yield baseRep ~ ("snapshots-persisted" -> totalSnapshots)
+  }
+
   override def preStart() {
     if (rwMode.supportsWriting) {
       logInfo("Starting(r/w)...")
@@ -351,11 +384,15 @@ private[snapshots] class BinarySnapshotRepositoryActor(
     }
     logInfo(s"collection: ${collectionName}\nWrite warn after ${readWarningThreshold.defaultUnitString}\nRead warn after ${writeWarningThreshold.defaultUnitString}\nCompress: $compress\nReadWriteMode: $rwMode")
     registerComponentControl()
+    registerStatusReporter(description = Some("SnapshotRepository based on MongoDB"))
     self ! Initialize
   }
 
   override def postStop() {
+    super.postStop()
     deregisterComponentControl()
+    deregisterStatusReporter()
+    logWarning("Stopped")
   }
 
 }

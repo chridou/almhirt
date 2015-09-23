@@ -5,6 +5,8 @@ import scala.concurrent.ExecutionContext
 import akka.actor._
 import almhirt.common._
 import almhirt.akkax._
+import almhirt.akkax.reporting._
+import almhirt.akkax.reporting.Implicits._
 import almhirt.almvalidation.kit._
 import almhirt.tracking.CorrelationId
 import almhirt.components.ResourcesService
@@ -48,7 +50,7 @@ private[almhirt] object componentactors {
    * This is all a bit hacky since I don't know yet, how I want this to behave like...
    */
   class ComponentsSupervisor(
-      dedicatedAppsFuturesExecutor: Option[String])(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging {
+      dedicatedAppsFuturesExecutor: Option[String])(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging with ControllableActor with StatusReportingActor {
     import akka.actor.SupervisorStrategy._
     override val supervisorStrategy = OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1.minute) {
       case exn ⇒
@@ -58,6 +60,10 @@ private[almhirt] object componentactors {
     }
 
     implicit val executor = almhirtContext.futuresContext
+
+    override val componentControl = LocalComponentControl(self, ActorMessages.ComponentControlActions.none, Some(logWarning))
+
+    override val statusReportsCollector = Some(StatusReportsCollector(this.context))
 
     val eventLogs = context.actorOf(eventLogsProps(almhirtContext), "event-logs")
     logInfo(s"Created event logs supervisor as ${eventLogs.path.name}.")
@@ -84,140 +90,162 @@ private[almhirt] object componentactors {
 
     override def receive = receiveStart(false)
 
-    def receiveStart(canAdvance: Boolean): Receive = {
-      case UnfoldFromFactories(theFactories) ⇒
-        factories = theFactories
-        logInfo("Received unfold components.")
+    def receiveStart(canAdvance: Boolean): Receive = startup() {
+      reportsStatusF(onReportRequested = createStatusReport) {
+        case UnfoldFromFactories(theFactories) ⇒
+          factories = theFactories
+          logInfo("Received unfold components.")
 
-        val componentFactoryF = factories.createResourceServiceProps match {
-          case None ⇒
-            AlmFuture.successful(ComponentFactory(ResourcesService.emptyProps, ResourcesService.actorname))
-          case Some(f) ⇒
-            f(almhirtContext).map(props ⇒ ComponentFactory(props, ResourcesService.actorname))
-        }
+          val componentFactoryF = factories.createResourceServiceProps match {
+            case None ⇒
+              AlmFuture.successful(ComponentFactory(ResourcesService.emptyProps, ResourcesService.actorname))
+            case Some(f) ⇒
+              f(almhirtContext).map(props ⇒ ComponentFactory(props, ResourcesService.actorname))
+          }
 
-        componentFactoryF.onComplete(
-          fail ⇒ self ! ResourcesService.InitializeResourcesFailed(fail),
-          factory ⇒ self ! ActorMessages.CreateChildActor(factory, true, None))
+          componentFactoryF.onComplete(
+            fail ⇒ self ! ResourcesService.InitializeResourcesFailed(fail),
+            factory ⇒ self ! ActorMessages.CreateChildActor(factory, true, None))
 
-      case ResourcesService.ResourcesInitialized ⇒
-        if (canAdvance) {
-          logInfo("Resources initialized.")
-          context.become(receiveBuildHerderApp)
-          self ! "herder"
-        } else {
-          context.become(receiveStart(true))
-        }
+        case ResourcesService.ResourcesInitialized ⇒
+          if (canAdvance) {
+            logInfo("Resources initialized.")
+            context.become(receiveBuildHerderApp)
+            self ! "herder"
+          } else {
+            context.become(receiveStart(true))
+          }
 
-      case ResourcesService.InitializeResourcesFailed(failure) ⇒
-        logError(s"Failed to initialize resources\n$failure.")
-        reportCriticalFailure(failure)
-        sys.error(s"Failed to initialize resources\n$failure.")
+        case ResourcesService.InitializeResourcesFailed(failure) ⇒
+          logError(s"Failed to initialize resources\n$failure.")
+          reportCriticalFailure(failure)
+          sys.error(s"Failed to initialize resources\n$failure.")
 
-      case ActorMessages.CreateChildActor(componentFactory, returnActorRef, correlationId) ⇒
-        context.childFrom(componentFactory).fold(
-          problem ⇒ {
-            logError(s""" |Failed to create "${componentFactory.name.getOrElse("<<<no name>>>")}":
+        case ActorMessages.CreateChildActor(componentFactory, returnActorRef, correlationId) ⇒
+          context.childFrom(componentFactory).fold(
+            problem ⇒ {
+              logError(s""" |Failed to create "${componentFactory.name.getOrElse("<<<no name>>>")}":
                     |$problem""".stripMargin)
-            sender() ! ActorMessages.CreateChildActorFailed(problem, correlationId)
-          },
-          actorRef ⇒ {
-            logInfo(s"Created ${actorRef.path} @ ${actorRef.path} ")
-            if (returnActorRef)
-              sender() ! ActorMessages.ChildActorCreated(actorRef, correlationId)
-          })
+              sender() ! ActorMessages.CreateChildActorFailed(problem, correlationId)
+            },
+            actorRef ⇒ {
+              logInfo(s"Created ${actorRef.path} @ ${actorRef.path} ")
+              if (returnActorRef)
+                sender() ! ActorMessages.ChildActorCreated(actorRef, correlationId)
+            })
 
-      case ActorMessages.CreateChildActorFailed(problem, _) ⇒
-        logError(s"A child actor was not created:\n$problem")
-        reportCriticalFailure(problem)
-        sys.error(s"A child actor was not created:\n$problem")
+        case ActorMessages.CreateChildActorFailed(problem, _) ⇒
+          logError(s"A child actor was not created:\n$problem")
+          reportCriticalFailure(problem)
+          sys.error(s"A child actor was not created:\n$problem")
 
-      case ActorMessages.ChildActorCreated(actor, _) ⇒
-        if (canAdvance) {
-          logInfo(s"Created ${actor.path}.")
-          context.become(receiveBuildHerderApp)
-          self ! "herder"
-        } else {
-          context.become(receiveStart(true))
-        }
+        case ActorMessages.ChildActorCreated(actor, _) ⇒
+          if (canAdvance) {
+            logInfo(s"Created ${actor.path}.")
+            context.become(receiveBuildHerderApp)
+            self ! "herder"
+          } else {
+            context.become(receiveStart(true))
+          }
+      }
     }
 
-    def receiveBuildHerderApp: Receive = {
-      case "herder" ⇒
-        factories.buildHerderService match {
-          case Some(ComponentFactoryBuilderEntry(factoryBuilder, severity)) ⇒
-            logInfo("Create herder app")
-            factoryBuilder(almhirtContext).onComplete(
-              problem ⇒ {
-                logError(s"Could not create herder app factory :\n$problem")
-                reportFailure(problem, severity)
-                self ! ActorMessages.HerderServiceAppFailedToStart(problem)
-              },
-              factory ⇒ apps ! ActorMessages.CreateChildActor(factory, true, None))(almhirtContext.futuresContext)
-          case None ⇒
-            logInfo("No herder app.")
-            context.become(receiveBuildComponents())
-            self ! "make_components"
-        }
+    def receiveBuildHerderApp: Receive = startup() {
+      reportsStatusF(onReportRequested = createStatusReport) {
+        case "herder" ⇒
+          factories.buildHerderService match {
+            case Some(ComponentFactoryBuilderEntry(factoryBuilder, severity)) ⇒
+              logInfo("Create herder app")
+              factoryBuilder(almhirtContext).onComplete(
+                problem ⇒ {
+                  logError(s"Could not create herder app factory :\n$problem")
+                  reportFailure(problem, severity)
+                  self ! ActorMessages.HerderServiceAppFailedToStart(problem)
+                },
+                factory ⇒ apps ! ActorMessages.CreateChildActor(factory, true, None))(almhirtContext.futuresContext)
+            case None ⇒
+              logInfo("No herder app.")
+              context.become(receiveBuildComponents())
+              self ! "make_components"
+          }
 
-      case ActorMessages.HerderServiceAppFailedToStart(problem) ⇒
-        sys.error(problem.toString())
+        case ActorMessages.HerderServiceAppFailedToStart(problem) ⇒
+          sys.error(problem.toString())
 
-      case ActorMessages.HerderServiceAppStarted ⇒
-        logInfo("No herder app started.")
-        context.become(receiveBuildComponents())
-        self ! "make_components"
+        case ActorMessages.HerderServiceAppStarted ⇒
+          logInfo("No herder app started.")
+          context.become(receiveBuildComponents())
+          self ! "make_components"
 
+      }
     }
 
-    def receiveBuildComponents(): Receive = {
-      case "make_components" ⇒
-        logInfo(s"Making components.")
+    def receiveBuildComponents(): Receive = running() {
+      reportsStatusF(onReportRequested = createStatusReport) {
+        case "make_components" ⇒
+          logInfo(s"Making components.")
 
-        factories.buildEventLogs.foreach(factoryEntry ⇒ eventLogs ! UnfoldFactory(factoryEntry))
+          factories.buildEventLogs.foreach(factoryEntry ⇒ eventLogs ! UnfoldFactory(factoryEntry))
 
-        factories.buildNexus.foreach(_(almhirtContext).onComplete(
-          problem ⇒ {
-            logError(s"Failed to create nexus props:\$problem")
-            reportCriticalFailure(problem)
-          },
-          factory ⇒ self ! ActorMessages.CreateChildActor(factory, true, None)))
+          factories.buildNexus.foreach(_(almhirtContext).onComplete(
+            problem ⇒ {
+              logError(s"Failed to create nexus props:\$problem")
+              reportCriticalFailure(problem)
+            },
+            factory ⇒ self ! ActorMessages.CreateChildActor(factory, true, None)))
 
-        factories.buildViews.foreach(factoryEntry ⇒ views ! UnfoldFactory(factoryEntry))
-        factories.buildMisc.foreach(factoryEntry ⇒ misc ! UnfoldFactory(factoryEntry))
-        factories.buildApps.foreach(factoryEntry ⇒ apps ! UnfoldFactory(factoryEntry))
+          factories.buildViews.foreach(factoryEntry ⇒ views ! UnfoldFactory(factoryEntry))
+          factories.buildMisc.foreach(factoryEntry ⇒ misc ! UnfoldFactory(factoryEntry))
+          factories.buildApps.foreach(factoryEntry ⇒ apps ! UnfoldFactory(factoryEntry))
 
-        AlmhirtReporter.componentFactory().fold(
-          problem ⇒ {
-            logError(s"Failed to create AlmhirtReporter:\$problem")
-            reportCriticalFailure(problem)
-          },
-          factory ⇒ self ! ActorMessages.CreateChildActor(factory, true, None))
-
-      case ActorMessages.CreateChildActor(componentFactory, returnActorRef, correlationId) ⇒
-        context.childFrom(componentFactory).fold(
-          problem ⇒ {
-            logError(s"""	|Failed to create "${componentFactory.name.getOrElse("<<<no name>>>")}":
+        case ActorMessages.CreateChildActor(componentFactory, returnActorRef, correlationId) ⇒
+          context.childFrom(componentFactory).fold(
+            problem ⇒ {
+              logError(s"""	|Failed to create "${componentFactory.name.getOrElse("<<<no name>>>")}":
             				|$problem""".stripMargin)
-            sender() ! ActorMessages.CreateChildActorFailed(problem, correlationId)
-          },
-          actorRef ⇒ {
-            logInfo(s"Created ${actorRef.path} @ ${actorRef.path} ")
-            if (returnActorRef)
-              sender() ! ActorMessages.ChildActorCreated(actorRef, correlationId)
-          })
+              sender() ! ActorMessages.CreateChildActorFailed(problem, correlationId)
+            },
+            actorRef ⇒ {
+              logInfo(s"Created ${actorRef.path} @ ${actorRef.path} ")
+              if (returnActorRef)
+                sender() ! ActorMessages.ChildActorCreated(actorRef, correlationId)
+            })
 
-      case ActorMessages.CreateChildActorFailed(problem, _) ⇒
-        logError(s"A child actor was not created:\n$problem")
-        reportCriticalFailure(problem)
+        case ActorMessages.CreateChildActorFailed(problem, _) ⇒
+          logError(s"A child actor was not created:\n$problem")
+          reportCriticalFailure(problem)
 
-      case ActorMessages.ChildActorCreated(created, _) ⇒
-        logInfo(s"Created ${created.path.name}.")
+        case ActorMessages.ChildActorCreated(created, _) ⇒
+          logInfo(s"Created ${created.path.name}.")
+      }
     }
+
+    def createStatusReport(options: StatusReportOptions): AlmFuture[StatusReport] = {
+      val baseReport = StatusReport(s"${this.getClass.getSimpleName}-Report").withComponentState(componentState)
+
+      appendToReportFromCollector(baseReport)(options)
+    }
+
+    override def preStart() {
+      super.preStart()
+      registerComponentControl()
+      registerStatusReporter(description = None)
+      logInfo("Starting...")
+    }
+
+    override def postStop() {
+      super.postStop()
+      deregisterComponentControl()
+      deregisterStatusReporter()
+      logWarning("Stopped")
+    }
+
   }
 
-  private[almhirt] abstract class SimpleUnfolder(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging with ActorLogging {
+  private[almhirt] abstract class SimpleUnfolder(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging with ActorLogging with ControllableActor with StatusReportingActor {
     import akka.actor.SupervisorStrategy._
+
+    implicit val executor = almhirtContext.futuresContext
 
     override val supervisorStrategy = OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1.minute) {
       case exn ⇒
@@ -226,46 +254,69 @@ private[almhirt] object componentactors {
         Stop
     }
 
-    override def receive: Receive = {
-      case ActorMessages.CreateChildActors(factories, returnActorRefs, correlationId) ⇒
-        logInfo(s"Creating:\n${factories.map(_.name.getOrElse("<<<no name>>>")).mkString(", ")}")
-        factories.foreach { factory ⇒ self ! ActorMessages.CreateChildActor(factory, returnActorRefs, correlationId) }
+    override val componentControl = LocalComponentControl(self, ActorMessages.ComponentControlActions.none, Some(logWarning))
 
-      case UnfoldFactory(ComponentFactoryBuilderEntry(factoryBuilder, severity)) ⇒
-        factoryBuilder(almhirtContext).onComplete(
-          problem ⇒ {
-            logError(s"Could not create component factory:\n$problem")
-            reportFailure(problem, severity)
-          },
-          factory ⇒ self ! ActorMessages.CreateChildActor(factory, true, None))(almhirtContext.futuresContext)
+    override val statusReportsCollector = Some(StatusReportsCollector(this.context))
 
-      case ActorMessages.CreateChildActor(componentFactory, returnActorRef, correlationId) ⇒
-        context.childFrom(componentFactory).fold(
-          problem ⇒ {
-            logError(s"""	|Failed to create "${componentFactory.name.getOrElse("<<<no name>>>")}":
+    override def receive: Receive = running() {
+      reportsStatusF(onReportRequested = createStatusReport) {
+        case ActorMessages.CreateChildActors(factories, returnActorRefs, correlationId) ⇒
+          logInfo(s"Creating:\n${factories.map(_.name.getOrElse("<<<no name>>>")).mkString(", ")}")
+          factories.foreach { factory ⇒ self ! ActorMessages.CreateChildActor(factory, returnActorRefs, correlationId) }
+
+        case UnfoldFactory(ComponentFactoryBuilderEntry(factoryBuilder, severity)) ⇒
+          factoryBuilder(almhirtContext).onComplete(
+            problem ⇒ {
+              logError(s"Could not create component factory:\n$problem")
+              reportFailure(problem, severity)
+            },
+            factory ⇒ self ! ActorMessages.CreateChildActor(factory, true, None))(almhirtContext.futuresContext)
+
+        case ActorMessages.CreateChildActor(componentFactory, returnActorRef, correlationId) ⇒
+          context.childFrom(componentFactory).fold(
+            problem ⇒ {
+              logError(s"""	|Failed to create "${componentFactory.name.getOrElse("<<<no name>>>")}":
             				      |$problem""".stripMargin)
-            reportCriticalFailure(problem)
-            sender() ! ActorMessages.CreateChildActorFailed(problem, correlationId)
-          },
-          actorRef ⇒ {
-            logInfo(s"Created ${actorRef.path.name}.")
-            if (returnActorRef)
-              sender() ! ActorMessages.ChildActorCreated(actorRef, correlationId)
-          })
+              reportCriticalFailure(problem)
+              sender() ! ActorMessages.CreateChildActorFailed(problem, correlationId)
+            },
+            actorRef ⇒ {
+              logInfo(s"Created ${actorRef.path.name}.")
+              if (returnActorRef)
+                sender() ! ActorMessages.ChildActorCreated(actorRef, correlationId)
+            })
 
-      case ActorMessages.CreateChildActorFailed(problem, _) ⇒
-        logError(s"A child actor was not created:\n$problem")
-        reportCriticalFailure(problem)
+        case ActorMessages.CreateChildActorFailed(problem, _) ⇒
+          logError(s"A child actor was not created:\n$problem")
+          reportCriticalFailure(problem)
 
-      case ActorMessages.ChildActorCreated(created, _) ⇒
+        case ActorMessages.ChildActorCreated(created, _) ⇒
 
-      case m: ActorMessages.HerderAppStartupMessage ⇒
-        context.parent ! m
+        case m: ActorMessages.HerderAppStartupMessage ⇒
+          context.parent ! m
+      }
+    }
+
+    def createStatusReport(options: StatusReportOptions): AlmFuture[StatusReport] = {
+      val baseReport = StatusReport(s"${this.getClass.getSimpleName}-Report").withComponentState(componentState)
+
+      appendToReportFromCollector(baseReport)(options)
     }
 
     override def preStart() {
       super.preStart()
+      context.parent ! ActorMessages.ConsiderMeForReporting
+      registerComponentControl()
+      registerStatusReporter(description = None)
       logInfo("Starting...")
     }
+
+    override def postStop() {
+      super.postStop()
+      deregisterComponentControl()
+      deregisterStatusReporter()
+      logWarning("Stopped")
+    }
+
   }
 }

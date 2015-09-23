@@ -201,6 +201,7 @@ private[almhirt] class CommandEndpointImpl(
     logInfo("Starting...")
     registerComponentControl()
     registerStatusReporter(description = Some("Internals from the command endpoint"))
+    context.parent ! ActorMessages.ConsiderMeForReporting
     self ! Resolve
   }
 

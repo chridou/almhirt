@@ -10,6 +10,8 @@ import almhirt.common._
 import almhirt.almvalidation.kit._
 import almhirt.almfuture.all._
 import almhirt.akkax._
+import almhirt.akkax.reporting._
+import almhirt.akkax.reporting.Implicits._
 import almhirt.context.AlmhirtContext
 import almhirt.context.HasAlmhirtContext
 import almhirt.streaming.ActorDevNullSubscriberWithAutoSubscribe
@@ -67,7 +69,7 @@ private[almhirt] class EventLogWriterImpl(
     warningThreshold: FiniteDuration,
     autoConnect: Boolean,
     eventlogCallTimeout: FiniteDuration,
-    storeEventRetrySettings: RetryPolicyExt)(implicit override val almhirtContext: AlmhirtContext) extends ActorSubscriber with AlmActor with AlmActorLogging with ActorLogging with ControllableActor {
+    storeEventRetrySettings: RetryPolicyExt)(implicit override val almhirtContext: AlmhirtContext) extends ActorSubscriber with AlmActor with AlmActorLogging with ActorLogging with ControllableActor with StatusReportingActor {
   import almhirt.eventlog.EventLog
 
   override val componentControl = LocalComponentControl(self, ActorMessages.ComponentControlActions.none, Some(logWarning))
@@ -81,85 +83,98 @@ private[almhirt] class EventLogWriterImpl(
   private case object Resolve
 
   def receiveResolve: Receive = startup() {
-    case Resolve ⇒
-      context.resolveSingle(eventLogToResolve, resolveSettings, None, Some("event-log-resolver"))
+    reportsStatusF(onReportRequested = createStatusReport) {
+      case Resolve ⇒
+        context.resolveSingle(eventLogToResolve, resolveSettings, None, Some("event-log-resolver"))
 
-    case ActorMessages.ResolvedSingle(eventlog, _) ⇒
-      logInfo("Found event log.")
+      case ActorMessages.ResolvedSingle(eventlog, _) ⇒
+        logInfo("Found event log.")
 
-      if (autoConnect)
-        self ! AutoConnect
-      else
-        request(1)
-      context.become(receiveCircuitClosed(eventlog))
+        if (autoConnect)
+          self ! AutoConnect
+        else
+          request(1)
+        context.become(receiveCircuitClosed(eventlog))
 
-    case ActorMessages.SingleNotResolved(problem, _) ⇒
-      logError(s"Could not resolve event log @${eventLogToResolve}:\n$problem")
-      sys.error(s"Could not resolve event log @${eventLogToResolve}.")
-      reportCriticalFailure(problem)
+      case ActorMessages.SingleNotResolved(problem, _) ⇒
+        logError(s"Could not resolve event log @${eventLogToResolve}:\n$problem")
+        sys.error(s"Could not resolve event log @${eventLogToResolve}.")
+        reportCriticalFailure(problem)
+    }
   }
 
   def receiveCircuitClosed(eventLog: ActorRef): Receive = running() {
-    case AutoConnect ⇒
-      logInfo("Subscribing to event stream.")
-      Source(almhirtContext.eventStream).to(Sink(EventLogWriter(self))).run()
-      request(1)
-
-    case ActorSubscriberMessage.OnNext(event: Event) ⇒
-      if (!event.header.noLoggingSuggested) {
-        val start = Deadline.now
-        val f = {
-          this.retryFuture(storeEventRetrySettings) {
-            (eventLog ? EventLog.LogEvent(event, true))(eventlogCallTimeout).mapCastTo[EventLog.LogEventResponse].foldV(
-              fail ⇒ {
-                fail match {
-                  case AlreadyExistsProblem(p) ⇒
-                    logWarning(s"Event event ${event.eventId} already existed. This can happen when a write operation timed out but the event was stored afterwards by the storage.")
-                    EventLog.EventLogged(event.eventId).success
-                  case _ ⇒
-                    fail.failure
-                }
-              },
-              succ ⇒ succ.success)
-          }
-        }.onComplete({
-          case scalaz.Failure(problem) ⇒
-            self ! EventLog.EventNotLogged(event.eventId, problem)
-            reportMissedEvent(event, MajorSeverity, problem)
-            reportMajorFailure(problem)
-          case scalaz.Success(rsp) ⇒ self ! rsp
-        })
-
-        f.onSuccess(rsp ⇒
-          if (start.lapExceeds(warningThreshold))
-            logWarning(s"Writing event '${event.eventId.value}' took longer than ${warningThreshold.defaultUnitString}: ${start.lap.defaultUnitString}"))
-      } else {
+    reportsStatusF(onReportRequested = createStatusReport) {
+      case AutoConnect ⇒
+        logInfo("Subscribing to event stream.")
+        Source(almhirtContext.eventStream).to(Sink(EventLogWriter(self))).run()
         request(1)
-      }
 
-    case ActorSubscriberMessage.OnNext(unprocessable) ⇒
-      log.warning(s"Received unprocessable element $unprocessable.")
-      request(1)
+      case ActorSubscriberMessage.OnNext(event: Event) ⇒
+        if (!event.header.noLoggingSuggested) {
+          val start = Deadline.now
+          val f = {
+            this.retryFuture(storeEventRetrySettings) {
+              (eventLog ? EventLog.LogEvent(event, true))(eventlogCallTimeout).mapCastTo[EventLog.LogEventResponse].foldV(
+                fail ⇒ {
+                  fail match {
+                    case AlreadyExistsProblem(p) ⇒
+                      logWarning(s"Event event ${event.eventId} already existed. This can happen when a write operation timed out but the event was stored afterwards by the storage.")
+                      EventLog.EventLogged(event.eventId).success
+                    case _ ⇒
+                      fail.failure
+                  }
+                },
+                succ ⇒ succ.success)
+            }
+          }.onComplete({
+            case scalaz.Failure(problem) ⇒
+              self ! EventLog.EventNotLogged(event.eventId, problem)
+              reportMissedEvent(event, MajorSeverity, problem)
+              reportMajorFailure(problem)
+            case scalaz.Success(rsp) ⇒ self ! rsp
+          })
 
-    case EventLog.EventLogged(id) ⇒
-      request(1)
+          f.onSuccess(rsp ⇒
+            if (start.lapExceeds(warningThreshold))
+              logWarning(s"Writing event '${event.eventId.value}' took longer than ${warningThreshold.defaultUnitString}: ${start.lap.defaultUnitString}"))
+        } else {
+          request(1)
+        }
 
-    case EventLog.EventNotLogged(id, problem) ⇒
-      logError(s"Could not log event '${id.value}':\n$problem")
-      reportMajorFailure(problem)
-      request(1)
+      case ActorSubscriberMessage.OnNext(unprocessable) ⇒
+        log.warning(s"Received unprocessable element $unprocessable.")
+        request(1)
+
+      case EventLog.EventLogged(id) ⇒
+        request(1)
+
+      case EventLog.EventNotLogged(id, problem) ⇒
+        logError(s"Could not log event '${id.value}':\n$problem")
+        reportMajorFailure(problem)
+        request(1)
+    }
   }
 
   override def receive: Receive = receiveResolve
 
+  def createStatusReport(options: StatusReportOptions): AlmFuture[StatusReport] = {
+    val baseReport = StatusReport(s"${this.getClass.getSimpleName}-Report").withComponentState(componentState)
+
+    AlmFuture.successful(baseReport)
+  }
+
   override def preStart() {
     super.preStart()
     registerComponentControl()
+    registerStatusReporter(description = None)
+    context.parent ! ActorMessages.ConsiderMeForReporting
     self ! Resolve
   }
 
   override def postStop() {
     super.postStop()
     deregisterComponentControl()
+    deregisterStatusReporter()
   }
 } 
