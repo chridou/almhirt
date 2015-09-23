@@ -140,125 +140,131 @@ private[snapshots] class BinarySnapshotRepositoryActor(
   private case class InitializeFailed(prob: Problem)
 
   def receiveInitializeReadWrite: Receive = startup() {
-    case Initialize ⇒
-      logInfo("Initializing")
-      retryFuture(initializeRetryPolicy) {
-        for {
-          collectionNames ← db.collectionNames
-          creationRes ← if (collectionNames.contains(collectionName)) {
-            logInfo(s"""Collection "$collectionName" already exists.""")
-            Future.successful(false)
-          } else {
-            logInfo(s"""Collection "$collectionName" does not yet exist. Create.""")
-            val collection = db(collectionName)
-            collection.create(true)
-          }
-        } yield creationRes
-      }.onComplete(
-        prob ⇒ self ! InitializeFailed(PersistenceProblem("Failed to initialize", cause = Some(prob))),
-        succ ⇒ { self ! Initialized })
+    reportsStatusF(onReportRequested = createStatusReport(None)) {
+      case Initialize ⇒
+        logInfo("Initializing")
+        retryFuture(initializeRetryPolicy) {
+          for {
+            collectionNames ← db.collectionNames
+            creationRes ← if (collectionNames.contains(collectionName)) {
+              logInfo(s"""Collection "$collectionName" already exists.""")
+              Future.successful(false)
+            } else {
+              logInfo(s"""Collection "$collectionName" does not yet exist. Create.""")
+              val collection = db(collectionName)
+              collection.create(true)
+            }
+          } yield creationRes
+        }.onComplete(
+          prob ⇒ self ! InitializeFailed(PersistenceProblem("Failed to initialize", cause = Some(prob))),
+          succ ⇒ { self ! Initialized })
 
-    case Initialized ⇒
-      logInfo(s"Initialized.")
-      registerCircuitControl(circuitBreaker)
-      context.become(receiveRunning)
+      case Initialized ⇒
+        logInfo(s"Initialized.")
+        registerCircuitControl(circuitBreaker)
+        context.become(receiveRunning)
 
-    case InitializeFailed(cause) ⇒
-      logError("Initialization failed.")
-      reportCriticalFailure(cause)
-    //throw cause.toThrowable
+      case InitializeFailed(cause) ⇒
+        logError("Initialization failed.")
+        reportCriticalFailure(cause)
+      //throw cause.toThrowable
 
-    case SnapshotRepository.StoreSnapshot(ar) ⇒
-      numSnapshotsReceivedWhileUninitialized = numSnapshotsReceivedWhileUninitialized + 1L
-      logWarning("Received storage message StoreSnapshot while initializing")
-      sender() ! SnapshotRepository.StoreSnapshotFailed(ar.id, ServiceNotReadyProblem("The storage is not yet initialized."))
+      case SnapshotRepository.StoreSnapshot(ar) ⇒
+        numSnapshotsReceivedWhileUninitialized = numSnapshotsReceivedWhileUninitialized + 1L
+        logWarning("Received storage message StoreSnapshot while initializing")
+        sender() ! SnapshotRepository.StoreSnapshotFailed(ar.id, ServiceNotReadyProblem("The storage is not yet initialized."))
 
-    case SnapshotRepository.MarkAggregateRootMortuus(id, version) ⇒
-      logWarning("Received storage message MarkAggregateRootMortuus while initializing")
-      sender() ! SnapshotRepository.MarkAggregateRootMortuusFailed(id, ServiceNotReadyProblem("The storage is not yet initialized."))
+      case SnapshotRepository.MarkAggregateRootMortuus(id, version) ⇒
+        logWarning("Received storage message MarkAggregateRootMortuus while initializing")
+        sender() ! SnapshotRepository.MarkAggregateRootMortuusFailed(id, ServiceNotReadyProblem("The storage is not yet initialized."))
 
-    case SnapshotRepository.DeleteSnapshot(id) ⇒
-      logWarning("Received storage message DeleteSnapshot while initializing")
-      sender() ! SnapshotRepository.DeleteSnapshotFailed(id, ServiceNotReadyProblem("The storage is not yet initialized."))
+      case SnapshotRepository.DeleteSnapshot(id) ⇒
+        logWarning("Received storage message DeleteSnapshot while initializing")
+        sender() ! SnapshotRepository.DeleteSnapshotFailed(id, ServiceNotReadyProblem("The storage is not yet initialized."))
 
-    case SnapshotRepository.FindSnapshot(id) ⇒
-      logWarning("Received storage message FindSnapshot while initializing")
-      sender() ! SnapshotRepository.FindSnapshotFailed(id, ServiceNotReadyProblem("The storage is not yet initialized."))
+      case SnapshotRepository.FindSnapshot(id) ⇒
+        logWarning("Received storage message FindSnapshot while initializing")
+        sender() ! SnapshotRepository.FindSnapshotFailed(id, ServiceNotReadyProblem("The storage is not yet initialized."))
+    }
   }
 
   def receiveInitializeReadOnly: Receive = startup() {
-    case Initialize ⇒
-      logInfo("Initializing")
-      retryFuture(initializeRetryPolicy) {
-        for {
-          collectionNames ← db.collectionNames
-          creationRes ← if (collectionNames.contains(collectionName)) {
-            logInfo(s"""Collection "$collectionName" already exists.""")
-            AlmFuture.successful(())
-          } else {
-            AlmFuture.failed(UnspecifiedProblem(s"""Collection "$collectionName" does not exist."""))
-          }
-        } yield creationRes
-      }.onComplete(
-        prob ⇒ self ! InitializeFailed(PersistenceProblem("Failed to initialize", cause = Some(prob))),
-        succ ⇒ { self ! Initialized })
+    reportsStatusF(onReportRequested = createStatusReport(None)) {
+      case Initialize ⇒
+        logInfo("Initializing")
+        retryFuture(initializeRetryPolicy) {
+          for {
+            collectionNames ← db.collectionNames
+            creationRes ← if (collectionNames.contains(collectionName)) {
+              logInfo(s"""Collection "$collectionName" already exists.""")
+              AlmFuture.successful(())
+            } else {
+              AlmFuture.failed(UnspecifiedProblem(s"""Collection "$collectionName" does not exist."""))
+            }
+          } yield creationRes
+        }.onComplete(
+          prob ⇒ self ! InitializeFailed(PersistenceProblem("Failed to initialize", cause = Some(prob))),
+          succ ⇒ { self ! Initialized })
 
-    case Initialized ⇒
-      logInfo(s"Initialized.")
-      registerCircuitControl(circuitBreaker)
-      context.become(receiveRunning)
+      case Initialized ⇒
+        logInfo(s"Initialized.")
+        registerCircuitControl(circuitBreaker)
+        context.become(receiveRunning)
 
-    case InitializeFailed(cause) ⇒
-      logError("Initialization failed.")
-      reportCriticalFailure(cause)
-    //throw cause.toThrowable
+      case InitializeFailed(cause) ⇒
+        logError("Initialization failed.")
+        reportCriticalFailure(cause)
+      //throw cause.toThrowable
 
-    case SnapshotRepository.StoreSnapshot(ar) ⇒
-      numSnapshotsReceivedWhileUninitialized = numSnapshotsReceivedWhileUninitialized + 1L
-      logWarning("Received storage message StoreSnapshot while initializing")
-      sender() ! SnapshotRepository.StoreSnapshotFailed(ar.id, ServiceNotReadyProblem("The storage is not yet initialized."))
+      case SnapshotRepository.StoreSnapshot(ar) ⇒
+        numSnapshotsReceivedWhileUninitialized = numSnapshotsReceivedWhileUninitialized + 1L
+        logWarning("Received storage message StoreSnapshot while initializing")
+        sender() ! SnapshotRepository.StoreSnapshotFailed(ar.id, ServiceNotReadyProblem("The storage is not yet initialized."))
 
-    case SnapshotRepository.MarkAggregateRootMortuus(id, version) ⇒
-      logWarning("Received storage message MarkAggregateRootMortuus while initializing")
-      sender() ! SnapshotRepository.MarkAggregateRootMortuusFailed(id, ServiceNotReadyProblem("The storage is not yet initialized."))
+      case SnapshotRepository.MarkAggregateRootMortuus(id, version) ⇒
+        logWarning("Received storage message MarkAggregateRootMortuus while initializing")
+        sender() ! SnapshotRepository.MarkAggregateRootMortuusFailed(id, ServiceNotReadyProblem("The storage is not yet initialized."))
 
-    case SnapshotRepository.DeleteSnapshot(id) ⇒
-      logWarning("Received storage message DeleteSnapshot while initializing")
-      sender() ! SnapshotRepository.DeleteSnapshotFailed(id, ServiceNotReadyProblem("The storage is not yet initialized."))
+      case SnapshotRepository.DeleteSnapshot(id) ⇒
+        logWarning("Received storage message DeleteSnapshot while initializing")
+        sender() ! SnapshotRepository.DeleteSnapshotFailed(id, ServiceNotReadyProblem("The storage is not yet initialized."))
 
-    case SnapshotRepository.FindSnapshot(id) ⇒
-      logWarning("Received storage message FindSnapshot while initializing")
-      sender() ! SnapshotRepository.FindSnapshotFailed(id, ServiceNotReadyProblem("The storage is not yet initialized."))
+      case SnapshotRepository.FindSnapshot(id) ⇒
+        logWarning("Received storage message FindSnapshot while initializing")
+        sender() ! SnapshotRepository.FindSnapshotFailed(id, ServiceNotReadyProblem("The storage is not yet initialized."))
+    }
   }
 
   def receiveRunning: Receive = running() {
-    case SnapshotRepository.StoreSnapshot(ar) ⇒
-      numSnapshotsReceived = numSnapshotsReceived + 1L
-      val f = measureWrite {
-        for {
-          snapshot ← marshal(ar)
-          storedAggId ← circuitBreaker.fused(storeSnapshot(snapshot))
-        } yield {
-          numSnapshotsStored.incrementAndGet()
-          SnapshotRepository.SnapshotStored(storedAggId)
+    reportsStatusF(onReportRequested = createStatusReport(Some(db.collection(collectionName).count().map(_.toLong)))) {
+      case SnapshotRepository.StoreSnapshot(ar) ⇒
+        numSnapshotsReceived = numSnapshotsReceived + 1L
+        val f = measureWrite {
+          for {
+            snapshot ← marshal(ar)
+            storedAggId ← circuitBreaker.fused(storeSnapshot(snapshot))
+          } yield {
+            numSnapshotsStored.incrementAndGet()
+            SnapshotRepository.SnapshotStored(storedAggId)
+          }
         }
-      }
-      f.recoverThenPipeTo(fail ⇒ { 
-        numSnapshotsNotStored.incrementAndGet()
-        SnapshotRepository.StoreSnapshotFailed(ar.id, fail) }
-      )(sender())
+        f.recoverThenPipeTo(fail ⇒ {
+          numSnapshotsNotStored.incrementAndGet()
+          SnapshotRepository.StoreSnapshotFailed(ar.id, fail)
+        })(sender())
 
-    case SnapshotRepository.MarkAggregateRootMortuus(id, version) ⇒
-      val f = measureWrite { circuitBreaker.fused(markSnapshotMortuus(PersistableMortuusSnapshotState(id, version))).map(SnapshotRepository.AggregateRootMarkedMortuus(_)) }
-      f.recoverThenPipeTo(fail ⇒ SnapshotRepository.MarkAggregateRootMortuusFailed(id, fail))(sender())
+      case SnapshotRepository.MarkAggregateRootMortuus(id, version) ⇒
+        val f = measureWrite { circuitBreaker.fused(markSnapshotMortuus(PersistableMortuusSnapshotState(id, version))).map(SnapshotRepository.AggregateRootMarkedMortuus(_)) }
+        f.recoverThenPipeTo(fail ⇒ SnapshotRepository.MarkAggregateRootMortuusFailed(id, fail))(sender())
 
-    case SnapshotRepository.DeleteSnapshot(id) ⇒
-      val f = measureWrite { circuitBreaker.fused(deleteSnapshot(id)).map(SnapshotRepository.SnapshotDeleted(_)) }
-      f.recoverThenPipeTo(fail ⇒ SnapshotRepository.DeleteSnapshotFailed(id, fail))(sender())
+      case SnapshotRepository.DeleteSnapshot(id) ⇒
+        val f = measureWrite { circuitBreaker.fused(deleteSnapshot(id)).map(SnapshotRepository.SnapshotDeleted(_)) }
+        f.recoverThenPipeTo(fail ⇒ SnapshotRepository.DeleteSnapshotFailed(id, fail))(sender())
 
-    case SnapshotRepository.FindSnapshot(id) ⇒
-      val f = measureRead { circuitBreaker.fused(findSnapshot(id)) }
-      f.recoverThenPipeTo(fail ⇒ SnapshotRepository.FindSnapshotFailed(id, fail))(sender())
+      case SnapshotRepository.FindSnapshot(id) ⇒
+        val f = measureRead { circuitBreaker.fused(findSnapshot(id)) }
+        f.recoverThenPipeTo(fail ⇒ SnapshotRepository.FindSnapshotFailed(id, fail))(sender())
+    }
   }
 
   override def receive: Receive = Actor.emptyBehavior
