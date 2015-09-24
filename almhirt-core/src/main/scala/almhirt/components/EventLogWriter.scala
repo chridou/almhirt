@@ -169,7 +169,7 @@ private[almhirt] class EventLogWriterImpl(
   override def preStart() {
     super.preStart()
     registerComponentControl()
-    registerStatusReporter(description = Some("Simpli writes to an event log."))
+    registerStatusReporter(description = Some("Simply writes to an event log."))
     context.parent ! ActorMessages.ConsiderMeForReporting
     self ! Resolve
   }
