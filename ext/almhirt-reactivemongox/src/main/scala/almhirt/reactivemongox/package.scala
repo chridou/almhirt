@@ -5,7 +5,7 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
 import scalaz.Validation.FlatMap._
 import almhirt.common._
-import reactivemongo.api.commands.WriteConcern
+import reactivemongo.api.commands._
 import reactivemongo.api._
 import reactivemongo.bson.{ BSONDocument, BSONDocumentReader }
 import play.api.libs.iteratee.{ Enumerator, Enumeratee }
@@ -54,6 +54,8 @@ package object reactivemongox {
     def queryAlm(selector: BSONDocument, projection: BSONDocument, readPreference: ReadPreferenceAlm): QueryBuilderAlm = QueryBuilderAlm(self, selector = selector, projection = projection, readPreference = readPreference)
 
     def queryAlm(selector: BSONDocument, projection: BSONDocument, sort: BSONDocument, readPreference: ReadPreferenceAlm): QueryBuilderAlm = QueryBuilderAlm(self, selector = selector, projection = projection, sort = sort, readPreference = readPreference)
+  
+    //def collStats: AlmFuture[BoxedAnyVal[CollStatsResult]] = self.runValueCommand(CollStats()).toAlmFuture
   }
 
   implicit object MongoConnectionSettingsConfigExtractor extends ConfigExtractor[MongoConnectionSettings] {

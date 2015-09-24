@@ -174,6 +174,7 @@ trait AlmhirtxReactiveMongoBuild {
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
 	  libraryDependencies += scalaz,
 	  libraryDependencies += typesafe_config,
+	  libraryDependencies += ezReps,
 	  libraryDependencies += "org.reactivemongo" %% "reactivemongo" % BuildSettings.reactiveMongoVersion % "provided"
 		exclude("ch.qos.logback", "logback-core")
 		exclude("ch.qos.logback", "logback-classic"),
