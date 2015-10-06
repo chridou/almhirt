@@ -20,7 +20,7 @@ import akka.stream.actor._
 import almhirt.streaming.ActorDevNullSubscriberWithAutoSubscribe
 import com.typesafe.config.Config
 
-object HttpEventPublisher {
+object HttpEventStreamPublisher {
   def propsRaw(
     endpointUri: String,
     method: HttpMethod,
@@ -30,7 +30,7 @@ object HttpEventPublisher {
     circuitControlSettings: CircuitControlSettings,
     circuitStateReportingInterval: Option[FiniteDuration],
     missedEventSeverity: almhirt.problem.Severity)(implicit serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem], almhirtContext: AlmhirtContext): Props =
-    Props(new HttpEventPublisherImpl(endpointUri, addEventId, method, contentMediaType, autoConnectTo, circuitControlSettings, circuitStateReportingInterval, missedEventSeverity))
+    Props(new HttpEventStreamPublisherImpl(endpointUri, addEventId, method, contentMediaType, autoConnectTo, circuitControlSettings, circuitStateReportingInterval, missedEventSeverity))
 
   def props(httpEventPublisherName: String)(implicit ctx: AlmhirtContext, serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem]): AlmValidation[Props] = {
     implicit val extr = almhirt.httpx.spray.HttpMethodConfigExtractor
@@ -60,7 +60,7 @@ object HttpEventPublisher {
     ActorSubscriber[Event](eventPublischer)
 }
 
-private[almhirt] class HttpEventPublisherImpl(
+private[almhirt] class HttpEventStreamPublisherImpl(
   endpointUri: String,
   addEventId: Boolean,
   method: HttpMethod,

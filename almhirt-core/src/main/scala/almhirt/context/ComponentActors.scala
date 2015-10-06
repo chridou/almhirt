@@ -21,6 +21,9 @@ object SupervisorPaths {
 private[almhirt] object componentactors {
   import almhirt.akkax.{ ActorMessages, ComponentFactory }
 
+  final case class EventPublisherHubCreated(actor: ActorRef)
+  case object EventPublisherHubRegistered
+
   def componentsProps(
     dedicatedAppsFuturesExecutor: Option[String])(implicit ctx: AlmhirtContext): Props =
     Props(new ComponentsSupervisor(dedicatedAppsFuturesExecutor))
@@ -165,17 +168,45 @@ private[almhirt] object componentactors {
                 factory ⇒ apps ! ActorMessages.CreateChildActor(factory, true, None))(almhirtContext.futuresContext)
             case None ⇒
               logInfo("No herder app.")
-              context.become(receiveBuildComponents())
-              self ! "make_components"
+              context.become(receiveBuildEventPublisher(CorrelationId()))
+              self ! "make_event_publisher_hub"
           }
 
         case ActorMessages.HerderServiceAppFailedToStart(problem) ⇒
           sys.error(problem.toString())
 
         case ActorMessages.HerderServiceAppStarted ⇒
-          logInfo("No herder app started.")
+          logInfo("Herder app started.")
+          context.become(receiveBuildEventPublisher(CorrelationId()))
+          self ! "make_event_publisher_hub"
+
+      }
+    }
+
+    def receiveBuildEventPublisher(cid: CorrelationId): Receive = running() {
+      reportsStatusF(onReportRequested = createStatusReport) {
+        case "make_event_publisher_hub" ⇒
+          almhirt.components.EventPublisherHub.componentFactory(Nil).fold(
+            fail ⇒ {},
+            factory ⇒ {
+              misc ! ActorMessages.CreateChildActor(factory, true, Some(cid))
+            })
+
+        case ActorMessages.CreateChildActorFailed(problem, _) ⇒
+          logError(s"A child actor was not created:\n$problem")
+          reportCriticalFailure(problem)
+
+        case ActorMessages.ChildActorCreated(created, Some(cid)) ⇒
+          logInfo(s"Created Event-Publisher-Hub ${created.path.name}.")
+          context.parent ! EventPublisherHubCreated(created)
+
+        case EventPublisherHubRegistered ⇒
+          logInfo("Created Event-Publisher-Hub was registered.")
           context.become(receiveBuildComponents())
           self ! "make_components"
+
+        case ActorMessages.ChildActorCreated(created, _) ⇒
+          logInfo(s"Created ${created.path.name}.")
 
       }
     }

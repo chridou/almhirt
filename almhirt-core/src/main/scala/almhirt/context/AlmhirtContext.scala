@@ -1,9 +1,12 @@
 package almhirt.context
 
 import scala.concurrent.ExecutionContext
+import scala.concurrent.duration._
 import akka.actor._
+import akka.pattern._
 import scalaz.Validation.FlatMap._
 import almhirt.common._
+import almhirt.almfuture.all._
 import almhirt.tooling.Reporter
 import almhirt.streaming.AlmhirtStreams
 import almhirt.akkax.ActorMessages
@@ -14,6 +17,8 @@ trait AlmhirtContext extends CanCreateUuidsAndDateTimes with AlmhirtStreams with
   def config: Config
   def localActorPaths: ContextActorPaths
   def tellHerder(what: almhirt.herder.HerderMessages.HerderNotificicationMessage): Unit
+  def publishNonStreamEvent(event: Event, maxDur: FiniteDuration = 3.seconds): AlmFuture[Event]
+  def fireNonStreamEvent(event: Event): Unit
 
   def createReporter(forComponent: ComponentId): Reporter
 
@@ -36,6 +41,8 @@ trait AlmhirtContext extends CanCreateUuidsAndDateTimes with AlmhirtStreams with
         AlmhirtContext.this.tellHerder(what)
       }
       def createReporter(forComponent: ComponentId): Reporter = AlmhirtContext.this.createReporter(forComponent)
+      def publishNonStreamEvent(event: Event, maxDur: FiniteDuration = 3.seconds): AlmFuture[Event] = AlmhirtContext.this.publishNonStreamEvent(event, maxDur)
+      def fireNonStreamEvent(event: Event): Unit = AlmhirtContext.this.fireNonStreamEvent(event)
 
     }
   }
@@ -59,6 +66,8 @@ trait AlmhirtContext extends CanCreateUuidsAndDateTimes with AlmhirtStreams with
         AlmhirtContext.this.tellHerder(what)
       }
       def createReporter(forComponent: ComponentId): Reporter = AlmhirtContext.this.createReporter(forComponent)
+      def publishNonStreamEvent(event: Event, maxDur: FiniteDuration = 3.seconds): AlmFuture[Event] = AlmhirtContext.this.publishNonStreamEvent(event, maxDur)
+      def fireNonStreamEvent(event: Event): Unit = AlmhirtContext.this.fireNonStreamEvent(event)
     }
   }
 
@@ -81,6 +90,8 @@ trait AlmhirtContext extends CanCreateUuidsAndDateTimes with AlmhirtStreams with
         AlmhirtContext.this.tellHerder(what)
       }
       def createReporter(forComponent: ComponentId): Reporter = AlmhirtContext.this.createReporter(forComponent)
+      def publishNonStreamEvent(event: Event, maxDur: FiniteDuration = 3.seconds): AlmFuture[Event] = AlmhirtContext.this.publishNonStreamEvent(event, maxDur)
+      def fireNonStreamEvent(event: Event): Unit = AlmhirtContext.this.fireNonStreamEvent(event)
     }
   }
 
@@ -196,6 +207,8 @@ object AlmhirtContext {
           implicit val execCtx = futuresExecutor
           var theReceiver: ActorRef = null
           var tellTheHerder: almhirt.herder.HerderMessages.HerderNotificicationMessage ⇒ Unit = x ⇒ ()
+          var publishANonStreamEvent: (Event, FiniteDuration) ⇒ AlmFuture[Event] = (x, y) ⇒ AlmFuture.successful(x)
+          var fireANonStreamEvent: Event ⇒ Unit = x ⇒ ()
 
           var _ctx: AlmhirtContext = null
           override def almhirtContext = _ctx
@@ -227,6 +240,8 @@ object AlmhirtContext {
                 val localActorPaths = ContextActorPaths.local(system)
                 def tellHerder(what: almhirt.herder.HerderMessages.HerderNotificicationMessage) { tellTheHerder(what) }
                 def createReporter(forComponent: ComponentId): Reporter = new TellHerderReporter(this, forComponent)
+                def publishNonStreamEvent(event: Event, maxDur: FiniteDuration = 3.seconds): AlmFuture[Event] = publishANonStreamEvent(event, maxDur)
+                def fireNonStreamEvent(event: Event): Unit = fireANonStreamEvent(event)
 
                 def stop() {
                   log.info("Stopping.")
@@ -255,6 +270,16 @@ object AlmhirtContext {
               theReceiver ! AlmhirtContextMessages.FinishedInitialization(ctx)
               val components = context.actorOf(componentactors.componentsProps(dedicatedAppsFuturesExecutorLookupName)(ctx), "components")
               components ! componentactors.UnfoldFromFactories(componentFactories)
+
+            case componentactors.EventPublisherHubCreated(publisher) ⇒
+              this.fireANonStreamEvent = event ⇒ publisher ! almhirt.components.EventPublisher.FireEvent(event)
+              this.publishANonStreamEvent = (event, maxDur) ⇒
+                (publisher ? almhirt.components.EventPublisher.PublishEvent(event))(maxDur).mapCastTo[almhirt.components.EventPublisher.PublishEventRsp].collectV {
+                  case almhirt.components.EventPublisher.EventPublished(event)       ⇒ scalaz.Success(event)
+                  case almhirt.components.EventPublisher.EventNotPublished(_, cause) ⇒ scalaz.Failure(cause)
+                }
+
+              sender() ! componentactors.EventPublisherHubRegistered
 
             case AlmhirtContextMessages.StreamsNotCreated(prob) ⇒
               logError(s"Could not create streams:\n$prob")
@@ -330,6 +355,8 @@ object AlmhirtContext {
               val localActorPaths = null
               def tellHerder(what: almhirt.herder.HerderMessages.HerderNotificicationMessage) {}
               def createReporter(forComponent: ComponentId): Reporter = Reporter.DevNull
+              def publishNonStreamEvent(event: Event, maxDur: FiniteDuration = 3.seconds): AlmFuture[Event] = AlmFuture.successful(event)
+              def fireNonStreamEvent(event: Event): Unit = {}
               def stop() {
                 log.debug("Stopping.")
                 //streams.stop()

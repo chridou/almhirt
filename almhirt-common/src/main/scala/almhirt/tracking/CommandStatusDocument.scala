@@ -9,7 +9,7 @@ import almhirt.common.AggregateRootCommand
 sealed trait CommandRepresentation {
   def toShortString: String
   def toVeryShortString: String
-  def downgradeToIdAndType: CommandRepresentation
+  def downgradeToIdAndType: CommandRepresentation.CommandIdAndType
 }
 
 object CommandRepresentation {
@@ -27,7 +27,7 @@ object CommandRepresentation {
     override def toVeryShortString: String =
       s"""${cmd.getClass().getSimpleName}(${cmd.commandId.value})"""
 
-    override def downgradeToIdAndType: CommandRepresentation = CommandIdAndType(cmd)
+    override def downgradeToIdAndType: CommandIdAndType = CommandIdAndType(cmd)
 
   }
 
@@ -38,22 +38,22 @@ object CommandRepresentation {
     override def toVeryShortString: String =
       s"""${commandType.getSimpleName}(${commandId.value})"""
 
-    override def downgradeToIdAndType: CommandRepresentation = this
+    override def downgradeToIdAndType: CommandIdAndType = this
   }
 
   object CommandIdAndType {
     def apply(cmd: Command): CommandIdAndType = CommandIdAndType(cmd.commandId, cmd.getClass())
   }
 
-  final case class CommandIdOnly(commandId: CommandId) extends CommandRepresentation {
-    override def toShortString: String =
-      s"""Command with id ${commandId.value})"""
-
-    override def toVeryShortString: String =
-      s"""Command with id ${commandId.value})"""
-
-    override def downgradeToIdAndType: CommandRepresentation = this
-  }
+//  final case class CommandIdOnly(commandId: CommandId) extends CommandRepresentation {
+//    override def toShortString: String =
+//      s"""Command with id ${commandId.value})"""
+//
+//    override def toVeryShortString: String =
+//      s"""Command with id ${commandId.value})"""
+//
+//    override def downgradeToIdAndType: CommandIdAndType = this
+//  }
 }
 
 final case class CommandStatusDocument(representation: CommandRepresentation, timestamp: LocalDateTime, status: CommandStatus)

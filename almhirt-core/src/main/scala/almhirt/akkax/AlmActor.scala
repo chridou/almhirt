@@ -13,22 +13,20 @@ import almhirt.problem.ProblemCause
 import almhirt.tracking.CommandRepresentation
 
 trait AlmActor extends Actor with HasAlmhirtContext with AlmActorSupport {
-  
-  
-  
+
   private object DefaultComponentIdProvider extends ActorComponentIdProvider {
     def componentId = ComponentId(AppName("almhirt"), ComponentName(self.path.name))
   }
 
   implicit def componentNameProvider: ActorComponentIdProvider = DefaultComponentIdProvider
 
-  implicit def CommandToCommandRepresentation(cmd: Command): CommandRepresentation = CommandRepresentation.FullCommand(cmd)
-  implicit def CommandIdToCommandRepresentation(id: CommandId): CommandRepresentation = CommandRepresentation.CommandIdOnly(id)
+//  implicit def CommandToCommandRepresentation(cmd: Command): CommandRepresentation = CommandRepresentation.FullCommand(cmd)
+//  implicit def CommandIdToCommandRepresentation(id: CommandId): CommandRepresentation = CommandRepresentation.CommandIdOnly(id)
 
   protected val born = java.time.ZonedDateTime.now()
   protected val bornUtc = java.time.LocalDateTime.now(java.time.ZoneOffset.UTC)
- // protected final def livingFor:  = this.almhirtContext.getUtcTimestamp
-  
+  // protected final def livingFor:  = this.almhirtContext.getUtcTimestamp
+
   def selectExecutionContext(implicit selector: ExtendedExecutionContextSelector): ExecutionContext =
     selector.select(this.almhirtContext, this.context)
 
@@ -38,23 +36,42 @@ trait AlmActor extends Actor with HasAlmhirtContext with AlmActorSupport {
   def deregisterCircuitControl()(implicit cnp: ActorComponentIdProvider): Unit =
     almhirtContext.tellHerder(HerderMessages.CircuitMessages.DeregisterCircuitControl(cnp.componentId))
 
-  def reportRejectedCommand(command: CommandRepresentation, severity: almhirt.problem.Severity, cause: ProblemCause)(implicit cnp: ActorComponentIdProvider): Unit =
-    almhirtContext.tellHerder(HerderMessages.CommandMessages.RejectedCommand(cnp.componentId, command, severity, cause, almhirtContext.getUtcTimestamp))
+  def reportRejectedCommand(command: Command, severity: almhirt.problem.Severity, cause: ProblemCause)(implicit cnp: ActorComponentIdProvider): Unit = {
+    val timestamp = almhirtContext.getUtcTimestamp
+    val repr = CommandRepresentation.FullCommand(command).downgradeToIdAndType
+    almhirtContext.tellHerder(HerderMessages.CommandMessages.RejectedCommand(cnp.componentId, repr, severity, cause, timestamp))
+    almhirtContext.fireNonStreamEvent(events.CommandRejected(repr, severity)(EventHeader(EventId(almhirtContext.getUniqueString()), timestamp), cnp.componentId))
+  }
 
-  def reportMissedEvent(event: Event, severity: almhirt.problem.Severity, cause: ProblemCause)(implicit cnp: ActorComponentIdProvider): Unit =
-    almhirtContext.tellHerder(HerderMessages.EventMessages.MissedEvent(cnp.componentId, event, severity, cause, almhirtContext.getUtcTimestamp))
+  def reportMissedEvent(event: Event, severity: almhirt.problem.Severity, cause: ProblemCause)(implicit cnp: ActorComponentIdProvider): Unit = {
+    val timestamp = almhirtContext.getUtcTimestamp
+    almhirtContext.tellHerder(HerderMessages.EventMessages.MissedEvent(cnp.componentId, event, severity, cause, timestamp))
+    almhirtContext.fireNonStreamEvent(events.EventNotProcessed(event.eventId, event.getClass.getName, severity)(EventHeader(EventId(almhirtContext.getUniqueString()), timestamp), cnp.componentId))
+  }
 
-  def reportFailure(cause: ProblemCause, severity: almhirt.problem.Severity)(implicit cnp: ActorComponentIdProvider): Unit =
-    almhirtContext.tellHerder(HerderMessages.FailureMessages.FailureOccured(cnp.componentId, cause, severity, almhirtContext.getUtcTimestamp))
+  def reportFailure(cause: ProblemCause, severity: almhirt.problem.Severity)(implicit cnp: ActorComponentIdProvider): Unit = {
+    val timestamp = almhirtContext.getUtcTimestamp
+    almhirtContext.tellHerder(HerderMessages.FailureMessages.FailureOccured(cnp.componentId, cause, severity, timestamp))
+    almhirtContext.fireNonStreamEvent(events.FailureReported(cause.toProblem, severity)(EventHeader(EventId(almhirtContext.getUniqueString()), timestamp), cnp.componentId))
+  }
 
-  def reportMinorFailure(failure: ProblemCause)(implicit cnp: ActorComponentIdProvider): Unit =
-    almhirtContext.tellHerder(HerderMessages.FailureMessages.FailureOccured(cnp.componentId, failure, MinorSeverity, almhirtContext.getUtcTimestamp))
+  def reportMinorFailure(failure: ProblemCause)(implicit cnp: ActorComponentIdProvider): Unit = {
+    val timestamp = almhirtContext.getUtcTimestamp
+    almhirtContext.tellHerder(HerderMessages.FailureMessages.FailureOccured(cnp.componentId, failure, MinorSeverity, timestamp))
+    almhirtContext.fireNonStreamEvent(events.FailureReported(failure.toProblem, MinorSeverity)(EventHeader(EventId(almhirtContext.getUniqueString()), timestamp), cnp.componentId))
+  }
 
-  def reportMajorFailure(failure: ProblemCause)(implicit cnp: ActorComponentIdProvider): Unit =
-    almhirtContext.tellHerder(HerderMessages.FailureMessages.FailureOccured(cnp.componentId, failure, MajorSeverity, almhirtContext.getUtcTimestamp))
+  def reportMajorFailure(failure: ProblemCause)(implicit cnp: ActorComponentIdProvider): Unit = {
+    val timestamp = almhirtContext.getUtcTimestamp
+    almhirtContext.tellHerder(HerderMessages.FailureMessages.FailureOccured(cnp.componentId, failure, MajorSeverity, timestamp))
+    almhirtContext.fireNonStreamEvent(events.FailureReported(failure.toProblem, MajorSeverity)(EventHeader(EventId(almhirtContext.getUniqueString()), timestamp), cnp.componentId))
+  }
 
-  def reportCriticalFailure(failure: ProblemCause)(implicit cnp: ActorComponentIdProvider): Unit =
-    almhirtContext.tellHerder(HerderMessages.FailureMessages.FailureOccured(cnp.componentId, failure, CriticalSeverity, almhirtContext.getUtcTimestamp))
+  def reportCriticalFailure(failure: ProblemCause)(implicit cnp: ActorComponentIdProvider): Unit = {
+    val timestamp = almhirtContext.getUtcTimestamp
+    almhirtContext.tellHerder(HerderMessages.FailureMessages.FailureOccured(cnp.componentId, failure, CriticalSeverity, timestamp))
+    almhirtContext.fireNonStreamEvent(events.FailureReported(failure.toProblem, CriticalSeverity)(EventHeader(EventId(almhirtContext.getUniqueString()), timestamp), cnp.componentId))
+  }
 
   def inform(message: String, importance: Importance)(implicit cnp: ActorComponentIdProvider): Unit = {
     almhirtContext.tellHerder(HerderMessages.InformationMessages.Information(cnp.componentId, message, importance, almhirtContext.getUtcTimestamp))
@@ -103,7 +120,7 @@ trait AlmActor extends Actor with HasAlmhirtContext with AlmActorSupport {
     }
     f.mapCast[T]
   }
-  
+
   def retryAskEvalForFailure[T](policy: RetryPolicyExt)(failPf: PartialFunction[T, Problem])(actor: ActorRef, m: Any, atMost: FiniteDuration)(implicit classTag: ClassTag[T]): AlmFuture[T] = {
     import akka.pattern._
     import almhirt.almfuture.all._
