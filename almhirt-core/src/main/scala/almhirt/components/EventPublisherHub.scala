@@ -294,6 +294,7 @@ private[components] class EventPublisherHubActor(
 
   override def preStart() {
     super.preStart()
+    logInfo(s"Start with ${initialPublisherFactories.size} publishers to create.")
     registerComponentControl()
     registerStatusReporter(description = Some("Things that just publish events(not from the stream)..."))
     context.parent ! ActorMessages.ConsiderMeForReporting
