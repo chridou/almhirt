@@ -4,7 +4,7 @@ import almhirt.common._
 import almhirt.context.AlmhirtContext
 import almhirt.akkax.ComponentFactory
 
-sealed trait EventPublisherFactory {
+trait EventPublisherFactory {
   def create(implicit almhirtContext: AlmhirtContext): AlmValidation[ComponentFactory]
 }
 

@@ -60,7 +60,7 @@ object ElasticSearchEventStreamPublisher {
   def componentFactory(implicit ctx: AlmhirtContext, serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem]): AlmValidation[ComponentFactory] =
     props().map(props ⇒ ComponentFactory(props, actorname))
 
-  val actorname = "elastic-search-event-publisher"
+  val actorname = "elastic-search-event-stream-publisher"
 }
 
 private[almhirt] class ElasticSearchEventStreamPublisherImpl(
