@@ -20,6 +20,8 @@ trait AlmhirtContext extends CanCreateUuidsAndDateTimes with AlmhirtStreams with
   def publishNonStreamEvent(event: Event, maxDur: FiniteDuration = 3.seconds): AlmFuture[Event]
   def fireNonStreamEvent(event: Event): Unit
 
+  def localNodeName: almhirt.akkax.NodeName
+
   def createReporter(forComponent: ComponentId): Reporter
 
   def withFuturesExecutor(executor: ExecutionContext): AlmhirtContext = {
@@ -43,7 +45,7 @@ trait AlmhirtContext extends CanCreateUuidsAndDateTimes with AlmhirtStreams with
       def createReporter(forComponent: ComponentId): Reporter = AlmhirtContext.this.createReporter(forComponent)
       def publishNonStreamEvent(event: Event, maxDur: FiniteDuration = 3.seconds): AlmFuture[Event] = AlmhirtContext.this.publishNonStreamEvent(event, maxDur)
       def fireNonStreamEvent(event: Event): Unit = AlmhirtContext.this.fireNonStreamEvent(event)
-
+      val localNodeName = AlmhirtContext.this.localNodeName
     }
   }
 
@@ -68,6 +70,7 @@ trait AlmhirtContext extends CanCreateUuidsAndDateTimes with AlmhirtStreams with
       def createReporter(forComponent: ComponentId): Reporter = AlmhirtContext.this.createReporter(forComponent)
       def publishNonStreamEvent(event: Event, maxDur: FiniteDuration = 3.seconds): AlmFuture[Event] = AlmhirtContext.this.publishNonStreamEvent(event, maxDur)
       def fireNonStreamEvent(event: Event): Unit = AlmhirtContext.this.fireNonStreamEvent(event)
+      val localNodeName = AlmhirtContext.this.localNodeName
     }
   }
 
@@ -92,6 +95,7 @@ trait AlmhirtContext extends CanCreateUuidsAndDateTimes with AlmhirtStreams with
       def createReporter(forComponent: ComponentId): Reporter = AlmhirtContext.this.createReporter(forComponent)
       def publishNonStreamEvent(event: Event, maxDur: FiniteDuration = 3.seconds): AlmFuture[Event] = AlmhirtContext.this.publishNonStreamEvent(event, maxDur)
       def fireNonStreamEvent(event: Event): Unit = AlmhirtContext.this.fireNonStreamEvent(event)
+      val localNodeName = AlmhirtContext.this.localNodeName
     }
   }
 
@@ -242,6 +246,7 @@ object AlmhirtContext {
                 def createReporter(forComponent: ComponentId): Reporter = new TellHerderReporter(this, forComponent)
                 def publishNonStreamEvent(event: Event, maxDur: FiniteDuration = 3.seconds): AlmFuture[Event] = publishANonStreamEvent(event, maxDur)
                 def fireNonStreamEvent(event: Event): Unit = fireANonStreamEvent(event)
+                val localNodeName = almhirt.akkax.NodeName(context.system.name)
 
                 def stop() {
                   log.info("Stopping.")
@@ -357,6 +362,7 @@ object AlmhirtContext {
               def createReporter(forComponent: ComponentId): Reporter = Reporter.DevNull
               def publishNonStreamEvent(event: Event, maxDur: FiniteDuration = 3.seconds): AlmFuture[Event] = AlmFuture.successful(event)
               def fireNonStreamEvent(event: Event): Unit = {}
+              val localNodeName = almhirt.akkax.NodeName(context.system.name)
               def stop() {
                 log.debug("Stopping.")
                 //streams.stop()

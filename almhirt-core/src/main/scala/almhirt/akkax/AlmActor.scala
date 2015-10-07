@@ -40,37 +40,37 @@ trait AlmActor extends Actor with HasAlmhirtContext with AlmActorSupport {
     val timestamp = almhirtContext.getUtcTimestamp
     val repr = CommandRepresentation.FullCommand(command).downgradeToIdAndType
     almhirtContext.tellHerder(HerderMessages.CommandMessages.RejectedCommand(cnp.componentId, repr, severity, cause, timestamp))
-    almhirtContext.fireNonStreamEvent(events.CommandRejected(repr, severity)(EventHeader(EventId(almhirtContext.getUniqueString()), timestamp), cnp.componentId))
+    almhirtContext.fireNonStreamEvent(events.CommandRejected(repr, severity)(EventHeader(EventId(almhirtContext.getUniqueString()), timestamp), GlobalComponentId(cnp.componentId)))
   }
 
   def reportMissedEvent(event: Event, severity: almhirt.problem.Severity, cause: ProblemCause)(implicit cnp: ActorComponentIdProvider): Unit = {
     val timestamp = almhirtContext.getUtcTimestamp
     almhirtContext.tellHerder(HerderMessages.EventMessages.MissedEvent(cnp.componentId, event, severity, cause, timestamp))
-    almhirtContext.fireNonStreamEvent(events.EventNotProcessed(event.eventId, event.getClass.getName, severity)(EventHeader(EventId(almhirtContext.getUniqueString()), timestamp), cnp.componentId))
+    almhirtContext.fireNonStreamEvent(events.EventNotProcessed(event.eventId, event.getClass.getName, severity)(EventHeader(EventId(almhirtContext.getUniqueString()), timestamp), GlobalComponentId(cnp.componentId)))
   }
 
   def reportFailure(cause: ProblemCause, severity: almhirt.problem.Severity)(implicit cnp: ActorComponentIdProvider): Unit = {
     val timestamp = almhirtContext.getUtcTimestamp
     almhirtContext.tellHerder(HerderMessages.FailureMessages.FailureOccured(cnp.componentId, cause, severity, timestamp))
-    almhirtContext.fireNonStreamEvent(events.FailureReported(cause.toProblem, severity)(EventHeader(EventId(almhirtContext.getUniqueString()), timestamp), cnp.componentId))
+    almhirtContext.fireNonStreamEvent(events.FailureReported(cause.toProblem, severity)(EventHeader(EventId(almhirtContext.getUniqueString()), timestamp), GlobalComponentId(cnp.componentId)))
   }
 
   def reportMinorFailure(failure: ProblemCause)(implicit cnp: ActorComponentIdProvider): Unit = {
     val timestamp = almhirtContext.getUtcTimestamp
     almhirtContext.tellHerder(HerderMessages.FailureMessages.FailureOccured(cnp.componentId, failure, MinorSeverity, timestamp))
-    almhirtContext.fireNonStreamEvent(events.FailureReported(failure.toProblem, MinorSeverity)(EventHeader(EventId(almhirtContext.getUniqueString()), timestamp), cnp.componentId))
+    almhirtContext.fireNonStreamEvent(events.FailureReported(failure.toProblem, MinorSeverity)(EventHeader(EventId(almhirtContext.getUniqueString()), timestamp), GlobalComponentId(cnp.componentId)))
   }
 
   def reportMajorFailure(failure: ProblemCause)(implicit cnp: ActorComponentIdProvider): Unit = {
     val timestamp = almhirtContext.getUtcTimestamp
     almhirtContext.tellHerder(HerderMessages.FailureMessages.FailureOccured(cnp.componentId, failure, MajorSeverity, timestamp))
-    almhirtContext.fireNonStreamEvent(events.FailureReported(failure.toProblem, MajorSeverity)(EventHeader(EventId(almhirtContext.getUniqueString()), timestamp), cnp.componentId))
+    almhirtContext.fireNonStreamEvent(events.FailureReported(failure.toProblem, MajorSeverity)(EventHeader(EventId(almhirtContext.getUniqueString()), timestamp), GlobalComponentId(cnp.componentId)))
   }
 
   def reportCriticalFailure(failure: ProblemCause)(implicit cnp: ActorComponentIdProvider): Unit = {
     val timestamp = almhirtContext.getUtcTimestamp
     almhirtContext.tellHerder(HerderMessages.FailureMessages.FailureOccured(cnp.componentId, failure, CriticalSeverity, timestamp))
-    almhirtContext.fireNonStreamEvent(events.FailureReported(failure.toProblem, CriticalSeverity)(EventHeader(EventId(almhirtContext.getUniqueString()), timestamp), cnp.componentId))
+    almhirtContext.fireNonStreamEvent(events.FailureReported(failure.toProblem, CriticalSeverity)(EventHeader(EventId(almhirtContext.getUniqueString()), timestamp), GlobalComponentId(cnp.componentId)))
   }
 
   def inform(message: String, importance: Importance)(implicit cnp: ActorComponentIdProvider): Unit = {

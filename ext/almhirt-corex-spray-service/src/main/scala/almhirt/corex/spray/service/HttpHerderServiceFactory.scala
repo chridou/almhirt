@@ -983,7 +983,7 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
     def createHistoryLine(item: RejectedCommandsEntry) = {
       <tr>
         <td>{ item._4.toString() }</td>
-        <td>{ (if (abridged) item._1.toVeryShortString else item._1.toShortString).split("\\r?\\n").map(line ⇒ <span>{ line }<br/></span>) }</td>
+        <td>{ item._1.toShortString }</td>
         <td style="height:100%">{ createSeverityItem(item._3) }</td>
         <td>{
           item._2 match {
