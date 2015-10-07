@@ -350,12 +350,12 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
         ar ⇒ {
           context.become(receiveRebuildFrom(currentCommand, Vivus(ar)))
           this.lastSnapshotState = SnapshotState.snapshotStateFromLivingAr(ar)
-//          logDebug(s"Rebuild from snapshot with version ${ar.version.value}.")
+          //          logDebug(s"Rebuild from snapshot with version ${ar.version.value}.")
           aggregateEventLog ! GetAggregateRootEventsFor(ar.id, FromVersion(ar.version), ToEnd, skip.none takeAll)
         })
 
     case SnapshotRepository.SnapshotNotFound(id) ⇒
-//      logDebug(s"Snapshot for ${id.value} not found. Rebuild all from log.")
+      //      logDebug(s"Snapshot for ${id.value} not found. Rebuild all from log.")
       context.become(receiveRebuildFrom(currentCommand, Vacat))
       aggregateEventLog ! GetAggregateRootEventsFor(currentCommand.aggId, FromStart, ToEnd, skip.none takeAll)
 
@@ -476,7 +476,18 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
       aggregateEventLog ! CommitAggregateRootEvent(inFlight)
 
     case PreStoreEventActionFailed(cause) ⇒
-      onError(AggregateRootEventStoreFailedWritingException(currentCommand.aggId, s"Failed to execute PreStoreAction:\n$cause"), currentCommand, done)
+      val msg = s"Failed to execute PreStoreAction. There are ${rest.size + 1} events that were not persisted. Will try to publish all persisted events(${done.size}) before exiting."
+      logError(msg, cause)
+      if (hiveNotifiedForCommit) {
+        sendMessage(AggregateRootHiveInternals.EventsFinallyLogged(currentCommand.aggId))
+        hiveNotifiedForCommit = false
+      }
+
+      cancelWaitingForLoggedEventsNotification.foreach { _.cancel() }
+      cancelWaitingForLoggedEventsNotification = None
+
+      context.become(receiveStoreSnapshot(currentCommand, unpersisted, done, exitReason = Some(PreStoreActionFailedException(currentCommand.aggId, msg))))
+      self ! StoreSnapshot
 
     case AggregateRootEventCommitted(id) ⇒
       val newDone = done :+ inFlight
@@ -490,7 +501,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
           cancelWaitingForLoggedEventsNotification.foreach { _.cancel() }
           cancelWaitingForLoggedEventsNotification = None
 
-          context.become(receiveStoreSnapshot(currentCommand, unpersisted, newDone))
+          context.become(receiveStoreSnapshot(currentCommand, unpersisted, newDone, exitReason = None))
           self ! StoreSnapshot
 
         case next +: newRest ⇒
@@ -526,16 +537,16 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
       sendMessage(Busy(unexpectedCommand))
   }
 
-  def receiveStoreSnapshot(currentCommand: AggregateRootCommand, persisted: Postnatalis[T], eventsToDispatch: Seq[E]): Receive = {
+  def receiveStoreSnapshot(currentCommand: AggregateRootCommand, persisted: Postnatalis[T], eventsToDispatch: Seq[E], exitReason: Option[AggregateRootDomainException]): Receive = {
     case StoreSnapshot ⇒
       this.snapshotting match {
         case None ⇒
-          context.become(receiveDispatchEvents(currentCommand, persisted, eventsToDispatch))
+          context.become(receiveDispatchEvents(currentCommand, persisted, eventsToDispatch, exitReason))
           self ! DispatchEvents
         case Some(SnapshottingForDrone(snapshotRepo, policy)) ⇒
           policy.requiredActionFor(persisted, lastSnapshotState) match {
             case None ⇒
-              context.become(receiveDispatchEvents(currentCommand, persisted, eventsToDispatch))
+              context.become(receiveDispatchEvents(currentCommand, persisted, eventsToDispatch, exitReason))
               self ! DispatchEvents
             case Some(action) ⇒
               snapshotRepo ! action
@@ -544,12 +555,12 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
 
     case rsp: SnapshotRepository.SuccessfulSnapshottingAction ⇒
       this.lastSnapshotState = SnapshotState.snapshotStateFromLifecycle(persisted)
-      context.become(receiveDispatchEvents(currentCommand, persisted, eventsToDispatch))
+      context.become(receiveDispatchEvents(currentCommand, persisted, eventsToDispatch, exitReason))
       self ! DispatchEvents
 
     case rsp: SnapshotRepository.FailedSnapshottingAction ⇒
       logWarning(s"Failed to store a snapshot for version ${persisted.version.value}.", Some(rsp.problem))
-      context.become(receiveDispatchEvents(currentCommand, persisted, eventsToDispatch))
+      context.become(receiveDispatchEvents(currentCommand, persisted, eventsToDispatch, exitReason))
       self ! DispatchEvents
 
     case EventsShouldHaveBeenDispatchedByNow(_) | EventsShouldHaveBeenStoredByNow(_) ⇒
@@ -560,7 +571,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
       sendMessage(Busy(unexpectedCommand))
   }
 
-  def receiveDispatchEvents(currentCommand: AggregateRootCommand, persisted: Postnatalis[T], eventsToDispatch: Seq[E]): Receive = {
+  def receiveDispatchEvents(currentCommand: AggregateRootCommand, persisted: Postnatalis[T], eventsToDispatch: Seq[E], exitReason: Option[AggregateRootDomainException]): Receive = {
     case DispatchEvents ⇒
       val cid = CorrelationId(ccuad.getUniqueString())
 
@@ -583,7 +594,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
 
         case unexpectedCommand: AggregateRootCommand ⇒
           sendMessage(Busy(unexpectedCommand))
-      }(receiveWaitingForEventsDispatched(currentCommand, persisted, eventsToDispatch, startOfferEvents, cid))
+      }(receiveWaitingForEventsDispatched(currentCommand, persisted, eventsToDispatch, startOfferEvents, cid, exitReason))
 
     case EventsShouldHaveBeenDispatchedByNow(_) | EventsShouldHaveBeenStoredByNow(_) ⇒
       //Do nothing..
@@ -592,38 +603,6 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
     case unexpectedCommand: AggregateRootCommand ⇒
       sendMessage(Busy(unexpectedCommand))
 
-  }
-
-  def receiveWaitForCleanUpAfterExecutedCommand(persistedState: AggregateRootLifecycle[T]): Receive = {
-    case AsyncCleanedUpAfterCommand(cmd, persistedState) ⇒
-      handleCommandExecutedAfterCleanup(persistedState, cmd)
-
-    case AsyncCleanUpAfterCommandFailed(cmd, problem) ⇒
-      logError(s"Cleanup Action after execution a command failed", problem)
-      handleCommandExecutedAfterCleanup(persistedState, cmd)
-
-    case EventsShouldHaveBeenDispatchedByNow(_) ⇒
-      // Do nothing....
-      ()
-
-    case unexpectedCommand: AggregateRootCommand ⇒
-      sendMessage(Busy(unexpectedCommand))
-  }
-
-  def receiveWaitForCleanUpAfterFailedCommand(persistedState: AggregateRootLifecycle[T], commandProblem: Problem): Receive = {
-    case AsyncCleanedUpAfterCommand(cmd, persistedState) ⇒
-      handleCommandFailedAfterCleanup(persistedState, cmd, commandProblem)
-
-    case AsyncCleanUpAfterCommandFailed(cmd, problem) ⇒
-      logError(s"Cleanup Action after a failed command failed", problem)
-      handleCommandFailedAfterCleanup(persistedState, cmd, commandProblem)
-
-    case EventsShouldHaveBeenDispatchedByNow(_) ⇒
-      // Do nothing....
-      ()
-
-    case unexpectedCommand: AggregateRootCommand ⇒
-      sendMessage(Busy(unexpectedCommand))
   }
 
   private def receiveRetryLogEventInFlight(
@@ -677,7 +656,8 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
     persisted: Postnatalis[T],
     committedEvents: Seq[E],
     startedDispatching: Deadline,
-    correlationId: CorrelationId): Receive = {
+    correlationId: CorrelationId,
+    exitReason: Option[AggregateRootDomainException]): Receive = {
     case DeliveryResult(d: DeliveryJobDone, payload) ⇒
       if (hiveNotifiedForDispatch) {
         sendMessage(AggregateRootHiveInternals.EventsFinallyDispatchedToStream(persisted.id))
@@ -685,7 +665,14 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
       }
       cancelWaitingForDispatchedEventsNotification.foreach { _.cancel() }
       cancelWaitingForDispatchedEventsNotification = None
-      handleCommandExecutedWithCleanup(persisted, currentCommand)
+
+      exitReason match {
+        case None ⇒
+          handleCommandExecutedWithCleanup(persisted, currentCommand)
+        case Some(exitCause) =>
+          logWarning("Exiting because of a previously error.")
+          handleCommandFatallyFailedWithCleanup(persisted, currentCommand, exitCause, committedEvents)
+      }
 
     case DeliveryResult(DeliveryJobFailed(problem, _), payload) ⇒
       cancelWaitingForDispatchedEventsNotification.foreach { _.cancel() }
@@ -694,7 +681,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
     case EventsShouldHaveBeenDispatchedByNow(incomingCorrelationId) ⇒
       if (incomingCorrelationId == correlationId) {
         sendMessage(AggregateRootHiveInternals.DispatchEventsToStreamTakesTooLong(persisted.id, startedDispatching.lap))
-        context.become(receiveWaitingForEventsDispatched(currentCommand, persisted, committedEvents, startedDispatching, correlationId))
+        context.become(receiveWaitingForEventsDispatched(currentCommand, persisted, committedEvents, startedDispatching, correlationId, exitReason))
         hiveNotifiedForDispatch = true
       }
 
@@ -714,6 +701,54 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
     case EventsShouldHaveBeenDispatchedByNow(_) | EventsShouldHaveBeenStoredByNow(_) ⇒
       //Do nothing..
       ()
+  }
+
+  def receiveWaitForCleanUpAfterExecutedCommand(persistedState: AggregateRootLifecycle[T]): Receive = {
+    case AsyncCleanedUpAfterCommand(cmd, persistedState) ⇒
+      handleCommandExecutedAfterCleanup(persistedState, cmd)
+
+    case AsyncCleanUpAfterCommandFailed(cmd, problem) ⇒
+      logError(s"Cleanup Action after execution a command failed", problem)
+      handleCommandExecutedAfterCleanup(persistedState, cmd)
+
+    case EventsShouldHaveBeenDispatchedByNow(_) ⇒
+      // Do nothing....
+      ()
+
+    case unexpectedCommand: AggregateRootCommand ⇒
+      sendMessage(Busy(unexpectedCommand))
+  }
+
+  def receiveWaitForCleanUpAfterFailedCommand(persistedState: AggregateRootLifecycle[T], commandProblem: Problem): Receive = {
+    case AsyncCleanedUpAfterCommand(cmd, persistedState) ⇒
+      handleCommandFailedAfterCleanup(persistedState, cmd, commandProblem)
+
+    case AsyncCleanUpAfterCommandFailed(cmd, problem) ⇒
+      logError(s"Cleanup Action after a failed command failed", problem)
+      handleCommandFailedAfterCleanup(persistedState, cmd, commandProblem)
+
+    case EventsShouldHaveBeenDispatchedByNow(_) ⇒
+      // Do nothing....
+      ()
+
+    case unexpectedCommand: AggregateRootCommand ⇒
+      sendMessage(Busy(unexpectedCommand))
+  }
+
+  def receiveWaitForCleanUpAfterFatallyFailedCommand(persistedState: AggregateRootLifecycle[T], reason: AggregateRootDomainException, committedEvents: Seq[E]): Receive = {
+    case AsyncCleanedUpAfterCommand(cmd, persistedState) ⇒
+      handleCommandFatallyFailedAfterCleanup(persistedState, cmd, reason, committedEvents)
+
+    case AsyncCleanUpAfterCommandFailed(cmd, problem) ⇒
+      logError(s"Cleanup Action after a failed command failed", problem)
+      handleCommandFatallyFailedAfterCleanup(persistedState, cmd, reason, committedEvents)
+
+    case EventsShouldHaveBeenDispatchedByNow(_) ⇒
+      // Do nothing....
+      ()
+
+    case unexpectedCommand: AggregateRootCommand ⇒
+      sendMessage(Busy(unexpectedCommand))
   }
 
   def receive: Receive = receiveUninitialized
@@ -751,6 +786,22 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
     sendMessage(rsp)
     onAfterExecutingCommand(command, Some(rsp.problem), Some(persistedState))
     becomeReceiveWaitingForCommand(persistedState)
+  }
+
+  private def handleCommandFatallyFailedWithCleanup(persistedState: AggregateRootLifecycle[T], command: AggregateRootCommand, reason: AggregateRootDomainException, committedEvents: Seq[E]): Unit = {
+    asyncCleanupAfterCommand(command, None, Some(persistedState)) match {
+      case None ⇒
+        handleCommandFatallyFailedAfterCleanup(persistedState, command, reason, committedEvents)
+      case Some(fut) ⇒
+        context.become(receiveWaitForCleanUpAfterFatallyFailedCommand(persistedState, reason, committedEvents))
+        fut.onComplete(
+          fail ⇒ self ! AsyncCleanUpAfterCommandFailed(command, fail),
+          succ ⇒ self ! AsyncCleanedUpAfterCommand(command, persistedState))(futuresContext)
+    }
+  }
+
+  private def handleCommandFatallyFailedAfterCleanup(persistedState: AggregateRootLifecycle[T], command: AggregateRootCommand, reason: AggregateRootDomainException, committedEvents: Seq[E]): Unit = {
+    onError(reason, command, committedEvents)
   }
 
   private def handleCommandExecutedWithCleanup(persistedState: AggregateRootLifecycle[T], command: AggregateRootCommand) {

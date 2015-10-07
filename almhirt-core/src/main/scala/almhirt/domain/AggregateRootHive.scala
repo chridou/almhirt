@@ -167,6 +167,10 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
         reportMajorFailure(exn)
         informVeryImportant(s"Handling escalated error from ${sender.path.name} with a action Stop.")
         Stop
+      case exn: PreStoreActionFailedException ⇒
+        reportMajorFailure(exn)
+        informVeryImportant(s"Handling escalated error from ${sender.path.name} with a action Restart.")
+        Restart
       case exn: Exception ⇒
         reportCriticalFailure(exn)
         informVeryImportant(s"Handling escalated error from ${sender.path.name} with a action Stop.")
@@ -390,7 +394,6 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
             logWarning(s"""Drone ${sender().path.name} reported a warning with message "$msg".""")
           case Some(cause) ⇒
             logWarning(s"""Drone ${sender().path.name} reported a warning with message "$msg" and and a problem with message "${cause.message}".""")
-            reportMinorFailure(cause.mapProblem { _.withArg("hive", hiveDescriptor.value) })
         }
 
       case AggregateRootHiveInternals.CargoJettisoned(id) ⇒

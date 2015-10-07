@@ -21,6 +21,14 @@ object AggregateRootEventStoreFailedWritingException {
     new AggregateRootEventStoreFailedWritingException(id, message, ex)
 }
 
+final class PreStoreActionFailedException private (id: AggregateRootId, message: String, ex: Throwable) extends AggregateRootDomainException(id, message, ex)
+object PreStoreActionFailedException {
+  def apply(id: AggregateRootId, message: String): PreStoreActionFailedException =
+    new PreStoreActionFailedException(id, message, null)
+  def apply(id: AggregateRootId, message: String, ex: Throwable): PreStoreActionFailedException =
+    new PreStoreActionFailedException(id, message, ex)
+}
+
 final class RebuildAggregateRootFailedException private (id: AggregateRootId, message: String, ex: Throwable) extends AggregateRootDomainException(id, message, ex)
 object RebuildAggregateRootFailedException {
   def apply(id: AggregateRootId, message: String): RebuildAggregateRootFailedException =
