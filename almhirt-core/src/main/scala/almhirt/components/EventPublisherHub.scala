@@ -23,7 +23,7 @@ object EventPublisherHub {
       section ← almhirtContext.config.v[com.typesafe.config.Config]("almhirt.components.misc.event-publisher-hub")
       buffersize ← section.v[Int]("buffer-size").constrained(_ >= 0, n ⇒ s""""buffer-size" must be greater or equal than 0, not $n.""")
       maxDispatchTime ← section.v[FiniteDuration]("max-dispatch-time")
-      factoryNamesOpt ← section.magicOption[List[String]]("event-publishers.publisher-factories")
+      factoryNamesOpt ← section.magicOption[List[String]]("publisher-factories")
       additionalFactories ← {
         val effList: List[String] = (factoryNamesOpt getOrElse Nil)
         val allFactoriesClassesV: AlmValidation[List[ComponentFactory]] = effList.map(className ⇒ createFactory(className).toAgg).sequence

@@ -66,7 +66,7 @@ object ElasticSearchEventPublisher {
 
   val actorname = "elastic-search-event-publisher"
   
-  val defaultConfigPath = "almhirt.components.misc.event-publisher-hub.elastic-search-event-publisher"
+  val defaultConfigPath = "almhirt.components.misc.event-publisher-hub.event-publishers.elastic-search-event-publisher"
 
 }
 
