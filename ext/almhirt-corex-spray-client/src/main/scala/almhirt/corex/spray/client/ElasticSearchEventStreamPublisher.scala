@@ -45,7 +45,7 @@ object ElasticSearchEventStreamPublisher {
         for {
           host ← section.v[String]("host")
           index ← section.v[String]("index")
-          fixedTypeName ← section.magicOption[String]("index")
+          fixedTypeName ← section.magicOption[String]("fixed-type-name")
           ttl ← section.magicOption[FiniteDuration]("ttl")
           missedEventSeverity ← section.v[almhirt.problem.Severity]("missed-event-severity")
           circuitControlSettings ← section.v[CircuitControlSettings]("circuit-control")
