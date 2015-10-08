@@ -37,7 +37,7 @@ object EventPublisherHub {
       val clazz = Class.forName(className)
       val ctor = clazz.getConstructors()(0)
       if(ctor.getParameterCount != 0)
-        throw new IllegalArgumentException(s"Expected a no arg constructor. The constructor required ${ctor.getParameterCount} arguments.")
+        throw new IllegalArgumentException(s"Expected a no arg constructor. The constructor required ${ctor.getParameterCount} arguments. The class name was $className.")
       val instance = ctor.newInstance().asInstanceOf[EventPublisherFactory]
       instance.create
     }
