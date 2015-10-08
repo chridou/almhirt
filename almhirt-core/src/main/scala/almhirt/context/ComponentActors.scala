@@ -119,10 +119,9 @@ private[almhirt] object componentactors {
             context.become(receiveStart(true))
           }
 
-        case ResourcesService.InitializeResourcesFailed(failure) ⇒
-          logError(s"Failed to initialize resources\n$failure.")
-          reportCriticalFailure(failure)
-          sys.error(s"Failed to initialize resources\n$failure.")
+        case ResourcesService.InitializeResourcesFailed(problem) ⇒
+          logError(s"Failed to initialize resources\n$problem.")
+          context.become(receiveError(problem.toProblem))
 
         case ActorMessages.CreateChildActor(componentFactory, returnActorRef, correlationId) ⇒
           context.childFrom(componentFactory).fold(
@@ -139,8 +138,7 @@ private[almhirt] object componentactors {
 
         case ActorMessages.CreateChildActorFailed(problem, _) ⇒
           logError(s"A child actor was not created:\n$problem")
-          reportCriticalFailure(problem)
-          sys.error(s"A child actor was not created:\n$problem")
+          context.become(receiveError(problem))
 
         case ActorMessages.ChildActorCreated(actor, _) ⇒
           if (canAdvance) {
@@ -173,7 +171,7 @@ private[almhirt] object componentactors {
           }
 
         case ActorMessages.HerderServiceAppFailedToStart(problem) ⇒
-          sys.error(problem.toString())
+          context.become(receiveError(problem))
 
         case ActorMessages.HerderServiceAppStarted ⇒
           logInfo("Herder app started.")
@@ -186,15 +184,19 @@ private[almhirt] object componentactors {
     def receiveBuildEventPublisher(cid: CorrelationId): Receive = running() {
       reportsStatusF(onReportRequested = createStatusReport) {
         case "make_event_publisher_hub" ⇒
+          logInfo("Create event publisher hub.")
           almhirt.components.EventPublisherHub.componentFactory(Nil).fold(
-            fail ⇒ {},
+            fail ⇒ {
+              logError(s"Aborting! Could not create the component factory for the event publisher:\n$fail")
+              context.become(receiveError(fail))
+            },
             factory ⇒ {
               misc ! ActorMessages.CreateChildActor(factory, true, Some(cid))
             })
 
         case ActorMessages.CreateChildActorFailed(problem, _) ⇒
           logError(s"A child actor was not created:\n$problem")
-          reportCriticalFailure(problem)
+          context.become(receiveError(problem))
 
         case ActorMessages.ChildActorCreated(created, Some(cid)) ⇒
           logInfo(s"Created Event-Publisher-Hub ${created.path.name}.")
@@ -248,6 +250,12 @@ private[almhirt] object componentactors {
 
         case ActorMessages.ChildActorCreated(created, _) ⇒
           logInfo(s"Created ${created.path.name}.")
+      }
+    }
+
+    def receiveError(problem: Problem): Receive = error(problem) {
+      reportsStatusF(onReportRequested = createStatusReport) {
+        case _ ⇒ ()
       }
     }
 
