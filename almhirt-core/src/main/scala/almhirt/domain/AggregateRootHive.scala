@@ -421,7 +421,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
         numReceivedInternal += 1
         numFailedInternal += 1
         val msg = s"Rejecting command because I am in error state."
-        val prob = ServiceShutDownProblem(msg, cause = Some(cause)).withArg("hive", hiveDescriptor.value)
+        val prob = ServiceBrokenProblem(msg, cause = Some(cause)).withArg("hive", hiveDescriptor.value)
         reportRejectedCommand(aggregateCommand, MajorSeverity, prob)
         receivedInvalidCommand()
         enqueueEvent(CommandExecutionFailed(aggregateCommand, prob))
