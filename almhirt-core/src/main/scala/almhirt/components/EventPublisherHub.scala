@@ -36,7 +36,7 @@ object EventPublisherHub {
     unsafe {
       val clazz = Class.forName(className)
       val ctor = clazz.getConstructors()(0)
-      if(ctor.getParameterCount != 0)
+      if (ctor.getParameterCount != 0)
         throw new IllegalArgumentException(s"Expected a no arg constructor. The constructor required ${ctor.getParameterCount} arguments. The class name was $className.")
       val instance = ctor.newInstance().asInstanceOf[EventPublisherFactory]
       instance.create
@@ -73,7 +73,7 @@ private[components] class EventPublisherHubActor(
   var numEventsDispatched = 0L
 
   def receiveIdle(): Receive = running() {
-    reportsStatus(onReportRequested = createStatusReport) {
+    reportsStatusF(onReportRequested = createStatusReport) {
       case EventPublisher.FireEvent(event) ⇒
         if (queue.size == buffersize) {
           numEventsNotDispatched = numEventsNotDispatched + 1L
@@ -120,7 +120,7 @@ private[components] class EventPublisherHubActor(
   }
 
   private def receiveDispatching(): Receive = running() {
-    reportsStatus(onReportRequested = createStatusReport) {
+    reportsStatusF(onReportRequested = createStatusReport) {
       case DispatchNext ⇒
         if (queue.isEmpty) {
           context.become(receiveIdle())
@@ -177,7 +177,7 @@ private[components] class EventPublisherHubActor(
   private var cancelCurrent: Cancellable = null
   private var errorOccured = false
   private def receiveDispatchOne(entry: QueueEntry): Receive = running() {
-    reportsStatus(onReportRequested = createStatusReport) {
+    reportsStatusF(onReportRequested = createStatusReport) {
       case DispatchOne ⇒
         waitingFor = publishers
         if (waitingFor.nonEmpty) {
@@ -279,7 +279,7 @@ private[components] class EventPublisherHubActor(
 
   override val receive: Receive = receiveIdle
 
-  private def createStatusReport(options: StatusReportOptions): AlmValidation[StatusReport] = {
+  private def createStatusReport(options: StatusReportOptions): AlmFuture[StatusReport] = {
     val configRep: StatusReport =
       StatusReport() addMany (
         "max-dispatch-time" -> maxDispatchTime,
@@ -291,7 +291,7 @@ private[components] class EventPublisherHubActor(
       "queue-size" -> queue.size,
       "config" -> configRep)
 
-    scalaz.Success(baseReport)
+    appendToReportFromCollector(baseReport)(options)
   }
 
   override def preStart() {
