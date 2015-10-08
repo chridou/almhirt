@@ -49,10 +49,10 @@ object ElasticSearchEventPublisher {
       circuitControlSettings ← section.v[CircuitControlSettings]("circuit-control")
       elSettingsSection ← section.v[Config]("elastic-search")
       elSettings ← for {
-        host ← section.v[String]("host")
-        index ← section.v[String]("index")
-        fixedTypeName ← section.magicOption[String]("fixed-type-name")
-        ttl ← section.magicOption[FiniteDuration]("ttl")
+        host ← elSettingsSection.v[String]("host")
+        index ← elSettingsSection.v[String]("index")
+        fixedTypeName ← elSettingsSection.magicOption[String]("fixed-type-name")
+        ttl ← elSettingsSection.magicOption[FiniteDuration]("ttl")
       } yield ElasticSearchSettings(
         host = host,
         index = index,
