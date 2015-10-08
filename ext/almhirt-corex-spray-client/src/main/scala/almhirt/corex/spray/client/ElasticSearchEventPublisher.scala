@@ -65,7 +65,7 @@ object ElasticSearchEventPublisher {
     props(configPath)(serializer).map(props ⇒ ComponentFactory(props, actorname))
 
   val actorname = "elastic-search-event-publisher"
-  
+
   val defaultConfigPath = "almhirt.components.misc.event-publisher-hub.event-publishers.elastic-search-event-publisher"
 
 }
@@ -153,13 +153,13 @@ private[client] class ElasticSearchEventPublisherActor(
         "host" -> elSettings.host,
         "index" -> elSettings.index,
         "fixed-type-name" -> elSettings.fixedTypeName,
-        "ttl" -> elSettings.ttl,
-        "max-parallel" -> maxParallel)
+        "ttl" -> elSettings.ttl)
     val baseReport = StatusReport("ElasticSearchEventPublisher-Report").withComponentState(componentState) addMany (
       "number-of-events-dispatched" -> numEventsDispatched.get,
       "number-of-events-not-dispatched" -> numEventsNotDispatched.get,
       "number-of-events-in-flight" -> eventsInFlight.get,
-      "elastic-search-settings" -> elSettingsRep)
+      "elastic-search-settings" -> elSettingsRep,
+      "max-parallel" -> maxParallel)
 
     scalaz.Success(baseReport)
   }
