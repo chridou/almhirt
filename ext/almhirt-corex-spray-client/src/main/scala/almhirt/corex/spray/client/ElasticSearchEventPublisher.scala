@@ -104,10 +104,12 @@ private[client] class ElasticSearchEventPublisherActor(
   val numEventsNotDispatched = new java.util.concurrent.atomic.AtomicLong(0L)
   val numEventsDispatched = new java.util.concurrent.atomic.AtomicLong(0L)
   val eventsInFlight = new java.util.concurrent.atomic.AtomicInteger(0)
+  var eventsReceived = 0L
 
   def receiveRunning: Receive = running() {
     reportsStatus(onReportRequested = createStatusReport) {
       case EventPublisher.PublishEvent(event) ⇒
+        eventsReceived = eventsReceived + 1L
         if (eventsInFlight.get < maxParallel) {
           publishEvent(event, elSettings).mapOrRecoverThenPipeTo(
             map = _ ⇒ EventPublisher.EventPublished(event),
@@ -116,6 +118,7 @@ private[client] class ElasticSearchEventPublisherActor(
           sender() ! EventPublisher.EventNotPublished(event, ServiceBusyProblem("Too many events in flight."))
         }
       case EventPublisher.FireEvent(event) ⇒
+        eventsReceived = eventsReceived + 1L
         if (eventsInFlight.get < maxParallel) {
           publishEvent(event, elSettings)
         }
@@ -129,6 +132,7 @@ private[client] class ElasticSearchEventPublisherActor(
     circuitBreaker.fused(publishOverWire(event, settings)).onComplete(
       fail ⇒ {
         numEventsNotDispatched.incrementAndGet()
+        eventsInFlight.decrementAndGet()
         reportMinorFailure(fail)
         logError(s"Could not dispatch event $event: ${fail.message}")
       },
@@ -155,6 +159,7 @@ private[client] class ElasticSearchEventPublisherActor(
         "fixed-type-name" -> elSettings.fixedTypeName,
         "ttl" -> elSettings.ttl)
     val baseReport = StatusReport("ElasticSearchEventPublisher-Report").withComponentState(componentState) addMany (
+      "number-of-events-received" -> eventsReceived,
       "number-of-events-dispatched" -> numEventsDispatched.get,
       "number-of-events-not-dispatched" -> numEventsNotDispatched.get,
       "number-of-events-in-flight" -> eventsInFlight.get,

@@ -69,12 +69,14 @@ private[components] class EventPublisherHubActor(
   private var publishers: Set[ActorRef] = Set.empty
   private val queue = scala.collection.mutable.Queue[QueueEntry]()
 
+  var numEventsReceived = 0L
   var numEventsNotDispatched = 0L
   var numEventsDispatched = 0L
 
   def receiveIdle(): Receive = running() {
     reportsStatusF(onReportRequested = createStatusReport) {
       case EventPublisher.FireEvent(event) ⇒
+        numEventsReceived = numEventsReceived + 1L
         if (queue.size == buffersize) {
           numEventsNotDispatched = numEventsNotDispatched + 1L
           logWarning(s"Buffer is full($buffersize). Skipping event.")
@@ -85,6 +87,7 @@ private[components] class EventPublisherHubActor(
         }
 
       case EventPublisher.PublishEvent(event) ⇒
+        numEventsReceived = numEventsReceived + 1L
         if (queue.size == buffersize) {
           numEventsNotDispatched = numEventsNotDispatched + 1L
           logWarning(s"Buffer is full($buffersize). Skipping event.")
@@ -131,6 +134,7 @@ private[components] class EventPublisherHubActor(
         }
 
       case EventPublisher.FireEvent(event) ⇒
+        numEventsReceived = numEventsReceived + 1L
         if (queue.size == buffersize) {
           numEventsNotDispatched = numEventsNotDispatched + 1L
           logWarning(s"Buffer is full($buffersize). Skipping event.")
@@ -140,6 +144,7 @@ private[components] class EventPublisherHubActor(
         }
 
       case EventPublisher.PublishEvent(event) ⇒
+        numEventsReceived = numEventsReceived + 1L
         if (queue.size == buffersize) {
           numEventsNotDispatched = numEventsNotDispatched + 1L
           logWarning(s"Buffer is full($buffersize). Skipping event.")
@@ -209,6 +214,7 @@ private[components] class EventPublisherHubActor(
         }
 
       case EventPublisher.EventNotPublished(event, cause) ⇒
+        logWarning(s"Event ${event.getClass.getName}(id=${event.eventId.value}) was not published by ${sender().path.name}:\n$cause")
         numEventsNotDispatched = numEventsNotDispatched + 1L
         if (event.eventId == entry.event.eventId) {
           waitingFor = waitingFor - sender()
@@ -234,6 +240,7 @@ private[components] class EventPublisherHubActor(
         }
 
       case EventPublisher.FireEvent(event) ⇒
+        numEventsReceived = numEventsReceived + 1L
         if (queue.size == buffersize) {
           numEventsNotDispatched = numEventsNotDispatched + 1L
           logWarning(s"Buffer is full($buffersize). Skipping event.")
@@ -243,6 +250,7 @@ private[components] class EventPublisherHubActor(
         }
 
       case EventPublisher.PublishEvent(event) ⇒
+        numEventsReceived = numEventsReceived + 1L
         if (queue.size == buffersize) {
           numEventsNotDispatched = numEventsNotDispatched + 1L
           logWarning(s"Buffer is full($buffersize). Skipping event.")
@@ -286,6 +294,7 @@ private[components] class EventPublisherHubActor(
         "buffer-size" -> buffersize)
     val baseReport = StatusReport("EventPublisherHub-Report").withComponentState(componentState) addMany (
       "number-of-publishers" -> publishers.size,
+      "number-of-events-received" -> numEventsReceived,
       "number-of-events-dispatched" -> numEventsDispatched,
       "number-of-events-not-dispatched" -> numEventsNotDispatched,
       "queue-size" -> queue.size,
