@@ -83,7 +83,7 @@ private[client] class ElasticSearchEventPublisherActor(
     serializer: HttpSerializer[Event])(implicit val almhirtContext: AlmhirtContext) extends AlmActor() with AlmActorSupport with AlmActorLogging with ControllableActor with StatusReportingActor with HttpExternalConnector with RequestsWithEntity with HttpExternalPublisher {
 
   private object DefaultComponentIdProvider extends ActorComponentIdProvider {
-    def componentId = ComponentId(AppName("zeus-server"), ComponentName(self.path.name))
+    def componentId = ComponentId(AppName("almhirt"), ComponentName(self.path.name))
   }
 
   implicit override val executionContext = almhirtContext.futuresContext

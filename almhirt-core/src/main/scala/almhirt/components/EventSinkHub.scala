@@ -110,7 +110,7 @@ private[almhirt] class EventSinksSupervisorImpl(factories: EventSinkHub.EventSin
   override def preStart() {
     super.preStart()
     registerComponentControl()
-    registerStatusReporter(description = Some("Things that just consume events from the event stream..."))
+    registerStatusReporter(description = Some("A Dispatcher for components that just consume events from an event stream..."))
     context.parent ! ActorMessages.ConsiderMeForReporting
     self ! Start
   }
