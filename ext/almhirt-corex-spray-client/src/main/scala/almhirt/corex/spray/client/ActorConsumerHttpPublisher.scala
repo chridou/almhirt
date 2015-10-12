@@ -162,7 +162,7 @@ abstract class ActorConsumerHttpPublisher[T](
     circuitBreaker.defaultActorListeners(self)
       .onWarning((n, max) ⇒ logWarning(s"$n failures in a row. $max will cause the circuit to open."))
 
-    registerStatusReporter(description = Some("Publishes events to a consumer somewhere via HTTP"))
+    registerStatusReporter(description = Some("Publishes events from a stream to a consumer somewhere via HTTP"))
     registerCircuitControl(circuitBreaker)
     context.parent ! ActorMessages.ConsiderMeForReporting
 
