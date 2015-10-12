@@ -58,7 +58,7 @@ private[components] class EventPublisherHubActor(
     maxDispatchTime: FiniteDuration,
     buffersize: Int)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging with ActorLogging with ControllableActor with StatusReportingActor {
   implicit val executor = almhirtContext.futuresContext
-  override val componentControl = LocalComponentControl(self, ActorMessages.ComponentControlActions.none, Some(logWarning))
+  override val componentControl = LocalComponentControl(self, ComponentControlActions.none, Some(logWarning))
   override val statusReportsCollector = Some(StatusReportsCollector(this.context))
 
   private case class QueueEntry(event: Event, receiver: Option[ActorRef])

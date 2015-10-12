@@ -100,7 +100,7 @@ private[almhirt] trait AggregateRootViewsSkeleton[E <: AggregateRootEvent] exten
 
   implicit private val executor = almhirtContext.futuresContext
 
-  override val componentControl = LocalComponentControl(self, ActorMessages.ComponentControlActions.none, Some(logWarning))
+  override val componentControl = LocalComponentControl(self, ComponentControlActions.none, Some(logWarning))
 
   override val supervisorStrategy =
     OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {

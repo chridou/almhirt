@@ -28,7 +28,7 @@ abstract class ActorConsumerHttpPublisher[T](
 
   implicit def implicitFlowMaterializer = akka.stream.ActorMaterializer()(this.context)
 
-  override val componentControl = LocalComponentControl(self, ActorMessages.ComponentControlActions.none, Some(logWarning))
+  override val componentControl = LocalComponentControl(self, ComponentControlActions.none, Some(logWarning))
 
   def createUri(entity: T): Uri
 

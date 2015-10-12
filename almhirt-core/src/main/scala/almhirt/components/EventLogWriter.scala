@@ -72,7 +72,7 @@ private[almhirt] class EventLogWriterImpl(
     storeEventRetrySettings: RetryPolicyExt)(implicit override val almhirtContext: AlmhirtContext) extends ActorSubscriber with AlmActor with AlmActorLogging with ActorLogging with ControllableActor with StatusReportingActor {
   import almhirt.eventlog.EventLog
 
-  override val componentControl = LocalComponentControl(self, ActorMessages.ComponentControlActions.none, Some(logWarning))
+  override val componentControl = LocalComponentControl(self, ComponentControlActions.none, Some(logWarning))
 
   implicit def implicitFlowMaterializer = akka.stream.ActorMaterializer()(this.context)
   implicit val executor = almhirtContext.futuresContext

@@ -106,7 +106,7 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
 
   import almhirt.eventlog.AggregateRootEventLog._
 
-  override val componentControl = LocalComponentControl(self, ActorMessages.ComponentControlActions.none, Some(logWarning))
+  override val componentControl = LocalComponentControl(self, ComponentControlActions.none, Some(logWarning))
 
   logInfo(s"""|collectionName: $collectionName
               |read-write-mode: $rwMode""".stripMargin)

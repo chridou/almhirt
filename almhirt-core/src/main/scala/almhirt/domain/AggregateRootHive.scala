@@ -129,7 +129,7 @@ private[almhirt] class AggregateRootHive(
 
   override val requestStrategy = ZeroRequestStrategy
 
-  override val componentControl = LocalComponentControl(self, ActorMessages.ComponentControlActions.none, Some(logWarning))
+  override val componentControl = LocalComponentControl(self, ComponentControlActions.none, Some(logWarning))
 
 }
 

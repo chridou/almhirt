@@ -64,7 +64,7 @@ private[almhirt] object componentactors {
 
     implicit val executor = almhirtContext.futuresContext
 
-    override val componentControl = LocalComponentControl(self, ActorMessages.ComponentControlActions.none, Some(logWarning))
+    override val componentControl = LocalComponentControl(self, ComponentControlActions.none, Some(logWarning))
 
     override val statusReportsCollector = Some(StatusReportsCollector(this.context))
 
@@ -293,7 +293,7 @@ private[almhirt] object componentactors {
         Stop
     }
 
-    override val componentControl = LocalComponentControl(self, ActorMessages.ComponentControlActions.none, Some(logWarning))
+    override val componentControl = LocalComponentControl(self, ComponentControlActions.none, Some(logWarning))
 
     override val statusReportsCollector = Some(StatusReportsCollector(this.context))
 

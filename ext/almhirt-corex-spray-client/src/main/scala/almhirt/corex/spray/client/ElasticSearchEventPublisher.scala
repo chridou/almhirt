@@ -99,7 +99,7 @@ private[client] class ElasticSearchEventPublisherActor(
   }
 
   implicit override val componentNameProvider: ActorComponentIdProvider = DefaultComponentIdProvider
-  override def componentControl = LocalComponentControl(self, ActorMessages.ComponentControlActions.none, Some(logWarning))
+  override def componentControl = LocalComponentControl(self, ComponentControlActions.none, Some(logWarning))
 
   val numEventsNotDispatched = new java.util.concurrent.atomic.AtomicLong(0L)
   val numEventsDispatched = new java.util.concurrent.atomic.AtomicLong(0L)

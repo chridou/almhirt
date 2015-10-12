@@ -205,25 +205,31 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
           } ~ pathPrefix(Segment / Segment) { (appName, componentName) ⇒
             pathPrefix("attempt-pause") {
               pathEnd {
-                get { ctx ⇒
-                  val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
-                  herder ! ComponentControlMessages.AttemptComponentControlAction(ComponentId(AppName(appName), ComponentName(componentName)), ActorMessages.Pause)
-                  ctx.complete(StatusCodes.Accepted, <div><br>s"attempting to pause $componentName"</br><br><a href="/herder">Dashboard</a></br></div>)
+                get {
+                  parameter('token.?) { token ⇒
+                    ctx ⇒
+                      val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
+                      herder ! ComponentControlMessages.AttemptComponentControlCommand(ComponentId(AppName(appName), ComponentName(componentName)), ActorMessages.Pause(token.map(PauseToken(_))))
+                      ctx.complete(StatusCodes.Accepted, <div><br>s"attempting to pause $componentName"</br><br><a href="/herder">Dashboard</a></br></div>)
+                  }
                 }
               }
             } ~ pathPrefix("attempt-resume") {
               pathEnd {
-                get { ctx ⇒
-                  val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
-                  herder ! ComponentControlMessages.AttemptComponentControlAction(ComponentId(AppName(appName), ComponentName(componentName)), ActorMessages.Resume)
-                  ctx.complete(StatusCodes.Accepted, <div><br>s"attempting to resume $componentName"</br><br><a href="/herder">Dashboard</a></br></div>)
+                get {
+                  parameter('token.?) { token ⇒
+                    ctx ⇒
+                      val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
+                      herder ! ComponentControlMessages.AttemptComponentControlCommand(ComponentId(AppName(appName), ComponentName(componentName)), ActorMessages.Resume(token.map(PauseToken(_))))
+                      ctx.complete(StatusCodes.Accepted, <div><br>s"attempting to resume $componentName"</br><br><a href="/herder">Dashboard</a></br></div>)
+                  }
                 }
               }
             } ~ pathPrefix("attempt-prepare-shutdown") {
               pathEnd {
                 get { ctx ⇒
                   val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
-                  herder ! ComponentControlMessages.AttemptComponentControlAction(ComponentId(AppName(appName), ComponentName(componentName)), ActorMessages.PrepareForShutdown)
+                  herder ! ComponentControlMessages.AttemptComponentControlCommand(ComponentId(AppName(appName), ComponentName(componentName)), ActorMessages.PrepareForShutdown)
                   ctx.complete(StatusCodes.Accepted, <div><br>s"attempting to shutdown $componentName"</br><br><a href="/herder">Dashboard</a></br></div>)
                 }
               }
@@ -231,7 +237,7 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
               pathEnd {
                 get { ctx ⇒
                   val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
-                  herder ! ComponentControlMessages.AttemptComponentControlAction(ComponentId(AppName(appName), ComponentName(componentName)), ActorMessages.Restart)
+                  herder ! ComponentControlMessages.AttemptComponentControlCommand(ComponentId(AppName(appName), ComponentName(componentName)), ActorMessages.Restart)
                   ctx.complete(StatusCodes.Accepted, <div><br>s"attempting to restart $componentName"</br><br><a href="/herder">Dashboard</a></br></div>)
                 }
               }
