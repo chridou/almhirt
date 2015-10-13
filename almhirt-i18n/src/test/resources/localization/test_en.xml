@@ -94,27 +94,89 @@
 	</section>
 	<section name="section_2">
 		<group name="group_1">
-			<key name="selection-of-many-1">
-				<range-selection-of-many
-					lower-index-parameter="lower-index" upper-index-parameter="upper-index"
-					all-items-parameter="all">
-					<if-all-items-is-zero>
+			<key name="selection-of-many-all">
+				<selection-of-many selection-size-parameter="selection-size"
+					lower-index-parameter="lower-index" all-items-count-parameter="all-items-count"
+					upper-index-parameter="upper-index">
+					<if-all-items-count-is-zero>
 						Nothing to select
-					</if-all-items-is-zero>
+					</if-all-items-count-is-zero>
+					<if-selection-size-is-zero>
+						Nothing
+					</if-selection-size-is-zero>
 					<range-selection-part>
-						<icu { selection-size , plural , =0{No item } =1{Item {
-							lower-index } =other{Items { lower-index } to { upper-index }>
+						<icu> { selection-size , plural , =1{ItemR {
+							lower-index }} =other{ItemsR { lower-index } to { upper-index }}}
+						</icu>
+					</range-selection-part>
+					<amount-selection-part>
+						<icu> { selection-size , plural , =1{One itemA }
+							=other{#
+							ItemsA }}
+						</icu>
+					</amount-selection-part>
+					<separator embed-in-spaces="true">from
+					</separator>
+					<all-items-part>
+						<icu> { all-items-count , plural , =1{one item selected } =other{#
+							items
+							selected }}
+						</icu>
+					</all-items-part>
+				</selection-of-many>
+			</key>
+			<key name="selection-of-many-range-only">
+				<selection-of-many selection-size-parameter="selection-size"
+					lower-index-parameter="lower-index" all-items-parameter="all"
+					upper-index-parameter="upper-index">
+					<if-all-items-count-is-zero>
+						Nothing to select
+					</if-all-items-count-is-zero>
+					<if-selection-size-is-zero>
+						Nothing
+					</if-selection-size-is-zero>
+					<range-selection-part>
+						<icu> { selection-size , plural , =1{ItemR {
+							lower-index }} =other{ItemsR { lower-index } to { upper-index }}}
 						</icu>
 					</range-selection-part>
 					<separator embed-in-spaces="true">from
 					</separator>
 					<all-items-part>
-						<icu { all-items , plural , =1{one item selected } =other{#
-							items selected }>
+						<icu> { all-items , plural , =1{one item selected } =other{#
+							items
+							selected }}
 						</icu>
 					</all-items-part>
-				</range-selection-of-many>
+				</selection-of-many>
 			</key>
+			<key name="selection-of-many-amount-only">
+				<selection-of-many selection-size-parameter="selection-size"
+					lower-index-parameter="lower-index" all-items-parameter="all"
+					upper-index-parameter="upper-index">
+					<if-all-items-count-is-zero>
+						Nothing to select
+					</if-all-items-count-is-zero>
+					<if-selection-size-is-zero>
+						Nothing
+					</if-selection-size-is-zero>
+					<amount-selection-part>
+						<icu> { selection-size , plural , =1{One itemA }
+							=other{#
+							ItemsA }}
+						</icu>
+					</amount-selection-part>
+					<separator embed-in-spaces="true">from
+					</separator>
+					<all-items-part>
+						<icu> { all-items , plural , =1{one item selected } =other{#
+							items
+							selected }}
+						</icu>
+					</all-items-part>
+				</selection-of-many>
+			</key>
+			
 		</group>
 	</section>
 </localized>

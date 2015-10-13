@@ -88,6 +88,7 @@ package object i18n {
 
       def lux = MeasuredLight(d, UnitsOfMeasurement.Lux)
       def lumen = MeasuredLightFlux(d, UnitsOfMeasurement.Lumen)
+      def lumenPerWatt = MeasuredLuminousEfficacy(d, UnitsOfMeasurement.LumenPerWatt)
     }
 
     implicit final class MeasuredLengthsOps(private val measured: MeasuredLength) extends AnyVal {

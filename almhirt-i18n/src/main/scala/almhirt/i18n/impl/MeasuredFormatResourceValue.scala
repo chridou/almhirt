@@ -315,7 +315,7 @@ private[almhirt] class LightFluxMeasuredFormatResourceValue(
   }
 }
 
-//Temp hack... because there are no translations for lumen....
+//Temp hack... because there are no translations for lumen per watt....
 private[almhirt] class LuminousEfficacyMeasuredFormatResourceValue(
   override val locale: ULocale,
   override val argname: String,

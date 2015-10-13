@@ -439,6 +439,8 @@ private[almhirt] object ResourceNodeXml {
           parseBooleanFormatterValue(locale, elemFormatterElem)
         } else if (typeDescriptor == "select-text") {
           parseSelectTextFormatterValue(locale, elemFormatterElem)
+        } else if (typeDescriptor == "selection-of-many") {
+          parseSelectionFromManyFormatterValue(locale, elemFormatterElem)
         } else {
           ArgumentProblem(s""""$typeDescriptor" is not a valid type for a resource value.""").failure
         }
@@ -542,6 +544,40 @@ private[almhirt] object ResourceNodeXml {
         } yield (selector, e.text.replaceAll("\\s{2,}", " ").trim())).toAgg
       }.toVector.sequence
     } yield impl.SelectTextFormatResourceValue(locale, paramName, defaultText, selectItems.toMap)
+  }
+
+  def parseSelectionFromManyFormatterValue(locale: ULocale, elem: Elem): AlmValidation[ResourceValue] = {
+    import almhirt.i18n.impl.SelectionOfManyResourceValue
+    def getParameterValueOpt(elem: Elem, name: String): AlmValidation[Option[String]] =
+      (elem \@? name).map(_.trim().notEmptyOrWhitespace()).validationOut
+
+    for {
+      selectionSizeParameter ← getParameterValueOpt(elem, "selection-size-parameter")
+      lowerIndexParameter ← getParameterValueOpt(elem, "lower-index-parameter")
+      allItemsCountParameter ← getParameterValueOpt(elem, "all-items-count-parameter")
+      upperIndexParameter ← getParameterValueOpt(elem, "upper-index-parameter")
+      ifAllItemsCountParamIsZeroElem ← (elem \! "if-all-items-count-is-zero")
+      ifAllItemsCountParamIsZero ← trimText(ifAllItemsCountParamIsZeroElem.text)
+      ifSelectionSizeIsZeroElem ← (elem \! "if-selection-size-is-zero")
+      ifSelectionSizeIsZero ← trimText(ifSelectionSizeIsZeroElem.text)
+      separatorElemOpt ← (elem \? "separator")
+      embedSeperatorInSpaces ← separatorElemOpt.map(elem ⇒
+        getParameterValueOpt(elem, "embed-in-spaces").flatMap(v ⇒
+          v.map(_.toBooleanAlm).validationOut)).validationOut.map(_.flatten.getOrElse(false)) 
+      preSeperatorTextOpt <- separatorElemOpt.map(elem => trimText(elem.text)).validationOut
+      seperatorOpt <- (if(embedSeperatorInSpaces) preSeperatorTextOpt.map(txt => s" $txt ") else preSeperatorTextOpt).success
+    } yield new SelectionOfManyResourceValue(
+      locale = locale,
+      selectionSizeParameter = selectionSizeParameter,
+      lowerIndexParameter = lowerIndexParameter,
+      allItemsCountParameter = allItemsCountParameter,
+      upperIndexParameter = upperIndexParameter,
+      ifAllItemsCountParamIsZero = ifAllItemsCountParamIsZero,
+      ifSelectionSizeIsZero = ifSelectionSizeIsZero,
+      separator = seperatorOpt,
+      rangeSelectionFormatter = None,
+      amountSelectionFormatter = None,
+      allItemsPartFormatter = None)
   }
 
   def checkName(name: String): AlmValidation[String] =
