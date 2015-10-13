@@ -58,7 +58,11 @@ object UnitOfMeasureDimension {
     override val siUnit = UnitsOfMeasurement.Lumen
     override def siMeasured(v: Double): MeasuredLightFlux = MeasuredLightFlux(v, siUnit)
   }
-  object MassDimension extends UnitOfMeasureDimension {
+   object LuminousEfficacyDimension extends UnitOfMeasureDimension {
+    override val siUnit = UnitsOfMeasurement.LumenPerWatt
+    override def siMeasured(v: Double): MeasuredLuminousEfficacy = MeasuredLuminousEfficacy(v, siUnit)
+  }
+ object MassDimension extends UnitOfMeasureDimension {
     override val siUnit = UnitsOfMeasurement.Kilogram
     override def siMeasured(v: Double): MeasuredMass = MeasuredMass(v, siUnit)
   }

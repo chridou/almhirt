@@ -82,6 +82,10 @@ final case class MeasuredLightFlux(value: Double, uom: LightFluxMeasureUnit) ext
   def to(newUom: LightFluxMeasureUnit): MeasuredLightFlux = MeasuredLightFlux(calcValue(newUom), newUom)
 }
 
+final case class MeasuredLuminousEfficacy(value: Double, uom: LuminousEfficacyMeasureUnit) extends Measured {
+  def to(newUom: LuminousEfficacyMeasureUnit): MeasuredLuminousEfficacy = MeasuredLuminousEfficacy(calcValue(newUom), newUom)
+}
+
 final case class MeasuredMass(value: Double, uom: MassMeasureUnit) extends Measured {
   def to(newUom: MassMeasureUnit): MeasuredMass = MeasuredMass(calcValue(newUom), newUom)
 }

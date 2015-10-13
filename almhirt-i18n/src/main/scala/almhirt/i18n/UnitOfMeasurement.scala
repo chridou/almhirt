@@ -119,6 +119,13 @@ sealed trait LightFluxMeasureUnit extends UnitOfMeasurement {
 object LightFluxMeasureUnit extends UomCompanion[LightFluxMeasureUnit] {
   override val dimension = UnitOfMeasureDimension.LightFluxDimension
 }
+sealed trait LuminousEfficacyMeasureUnit extends UnitOfMeasurement {
+  override val dimension = UnitOfMeasureDimension.LuminousEfficacyDimension
+  override def measured(v: Double): MeasuredLuminousEfficacy = MeasuredLuminousEfficacy(v, this)
+}
+object LuminousEfficacyMeasureUnit extends UomCompanion[LuminousEfficacyMeasureUnit] {
+  override val dimension = UnitOfMeasureDimension.LuminousEfficacyDimension
+}
 sealed trait MassMeasureUnit extends UnitOfMeasurement {
   override val dimension = UnitOfMeasureDimension.MassDimension
   override def measured(v: Double): MeasuredMass = MeasuredMass(v, this)
@@ -601,6 +608,13 @@ object UnitsOfMeasurement {
     private[almhirt] override def fromBase(value: Double): Double = value
     val icu = IllegalOperationProblem("""Lumen is not supported by ICU.""").failure
     val name = "lumen"
+  }
+  
+  case object LumenPerWatt extends LuminousEfficacyMeasureUnit {
+    private[almhirt] override def toBase(value: Double): Double = value
+    private[almhirt] override def fromBase(value: Double): Double = value
+    val icu = IllegalOperationProblem("""LumenPerWatt is not supported by ICU.""").failure
+    val name = "lumen-per-watt"
   }
 
   case object Carat extends MassMeasureUnit {
