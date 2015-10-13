@@ -92,4 +92,29 @@
 			</key>
 		</group>
 	</section>
+	<section name="section_2">
+		<group name="group_1">
+			<key name="selection-of-many-1">
+				<range-selection-of-many
+					lower-index-parameter="lower-index" upper-index-parameter="upper-index"
+					all-items-parameter="all">
+					<if-all-items-is-zero>
+						Nothing to select
+					</if-all-items-is-zero>
+					<range-selection-part>
+						<icu { selection-size , plural , =0{No item } =1{Item {
+							lower-index } =other{Items { lower-index } to { upper-index }>
+						</icu>
+					</range-selection-part>
+					<separator embed-in-spaces="true">from
+					</separator>
+					<all-items-part>
+						<icu { all-items , plural , =1{one item selected } =other{#
+							items selected }>
+						</icu>
+					</all-items-part>
+				</range-selection-of-many>
+			</key>
+		</group>
+	</section>
 </localized>
