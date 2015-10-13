@@ -81,11 +81,12 @@ trait ControllableActor { me: AlmActor with AlmActorLogging ⇒
     def terminateReadyForShutdown: Receive = rec orElse readyForShutdownTerminator
   }
 
-  private var _currentComponentState: ComponentState = ComponentState.Startup
+  @volatile private var _currentComponentState: ComponentState = ComponentState.Startup
 
-  private var _pauseTokens: Set[PauseToken] = Set.empty
+  @volatile private var _pauseTokens: Set[PauseToken] = Set.empty
 
   def componentState: ComponentState = _currentComponentState
+  def pauseTokens: Set[PauseToken] = _pauseTokens
   def onComponentStateChanged(oldState: ComponentState, newState: ComponentState): Unit = {}
   final def componentStateTransitionTo(newState: ComponentState) {
 

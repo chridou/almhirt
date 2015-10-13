@@ -11,6 +11,7 @@ import almhirt.almfuture.all._
 import almhirt.herder.HerderMessages.StatusReportMessages
 import almhirt.herder.HerderMessages
 import almhirt.akkax.reporting._
+import almhirt.akkax.reporting.Implicits._
 import ezreps.{ EzReport, EzOptions }
 import ezreps.ast._
 
@@ -82,7 +83,26 @@ trait StatusReportingActor { me: AlmActor ⇒
     val rep2 = if (me.autoAddDateOfBirthUtc) rep1.bornUtc(me.bornUtc) else rep1
     val rep3 = if (report.fields.exists { x ⇒ x.label == "report-created-on" || x.label == "report-created-on-utc" }) rep2 else rep2.createdNow(this.almhirtContext)
     val rep4 = if (report.fields.exists { x ⇒ x.label == "age" }) rep3 else rep3.age(java.time.Duration.between(this.almhirtContext.getUtcTimestamp, me.bornUtc))
-    val res = if (report.fields.exists { x ⇒ x.label == "actor-path" }) rep4 else rep4.actorPath(self.path)
+    val rep5 =
+      this match {
+        case ca: ControllableActor ⇒
+          if (report.fields.exists { x ⇒ x.label == "component-state" }) rep4
+          else rep4.withComponentState(ca.componentState)
+        case _ ⇒
+          rep4
+      }
+    val rep6 =
+      this match {
+        case ca: ControllableActor ⇒
+          val pauseTokens = ca.pauseTokens
+          if(pauseTokens.nonEmpty)
+            rep5 ~ ("pause-tokens" -> pauseTokens.mkString(", "))
+          else rep5
+        case _ ⇒
+          rep5
+      }
+
+    val res = if (report.fields.exists { x ⇒ x.label == "actor-path" }) rep6 else rep6.actorPath(self.path)
     res
   }
 
@@ -172,18 +192,17 @@ trait StatusReportingActor { me: AlmActor ⇒
       case None ⇒
         AlmFuture.successful(None)
     }
-  
+
   def appendToReportFromCollector(report: StatusReport, maxQueryDurOverride: Option[FiniteDuration] = None)(options: StatusReportOptions): AlmFuture[StatusReport] =
     statusReportsCollector match {
-    case Some(collector) => collector.appendToReport(report, maxQueryDurOverride)(options)
-    case None => AlmFuture.successful(report ~ ezreps.ast.EzField("collector-warning", ezreps.ast.EzString("There was no collector to collect status reports")))
-  }
+      case Some(collector) ⇒ collector.appendToReport(report, maxQueryDurOverride)(options)
+      case None            ⇒ AlmFuture.successful(report ~ ezreps.ast.EzField("collector-warning", ezreps.ast.EzString("There was no collector to collect status reports")))
+    }
 
   def addAsSubReportFromCollector(report: StatusReport, subreportLabel: String = "subreports", maxQueryDurOverride: Option[FiniteDuration] = None)(options: StatusReportOptions): AlmFuture[StatusReport] =
     statusReportsCollector match {
-    case Some(collector) => collector.addAsSubReport(report, subreportLabel, maxQueryDurOverride)(options)
-    case None => AlmFuture.successful(report ~ ezreps.ast.EzField("collector-warning", ezreps.ast.EzString("There was no collector to collect status reports")))
-  }
-  
+      case Some(collector) ⇒ collector.addAsSubReport(report, subreportLabel, maxQueryDurOverride)(options)
+      case None            ⇒ AlmFuture.successful(report ~ ezreps.ast.EzField("collector-warning", ezreps.ast.EzString("There was no collector to collect status reports")))
+    }
 
 }
