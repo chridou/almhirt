@@ -19,15 +19,15 @@ private[almhirt] final class SelectionOfManyResourceValue(
     allItemsCountParameter: Option[String],
     upperIndexParameter: Option[String],
     ifAllItemsCountParamIsZero: String,
-    ifSelectionSizeIsZero: String,
+    ifSelectionSizeIsZero: Option[String],
     separator: Option[String],
     rangeSelectionFormatter: Option[AlmFormatter],
     amountSelectionFormatter: Option[AlmFormatter],
     allItemsPartFormatter: Option[AlmFormatter]) extends BasicValueResourceValue with AlmFormatter {
-  val selectionSizeParamName = selectionSizeParameter getOrElse "selection-size"
-  val lowerIndexParamName = lowerIndexParameter getOrElse "lower-index"
-  val allItemsCountParamName = allItemsCountParameter getOrElse "all-items-count"
-  val upperIndexParamName = upperIndexParameter getOrElse "upper-index"
+  val selectionSizeParamName = selectionSizeParameter getOrElse "selection_size"
+  val lowerIndexParamName = lowerIndexParameter getOrElse "lower_index"
+  val allItemsCountParamName = allItemsCountParameter getOrElse "all_items_count"
+  val upperIndexParamName = upperIndexParameter getOrElse "upper_index"
 
   def formatArgsIntoAt(appendTo: StringBuffer, pos: FieldPosition, args: Map[String, Any]): AlmValidation[StringBuffer] = {
     for {
@@ -54,17 +54,20 @@ private[almhirt] final class SelectionOfManyResourceValue(
           case (None, None, None)          ⇒ (0, None)
         }
 
-      val preResV: AlmValidation[StringBuffer] = (effLowerIndex, effSelectionSize, rangeSelectionFormatter, amountSelectionFormatter) match {
-        case (_, 0, _, _) ⇒
-          appendTo.append(ifSelectionSizeIsZero).success
-        case (Some(li), _, Some(rsf), _) ⇒
-          val upperIndex = li + effSelectionSize - 1
-          rsf.formatInto(appendTo, selectionSizeParamName -> effSelectionSize, lowerIndexParamName -> li, upperIndexParamName -> upperIndex)
-        case (_, _, _, Some(asf)) ⇒
-          asf.formatInto(appendTo, selectionSizeParamName -> effSelectionSize)
-        case _ ⇒
-          UnspecifiedProblem("I need at least an 'amount-selection-part' to display any other selection than zero elements.").failure
-      }
+      val preResV: AlmValidation[StringBuffer] =
+        if (effSelectionSize == 0 && ifSelectionSizeIsZero.isDefined) {
+          appendTo.append(ifSelectionSizeIsZero.get).success
+        } else {
+          (effLowerIndex, rangeSelectionFormatter, amountSelectionFormatter) match {
+            case (Some(li), Some(rsf), _) ⇒
+              val upperIndex = li + effSelectionSize - 1
+              rsf.formatInto(appendTo, selectionSizeParamName -> effSelectionSize, lowerIndexParamName -> li, upperIndexParamName -> upperIndex)
+            case (_, _, Some(asf)) ⇒
+              asf.formatInto(appendTo, selectionSizeParamName -> effSelectionSize)
+            case _ ⇒
+              UnspecifiedProblem("I need at least a formatter for an amount selection to render a selection.").failure
+          }
+        }
 
       preResV.flatMap(appendTo ⇒
         allItemsPartFormatter match {

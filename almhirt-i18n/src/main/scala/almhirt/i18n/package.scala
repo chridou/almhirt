@@ -1,6 +1,7 @@
 package almhirt
 
 import scala.language.implicitConversions
+import almhirt.common._
 import com.ibm.icu.util._
 import almhirt.i18n.MeasuredLength
 
@@ -50,6 +51,18 @@ package object i18n {
       self.getCountry match {
         case "" ⇒ None
         case x  ⇒ Some(x)
+      }
+  }
+
+  implicit class ResourceValueOps(val self: ResourceValue) extends AnyVal {
+    def toFormatter: AlmValidation[AlmFormatter] =
+      self match {
+        case fmt: IcuResourceValue ⇒
+          scalaz.Success(new IcuFormatter(fmt.formatInstance))
+        case raw: RawStringResourceValue ⇒
+          scalaz.Success(raw)
+        case f: BasicValueResourceValue ⇒
+          scalaz.Success(f.formatable)
       }
   }
 
