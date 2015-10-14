@@ -118,7 +118,7 @@ class CircularBufferTests extends FunSuite with Matchers {
     (1 to 6).foreach(b.push(_))
     b.lastOption should equal(Some(6))
   }
-  
+
   test("must return the correct values when twice the capacity items are added") {
     val b = new CircularBuffer[Int](5)
     (1 to 10).foreach(b.push(_))
@@ -141,5 +141,20 @@ class CircularBufferTests extends FunSuite with Matchers {
     val b = new CircularBuffer[Int](5)
     (1 to 10).foreach(b.push(_))
     b.lastOption should equal(Some(10))
+  }
+
+  test("must have value = 42 on index = 3 after setItemAt(3,42)") {
+    val b = new CircularBuffer[Int](5)
+    (1 to 5).foreach(b.push(_))
+    b.setItemAt(3, 42)
+    b.itemAt(3) should equal(42)
+  }
+
+  test("setItemAt() must throw IndexOutOfBoundsException when index >= size") {
+    val b = new CircularBuffer[Int](5)
+    (1 to 5).foreach(b.push(_))
+    an[IndexOutOfBoundsException] should be thrownBy {
+      b.setItemAt(6, 42)
+    }
   }
 }
