@@ -96,7 +96,7 @@
 		<group name="group_1">
 			<key name="selection-of-many-all">
 				<!-- Show a selection from a number of items. In the regular case a selection consists of two(three) concatenated parts: The items that have been selected and 
-					the total amount of items which the selection is a part of and maybe a separator([selection-part]+[separator]?+[all-items-part]). There are two kinds of [selection-part]: 
+					the total amount of items which the selection is a part of and maybe a separator([selection-part]+([separator]+)?[all-items-part]). There are two kinds of [selection-part]: 
 					One renders an index based ranged of a selection([range-selection-part]) and the other just renders the amount of selected items([amount-selection-part]). Both of 
 					them are optional and defined inside an [selection-parts] element. The [range-selection-part] must be provided with an index-parameter. The [amount-selection-part] 
 					will always work. The parameter names are defined with attributes. They are optional and default to the values shown below. 'all-items-count-parameter' defines the 
