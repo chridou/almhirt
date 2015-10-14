@@ -21,9 +21,9 @@ private[almhirt] final class SelectionOfManyResourceValue(
     ifAllItemsCountParamIsZero: String,
     ifSelectionSizeIsZero: Option[String],
     separator: Option[String],
-    rangeSelectionFormatter: Option[AlmFormatter],
-    amountSelectionFormatter: Option[AlmFormatter],
-    allItemsPartFormatter: Option[AlmFormatter]) extends BasicValueResourceValue with AlmFormatter {
+    rangeSelectionFormatter: Option[() => AlmFormatter],
+    amountSelectionFormatter: Option[() => AlmFormatter],
+    allItemsPartFormatter: Option[() => AlmFormatter]) extends BasicValueResourceValue with AlmFormatter {
   val selectionSizeParamName = selectionSizeParameter getOrElse "selection_size"
   val lowerIndexParamName = lowerIndexParameter getOrElse "lower_index"
   val allItemsCountParamName = allItemsCountParameter getOrElse "all_items_count"
@@ -61,9 +61,9 @@ private[almhirt] final class SelectionOfManyResourceValue(
           (effLowerIndex, rangeSelectionFormatter, amountSelectionFormatter) match {
             case (Some(li), Some(rsf), _) ⇒
               val upperIndex = li + effSelectionSize - 1
-              rsf.formatInto(appendTo, selectionSizeParamName -> effSelectionSize, lowerIndexParamName -> li, upperIndexParamName -> upperIndex)
+              rsf().formatInto(appendTo, selectionSizeParamName -> effSelectionSize, lowerIndexParamName -> li, upperIndexParamName -> upperIndex)
             case (_, _, Some(asf)) ⇒
-              asf.formatInto(appendTo, selectionSizeParamName -> effSelectionSize)
+              asf().formatInto(appendTo, selectionSizeParamName -> effSelectionSize)
             case _ ⇒
               UnspecifiedProblem("I need at least a formatter for an amount selection to render a selection.").failure
           }
@@ -73,7 +73,7 @@ private[almhirt] final class SelectionOfManyResourceValue(
         allItemsPartFormatter match {
           case Some(fmt) ⇒
             separator.foreach { appendTo.append }
-            fmt.formatInto(appendTo, allItemsCountParamName -> allItemsCount)
+            fmt().formatInto(appendTo, allItemsCountParamName -> allItemsCount)
           case None ⇒ appendTo.success
         })
     }

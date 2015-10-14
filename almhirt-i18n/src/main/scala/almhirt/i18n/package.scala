@@ -64,6 +64,19 @@ package object i18n {
         case f: BasicValueResourceValue ⇒
           scalaz.Success(f.formatable)
       }
+    /**
+     * Use to create new formatters. Helpful when the formatter needs to be cloned...
+     */
+    def toFormatterFun: AlmValidation[() ⇒ AlmFormatter] =
+      self match {
+        case fmt: IcuResourceValue ⇒
+          scalaz.Success(() ⇒ new IcuFormatter(fmt.formatInstance))
+        case raw: RawStringResourceValue ⇒
+          scalaz.Success(() ⇒ raw)
+        case f: BasicValueResourceValue ⇒
+          scalaz.Success(() ⇒ f.formatable)
+      }
+
   }
 
   object MeasuredImplicits {

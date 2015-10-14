@@ -558,20 +558,28 @@ private[almhirt] object ResourceNodeXml {
       upperIndexParameter ← getParameterValueOpt(elem, "upper-index-parameter")
       ifAllItemsCountParamIsZeroElem ← (elem \! "if-all-items-count-is-zero")
       ifAllItemsCountParamIsZero ← trimText(ifAllItemsCountParamIsZeroElem.text)
-      ifSelectionSizeIsZeroElemOpt ← (elem \? "if-selection-size-is-zero")
-      ifSelectionSizeIsZero ← ifSelectionSizeIsZeroElemOpt.map(elem ⇒ trimText(elem.text)).validationOut
       separatorElemOpt ← (elem \? "separator")
       embedSeperatorInSpaces ← separatorElemOpt.map(elem ⇒
         getParameterValueOpt(elem, "embed-in-spaces").flatMap(v ⇒
           v.map(_.toBooleanAlm).validationOut)).validationOut.map(_.flatten.getOrElse(false))
       preSeperatorTextOpt ← separatorElemOpt.map(elem ⇒ trimText(elem.text)).validationOut
       seperatorOpt ← (if (embedSeperatorInSpaces) preSeperatorTextOpt.map(txt ⇒ s" $txt ") else preSeperatorTextOpt).success
-      rangeSelectionFormatterContainerElemOpt ← (elem \? "range-selection-part")
-      rangeSelectionFormatterOpt ← rangeSelectionFormatterContainerElemOpt.map(elem ⇒ parseResourceValueContainer(locale, elem).flatMap(_.toFormatter)).validationOut
-      amountSelectionFormatterContainerElemOpt ← (elem \? "amount-selection-part")
-      amountSelectionFormatterOpt ← amountSelectionFormatterContainerElemOpt.map(elem ⇒ parseResourceValueContainer(locale, elem).flatMap(_.toFormatter)).validationOut
+      selectionPartsElemOpt ← (elem \? "selection-parts")
+      selectionParts ← selectionPartsElemOpt match {
+        case Some(elem) ⇒
+          for {
+            rangeSelectionFormatterContainerElemOpt ← (elem \? "range-selection-part")
+            rangeSelectionFormatterOpt ← rangeSelectionFormatterContainerElemOpt.map(elem ⇒ parseResourceValueContainer(locale, elem).flatMap(_.toFormatterFun)).validationOut
+            amountSelectionFormatterContainerElemOpt ← (elem \? "amount-selection-part")
+            amountSelectionFormatterOpt ← amountSelectionFormatterContainerElemOpt.map(elem ⇒ parseResourceValueContainer(locale, elem).flatMap(_.toFormatterFun)).validationOut
+            ifSelectionSizeIsZeroElemOpt ← (elem \? "if-selection-size-is-zero")
+            ifSelectionSizeIsZero ← ifSelectionSizeIsZeroElemOpt.map(elem ⇒ trimText(elem.text)).validationOut
+          } yield (rangeSelectionFormatterOpt, amountSelectionFormatterOpt, ifSelectionSizeIsZero)
+        case None ⇒
+          (None, None, None).success
+      }
       allItemsFormatterContainerElemOpt ← (elem \? "all-items-part")
-      allItemsFormatterOpt ← allItemsFormatterContainerElemOpt.map(elem ⇒ parseResourceValueContainer(locale, elem).flatMap(_.toFormatter)).validationOut
+      allItemsFormatterOpt ← allItemsFormatterContainerElemOpt.map(elem ⇒ parseResourceValueContainer(locale, elem).flatMap(_.toFormatterFun)).validationOut
     } yield new SelectionOfManyResourceValue(
       locale = locale,
       selectionSizeParameter = selectionSizeParameter,
@@ -579,10 +587,10 @@ private[almhirt] object ResourceNodeXml {
       allItemsCountParameter = allItemsCountParameter,
       upperIndexParameter = upperIndexParameter,
       ifAllItemsCountParamIsZero = ifAllItemsCountParamIsZero,
-      ifSelectionSizeIsZero = ifSelectionSizeIsZero,
+      ifSelectionSizeIsZero = selectionParts._3,
       separator = seperatorOpt,
-      rangeSelectionFormatter = rangeSelectionFormatterOpt,
-      amountSelectionFormatter = amountSelectionFormatterOpt,
+      rangeSelectionFormatter = selectionParts._1,
+      amountSelectionFormatter = selectionParts._2,
       allItemsPartFormatter = allItemsFormatterOpt)
   }
 
