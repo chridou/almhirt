@@ -20,7 +20,7 @@ private[almhirt] final class SelectionOfManyResourceValue(
     upperIndexParameter: Option[String],
     ifAllItemsCountParamIsZero: String,
     ifSelectionSizeIsZero: Option[String],
-    separator: Option[String],
+    joiner: Option[String],
     rangeSelectionFormatter: Option[() => AlmFormatter],
     amountSelectionFormatter: Option[() => AlmFormatter],
     allItemsPartFormatter: Option[() => AlmFormatter]) extends BasicValueResourceValue with AlmFormatter {
@@ -72,7 +72,7 @@ private[almhirt] final class SelectionOfManyResourceValue(
       preResV.flatMap(appendTo ⇒
         allItemsPartFormatter match {
           case Some(fmt) ⇒
-            separator.foreach { appendTo.append }
+            joiner.foreach { appendTo.append }
             fmt().formatInto(appendTo, allItemsCountParamName -> allItemsCount)
           case None ⇒ appendTo.success
         })

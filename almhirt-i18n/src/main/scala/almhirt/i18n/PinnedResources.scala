@@ -558,12 +558,12 @@ private[almhirt] object ResourceNodeXml {
       upperIndexParameter ← getParameterValueOpt(elem, "upper-index-parameter")
       ifAllItemsCountParamIsZeroElem ← (elem \! "if-all-items-count-is-zero")
       ifAllItemsCountParamIsZero ← trimText(ifAllItemsCountParamIsZeroElem.text)
-      separatorElemOpt ← (elem \? "separator")
-      embedSeperatorInSpaces ← separatorElemOpt.map(elem ⇒
+      joinerElemOpt ← (elem \? "joiner")
+      embedJoinerInSpaces ← joinerElemOpt.map(elem ⇒
         getParameterValueOpt(elem, "embed-in-spaces").flatMap(v ⇒
           v.map(_.toBooleanAlm).validationOut)).validationOut.map(_.flatten.getOrElse(false))
-      preSeperatorTextOpt ← separatorElemOpt.map(elem ⇒ trimText(elem.text)).validationOut
-      seperatorOpt ← (if (embedSeperatorInSpaces) preSeperatorTextOpt.map(txt ⇒ s" $txt ") else preSeperatorTextOpt).success
+      preJoinerTextOpt ← joinerElemOpt.map(elem ⇒ trimText(elem.text)).validationOut
+      joinerOpt ← (if (embedJoinerInSpaces) preJoinerTextOpt.map(txt ⇒ s" $txt ") else preJoinerTextOpt).success
       selectionPartsElemOpt ← (elem \? "selection-parts")
       selectionParts ← selectionPartsElemOpt match {
         case Some(elem) ⇒
@@ -588,7 +588,7 @@ private[almhirt] object ResourceNodeXml {
       upperIndexParameter = upperIndexParameter,
       ifAllItemsCountParamIsZero = ifAllItemsCountParamIsZero,
       ifSelectionSizeIsZero = selectionParts._3,
-      separator = seperatorOpt,
+      joiner = joinerOpt,
       rangeSelectionFormatter = selectionParts._1,
       amountSelectionFormatter = selectionParts._2,
       allItemsPartFormatter = allItemsFormatterOpt)
