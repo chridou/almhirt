@@ -10,7 +10,7 @@ object BuildSettings {
   val buildOrganization = "org.almhirt"
   val buildScalaVersion = "2.11.7"
 
-  val akkaVersion = "2.4.0-RC3"
+  val akkaVersion = "2.4.0"
   val akkaStreamsVersion = "1.0"
   val scalatestVersion = "2.2.5"
   val sprayVersion = "1.3.3"
@@ -174,6 +174,7 @@ trait AlmhirtxReactiveMongoBuild {
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
 	  libraryDependencies += scalaz,
 	  libraryDependencies += typesafe_config,
+	  libraryDependencies += ezReps,
 	  libraryDependencies += "org.reactivemongo" %% "reactivemongo" % BuildSettings.reactiveMongoVersion % "provided"
 		exclude("ch.qos.logback", "logback-core")
 		exclude("ch.qos.logback", "logback-classic"),
@@ -303,6 +304,20 @@ trait RiftWarpMongoExtBuild {
   )
 }
 
+trait RiftAlmhirtCoreExtBuild {
+  import Dependencies._
+  import Resolvers._
+  def riftwarpAlmhirtCoreExtProject(name: String, baseFile: java.io.File) = 
+  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
+	  resolvers += sonatypeSnapshots,
+    libraryDependencies += akka_actor,
+	  libraryDependencies += scala_reflect,
+	  libraryDependencies += scalaz,
+	  libraryDependencies += scalatest,
+    libraryDependencies += pegdown
+  )
+}
+
 trait RiftWarpAutomaticBuild {
   import Dependencies._
   import Resolvers._
@@ -329,6 +344,7 @@ object AlmHirtBuild extends Build
 	with RiftWarpBuild 
 	with RiftWarpHttpSprayBuild
 	with RiftWarpMongoExtBuild 
+	with RiftAlmhirtCoreExtBuild 
 	with RiftWarpAutomaticBuild {
   lazy val root = Project(
     id = "almhirt",
@@ -347,7 +363,8 @@ object AlmHirtBuild extends Build
 									corexSprayService, 
 									riftwarp, 
 									riftwarpHttpSpray, 
-									riftwarpMongoProject)	
+									riftwarpMongoProject,
+                  riftwarpAlmhirtCoreProject)	
   lazy val common = commonProject(	name = "almhirt-common",
                        			baseFile = file("almhirt-common"))
 
@@ -384,6 +401,9 @@ object AlmHirtBuild extends Build
 								
   lazy val riftwarpMongoProject = riftwarpMongoExtProject(	name = "riftwarpx-mongo",
                        			baseFile = file("./ext/riftwarpx-mongo")) dependsOn(common, riftwarp)
+
+  lazy val riftwarpAlmhirtCoreProject = riftwarpAlmhirtCoreExtProject(	name = "riftwarpx-almhirt-core",
+                       			baseFile = file("./ext/riftwarpx-almhirt-core")) dependsOn(common, core, riftwarp)
 
 	lazy val riftwarpHttpSpray = riftwarpHttpSprayProject(	name = "riftwarpx-http-spray",
                        			baseFile = file("./ext/riftwarpx-http-spray")) dependsOn(common, riftwarp, httpxSpray)

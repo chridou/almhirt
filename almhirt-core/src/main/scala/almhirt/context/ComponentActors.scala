@@ -21,6 +21,9 @@ object SupervisorPaths {
 private[almhirt] object componentactors {
   import almhirt.akkax.{ ActorMessages, ComponentFactory }
 
+  final case class EventPublisherHubCreated(actor: ActorRef)
+  case object EventPublisherHubRegistered
+
   def componentsProps(
     dedicatedAppsFuturesExecutor: Option[String])(implicit ctx: AlmhirtContext): Props =
     Props(new ComponentsSupervisor(dedicatedAppsFuturesExecutor))
@@ -61,7 +64,7 @@ private[almhirt] object componentactors {
 
     implicit val executor = almhirtContext.futuresContext
 
-    override val componentControl = LocalComponentControl(self, ActorMessages.ComponentControlActions.none, Some(logWarning))
+    override val componentControl = LocalComponentControl(self, ComponentControlActions.none, Some(logWarning))
 
     override val statusReportsCollector = Some(StatusReportsCollector(this.context))
 
@@ -116,10 +119,9 @@ private[almhirt] object componentactors {
             context.become(receiveStart(true))
           }
 
-        case ResourcesService.InitializeResourcesFailed(failure) ⇒
-          logError(s"Failed to initialize resources\n$failure.")
-          reportCriticalFailure(failure)
-          sys.error(s"Failed to initialize resources\n$failure.")
+        case ResourcesService.InitializeResourcesFailed(problem) ⇒
+          logError(s"Failed to initialize resources\n$problem.")
+          context.become(receiveError(problem.toProblem))
 
         case ActorMessages.CreateChildActor(componentFactory, returnActorRef, correlationId) ⇒
           context.childFrom(componentFactory).fold(
@@ -136,8 +138,7 @@ private[almhirt] object componentactors {
 
         case ActorMessages.CreateChildActorFailed(problem, _) ⇒
           logError(s"A child actor was not created:\n$problem")
-          reportCriticalFailure(problem)
-          sys.error(s"A child actor was not created:\n$problem")
+          context.become(receiveError(problem))
 
         case ActorMessages.ChildActorCreated(actor, _) ⇒
           if (canAdvance) {
@@ -165,17 +166,49 @@ private[almhirt] object componentactors {
                 factory ⇒ apps ! ActorMessages.CreateChildActor(factory, true, None))(almhirtContext.futuresContext)
             case None ⇒
               logInfo("No herder app.")
-              context.become(receiveBuildComponents())
-              self ! "make_components"
+              context.become(receiveBuildEventPublisher(CorrelationId()))
+              self ! "make_event_publisher_hub"
           }
 
         case ActorMessages.HerderServiceAppFailedToStart(problem) ⇒
-          sys.error(problem.toString())
+          context.become(receiveError(problem))
 
         case ActorMessages.HerderServiceAppStarted ⇒
-          logInfo("No herder app started.")
+          logInfo("Herder app started.")
+          context.become(receiveBuildEventPublisher(CorrelationId()))
+          self ! "make_event_publisher_hub"
+
+      }
+    }
+
+    def receiveBuildEventPublisher(cid: CorrelationId): Receive = running() {
+      reportsStatusF(onReportRequested = createStatusReport) {
+        case "make_event_publisher_hub" ⇒
+          logInfo("Create event publisher hub.")
+          almhirt.components.EventPublisherHub.componentFactory(Nil).fold(
+            fail ⇒ {
+              logError(s"Aborting! Could not create the component factory for the event publisher:\n$fail")
+              context.become(receiveError(fail))
+            },
+            factory ⇒ {
+              misc ! ActorMessages.CreateChildActor(factory, true, Some(cid))
+            })
+
+        case ActorMessages.CreateChildActorFailed(problem, _) ⇒
+          logError(s"A child actor was not created:\n$problem")
+          context.become(receiveError(problem))
+
+        case ActorMessages.ChildActorCreated(created, Some(cid)) ⇒
+          logInfo(s"Created Event-Publisher-Hub ${created.path.name}.")
+          context.parent ! EventPublisherHubCreated(created)
+
+        case EventPublisherHubRegistered ⇒
+          logInfo("Created Event-Publisher-Hub was registered.")
           context.become(receiveBuildComponents())
           self ! "make_components"
+
+        case ActorMessages.ChildActorCreated(created, _) ⇒
+          logInfo(s"Created ${created.path.name}.")
 
       }
     }
@@ -220,6 +253,12 @@ private[almhirt] object componentactors {
       }
     }
 
+    def receiveError(problem: Problem): Receive = error(problem) {
+      reportsStatusF(onReportRequested = createStatusReport) {
+        case _ ⇒ ()
+      }
+    }
+
     def createStatusReport(options: StatusReportOptions): AlmFuture[StatusReport] = {
       val baseReport = StatusReport(s"${this.getClass.getSimpleName}-Report").withComponentState(componentState)
 
@@ -254,7 +293,7 @@ private[almhirt] object componentactors {
         Stop
     }
 
-    override val componentControl = LocalComponentControl(self, ActorMessages.ComponentControlActions.none, Some(logWarning))
+    override val componentControl = LocalComponentControl(self, ComponentControlActions.none, Some(logWarning))
 
     override val statusReportsCollector = Some(StatusReportsCollector(this.context))
 

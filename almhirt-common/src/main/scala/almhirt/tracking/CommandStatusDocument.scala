@@ -8,51 +8,46 @@ import almhirt.common.AggregateRootCommand
 
 sealed trait CommandRepresentation {
   def toShortString: String
-  def toVeryShortString: String
-  def downgradeToIdAndType: CommandRepresentation
+  //  def toVeryShortString: String
+  def downgradeToIdAndType: CommandRepresentation.CommandIdAndType
+  def commandId: CommandId
+  def commandType: String
 }
 
 object CommandRepresentation {
   final case class FullCommand(cmd: Command) extends CommandRepresentation {
-    override def toShortString: String =
-      cmd match {
-        case c: AggregateRootCommand ⇒
-          s"""|${cmd.getClass().getName}(${c.commandId.value})
-        	|AggregateRootId: ${c.aggId.value}
-        	|AggregateRootVersion: ${c.aggVersion.value}""".stripMargin
-        case _ ⇒
-          s"""${cmd.getClass().getName}(${cmd.commandId.value})"""
-      }
+    //    override def toShortString: String =
+    //      cmd match {
+    //        case c: AggregateRootCommand ⇒
+    //          s"""|${cmd.getClass().getName}(${c.commandId.value})
+    //        	|AggregateRootId: ${c.aggId.value}
+    //        	|AggregateRootVersion: ${c.aggVersion.value}""".stripMargin
+    //        case _ ⇒
+    //          s"""${cmd.getClass().getName}(${cmd.commandId.value})"""
+    //      }
 
-    override def toVeryShortString: String =
+    override def commandId: CommandId = cmd.commandId
+    override def commandType: String = cmd.getClass.getName
+
+    override def toShortString: String =
       s"""${cmd.getClass().getSimpleName}(${cmd.commandId.value})"""
 
-    override def downgradeToIdAndType: CommandRepresentation = CommandIdAndType(cmd)
+    override def downgradeToIdAndType: CommandIdAndType = CommandIdAndType(cmd)
 
   }
 
-  final case class CommandIdAndType(commandId: CommandId, commandType: Class[_ <: Command]) extends CommandRepresentation {
+  final case class CommandIdAndType(commandId: CommandId, commandType: String) extends CommandRepresentation {
     override def toShortString: String =
-      s"""${commandType.getName}(${commandId.value})"""
+      s"""${commandType}(${commandId.value})"""
 
-    override def toVeryShortString: String =
-      s"""${commandType.getSimpleName}(${commandId.value})"""
+    //    override def toVeryShortString: String =
+    //      s"""${commandType.getSimpleName}(${commandId.value})"""
 
-    override def downgradeToIdAndType: CommandRepresentation = this
+    override def downgradeToIdAndType: CommandIdAndType = this
   }
 
   object CommandIdAndType {
-    def apply(cmd: Command): CommandIdAndType = CommandIdAndType(cmd.commandId, cmd.getClass())
-  }
-
-  final case class CommandIdOnly(commandId: CommandId) extends CommandRepresentation {
-    override def toShortString: String =
-      s"""Command with id ${commandId.value})"""
-
-    override def toVeryShortString: String =
-      s"""Command with id ${commandId.value})"""
-
-    override def downgradeToIdAndType: CommandRepresentation = this
+    def apply(cmd: Command): CommandIdAndType = CommandIdAndType(cmd.commandId, cmd.getClass().getName)
   }
 }
 

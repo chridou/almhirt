@@ -52,7 +52,7 @@ private[almhirt] class CommandEndpointImpl(
     autoConnect: Boolean)(implicit override val almhirtContext: AlmhirtContext) extends ActorPublisher[Command] with AlmActor with AlmActorLogging with ActorLogging with ControllableActor with StatusReportingActor {
   import CommandStatusTracker._
 
-  override val componentControl = LocalComponentControl(self, ActorMessages.ComponentControlActions.pauseResume, Some(logWarning))
+  override val componentControl = LocalComponentControl(self, ComponentControlActions.pauseResume, Some(logWarning))
 
   implicit def implicitFlowMaterializer = akka.stream.ActorMaterializer()(this.context)
 
@@ -68,6 +68,8 @@ private[almhirt] class CommandEndpointImpl(
   private var numResponsesAccepted = 0L
   private var numResponsesNotAccepted = 0L
   private var numCommandsSentToTracker = 0L
+  private var lastCommandReceived: Option[java.time.LocalDateTime] = None
+  private var lastCommandDispatched: Option[java.time.LocalDateTime] = None
 
   def receiveResolve: Receive = startup() {
     reportsStatus(onReportRequested = createStatusReport) {
@@ -86,6 +88,7 @@ private[almhirt] class CommandEndpointImpl(
 
       case cmd: Command ⇒
         numCommandsReceivedWhileInactive = numCommandsReceivedWhileInactive + 1L
+        lastCommandReceived = Some(almhirtContext.getUtcTimestamp)
         sender() ! CommandNotAccepted(cmd.commandId, ServiceNotAvailableProblem("Command endpoint not ready! Try again later."))
 
     }
@@ -100,6 +103,7 @@ private[almhirt] class CommandEndpointImpl(
 
       case cmd: Command ⇒
         numCommandsReceived = numCommandsReceived + 1L
+        lastCommandReceived = Some(almhirtContext.getUtcTimestamp)
         dispatchCommandResult(
           cmd,
           checkCommandDispatchable(cmd),
@@ -112,6 +116,7 @@ private[almhirt] class CommandEndpointImpl(
     reportsStatus(onReportRequested = createStatusReport) {
       case cmd: Command ⇒
         numCommandsReceivedWhileInactive = numCommandsReceivedWhileInactive + 1L
+        lastCommandReceived = Some(almhirtContext.getUtcTimestamp)
         sender() ! CommandNotAccepted(cmd.commandId, ServiceNotAvailableProblem("I'm taking a break. Try again later."))
     }
   }
@@ -174,17 +179,20 @@ private[almhirt] class CommandEndpointImpl(
           receiver ! CommandAccepted(dispatchableCmd.commandId)
         }
         numCommandsDispatched = numCommandsDispatched + 1L
+        lastCommandDispatched = Some(almhirtContext.getUtcTimestamp)
         onNext(dispatchableCmd)
       })
   }
 
   private def createStatusReport(option: StatusReportOptions): AlmValidation[StatusReport] = {
     val incoming = StatusReport() addMany (
+      "last-command-received" -> lastCommandReceived,
       "number-of-commands-received" -> numCommandsReceived,
       "number-of-commands-received-while-inactive" -> numCommandsReceivedWhileInactive,
       "number-of-commands-rejected" -> numCommandsRejected,
       "number-of-commands-rejected-due-to-missing-demand" -> numCommandsRejectedDueToMissingDemand)
     val outgoing = StatusReport() addMany (
+      "number-command-dispatched" -> lastCommandDispatched,
       "number-of-accepted-responses" -> numResponsesAccepted,
       "number-of-not-accepted-responses" -> numResponsesNotAccepted,
       "number-of-commands-sent-to-tracker" -> numCommandsSentToTracker,

@@ -129,7 +129,7 @@ private[almhirt] class AggregateRootHive(
 
   override val requestStrategy = ZeroRequestStrategy
 
-  override val componentControl = LocalComponentControl(self, ActorMessages.ComponentControlActions.none, Some(logWarning))
+  override val componentControl = LocalComponentControl(self, ComponentControlActions.none, Some(logWarning))
 
 }
 
@@ -148,24 +148,35 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
         Restart
       case exn: RebuildAggregateRootFailedException ⇒
         reportCriticalFailure(exn)
-        logError(s"Handling escalated error for ${sender.path.name} with a action Escalate.", exn)
-        Escalate
+        logError(s"Handling escalated error for ${sender.path.name} with a action Stop.", exn)
+        context.become(receiveErrorState(exn))
+        Stop
+      //Escalate
       case exn: CouldNotDispatchAllAggregateRootEventsException ⇒
         reportMajorFailure(exn)
-        informVeryImportant(s"Handling escalated error from ${sender.path.name} with a action Resume.")
-        Resume
+        informVeryImportant(s"Handling escalated error from ${sender.path.name} with a action Stop.")
+        context.become(receiveErrorState(exn))
+        Stop
       case exn: WrongAggregateRootEventTypeException ⇒
         reportCriticalFailure(exn)
-        logError(s"Handling escalated error for ${sender.path.name} with a action Escalate.", exn)
-        Escalate
+        logError(s"Handling escalated error for ${sender.path.name} with a action Stop.", exn)
+        context.become(receiveErrorState(exn))
+        Stop
+      //Escalate
       case exn: UserInitializationFailedException ⇒
+        reportMajorFailure(exn)
+        informVeryImportant(s"Handling escalated error from ${sender.path.name} with a action Stop.")
+        Stop
+      case exn: PreStoreActionFailedException ⇒
         reportMajorFailure(exn)
         informVeryImportant(s"Handling escalated error from ${sender.path.name} with a action Restart.")
         Restart
       case exn: Exception ⇒
         reportCriticalFailure(exn)
-        informVeryImportant(s"Handling escalated error from ${sender.path.name} with a action Escalate.")
-        Escalate
+        informVeryImportant(s"Handling escalated error from ${sender.path.name} with a action Stop.")
+        context.become(receiveErrorState(exn))
+        Stop
+      //Escalate
     }
 
   def aggregateEventLogToResolve: ToResolve
@@ -189,6 +200,9 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
   def numSucceeded = numSucceededInternal
   def numFailed = numFailedInternal
 
+  private var aggregateEventLog: ActorRef = null
+  private var snapshotting: Option[(ActorRef, SnapshottingPolicyProvider)] = None
+
   private case object ReportThrottlingState
 
   private case object Resolve
@@ -204,7 +218,10 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
         logInfo("Found dependencies.")
         signContract(eventsBroker)
 
-        context.become(receiveInitialize(dependencies("aggregateeventlog"), dependencies.get("snapshotting").map((_, snapshottingToResolve.get._2))))
+        aggregateEventLog = dependencies("aggregateeventlog")
+        snapshotting = dependencies.get("snapshotting").map((_, snapshottingToResolve.get._2))
+
+        context.become(receiveInitialize)
 
       case ActorMessages.ManyNotResolved(problem, _) ⇒
         logError(s"Failed to resolve dependencies:\n$problem")
@@ -213,10 +230,10 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
     }
   }
 
-  def receiveInitialize(aggregateEventLog: ActorRef, snapshotting: Option[(ActorRef, SnapshottingPolicyProvider)]): Receive = startup() {
+  def receiveInitialize: Receive = startup() {
     case ReadyForDeliveries ⇒
       requestCommands()
-      context.become(receiveRunning(aggregateEventLog, snapshotting, Set.empty))
+      context.become(receiveRunning)
   }
 
   private var totalSuppliesRequested = 0
@@ -225,6 +242,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
 
   private var numberOfCommandsThatCanBeRequested: Int = commandBuffersize
   private var bufferedEvents: Vector[CommandStatusChanged] = Vector.empty
+  private var overdueActions: Set[AggregateRootId] = Set.empty
 
   private var throttled = false
   private def requestCommands() {
@@ -276,11 +294,11 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
     }
   }
 
-  def receiveRunning(aggregateEventLog: ActorRef, snapshotting: Option[(ActorRef, SnapshottingPolicyProvider)], haveOverdueActions: Set[AggregateRootId]): Receive = running() {
+  def receiveRunning: Receive = running() {
     reportsStatus(onReportRequested = createStatusReport) {
       case ActorSubscriberMessage.OnNext(aggregateCommand: AggregateRootCommand) ⇒
         numReceivedInternal += 1
-        if (haveOverdueActions.isEmpty) {
+        if (overdueActions.isEmpty) {
           val drone = context.child(aggregateCommand.aggId.value) match {
             case Some(drone) ⇒
               drone
@@ -300,7 +318,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
           enqueueEvent(CommandExecutionInitiated(aggregateCommand))
         } else {
           numFailedInternal += 1
-          val msg = s"Rejecting command because there are ${haveOverdueActions.size} drones which are overdue completing their actions."
+          val msg = s"Rejecting command because there are ${overdueActions.size} drones which are overdue completing their actions."
           val prob = ServiceBusyProblem(msg).withArg("hive", hiveDescriptor.value)
           reportRejectedCommand(aggregateCommand, MinorSeverity, prob)
           receivedInvalidCommand()
@@ -339,15 +357,116 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
 
       case AggregateRootHiveInternals.DispatchEventsToStreamTakesTooLong(aggId, elapsed) ⇒
         logWarning(s"Drone ${aggId.value} is overdue on dispatching events after ${elapsed.defaultUnitString}.")
-        context.become(receiveRunning(aggregateEventLog, snapshotting, haveOverdueActions + aggId))
+        overdueActions = overdueActions + aggId
 
       case AggregateRootHiveInternals.LogEventsTakesTooLong(aggId, elapsed) ⇒
         logWarning(s"Drone ${aggId.value} is overdue on logging events after ${elapsed.defaultUnitString}.")
-        context.become(receiveRunning(aggregateEventLog, snapshotting, haveOverdueActions + aggId))
+        overdueActions = overdueActions + aggId
 
       case m: AggregateRootHiveInternals.SomethingOverdueGotDone ⇒
         logInfo(s"Drone ${m.aggId.value} got it's stuff done.")
-        context.become(receiveRunning(aggregateEventLog, snapshotting, haveOverdueActions - m.aggId))
+        overdueActions = overdueActions - m.aggId
+
+      case OnDeliverSuppliesNow(amount) ⇒
+        deliverEvents(amount)
+        requestCommands()
+
+      case ActorSubscriberMessage.OnComplete ⇒
+        logDebug(s"Aggregate command stream completed after receiving $numReceived commands. $numSucceeded succeeded, $numFailed failed.")
+
+      case OnBrokerProblem(problem) ⇒
+        reportCriticalFailure(problem.withArg("hive", hiveDescriptor.value))
+        throw new Exception(s"The broker reported a problem:\n$problem")
+
+      case OnContractExpired ⇒
+        logInfo(s"Contract with broker expired. There are ${bufferedEvents.size} events still to deliver.")
+
+      case ReportDroneDebug(msg) ⇒
+        logDebug(s"Drone ${sender().path.name} reported a debug message: $msg")
+
+      case ReportDroneError(msg, cause) ⇒
+        logError(s"Drone ${sender().path.name} reported an error: $msg")
+        reportMajorFailure(cause.mapProblem { _.withArg("hive", hiveDescriptor.value) })
+
+      case ReportDroneWarning(msg, causeOpt) ⇒
+        causeOpt match {
+          case None ⇒
+            logWarning(s"""Drone ${sender().path.name} reported a warning with message "$msg".""")
+          case Some(cause) ⇒
+            logWarning(s"""Drone ${sender().path.name} reported a warning with message "$msg" and and a problem with message "${cause.message}".""")
+        }
+
+      case AggregateRootHiveInternals.CargoJettisoned(id) ⇒
+        this.numJettisonedSinceLastReport += 1
+
+      case ReportThrottlingState ⇒
+        if (throttled) {
+          logInfo(s"""|I'm throttling for ${throttledSince.lap.defaultUnitString}
+                    |Number of buffered events: ${bufferedEvents.size}
+                    |Throttling threshold: $enqueuedEventsThrottlingThreshold 
+                    |Total requested events: $totalSuppliesRequested
+                    |Requested events since throttling state changed: $suppliesRequestedSinceThrottlingStateChanged""".stripMargin)
+          context.system.scheduler.scheduleOnce(1.minute, self, ReportThrottlingState)
+        }
+
+      case Terminated(actor) ⇒
+        overdueActions = overdueActions - AggregateRootId(actor.path.name)
+        logDebug(s"""${actor} terminated.""")
+    }
+  }
+
+  private def receiveErrorState(cause: almhirt.problem.ProblemCause): Receive = error(cause) {
+    reportsStatus(onReportRequested = createStatusReport) {
+      case ActorSubscriberMessage.OnNext(aggregateCommand: AggregateRootCommand) ⇒
+        numReceivedInternal += 1
+        numFailedInternal += 1
+        val msg = s"Rejecting command because I am in error state."
+        val prob = ServiceBrokenProblem(msg, cause = Some(cause)).withArg("hive", hiveDescriptor.value)
+        reportRejectedCommand(aggregateCommand, MajorSeverity, prob)
+        receivedInvalidCommand()
+        enqueueEvent(CommandExecutionFailed(aggregateCommand, prob))
+        requestCommands()
+
+      case ActorSubscriberMessage.OnNext(something) ⇒
+        reportMinorFailure(ArgumentProblem(s"Received something I cannot handle: $something").withArg("hive", hiveDescriptor.value))
+        logWarning(s"Received something I cannot handle: $something")
+        receivedInvalidCommand()
+        requestCommands()
+
+      case rsp: ExecuteCommandResponse ⇒
+        receivedCommandResponse()
+        if (rsp.isSuccess) {
+          numSucceededInternal += 1
+        } else {
+          numFailedInternal += 1
+        }
+        val event: CommandStatusChanged = rsp match {
+          case CommandExecuted(command) ⇒
+            CommandSuccessfullyExecuted(command)
+          case CommandNotExecuted(command, problem) ⇒
+            val newProb = problem.withArg("hive", hiveDescriptor.value)
+            reportRejectedCommand(command, MinorSeverity, newProb)
+            CommandExecutionFailed(command, newProb)
+          case Busy(command) ⇒
+            val msg = s"Command[${command.getClass.getSimpleName}] with id ${command.commandId.value} on aggregate root ${command.aggId.value} can not be executed since another command is being executed."
+            val prob = CollisionProblem(msg).withArg("hive", hiveDescriptor.value)
+            reportRejectedCommand(command, MinorSeverity, prob)
+            CommandExecutionFailed(command, prob)
+        }
+        enqueueEvent(event)
+        requestCommands()
+
+      case AggregateRootHiveInternals.DispatchEventsToStreamTakesTooLong(aggId, elapsed) ⇒
+        logWarning(s"Drone ${aggId.value} is overdue on dispatching events after ${elapsed.defaultUnitString}.")
+        overdueActions = overdueActions + aggId
+
+      case AggregateRootHiveInternals.LogEventsTakesTooLong(aggId, elapsed) ⇒
+        logWarning(s"Drone ${aggId.value} is overdue on logging events after ${elapsed.defaultUnitString}.")
+        overdueActions = overdueActions + aggId
+
+      case m: AggregateRootHiveInternals.SomethingOverdueGotDone ⇒
+        logInfo(s"Drone ${m.aggId.value} got it's stuff done.")
+        overdueActions = overdueActions - m.aggId
 
       case OnDeliverSuppliesNow(amount) ⇒
         deliverEvents(amount)
@@ -393,6 +512,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
         }
 
       case Terminated(actor) ⇒
+        overdueActions = overdueActions - AggregateRootId(actor.path.name)
         logDebug(s"""${actor} terminated.""")
     }
   }
@@ -403,13 +523,14 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
     val numJet = numJettisonedSinceLastReport
     this.numJettisonedSinceLastReport = 0
 
-    val rep = StatusReport(s"Hive-${this.hiveDescriptor.value}-Report") addMany (
+    val rep = StatusReport(s"Hive-${this.hiveDescriptor.value}-Report").withComponentState(componentState) addMany (
       "number-of-drones" -> this.context.children.size,
       "number-of-commands-received" -> numReceived,
       "number-of-commands-succeeded" -> numSucceeded,
       "number-of-commands-failed" -> numFailed,
       "number-of-buffered-command-status-changed-events" -> bufferedEvents.size,
       "command-buffer-size" -> commandBuffersize,
+      "number-of-overdue-actions" -> overdueActions.size,
       "amount-of-jettisoned-cargo-since-last-report" -> numJet,
       "throttled" -> throttled)
     scalaz.Success(rep)

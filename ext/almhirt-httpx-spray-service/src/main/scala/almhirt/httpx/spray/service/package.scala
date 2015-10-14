@@ -13,7 +13,7 @@ package object service {
     problem match {
       case NotFoundProblem(_) ⇒ StatusCodes.NotFound
       case ServiceNotFoundProblem(_) ⇒ StatusCodes.ServiceUnavailable
-      case ServiceBrokenProblem(_) ⇒ StatusCodes.InternalServerError
+      case ServiceBrokenProblem(_) ⇒ StatusCodes.ServiceUnavailable
       case ServiceShutDownProblem(_) ⇒ StatusCodes.ServiceUnavailable
       case ServiceNotAvailableProblem(_) ⇒ StatusCodes.ServiceUnavailable
       case ServiceNotReadyProblem(_) ⇒ StatusCodes.ServiceUnavailable

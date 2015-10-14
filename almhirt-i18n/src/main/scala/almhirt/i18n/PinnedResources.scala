@@ -64,14 +64,7 @@ trait PinnedResourceLookup extends Function1[ResourceKey, AlmValidation[Resource
   final def getFormatter(key: ResourceKey): AlmValidation[AlmFormatter] =
     for {
       res ← get(key)
-      fmt ← res match {
-        case fmt: IcuResourceValue ⇒
-          new IcuFormatter(fmt.formatInstance).success
-        case raw: RawStringResourceValue ⇒
-          raw.success
-        case f: BasicValueResourceValue ⇒
-          f.formatable.success
-      }
+      fmt ← res.toFormatter
     } yield fmt
 
   /**
@@ -426,11 +419,17 @@ private[almhirt] object ResourceNodeXml {
     (for {
       name ← elem \@! "name"
       checkedName ← checkName(name)
+      value ← parseResourceValueContainer(locale, elem).leftMap(p ⇒ UnspecifiedProblem(s"""Problem with key "$checkedName" for locale ${locale.toLanguageTag}.""", cause = Some(p)))
+    } yield (s"$prefix$checkedName", value))
+  }
+
+  private def parseResourceValueContainer(locale: ULocale, elem: Elem): AlmValidation[ResourceValue] =
+    for {
       elemFormatterElem ← elem.firstChildNodeExcluding("comment")
       value ← {
         val typeDescriptor = elemFormatterElem.label
         if (stringValueBasedDescriptors(typeDescriptor)) {
-          parseStringValueBasedValue(locale, elemFormatterElem, typeDescriptor)
+          parseStringValueBasedValue(locale, elemFormatterElem)
         } else if (typeDescriptor == "number") {
           parseNumberFormatterValue(locale, elemFormatterElem)
         } else if (typeDescriptor == "measured-value") {
@@ -439,26 +438,29 @@ private[almhirt] object ResourceNodeXml {
           parseBooleanFormatterValue(locale, elemFormatterElem)
         } else if (typeDescriptor == "select-text") {
           parseSelectTextFormatterValue(locale, elemFormatterElem)
+        } else if (typeDescriptor == "selection-of-many") {
+          parseSelectionFromManyFormatterValue(locale, elemFormatterElem)
         } else {
           ArgumentProblem(s""""$typeDescriptor" is not a valid type for a resource value.""").failure
         }
-      }.leftMap(p ⇒ UnspecifiedProblem(s"""Problem with key "$checkedName" for locale ${locale.toLanguageTag}.""", cause = Some(p)))
-    } yield (s"$prefix$checkedName", value))
-  }
+      }
+    } yield value
 
   private def trimText(text: String): AlmValidation[String] =
     text.replaceAll("\\s{2,}", " ").trim().notEmptyOrWhitespace()
 
-  def parseStringValueBasedValue(locale: ULocale, valueElem: Elem, typeDescriptor: String): AlmValidation[ResourceValue] =
+  def parseStringValueBasedValue(locale: ULocale, valueElem: Elem): AlmValidation[ResourceValue] = {
+    val typeDescriptor = valueElem.label
     for {
       valueStr ← trimText(valueElem.text)
       value ← typeDescriptor match {
         case ""      ⇒ RawStringResourceValue(locale, valueStr).success
         case "plain" ⇒ RawStringResourceValue(locale, valueStr).success
         case "icu"   ⇒ IcuResourceValue(valueStr, locale)
-        case x       ⇒ ArgumentProblem(s""""$x" is not a valid type for a resource value.""").failure
+        case x       ⇒ ArgumentProblem(s""""$x" is not a valid type for a string based resource value.""").failure
       }
     } yield value
+  }
 
   def parseMeasureFormatterValue(locale: ULocale, elem: Elem): AlmValidation[ResourceValue] = {
     def parseFormatDefinition(format: Elem): AlmValidation[impl.MeasuredFormatResourceValue.FormatDefinition] =
@@ -542,6 +544,54 @@ private[almhirt] object ResourceNodeXml {
         } yield (selector, e.text.replaceAll("\\s{2,}", " ").trim())).toAgg
       }.toVector.sequence
     } yield impl.SelectTextFormatResourceValue(locale, paramName, defaultText, selectItems.toMap)
+  }
+
+  def parseSelectionFromManyFormatterValue(locale: ULocale, elem: Elem): AlmValidation[ResourceValue] = {
+    import almhirt.i18n.impl.SelectionOfManyResourceValue
+    def getParameterValueOpt(elem: Elem, name: String): AlmValidation[Option[String]] =
+      (elem \@? name).map(_.trim().notEmptyOrWhitespace()).validationOut
+
+    for {
+      selectionSizeParameter ← getParameterValueOpt(elem, "selection-size-parameter")
+      lowerIndexParameter ← getParameterValueOpt(elem, "lower-index-parameter")
+      allItemsCountParameter ← getParameterValueOpt(elem, "all-items-count-parameter")
+      upperIndexParameter ← getParameterValueOpt(elem, "upper-index-parameter")
+      ifAllItemsCountParamIsZeroElem ← (elem \! "if-all-items-count-is-zero")
+      ifAllItemsCountParamIsZero ← trimText(ifAllItemsCountParamIsZeroElem.text)
+      joinerElemOpt ← (elem \? "joiner")
+      embedJoinerInSpaces ← joinerElemOpt.map(elem ⇒
+        getParameterValueOpt(elem, "embed-in-spaces").flatMap(v ⇒
+          v.map(_.toBooleanAlm).validationOut)).validationOut.map(_.flatten.getOrElse(false))
+      preJoinerTextOpt ← joinerElemOpt.map(elem ⇒ trimText(elem.text)).validationOut
+      joinerOpt ← (if (embedJoinerInSpaces) preJoinerTextOpt.map(txt ⇒ s" $txt ") else preJoinerTextOpt).success
+      selectionPartsElemOpt ← (elem \? "selection-parts")
+      selectionParts ← selectionPartsElemOpt match {
+        case Some(elem) ⇒
+          for {
+            rangeSelectionFormatterContainerElemOpt ← (elem \? "range-selection-part")
+            rangeSelectionFormatterOpt ← rangeSelectionFormatterContainerElemOpt.map(elem ⇒ parseResourceValueContainer(locale, elem).flatMap(_.toFormatterFun)).validationOut
+            amountSelectionFormatterContainerElemOpt ← (elem \? "amount-selection-part")
+            amountSelectionFormatterOpt ← amountSelectionFormatterContainerElemOpt.map(elem ⇒ parseResourceValueContainer(locale, elem).flatMap(_.toFormatterFun)).validationOut
+            ifSelectionSizeIsZeroElemOpt ← (elem \? "if-selection-size-is-zero")
+            ifSelectionSizeIsZero ← ifSelectionSizeIsZeroElemOpt.map(elem ⇒ trimText(elem.text)).validationOut
+          } yield (rangeSelectionFormatterOpt, amountSelectionFormatterOpt, ifSelectionSizeIsZero)
+        case None ⇒
+          (None, None, None).success
+      }
+      allItemsFormatterContainerElemOpt ← (elem \? "all-items-part")
+      allItemsFormatterOpt ← allItemsFormatterContainerElemOpt.map(elem ⇒ parseResourceValueContainer(locale, elem).flatMap(_.toFormatterFun)).validationOut
+    } yield new SelectionOfManyResourceValue(
+      locale = locale,
+      selectionSizeParameter = selectionSizeParameter,
+      lowerIndexParameter = lowerIndexParameter,
+      allItemsCountParameter = allItemsCountParameter,
+      upperIndexParameter = upperIndexParameter,
+      ifAllItemsCountParamIsZero = ifAllItemsCountParamIsZero,
+      ifSelectionSizeIsZero = selectionParts._3,
+      joiner = joinerOpt,
+      rangeSelectionFormatter = selectionParts._1,
+      amountSelectionFormatter = selectionParts._2,
+      allItemsPartFormatter = allItemsFormatterOpt)
   }
 
   def checkName(name: String): AlmValidation[String] =

@@ -92,4 +92,125 @@
 			</key>
 		</group>
 	</section>
+	<section name="section_2">
+		<group name="group_1">
+			<key name="selection-of-many-all">
+				<!-- Show a selection from a number of items. In the regular case a selection consists of two(three) concatenated parts: The items that have been selected and 
+					the total amount of items which the selection is a part of and maybe a joiner([selection-part]+([joiner]+)?[all-items-part]). There are two kinds of [selection-part]: 
+					One renders an index based ranged of a selection([range-selection-part]) and the other just renders the amount of selected items([amount-selection-part]). Both of 
+					them are optional and defined inside an [selection-parts] element. The [range-selection-part] must be provided with an index-parameter. The [amount-selection-part] 
+					will always work. The parameter names are defined with attributes. They are optional and default to the values shown below. 'all-items-count-parameter' defines the 
+					name of the parameter that carries the total amount of items. 'selection-size-parameter' defines the name of the parameter that carries the amount of items selected 
+					items. 'lower-index-parameter' defines the name of the parameter that carries index of the first item in the selection. 'upper-index-parameter' defines the name 
+					of the parameter that carries index of the last item in the selection. If you redefine the parameter names you must use those in the defined renderers. For detailed 
+					information see the following element. When calling the formatter all 4 parameters are optional or may be set in any combination. -->
+				<selection-of-many selection-size-parameter="selection_size" lower-index-parameter="lower_index" all-items-count-parameter="all_items_count"
+					upper-index-parameter="upper_index">
+					<!-- This is a mandatory element. It will always be rendered when the 'all-items-count-parameter' is zero(or less) or not provided. -->
+					<if-all-items-count-is-zero>
+						Nothing to select
+					</if-all-items-count-is-zero>
+					<!-- This is an optional element. Define your selection parts inside. If omitted or empty only special cases like selection size is zero or all-items-count 
+						is zero can be rendered. The formatter will decide on which selection part to use based on the provided parameters. If any index-parameter is provided it will try 
+						the [range-selection-part] first. If no index-parameter is provided or the [range-selection-part] is missing it will fall back to the [amount-selection-part]. As 
+						long as you provide any of the index-parameters and/or the selection-size-parameter the [range-selection-part] can be used. Missing parameters will be calculated 
+						but a provided [selection-size-parameter] will never be recalculated. If one of the index-parameters is missing the missing index-parameter will be calculated from 
+						the given index-parameter and the [selection-size-parameter]. If both index-parameters and the [selection-size-parameter] are provided the [lower-index-parameter] 
+						combined with the [selection-size-parameter] will take precedence. Remember that you can express an empty selection only by providing the [selection-size-parameter]. 
+						A missing [selection-size-parameter] defaults to zero(no selection). -->
+					<selection-parts>
+						<!-- This is an optional element. It replaces the selection part whenever the selection-size-parameter is zero(nothing selected). If you omit this element 
+							you must handle the case of nothing being selected inside your selection-parts -->
+						<if-selection-size-is-zero>
+							Nothing
+						</if-selection-size-is-zero>
+						<!-- This is an optional element. It renders the selected items based on the selection-size-parameter and both index parameters. You can place anything that 
+							renders a text inside. -->
+						<range-selection-part>
+							<icu>{selection_size, plural,
+								=1{ItemR {lower_index}}
+								other{ItemsR {lower_index} to {upper_index}}}
+							</icu>
+						</range-selection-part>
+						<!-- This is an optional element. It renders the selected items based on the selection-size-parameter only. You can place anything that renders a text inside. -->
+						<amount-selection-part>
+							<icu> { selection_size, plural,
+								=1{One itemA}
+								other{# itemsA}}
+							</icu>
+						</amount-selection-part>
+					</selection-parts>
+					<!-- This is an optional element. If provided the content will be placed between the selection-part and the all-items-part. If you omit this element you have 
+						to handle the joining of the parts somewhere else where rendering takes place. The 'embed-in-spaces' attribute is optional and defaults to false. If set to true 
+						it will place spaces around its content. Example: Set the content to 'from' with 'embed-in-spaces' set to true. Then the rendered text will be '[selection-part] 
+						from [all-items-part]'. -->
+					<joiner embed-in-spaces="true">from
+					</joiner>
+					<!-- This is an optional element. If provided it renders the total amount of items the selection was taken from. If omitted this part will just be missing and 
+						the 'separator' has no effect. -->
+					<all-items-part>
+						<icu> { all_items_count, plural,
+							=1{one item selected}
+							other{# items selected}}
+						</icu>
+					</all-items-part>
+				</selection-of-many>
+			</key>
+			<key name="selection-of-many-range-only">
+				<selection-of-many selection-size-parameter="selection_size" lower-index-parameter="lower_index" all-items-parameter="all_items_count"
+					upper-index-parameter="upper_index">
+					<if-all-items-count-is-zero>
+						Nothing to select
+					</if-all-items-count-is-zero>
+					<selection-parts>
+						<if-selection-size-is-zero>
+							Nothing
+						</if-selection-size-is-zero>
+						<range-selection-part>
+							<icu>{selection_size, plural,
+								=1{ItemR {lower_index}}
+								other{ItemsR {lower_index} to {upper_index}}}
+							</icu>
+						</range-selection-part>
+					</selection-parts>
+					<joiner embed-in-spaces="true">from
+					</joiner>
+					<all-items-part>
+						<icu> { all_items_count , plural ,
+							=1{one item selected}
+							other{# items selected}}
+						</icu>
+					</all-items-part>
+				</selection-of-many>
+			</key>
+			<key name="selection-of-many-amount-only">
+				<selection-of-many selection-size-parameter="selection_size" lower-index-parameter="lower_index" all-items-parameter="all_items_count"
+					upper-index-parameter="upper_index">
+					<if-all-items-count-is-zero>
+						Nothing to select
+					</if-all-items-count-is-zero>
+					<selection-parts>
+						<if-selection-size-is-zero>
+							Nothing
+						</if-selection-size-is-zero>
+						<amount-selection-part>
+							<icu> { selection_size, plural,
+								=1{One itemA}
+								other{# itemsA}}
+							</icu>
+						</amount-selection-part>
+					</selection-parts>
+					<joiner embed-in-spaces="true">from
+					</joiner>
+					<all-items-part>
+						<icu> { all_items_count , plural ,
+							=1{one item selected}
+							other{# items selected}}
+						</icu>
+					</all-items-part>
+				</selection-of-many>
+			</key>
+
+		</group>
+	</section>
 </localized>

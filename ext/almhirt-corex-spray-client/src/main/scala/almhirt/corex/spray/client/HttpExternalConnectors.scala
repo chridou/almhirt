@@ -58,10 +58,19 @@ trait HttpExternalConnector {
           							|Body:
           							|${body.asString}""".stripMargin).failure
         else {
-          if (mediaType.binary)
+          val deserialized = if (mediaType.binary)
             problemDeserializer.deserialize(mediaType, BinaryBody(body.data.toByteArray))
           else
             problemDeserializer.deserialize(mediaType, TextBody(body.data.asString))
+          deserialized.fold(
+            fail ⇒ {
+              if (mediaType == AlmMediaTypes.`application/json`) {
+                SerializationProblem(s"Could not deserialize the response problem but I received some JSON:\n${body.data.asString}", cause = Some(fail)).failure
+              } else {
+                fail.failure
+              }
+            },
+            succ ⇒ succ.success)
         }
       case None ⇒
         UnspecifiedProblem(s"""	|
@@ -85,7 +94,7 @@ trait RequestsWithEntity { self: HttpExternalConnector ⇒
       headers = Nil,
       entity =
         serialized match {
-          case TextBody(data) ⇒ HttpEntity(ContentType(settings.contentMediaType), data)
+          case TextBody(data)   ⇒ HttpEntity(ContentType(settings.contentMediaType), data)
           case BinaryBody(data) ⇒ HttpEntity(ContentType(settings.contentMediaType), data)
         })
   }

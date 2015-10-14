@@ -72,7 +72,7 @@ private[almhirt] class EventLogWriterImpl(
     storeEventRetrySettings: RetryPolicyExt)(implicit override val almhirtContext: AlmhirtContext) extends ActorSubscriber with AlmActor with AlmActorLogging with ActorLogging with ControllableActor with StatusReportingActor {
   import almhirt.eventlog.EventLog
 
-  override val componentControl = LocalComponentControl(self, ActorMessages.ComponentControlActions.none, Some(logWarning))
+  override val componentControl = LocalComponentControl(self, ComponentControlActions.none, Some(logWarning))
 
   implicit def implicitFlowMaterializer = akka.stream.ActorMaterializer()(this.context)
   implicit val executor = almhirtContext.futuresContext
@@ -81,6 +81,10 @@ private[almhirt] class EventLogWriterImpl(
 
   private case object AutoConnect
   private case object Resolve
+
+  private var loggedEvents = 0L
+  private var eventsNotLogged = 0L
+  private var eventsReceived = 0L
 
   private var eventLog: ActorRef = null
 
@@ -96,7 +100,7 @@ private[almhirt] class EventLogWriterImpl(
           self ! AutoConnect
         else
           request(1)
-        context.become(receiveCircuitClosed)
+        context.become(receiveRunning)
 
       case ActorMessages.SingleNotResolved(problem, _) ⇒
         logError(s"Could not resolve event log @${eventLogToResolve}:\n$problem")
@@ -105,7 +109,7 @@ private[almhirt] class EventLogWriterImpl(
     }
   }
 
-  def receiveCircuitClosed: Receive = running() {
+  def receiveRunning: Receive = running() {
     reportsStatusF(onReportRequested = createStatusReport) {
       case AutoConnect ⇒
         logInfo("Subscribing to event stream.")
@@ -113,6 +117,7 @@ private[almhirt] class EventLogWriterImpl(
         request(1)
 
       case ActorSubscriberMessage.OnNext(event: Event) ⇒
+        eventsReceived = eventsReceived + 1L
         if (!event.header.noLoggingSuggested) {
           val start = Deadline.now
           val f = {
@@ -123,8 +128,9 @@ private[almhirt] class EventLogWriterImpl(
                     case AlreadyExistsProblem(p) ⇒
                       logWarning(s"Event event ${event.eventId} already existed. This can happen when a write operation timed out but the event was stored afterwards by the storage.")
                       EventLog.EventLogged(event.eventId).success
-                    case _ ⇒
+                    case _ ⇒ {
                       fail.failure
+                    }
                   }
                 },
                 succ ⇒ succ.success)
@@ -149,9 +155,11 @@ private[almhirt] class EventLogWriterImpl(
         request(1)
 
       case EventLog.EventLogged(id) ⇒
+        loggedEvents = loggedEvents + 1L
         request(1)
 
       case EventLog.EventNotLogged(id, problem) ⇒
+        eventsNotLogged = eventsNotLogged + 1L
         logError(s"Could not log event '${id.value}':\n$problem")
         reportMajorFailure(problem)
         request(1)
@@ -161,7 +169,11 @@ private[almhirt] class EventLogWriterImpl(
   override def receive: Receive = receiveResolve
 
   def createStatusReport(options: StatusReportOptions): AlmFuture[StatusReport] = {
-    val baseReport = StatusReport(s"${this.getClass.getSimpleName}-Report").withComponentState(componentState) ~ ("event-log" -> eventLog.path.toStringWithoutAddress)
+    val baseReport = StatusReport("EventLogWriter-Report").withComponentState(componentState) addMany
+      ("events-received" -> eventsReceived,
+        "events-logged" -> loggedEvents,
+        "events-not-logged" -> eventsNotLogged,
+        "event-log" -> eventLog.path.toStringWithoutAddress)
 
     AlmFuture.successful(baseReport)
   }

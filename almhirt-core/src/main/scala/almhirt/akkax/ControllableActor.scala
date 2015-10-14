@@ -1,6 +1,30 @@
 package almhirt.akkax
 
 import almhirt.herder.HerderMessages
+import almhirt.common.CanCreateUuid
+
+final case class PauseToken(val value: String) extends AnyVal
+object PauseToken {
+  def apply()(implicit ccud: CanCreateUuid): PauseToken = PauseToken(ccud.getUniqueString())
+}
+
+sealed trait ComponentControlAction
+object ComponentControlAction {
+  case object Pause extends ComponentControlAction
+  case object Resume extends ComponentControlAction
+  case object Restart extends ComponentControlAction
+  case object PrepareForShutdown extends ComponentControlAction
+  case object ReportComponentState extends ComponentControlAction
+}
+
+object ComponentControlActions {
+  val none = Set[ComponentControlAction]()
+  val pauseResume = Set[ComponentControlAction](ComponentControlAction.Pause, ComponentControlAction.Resume)
+  val pauseResumeShutdown = Set[ComponentControlAction](ComponentControlAction.Pause, ComponentControlAction.Resume, ComponentControlAction.PrepareForShutdown)
+  val pauseResumeShutdownRestart = Set[ComponentControlAction](ComponentControlAction.Pause, ComponentControlAction.Resume, ComponentControlAction.PrepareForShutdown, ComponentControlAction.Restart)
+  val shutdown = Set[ComponentControlAction](ComponentControlAction.PrepareForShutdown)
+  val shutdownRestart = Set[ComponentControlAction](ComponentControlAction.PrepareForShutdown, ComponentControlAction.Restart)
+}
 
 /**
  * @author douven
@@ -57,9 +81,12 @@ trait ControllableActor { me: AlmActor with AlmActorLogging ⇒
     def terminateReadyForShutdown: Receive = rec orElse readyForShutdownTerminator
   }
 
-  private var _currentComponentState: ComponentState = ComponentState.Startup
+  @volatile private var _currentComponentState: ComponentState = ComponentState.Startup
+
+  @volatile private var _pauseTokens: Set[PauseToken] = Set.empty
 
   def componentState: ComponentState = _currentComponentState
+  def pauseTokens: Set[PauseToken] = _pauseTokens
   def onComponentStateChanged(oldState: ComponentState, newState: ComponentState): Unit = {}
   final def componentStateTransitionTo(newState: ComponentState) {
 
@@ -90,23 +117,23 @@ trait ControllableActor { me: AlmActor with AlmActorLogging ⇒
     almhirtContext.tellHerder(HerderMessages.ComponentControlMessages.DeregisterComponentControl(cnp.componentId))
 
   def startupHandlerScaffolding(onPrepareShutdown: Option[(ReceiveFun, () ⇒ Unit)]): PartialFunction[ActorMessages.ComponentControlMessage, Unit] = {
-    case ActorMessages.Pause ⇒
-      if (!componentControl.supports(ActorMessages.Pause))
+    case ActorMessages.Pause(_) ⇒
+      if (!componentControl.supports(ComponentControlAction.Pause))
         logWarning("Pause is not supported.")
       else
         logDebug("Pause not possible in state Startup")
-    case ActorMessages.Resume ⇒
-      if (!componentControl.supports(ActorMessages.Resume))
+    case ActorMessages.Resume(_) ⇒
+      if (!componentControl.supports(ComponentControlAction.Resume))
         logWarning("Resume is not supported.")
       else
         logDebug("Resume not possible in state Startup")
     case ActorMessages.Restart ⇒
-      if (!componentControl.supports(ActorMessages.Restart))
+      if (!componentControl.supports(ComponentControlAction.Restart))
         logWarning("Restart is not supported.")
       else
         logDebug("Restart not possible in state Startup")
     case ActorMessages.PrepareForShutdown ⇒
-      if (!componentControl.supports(ActorMessages.PrepareForShutdown))
+      if (!componentControl.supports(ComponentControlAction.PrepareForShutdown))
         logWarning("PrepareForShutdown is not supported.")
       else {
         onPrepareShutdown match {
@@ -122,23 +149,23 @@ trait ControllableActor { me: AlmActor with AlmActorLogging ⇒
   }
 
   def waitingForStartSignalHandlerScaffolding(onPrepareShutdown: Option[(ReceiveFun, () ⇒ Unit)]): PartialFunction[ActorMessages.ComponentControlMessage, Unit] = {
-    case ActorMessages.Pause ⇒
-      if (!componentControl.supports(ActorMessages.Pause))
+    case ActorMessages.Pause(_) ⇒
+      if (!componentControl.supports(ComponentControlAction.Pause))
         logWarning("Pause is not supported.")
       else
         logDebug("Pause not possible in state WaitingForStartSignal")
-    case ActorMessages.Resume ⇒
-      if (!componentControl.supports(ActorMessages.Resume))
+    case ActorMessages.Resume(_) ⇒
+      if (!componentControl.supports(ComponentControlAction.Resume))
         logWarning("Resume is not supported.")
       else
         logDebug("Resume not possible in state WaitingForStartSignal")
     case ActorMessages.Restart ⇒
-      if (!componentControl.supports(ActorMessages.Restart))
+      if (!componentControl.supports(ComponentControlAction.Restart))
         logWarning("Restart is not supported.")
       else
         logDebug("Restart not possible in state WaitingForStartSignal")
     case ActorMessages.PrepareForShutdown ⇒
-      if (!componentControl.supports(ActorMessages.PrepareForShutdown))
+      if (!componentControl.supports(ComponentControlAction.PrepareForShutdown))
         logWarning("PrepareForShutdown is not supported.")
       else {
         onPrepareShutdown match {
@@ -154,27 +181,29 @@ trait ControllableActor { me: AlmActor with AlmActorLogging ⇒
   }
 
   def runningHandlerScaffolding(onPause: Option[ReceiveFun], onPrepareShutdown: Option[(ReceiveFun, () ⇒ Unit)]): PartialFunction[ActorMessages.ComponentControlMessage, Unit] = {
-    case ActorMessages.Pause ⇒
-      if (!componentControl.supports(ActorMessages.Pause))
+    case ActorMessages.Pause(token) ⇒
+      if (!componentControl.supports(ComponentControlAction.Pause)) {
         logWarning("Pause is not supported.")
-      else {
+      } else {
         onPause match {
-          case Some(handler) ⇒ me.context.become(handler())
-          case None          ⇒ logWarning("Received a supported Pause but there is no handler in state Running")
+          case Some(handler) ⇒
+            token.foreach(t ⇒ _pauseTokens = _pauseTokens + t)
+            me.context.become(handler())
+          case None ⇒ logWarning("Received a supported Pause but there is no handler in state Running")
         }
       }
-    case ActorMessages.Resume ⇒
-      if (!componentControl.supports(ActorMessages.Resume))
+    case ActorMessages.Resume(_) ⇒
+      if (!componentControl.supports(ComponentControlAction.Resume))
         logWarning("Resume is not supported.")
       else
         logDebug("Resume not possible in state Running")
     case ActorMessages.Restart ⇒
-      if (!componentControl.supports(ActorMessages.Restart))
+      if (!componentControl.supports(ComponentControlAction.Restart))
         logWarning("Restart is not supported.")
       else
         logDebug("Restart not possible in state Running")
     case ActorMessages.PrepareForShutdown ⇒
-      if (!componentControl.supports(ActorMessages.PrepareForShutdown))
+      if (!componentControl.supports(ComponentControlAction.PrepareForShutdown))
         logWarning("PrepareForShutdown is not supported.")
       else {
         onPrepareShutdown match {
@@ -190,30 +219,37 @@ trait ControllableActor { me: AlmActor with AlmActorLogging ⇒
   }
 
   def pauseHandlerScaffolding(onResume: Option[(ReceiveFun, () ⇒ Unit)], onPrepareShutdown: Option[(ReceiveFun, () ⇒ Unit)]): PartialFunction[ActorMessages.ComponentControlMessage, Unit] = {
-    case ActorMessages.Pause ⇒
-      if (!componentControl.supports(ActorMessages.Pause))
+    case ActorMessages.Pause(token) ⇒
+      if (!componentControl.supports(ComponentControlAction.Pause))
         logWarning("Pause is not supported.")
-      else
-        logDebug("Pause not possible in state Pause")
-    case ActorMessages.Resume ⇒
-      if (!componentControl.supports(ActorMessages.Resume))
+      else {
+        token.foreach(t ⇒ _pauseTokens = _pauseTokens + t)
+        logDebug("Already paused")
+      }
+    case ActorMessages.Resume(token) ⇒
+      if (!componentControl.supports(ComponentControlAction.Resume))
         logWarning("Resume is not supported.")
       else {
+        token.foreach(t ⇒ _pauseTokens = _pauseTokens - t)
         onResume match {
           case Some((rec, act)) ⇒
-            me.context.become(rec())
-            act()
+            if (_pauseTokens.isEmpty) {
+              me.context.become(rec())
+              act()
+            } else {
+              logWarning(s"Cannot resume since there are ${_pauseTokens.size} pause tokens left: ${_pauseTokens.mkString}")
+            }
           case None ⇒
             logWarning("Received a supported Resume but there is no handler in state Paused")
         }
       }
     case ActorMessages.Restart ⇒
-      if (!componentControl.supports(ActorMessages.Restart))
+      if (!componentControl.supports(ComponentControlAction.Restart))
         logWarning("Restart is not supported.")
       else
         logDebug("Restart not possible in state Pause")
     case ActorMessages.PrepareForShutdown ⇒
-      if (!componentControl.supports(ActorMessages.PrepareForShutdown))
+      if (!componentControl.supports(ComponentControlAction.PrepareForShutdown))
         logWarning("PrepareForShutdown is not supported.")
       else {
         onPrepareShutdown match {
@@ -229,30 +265,38 @@ trait ControllableActor { me: AlmActor with AlmActorLogging ⇒
   }
 
   def preparingForPauseHandlerScaffolding(onResume: Option[(ReceiveFun, () ⇒ Unit)], onPrepareShutdown: Option[(ReceiveFun, () ⇒ Unit)]): PartialFunction[ActorMessages.ComponentControlMessage, Unit] = {
-    case ActorMessages.Pause ⇒
-      if (!componentControl.supports(ActorMessages.Pause))
+    case ActorMessages.Pause(token) ⇒
+      token.foreach(t ⇒ _pauseTokens = _pauseTokens + t)
+      if (!componentControl.supports(ComponentControlAction.Pause))
         logWarning("Pause is not supported.")
-      else
-        logDebug("Pause not possible in state PreparingForPause")
-    case ActorMessages.Resume ⇒
-      if (!componentControl.supports(ActorMessages.Resume))
+      else {
+        token.foreach(t ⇒ _pauseTokens = _pauseTokens + t)
+        logDebug("Already PreparingForPause")
+      }
+    case ActorMessages.Resume(token) ⇒
+      if (!componentControl.supports(ComponentControlAction.Resume))
         logWarning("Resume is not supported.")
       else {
+        token.foreach(t ⇒ _pauseTokens = _pauseTokens - t)
         onResume match {
           case Some((rec, act)) ⇒
-            me.context.become(rec())
-            act()
+            if (_pauseTokens.isEmpty) {
+              me.context.become(rec())
+              act()
+            } else {
+              logWarning(s"Cannot resume since there are ${_pauseTokens.size} pause tokens left: ${_pauseTokens.mkString}")
+            }
           case None ⇒
             logWarning("Received a supported Resume but there is no handler in state PreparingForPause")
         }
       }
     case ActorMessages.Restart ⇒
-      if (!componentControl.supports(ActorMessages.Restart))
+      if (!componentControl.supports(ComponentControlAction.Restart))
         logWarning("Restart is not supported.")
       else
         logDebug("Restart not possible in state PreparingForPause")
     case ActorMessages.PrepareForShutdown ⇒
-      if (!componentControl.supports(ActorMessages.PrepareForShutdown))
+      if (!componentControl.supports(ComponentControlAction.PrepareForShutdown))
         logWarning("PrepareForShutdown is not supported.")
       else {
         onPrepareShutdown match {
@@ -268,18 +312,18 @@ trait ControllableActor { me: AlmActor with AlmActorLogging ⇒
   }
 
   def errorHandlerScaffolding(onPrepareShutdown: Option[(ReceiveFun, () ⇒ Unit)], onRestart: Option[(ReceiveFun, () ⇒ Unit)])(error: almhirt.problem.ProblemCause): PartialFunction[ActorMessages.ComponentControlMessage, Unit] = {
-    case ActorMessages.Pause ⇒
-      if (!componentControl.supports(ActorMessages.Pause))
+    case ActorMessages.Pause(_) ⇒
+      if (!componentControl.supports(ComponentControlAction.Pause))
         logWarning("Pause is not supported.")
       else
         logDebug("Pause not possible in state Error")
-    case ActorMessages.Resume ⇒
-      if (!componentControl.supports(ActorMessages.Resume))
+    case ActorMessages.Resume(_) ⇒
+      if (!componentControl.supports(ComponentControlAction.Resume))
         logWarning("Resume is not supported.")
       else
         logDebug("Resume not possible in state Error")
     case ActorMessages.Restart ⇒
-      if (!componentControl.supports(ActorMessages.Restart))
+      if (!componentControl.supports(ComponentControlAction.Restart))
         logWarning("Restart is not supported.")
       else {
         onRestart match {
@@ -291,7 +335,7 @@ trait ControllableActor { me: AlmActor with AlmActorLogging ⇒
         }
       }
     case ActorMessages.PrepareForShutdown ⇒
-      if (!componentControl.supports(ActorMessages.PrepareForShutdown))
+      if (!componentControl.supports(ComponentControlAction.PrepareForShutdown))
         logWarning("PrepareForShutdown is not supported.")
       else {
         onPrepareShutdown match {
@@ -307,23 +351,23 @@ trait ControllableActor { me: AlmActor with AlmActorLogging ⇒
   }
 
   lazy val preparingForShutdownHandler: PartialFunction[ActorMessages.ComponentControlMessage, Unit] = {
-    case ActorMessages.Pause ⇒
-      if (!componentControl.supports(ActorMessages.Pause))
+    case ActorMessages.Pause(_) ⇒
+      if (!componentControl.supports(ComponentControlAction.Pause))
         logWarning("Pause is not supported.")
       else
         logDebug("Pause not possible in state PreparingForShutdown")
-    case ActorMessages.Resume ⇒
-      if (!componentControl.supports(ActorMessages.Resume))
+    case ActorMessages.Resume(_) ⇒
+      if (!componentControl.supports(ComponentControlAction.Resume))
         logWarning("Resume is not supported.")
       else
         logDebug("Resume not possible in state PreparingForShutdown")
     case ActorMessages.Restart ⇒
-      if (!componentControl.supports(ActorMessages.Restart))
+      if (!componentControl.supports(ComponentControlAction.Restart))
         logWarning("Restart is not supported.")
       else
         logDebug("Restart not possible in state PreparingForShutdown")
     case ActorMessages.PrepareForShutdown ⇒
-      if (!componentControl.supports(ActorMessages.PrepareForShutdown))
+      if (!componentControl.supports(ComponentControlAction.PrepareForShutdown))
         logWarning("PrepareForShutdown is not supported.")
       else
         logDebug("PrepareForShutdown not possible in state PreparingForShutdown")
@@ -332,23 +376,23 @@ trait ControllableActor { me: AlmActor with AlmActorLogging ⇒
   }
 
   lazy val readyForShutdownHandler: PartialFunction[ActorMessages.ComponentControlMessage, Unit] = {
-    case ActorMessages.Pause ⇒
-      if (!componentControl.supports(ActorMessages.Pause))
+    case ActorMessages.Pause(_) ⇒
+      if (!componentControl.supports(ComponentControlAction.Pause))
         logWarning("Pause is not supported.")
       else
         logDebug("Pause not possible in state ReadyForShutdown")
-    case ActorMessages.Resume ⇒
-      if (!componentControl.supports(ActorMessages.Resume))
+    case ActorMessages.Resume(_) ⇒
+      if (!componentControl.supports(ComponentControlAction.Resume))
         logWarning("Resume is not supported.")
       else
         logDebug("Resume not possible in state ReadyForShutdown")
     case ActorMessages.Restart ⇒
-      if (!componentControl.supports(ActorMessages.Restart))
+      if (!componentControl.supports(ComponentControlAction.Restart))
         logWarning("Restart is not supported.")
       else
         logDebug("Restart not possible in state ReadyForShutdown")
     case ActorMessages.PrepareForShutdown ⇒
-      if (!componentControl.supports(ActorMessages.PrepareForShutdown))
+      if (!componentControl.supports(ComponentControlAction.PrepareForShutdown))
         logWarning("PrepareForShutdown is not supported.")
       else
         logDebug("PrepareForShutdown not possible in state ReadyForShutdown")

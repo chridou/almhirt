@@ -80,7 +80,7 @@ private[almhirt] class MyCommandStatusTracker(
   import CommandStatusTracker._
   import almhirt.storages._
 
-  override val componentControl = LocalComponentControl(self, ActorMessages.ComponentControlActions.none, Some(logWarning))
+  override val componentControl = LocalComponentControl(self, ComponentControlActions.none, Some(logWarning))
 
   implicit def implicitFlowMaterializer = akka.stream.ActorMaterializer()(this.context)
 

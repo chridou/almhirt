@@ -1,6 +1,7 @@
 package almhirt
 
 import scala.language.implicitConversions
+import almhirt.common._
 import com.ibm.icu.util._
 import almhirt.i18n.MeasuredLength
 
@@ -53,6 +54,31 @@ package object i18n {
       }
   }
 
+  implicit class ResourceValueOps(val self: ResourceValue) extends AnyVal {
+    def toFormatter: AlmValidation[AlmFormatter] =
+      self match {
+        case fmt: IcuResourceValue ⇒
+          scalaz.Success(new IcuFormatter(fmt.formatInstance))
+        case raw: RawStringResourceValue ⇒
+          scalaz.Success(raw)
+        case f: BasicValueResourceValue ⇒
+          scalaz.Success(f.formatable)
+      }
+    /**
+     * Use to create new formatters. Helpful when the formatter needs to be cloned...
+     */
+    def toFormatterFun: AlmValidation[() ⇒ AlmFormatter] =
+      self match {
+        case fmt: IcuResourceValue ⇒
+          scalaz.Success(() ⇒ new IcuFormatter(fmt.formatInstance))
+        case raw: RawStringResourceValue ⇒
+          scalaz.Success(() ⇒ raw)
+        case f: BasicValueResourceValue ⇒
+          scalaz.Success(() ⇒ f.formatable)
+      }
+
+  }
+
   object MeasuredImplicits {
     implicit final class MeasuredImplicitsOps(private val d: Double) extends AnyVal {
       def squareMeter = MeasuredArea(d, UnitsOfMeasurement.SquareMeter)
@@ -88,6 +114,7 @@ package object i18n {
 
       def lux = MeasuredLight(d, UnitsOfMeasurement.Lux)
       def lumen = MeasuredLightFlux(d, UnitsOfMeasurement.Lumen)
+      def lumenPerWatt = MeasuredLuminousEfficacy(d, UnitsOfMeasurement.LumenPerWatt)
     }
 
     implicit final class MeasuredLengthsOps(private val measured: MeasuredLength) extends AnyVal {

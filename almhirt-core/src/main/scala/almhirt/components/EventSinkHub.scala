@@ -47,7 +47,7 @@ private[almhirt] class EventSinksSupervisorImpl(factories: EventSinkHub.EventSin
   implicit def implicitFlowMaterializer = akka.stream.ActorMaterializer()(this.context)
 
   implicit val executor = almhirtContext.futuresContext
-  override val componentControl = LocalComponentControl(self, ActorMessages.ComponentControlActions.none, Some(logWarning))
+  override val componentControl = LocalComponentControl(self, ComponentControlActions.none, Some(logWarning))
   override val statusReportsCollector = Some(StatusReportsCollector(this.context))
 
   override val requestStrategy = ZeroRequestStrategy
@@ -110,7 +110,7 @@ private[almhirt] class EventSinksSupervisorImpl(factories: EventSinkHub.EventSin
   override def preStart() {
     super.preStart()
     registerComponentControl()
-    registerStatusReporter(description = Some("Things that just consume events..."))
+    registerStatusReporter(description = Some("A Dispatcher for components that just consume events from an event stream..."))
     context.parent ! ActorMessages.ConsiderMeForReporting
     self ! Start
   }

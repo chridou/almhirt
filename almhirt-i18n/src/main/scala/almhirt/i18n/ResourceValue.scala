@@ -67,7 +67,7 @@ object IcuResourceValue {
       val msgFrmt = new MessageFormat(pattern, locale)
       (new IcuResourceValue(msgFrmt)).success
     } catch {
-      case scala.util.control.NonFatal(exn) ⇒ ParsingProblem(exn.getMessage, Some(pattern), cause = Some(exn)).failure
+      case scala.util.control.NonFatal(exn) ⇒ ParsingProblem(exn.getMessage, Some(pattern), cause = None).failure
     }
 }
 

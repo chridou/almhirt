@@ -37,28 +37,19 @@ object ActorMessages {
   final case class HerderServiceAppFailedToStart(problem: Problem) extends HerderAppStartupMessage
 
   sealed trait ComponentControlMessage
-  sealed trait ComponentControlAction extends ComponentControlMessage
-  case object Pause extends ComponentControlAction
-  case object Resume extends ComponentControlAction
-  case object Restart extends ComponentControlAction
-  case object PrepareForShutdown extends ComponentControlAction
+  sealed trait ComponentControlCommand extends ComponentControlMessage { def action: ComponentControlAction }
+  final case class Pause(token: Option[PauseToken]) extends ComponentControlCommand { override val action = ComponentControlAction.Pause }
+  final case class Resume(token: Option[PauseToken]) extends ComponentControlCommand { override val action = ComponentControlAction.Resume }
+  case object Restart extends ComponentControlCommand { override val action = ComponentControlAction.Restart }
+  case object PrepareForShutdown extends ComponentControlCommand { override val action = ComponentControlAction.PrepareForShutdown }
   case object ReportComponentState extends ComponentControlMessage
-
-  object ComponentControlActions {
-    val none = Set[ComponentControlAction]()
-    val pauseResume = Set[ComponentControlAction](Pause, Resume)
-    val pauseResumeShutdown = Set[ComponentControlAction](Pause, Resume, PrepareForShutdown)
-    val pauseResumeShutdownRestart = Set[ComponentControlAction](Pause, Resume, PrepareForShutdown, Restart)
-    val shutdown = Set[ComponentControlAction](PrepareForShutdown)
-    val shutdownRestart = Set[ComponentControlAction](PrepareForShutdown, Restart)
-  }
 
   sealed trait StatusReportMessage
   final case class SendStatusReport(options: ezreps.EzOptions) extends StatusReportMessage
   sealed trait SendStatusReportRsp extends StatusReportMessage
   final case class CurrentStatusReport(status: ezreps.EzReport) extends SendStatusReportRsp
   final case class ReportStatusFailed(cause: almhirt.problem.ProblemCause) extends SendStatusReportRsp
-  
+
   case object ConsiderMeForReporting
 }
 

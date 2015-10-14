@@ -59,14 +59,14 @@ private[almhirt] class ComponentControlHerdingDog()(implicit override val almhir
         },
         states ⇒ pinnedSender ! ComponentStates(states.toSeq.sortBy(_._1)))
 
-    case AttemptComponentControlAction(ownerId, action) ⇒
+    case AttemptComponentControlCommand(ownerId, command) ⇒
       componentControls.find(_._1 == ownerId) match {
         case Some(cc) ⇒
-          if (cc._2.supports(action)) {
-            cc._2.changeState(action)
-            logInfo(s"""Sent request for action $action to component "$ownerId".""")
+          if (cc._2.supports(command.action)) {
+            cc._2.changeState(command)
+            logInfo(s"""Sent request for command $command to component "$ownerId".""")
           } else {
-            logWarning(s""""$ownerId" does not support $action.""")
+            logWarning(s""""$ownerId" does not support $command.""")
           }
         case None ⇒ logWarning(s"""There is no component named "$ownerId".""")
       }
