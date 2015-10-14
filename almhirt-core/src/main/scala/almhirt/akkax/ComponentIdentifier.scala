@@ -37,15 +37,17 @@ final case class GlobalComponentId(node: NodeName, app: AppName, component: Comp
     } else {
       this.node compare that.node
     }
-  
+
   def componentId = ComponentId(app, component)
+
+  def toPathString = s"${node.value}/${app.value}/${component.value}"
 }
 
 object GlobalComponentId {
-  def apply(node: NodeName, componentId: ComponentId): GlobalComponentId = 
+  def apply(node: NodeName, componentId: ComponentId): GlobalComponentId =
     GlobalComponentId(node, componentId.app, componentId.component)
-    
-  def apply(componentId: ComponentId)(implicit ctx: almhirt.context.AlmhirtContext): GlobalComponentId = 
+
+  def apply(componentId: ComponentId)(implicit ctx: almhirt.context.AlmhirtContext): GlobalComponentId =
     GlobalComponentId(ctx.localNodeName, componentId.app, componentId.component)
-    
+
 }

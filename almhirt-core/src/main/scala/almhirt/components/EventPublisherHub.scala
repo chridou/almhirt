@@ -73,10 +73,34 @@ private[components] class EventPublisherHubActor(
   var numEventsNotDispatched = 0L
   var numEventsDispatched = 0L
 
+  val eventsByType = new scala.collection.mutable.HashMap[Class[_], Long]()
+  val eventsByComponent = new scala.collection.mutable.HashMap[String, Long]()
+
+  private def countReceivedEvent(event: Event): Unit = {
+    numEventsReceived = numEventsReceived + 1L
+
+    val eventType = event.getClass()
+    eventsByType get eventType match {
+      case None        ⇒ eventsByType += (eventType -> 1L)
+      case Some(count) ⇒ eventsByType.update(eventType, count + 1L)
+    }
+
+    event match {
+      case e: almhirt.akkax.events.ComponentEvent ⇒
+        val cidString = e.origin.toPathString
+        eventsByComponent get cidString match {
+          case None        ⇒ eventsByComponent += (cidString -> 1L)
+          case Some(count) ⇒ eventsByComponent.update(cidString, count + 1L)
+        }
+      case _ ⇒
+        ()
+    }
+  }
+
   def receiveIdle(): Receive = running() {
     reportsStatusF(onReportRequested = createStatusReport) {
       case EventPublisher.FireEvent(event) ⇒
-        numEventsReceived = numEventsReceived + 1L
+        countReceivedEvent(event)
         if (queue.size == buffersize) {
           numEventsNotDispatched = numEventsNotDispatched + 1L
           logWarning(s"Buffer is full($buffersize). Skipping event.")
@@ -87,7 +111,7 @@ private[components] class EventPublisherHubActor(
         }
 
       case EventPublisher.PublishEvent(event) ⇒
-        numEventsReceived = numEventsReceived + 1L
+        countReceivedEvent(event)
         if (queue.size == buffersize) {
           numEventsNotDispatched = numEventsNotDispatched + 1L
           logWarning(s"Buffer is full($buffersize). Skipping event.")
@@ -134,7 +158,7 @@ private[components] class EventPublisherHubActor(
         }
 
       case EventPublisher.FireEvent(event) ⇒
-        numEventsReceived = numEventsReceived + 1L
+        countReceivedEvent(event)
         if (queue.size == buffersize) {
           numEventsNotDispatched = numEventsNotDispatched + 1L
           logWarning(s"Buffer is full($buffersize). Skipping event.")
@@ -144,7 +168,7 @@ private[components] class EventPublisherHubActor(
         }
 
       case EventPublisher.PublishEvent(event) ⇒
-        numEventsReceived = numEventsReceived + 1L
+        countReceivedEvent(event)
         if (queue.size == buffersize) {
           numEventsNotDispatched = numEventsNotDispatched + 1L
           logWarning(s"Buffer is full($buffersize). Skipping event.")
@@ -240,7 +264,7 @@ private[components] class EventPublisherHubActor(
         }
 
       case EventPublisher.FireEvent(event) ⇒
-        numEventsReceived = numEventsReceived + 1L
+        countReceivedEvent(event)
         if (queue.size == buffersize) {
           numEventsNotDispatched = numEventsNotDispatched + 1L
           logWarning(s"Buffer is full($buffersize). Skipping event.")
@@ -250,7 +274,7 @@ private[components] class EventPublisherHubActor(
         }
 
       case EventPublisher.PublishEvent(event) ⇒
-        numEventsReceived = numEventsReceived + 1L
+        countReceivedEvent(event)
         if (queue.size == buffersize) {
           numEventsNotDispatched = numEventsNotDispatched + 1L
           logWarning(s"Buffer is full($buffersize). Skipping event.")
@@ -288,16 +312,29 @@ private[components] class EventPublisherHubActor(
   override val receive: Receive = receiveIdle
 
   private def createStatusReport(options: StatusReportOptions): AlmFuture[StatusReport] = {
+
+    val byTypeReport = StatusReport() ~~ (
+      eventsByType.toStream.map { case (clazz, count) ⇒ ezreps.toField(clazz.getName, count) }.toIterable)
+
+    val byComponentReport = StatusReport() ~~ (
+      eventsByComponent.toStream.map { ezreps.toField(_) }.toIterable)
+
+    val eventStatsReport = StatusReport() addMany (
+      "number-of-events-received" -> numEventsReceived,
+      "number-of-events-received-by-type" -> byTypeReport,
+      "number-of-events-received-by-component" -> byComponentReport)
+
     val configRep: StatusReport =
       StatusReport() addMany (
         "max-dispatch-time" -> maxDispatchTime,
         "buffer-size" -> buffersize)
+        
     val baseReport = StatusReport("EventPublisherHub-Report").withComponentState(componentState) addMany (
       "number-of-publishers" -> publishers.size,
-      "number-of-events-received" -> numEventsReceived,
       "number-of-events-dispatched" -> numEventsDispatched,
       "number-of-events-not-dispatched" -> numEventsNotDispatched,
       "queue-size" -> queue.size,
+      "received-events-stats" -> eventStatsReport,
       "config" -> configRep)
 
     appendToReportFromCollector(baseReport)(options)
