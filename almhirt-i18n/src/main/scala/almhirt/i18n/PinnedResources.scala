@@ -564,6 +564,8 @@ private[almhirt] object ResourceNodeXml {
           v.map(_.toBooleanAlm).validationOut)).validationOut.map(_.flatten.getOrElse(false))
       preJoinerTextOpt ← joinerElemOpt.map(elem ⇒ trimText(elem.text)).validationOut
       joinerOpt ← (if (embedJoinerInSpaces) preJoinerTextOpt.map(txt ⇒ s" $txt ") else preJoinerTextOpt).success
+      ifSelectionSizeEqualsAllItemsCountFormatterContainerElemOpt ← (elem \? "if-selection-size-equals-all-items-count")
+      ifSelectionSizeEqualsAllItemsCountFormatterOpt ← ifSelectionSizeEqualsAllItemsCountFormatterContainerElemOpt.map(elem ⇒ parseResourceValueContainer(locale, elem).flatMap(_.toFormatterFun)).validationOut
       selectionPartsElemOpt ← (elem \? "selection-parts")
       selectionParts ← selectionPartsElemOpt match {
         case Some(elem) ⇒
@@ -587,6 +589,7 @@ private[almhirt] object ResourceNodeXml {
       allItemsCountParameter = allItemsCountParameter,
       upperIndexParameter = upperIndexParameter,
       ifAllItemsCountParamIsZero = ifAllItemsCountParamIsZero,
+      ifSelectionSizeEqualsAllItemsCountFormatter = ifSelectionSizeEqualsAllItemsCountFormatterOpt,
       ifSelectionSizeIsZero = selectionParts._3,
       joiner = joinerOpt,
       rangeSelectionFormatter = selectionParts._1,

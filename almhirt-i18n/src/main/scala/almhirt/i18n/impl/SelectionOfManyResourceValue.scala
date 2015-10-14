@@ -19,11 +19,12 @@ private[almhirt] final class SelectionOfManyResourceValue(
     allItemsCountParameter: Option[String],
     upperIndexParameter: Option[String],
     ifAllItemsCountParamIsZero: String,
+    ifSelectionSizeEqualsAllItemsCountFormatter: Option[() ⇒ AlmFormatter],
     ifSelectionSizeIsZero: Option[String],
     joiner: Option[String],
-    rangeSelectionFormatter: Option[() => AlmFormatter],
-    amountSelectionFormatter: Option[() => AlmFormatter],
-    allItemsPartFormatter: Option[() => AlmFormatter]) extends BasicValueResourceValue with AlmFormatter {
+    rangeSelectionFormatter: Option[() ⇒ AlmFormatter],
+    amountSelectionFormatter: Option[() ⇒ AlmFormatter],
+    allItemsPartFormatter: Option[() ⇒ AlmFormatter]) extends BasicValueResourceValue with AlmFormatter {
   val selectionSizeParamName = selectionSizeParameter getOrElse "selection_size"
   val lowerIndexParamName = lowerIndexParameter getOrElse "lower_index"
   val allItemsCountParamName = allItemsCountParameter getOrElse "all_items_count"
@@ -57,6 +58,8 @@ private[almhirt] final class SelectionOfManyResourceValue(
       val preResV: AlmValidation[StringBuffer] =
         if (effSelectionSize == 0 && ifSelectionSizeIsZero.isDefined) {
           appendTo.append(ifSelectionSizeIsZero.get).success
+        } else if (effSelectionSize == allItemsCount && ifSelectionSizeEqualsAllItemsCountFormatter.isDefined) {
+          ifSelectionSizeEqualsAllItemsCountFormatter.get().formatInto(appendTo, selectionSizeParamName -> effSelectionSize, allItemsCountParamName -> allItemsCount)
         } else {
           (effLowerIndex, rangeSelectionFormatter, amountSelectionFormatter) match {
             case (Some(li), Some(rsf), _) ⇒
