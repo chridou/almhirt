@@ -30,13 +30,20 @@ class CircularBuffer[@specialized T](capacity: Int)(implicit tag: ClassTag[T]) {
   def clear() {
     _size = 0
   }
-  
+
   def itemAt(idx: Int): T = {
     if (_size == 0 || idx >= size)
       throw new IndexOutOfBoundsException()
     else
       arr((_cursor + capacity - size + idx) % capacity)
-    
+
+  }
+
+  def setItemAt(idx: Int, item: T) = {
+    if (_size == 0 || idx >= size)
+      throw new IndexOutOfBoundsException()
+    else
+      arr((_cursor + capacity - size + idx) % capacity) = item
   }
 
   def headOption: Option[T] =
@@ -49,7 +56,7 @@ class CircularBuffer[@specialized T](capacity: Int)(implicit tag: ClassTag[T]) {
     if (_size == 0)
       None
     else
-      Some(itemAt(_size-1))
+      Some(itemAt(_size - 1))
 
   def resize(newCapacity: Int): CircularBuffer[T] = {
     val newBuffer = new CircularBuffer(newCapacity)
