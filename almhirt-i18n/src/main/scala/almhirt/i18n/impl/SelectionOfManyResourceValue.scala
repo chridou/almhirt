@@ -30,17 +30,20 @@ private[almhirt] final class SelectionOfManyResourceValue(
   val allItemsCountParamName = allItemsCountParameter getOrElse "all_items_count"
   val upperIndexParamName = upperIndexParameter getOrElse "upper_index"
 
+  val myParamNames = Set(selectionSizeParamName, lowerIndexParamName, allItemsCountParamName, upperIndexParamName)
+
   def formatArgsIntoAt(appendTo: StringBuffer, pos: FieldPosition, args: Map[String, Any]): AlmValidation[StringBuffer] = {
+    val alienParameters = args.filterKeys { key ⇒ !myParamNames(key) }
     for {
       allItemsCount ← any2Int((args get allItemsCountParamName) getOrElse 0, allItemsCountParamName)
       lowerIndex ← (args get lowerIndexParamName).map(any2Int(_, lowerIndexParamName)).validationOut
       upperIndex ← (args get upperIndexParamName).map(any2Int(_, upperIndexParamName)).validationOut
       selectionSize ← (args get selectionSizeParamName).map(any2Int(_, selectionSizeParamName)).validationOut
-      res ← formatInternal(allItemsCount, lowerIndex, upperIndex, selectionSize, appendTo)
+      res ← formatInternal(allItemsCount, lowerIndex, upperIndex, selectionSize, appendTo, alienParameters)
     } yield res
   }
 
-  private def formatInternal(allItemsCount: Int, lowerIndex: Option[Int], upperIndex: Option[Int], selectionSize: Option[Int], appendTo: StringBuffer): AlmValidation[StringBuffer] = {
+  private def formatInternal(allItemsCount: Int, lowerIndex: Option[Int], upperIndex: Option[Int], selectionSize: Option[Int], appendTo: StringBuffer, alienParameters: Map[String, Any]): AlmValidation[StringBuffer] = {
     if (allItemsCount <= 0) formatNoItems(appendTo)
     else {
       val (effSelectionSize, effLowerIndex): (Int, Option[Int]) =
@@ -59,14 +62,14 @@ private[almhirt] final class SelectionOfManyResourceValue(
         if (effSelectionSize == 0 && ifSelectionSizeIsZero.isDefined) {
           appendTo.append(ifSelectionSizeIsZero.get).success
         } else if (effSelectionSize == allItemsCount && ifSelectionSizeEqualsAllItemsCountFormatter.isDefined) {
-          ifSelectionSizeEqualsAllItemsCountFormatter.get().formatInto(appendTo, selectionSizeParamName -> effSelectionSize, allItemsCountParamName -> allItemsCount)
+          ifSelectionSizeEqualsAllItemsCountFormatter.get().formatArgsInto(appendTo, createParamsMap(alienParameters, selectionSizeParamName -> effSelectionSize, allItemsCountParamName -> allItemsCount))
         } else {
           (effLowerIndex, rangeSelectionFormatter, amountSelectionFormatter) match {
             case (Some(li), Some(rsf), _) ⇒
               val upperIndex = li + effSelectionSize - 1
-              rsf().formatInto(appendTo, selectionSizeParamName -> effSelectionSize, lowerIndexParamName -> li, upperIndexParamName -> upperIndex)
+              rsf().formatArgsInto(appendTo, createParamsMap(alienParameters, selectionSizeParamName -> effSelectionSize, lowerIndexParamName -> li, upperIndexParamName -> upperIndex, allItemsCountParamName -> allItemsCount))
             case (_, _, Some(asf)) ⇒
-              asf().formatInto(appendTo, selectionSizeParamName -> effSelectionSize)
+              asf().formatArgsInto(appendTo, createParamsMap(alienParameters, selectionSizeParamName -> effSelectionSize, allItemsCountParamName -> allItemsCount))
             case _ ⇒
               UnspecifiedProblem("I need at least a formatter for an amount selection to render a selection.").failure
           }
@@ -76,11 +79,13 @@ private[almhirt] final class SelectionOfManyResourceValue(
         allItemsPartFormatter match {
           case Some(fmt) ⇒
             joiner.foreach { appendTo.append }
-            fmt().formatInto(appendTo, allItemsCountParamName -> allItemsCount)
+            fmt().formatArgsInto(appendTo, createParamsMap(alienParameters, allItemsCountParamName -> allItemsCount, selectionSizeParamName -> effSelectionSize))
           case None ⇒ appendTo.success
         })
     }
   }
+
+  def createParamsMap(alienParameters: Map[String, Any], others: (String, Any)*): Map[String, Any] = alienParameters ++ others
 
   private def formatNoItems(appendTo: StringBuffer): AlmValidation[StringBuffer] = {
     appendTo.append(ifAllItemsCountParamIsZero).success
