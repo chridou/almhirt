@@ -8,6 +8,7 @@ import riftwarp.std.kit._
 import riftwarp.std.WarpObjectLookUp
 import almhirt.akkax.events._
 import almhirt.akkax.{ GlobalComponentId }
+import almhirt.herder.RuntimeStateRecorded
 
 object FailureReportedWarpPackaging extends ComponentEventPackagingTemplate[FailureReported] {
   val warpDescriptor = WarpDescriptor("FailureReported")
@@ -64,5 +65,31 @@ object CommandRejectedWarpPackaging extends ComponentEventPackagingTemplate[Comm
       commandType ← from.getAs[String]("commandType")
       severity ← from.getAs[String]("severity").flatMap(almhirt.problem.Severity.fromString)
     } yield CommandRejected(header, origin, almhirt.tracking.CommandRepresentation.CommandIdAndType(CommandId(commandId), commandType), severity)
+  }
+}
+
+object RuntimeStateRecordedPackaging extends ComponentEventPackagingTemplate[RuntimeStateRecorded] {
+  val warpDescriptor = WarpDescriptor("RuntimeStateRecorded")
+  val alternativeWarpDescriptors = WarpDescriptor(classOf[RuntimeStateRecorded]) :: Nil
+
+  def addEventParams(what: RuntimeStateRecorded, into: WarpObject)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
+    into ~>
+      P("freeMemory", what.freeMemory) ~>
+      P("maxMemory", what.maxMemory) ~>
+      P("usedMemory", what.usedMemory) ~>
+      P("totalMemory", what.totalMemory)
+  }
+
+  def extractEventParams(from: WarpObjectLookUp, header: EventHeader, origin: GlobalComponentId)(implicit unpackers: WarpUnpackers): AlmValidation[RuntimeStateRecorded] = {
+    for {
+      freeMemory ← from.getAs[Long]("freeMemory")
+      maxMemory ← from.getAs[Long]("maxMemory")
+      usedMemory ← from.getAs[Long]("usedMemory")
+      totalMemory ← from.getAs[Long]("totalMemory")
+    } yield RuntimeStateRecorded(header, origin,
+      freeMemory = freeMemory,
+      usedMemory = usedMemory,
+      totalMemory = totalMemory,
+      maxMemory = maxMemory)
   }
 }

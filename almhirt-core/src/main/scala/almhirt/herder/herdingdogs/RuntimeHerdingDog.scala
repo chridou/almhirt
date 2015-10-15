@@ -28,10 +28,10 @@ object RuntimeHerdingDog {
 }
 
 private[almhirt] class RuntimeHerdingDog(
-  historySize: Int,
-  runtimePollingInterval: FiniteDuration,
-  warningPercentage: Double,
-  criticalPercentage: Double)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor {
+    historySize: Int,
+    runtimePollingInterval: FiniteDuration,
+    warningPercentage: Double,
+    criticalPercentage: Double)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor {
   import HerderMessages.InformationMessages._
 
   val runtime = Runtime.getRuntime()
@@ -69,6 +69,8 @@ private[almhirt] class RuntimeHerdingDog(
   def receiveRunning: Receive = {
     case PollRuntime ⇒
       val newEntry = RuntimeHistoryEntry(runtime)
+      val timestamp = almhirtContext.getUtcTimestamp
+      almhirtContext.fireNonStreamEvent(RuntimeStateRecorded(newEntry)(EventHeader(EventId(almhirtContext.getUniqueString()), timestamp), GlobalComponentId(this.componentNameProvider.componentId)))
       history.add(newEntry)
       val memPercentage = newEntry.usedMemoryAbsolute * 100.0
       if (memPercentage >= criticalPercentage)
