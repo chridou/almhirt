@@ -598,6 +598,26 @@ private[almhirt] object ResourceNodeXml {
       allItemsPartFormatter = allItemsFormatterOpt)
   }
 
+  def parseCustomSelectionFromManyFormatterValue(locale: ULocale, elem: Elem): AlmValidation[ResourceValue] = {
+    import almhirt.i18n.impl.CustomSelectionOfManyResourceValue
+    def getParameterValueOpt(elem: Elem, name: String): AlmValidation[Option[String]] =
+      (elem \@? name).map(_.trim().notEmptyOrWhitespace()).validationOut
+
+    for {
+      selectionSizeParameter ← getParameterValueOpt(elem, "selection-size-parameter")
+      lowerIndexParameter ← getParameterValueOpt(elem, "lower-index-parameter")
+      allItemsCountParameter ← getParameterValueOpt(elem, "all-items-count-parameter")
+      upperIndexParameter ← getParameterValueOpt(elem, "upper-index-parameter")
+      formatter ← parseResourceValueContainer(locale, elem).flatMap(_.toFormatterFun)
+    } yield new CustomSelectionOfManyResourceValue(
+      locale = locale,
+      selectionSizeParameter = selectionSizeParameter,
+      lowerIndexParameter = lowerIndexParameter,
+      allItemsCountParameter = allItemsCountParameter,
+      upperIndexParameter = upperIndexParameter,
+      formatter = formatter)
+  }
+
   def checkName(name: String): AlmValidation[String] =
     if (name.contains('.') || name.contains(' ')) {
       ArgumentProblem(s""""$name" is not allowed. An key part may not conatain a dot or whitespace.""").failure
