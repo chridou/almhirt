@@ -440,6 +440,8 @@ private[almhirt] object ResourceNodeXml {
           parseSelectTextFormatterValue(locale, elemFormatterElem)
         } else if (typeDescriptor == "selection-of-many") {
           parseSelectionFromManyFormatterValue(locale, elemFormatterElem)
+        } else if (typeDescriptor == "custom-selection-of-many") {
+          parseCustomSelectionFromManyFormatterValue(locale, elemFormatterElem)
         } else {
           ArgumentProblem(s""""$typeDescriptor" is not a valid type for a resource value.""").failure
         }
@@ -451,16 +453,19 @@ private[almhirt] object ResourceNodeXml {
 
   def parseStringValueBasedValue(locale: ULocale, valueElem: Elem): AlmValidation[ResourceValue] = {
     val typeDescriptor = valueElem.label
-    for {
-      valueStr ← trimText(valueElem.text)
-      value ← typeDescriptor match {
-        case ""           ⇒ RawStringResourceValue(locale, valueStr).success
-        case "plain"      ⇒ RawStringResourceValue(locale, valueStr).success
-        case "icu"        ⇒ IcuResourceValue(valueStr, locale)
-        case "empty-text" ⇒ impl.ZeroTextResourceValue(locale).success
-        case x            ⇒ ArgumentProblem(s""""$x" is not a valid type for a string based resource value.""").failure
-      }
-    } yield value
+    if (typeDescriptor == "empty-text") {
+      impl.ZeroTextResourceValue(locale).success
+    } else {
+      for {
+        valueStr ← trimText(valueElem.text)
+        value ← typeDescriptor match {
+          case ""      ⇒ RawStringResourceValue(locale, valueStr).success
+          case "plain" ⇒ RawStringResourceValue(locale, valueStr).success
+          case "icu"   ⇒ IcuResourceValue(valueStr, locale)
+          case x       ⇒ ArgumentProblem(s""""$x" is not a valid type for a string based resource value.""").failure
+        }
+      } yield value
+    }
   }
 
   def parseMeasureFormatterValue(locale: ULocale, elem: Elem): AlmValidation[ResourceValue] = {
@@ -608,7 +613,7 @@ private[almhirt] object ResourceNodeXml {
       lowerIndexParameter ← getParameterValueOpt(elem, "lower-index-parameter")
       allItemsCountParameter ← getParameterValueOpt(elem, "all-items-count-parameter")
       upperIndexParameter ← getParameterValueOpt(elem, "upper-index-parameter")
-      formatter ← parseResourceValueContainer(locale, elem).flatMap(_.toFormatterFun)
+      formatter ← parseResourceValueContainer(locale, elem).flatMap(_.toFormatterFun).leftMap(p ⇒ BadDataProblem("Failed to parse the formatter", cause = Some(p)))
     } yield new CustomSelectionOfManyResourceValue(
       locale = locale,
       selectionSizeParameter = selectionSizeParameter,

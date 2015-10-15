@@ -118,8 +118,7 @@
 					</if-all-items-count-is-zero>
 					<!-- This is an optional element. If provided it will always be rendered when the 'all-items-count-parameter' equals 'selection_size'. Both parameters will 
 						be passed so you can choose which one suits your style(They have an equal value). 'if-all-items-count-is-zero' takes precedence -->
-					<!-- <if-selection-size-equals-all-items-count> <icu>{selection_size, plural, =1{The only one item selected} other{All # items selected}}                      
-						</icu> </if-selection-size-equals-all-items-count> -->
+					<!-- <if-selection-size-equals-all-items-count> <plain>selection-size=all-items-count</plain> </if-selection-size-equals-all-items-count> -->
 					<!-- This is an optional element. Define your selection parts inside. If omitted or empty only special cases like selection size is zero or all-items-count 
 						is zero can be rendered. The formatter will decide on which selection part to use based on the provided parameters. If any index-parameter is provided it will try 
 						the [range-selection-part] first. If no index-parameter is provided or the [range-selection-part] is missing it will fall back to the [amount-selection-part]. As 
@@ -174,7 +173,7 @@
 					</if-all-items-count-is-zero>
 					<selection-parts>
 						<if-selection-size-is-zero>
-							Nothing
+							<plain>Nothing</plain>
 						</if-selection-size-is-zero>
 						<range-selection-part>
 							<icu>{selection_size, plural,
@@ -201,7 +200,7 @@
 					</if-all-items-count-is-zero>
 					<selection-parts>
 						<if-selection-size-is-zero>
-							Nothing
+							<plain>Nothing</plain>
 						</if-selection-size-is-zero>
 						<amount-selection-part>
 							<icu> { selection_size, plural,
