@@ -56,12 +56,19 @@ private[almhirt] final class SelectionOfManyResourceValue(
 
       val allParams = createParamsMap(alienParameters, upperAndLowerIndex, selectionSizeParamName -> effSelectionSize, allItemsCountParamName -> allItemsCount)
 
-      val preResV: AlmValidation[StringBuffer] =
-        if (effSelectionSize == 0 && ifSelectionSizeIsZeroFormatter.isDefined) {
-          ifSelectionSizeIsZeroFormatter.get().formatArgsInto(appendTo, allParams)
-        } else if (effSelectionSize == allItemsCount && ifSelectionSizeEqualsAllItemsCountFormatter.isDefined) {
-          ifSelectionSizeEqualsAllItemsCountFormatter.get().formatArgsInto(appendTo, allParams)
-        } else {
+      if (effSelectionSize == 0 && ifSelectionSizeIsZeroFormatter.isDefined) {
+        val preResV: AlmValidation[StringBuffer] = ifSelectionSizeIsZeroFormatter.get().formatArgsInto(appendTo, allParams)
+        preResV.flatMap(appendTo ⇒
+          allItemsPartFormatter match {
+            case Some(fmt) ⇒
+              joiner.foreach { appendTo.append }
+              fmt().formatArgsInto(appendTo, allParams)
+            case None ⇒ appendTo.success
+          })
+      } else if (effSelectionSize == allItemsCount && ifSelectionSizeEqualsAllItemsCountFormatter.isDefined) {
+        ifSelectionSizeEqualsAllItemsCountFormatter.get().formatArgsInto(appendTo, allParams)
+      } else {
+        val preResV: AlmValidation[StringBuffer] =
           (upperAndLowerIndex, rangeSelectionFormatter, amountSelectionFormatter) match {
             case (Some(_), Some(rsf), _) ⇒
               rsf().formatArgsInto(appendTo, allParams)
@@ -70,15 +77,14 @@ private[almhirt] final class SelectionOfManyResourceValue(
             case _ ⇒
               UnspecifiedProblem("I need at least a formatter for an amount selection to render a selection.").failure
           }
-        }
-
-      preResV.flatMap(appendTo ⇒
-        allItemsPartFormatter match {
-          case Some(fmt) ⇒
-            joiner.foreach { appendTo.append }
-            fmt().formatArgsInto(appendTo, allParams)
-          case None ⇒ appendTo.success
-        })
+        preResV.flatMap(appendTo ⇒
+          allItemsPartFormatter match {
+            case Some(fmt) ⇒
+              joiner.foreach { appendTo.append }
+              fmt().formatArgsInto(appendTo, allParams)
+            case None ⇒ appendTo.success
+          })
+      }
     }
   }
 
@@ -133,21 +139,21 @@ private[almhirt] final class CustomSelectionOfManyResourceValue(
   }
 
   private def formatInternal(allItemsCount: Int, lowerIndex: Option[Int], upperIndex: Option[Int], selectionSize: Option[Int], appendTo: StringBuffer, alienParameters: Map[String, Any]): AlmValidation[StringBuffer] = {
-      val (effSelectionSize, upperAndLowerIndex): (Int, Option[(Int, Int)]) =
-        (selectionSize, lowerIndex, upperIndex) match {
-          case (Some(sz), _, _) if sz <= 0 ⇒ (0, None)
-          case (Some(sz), Some(li), _)     ⇒ (sz, Some((li, li + sz - 1)))
-          case (Some(sz), None, Some(ui))  ⇒ (sz, Some((ui - sz + 1, ui)))
-          case (Some(sz), None, None)      ⇒ (sz, None)
-          case (None, Some(li), Some(ui))  ⇒ (ui - li + 1, Some((li, ui)))
-          case (None, Some(li), None)      ⇒ (1, Some((li, li)))
-          case (None, None, Some(ui))      ⇒ (1, Some(ui, ui))
-          case (None, None, None)          ⇒ (0, None)
-        }
+    val (effSelectionSize, upperAndLowerIndex): (Int, Option[(Int, Int)]) =
+      (selectionSize, lowerIndex, upperIndex) match {
+        case (Some(sz), _, _) if sz <= 0 ⇒ (0, None)
+        case (Some(sz), Some(li), _)     ⇒ (sz, Some((li, li + sz - 1)))
+        case (Some(sz), None, Some(ui))  ⇒ (sz, Some((ui - sz + 1, ui)))
+        case (Some(sz), None, None)      ⇒ (sz, None)
+        case (None, Some(li), Some(ui))  ⇒ (ui - li + 1, Some((li, ui)))
+        case (None, Some(li), None)      ⇒ (1, Some((li, li)))
+        case (None, None, Some(ui))      ⇒ (1, Some(ui, ui))
+        case (None, None, None)          ⇒ (0, None)
+      }
 
-      val allParams = createParamsMap(alienParameters, upperAndLowerIndex, selectionSizeParamName -> effSelectionSize, allItemsCountParamName -> allItemsCount)
+    val allParams = createParamsMap(alienParameters, upperAndLowerIndex, selectionSizeParamName -> effSelectionSize, allItemsCountParamName -> allItemsCount)
 
-      formatter().formatArgsInto(appendTo, allParams)
+    formatter().formatArgsInto(appendTo, allParams)
   }
 
   def createParamsMap(alienParameters: Map[String, Any], upperAndLowerIndex: Option[(Int, Int)], others: (String, Any)*): Map[String, Any] =
