@@ -414,7 +414,7 @@ private[almhirt] object ResourceNodeXml {
     elems.map { elem ⇒ parseKey(locale, elem, prefix).toAgg }.toVector.sequence
   }
 
-  val stringValueBasedDescriptors = Set("plain", "icu")
+  val stringValueBasedDescriptors = Set("plain", "icu", "empty-text")
   def parseKey(locale: ULocale, elem: Elem, prefix: String): AlmValidation[(String, ResourceValue)] = {
     (for {
       name ← elem \@! "name"
@@ -454,10 +454,11 @@ private[almhirt] object ResourceNodeXml {
     for {
       valueStr ← trimText(valueElem.text)
       value ← typeDescriptor match {
-        case ""      ⇒ RawStringResourceValue(locale, valueStr).success
-        case "plain" ⇒ RawStringResourceValue(locale, valueStr).success
-        case "icu"   ⇒ IcuResourceValue(valueStr, locale)
-        case x       ⇒ ArgumentProblem(s""""$x" is not a valid type for a string based resource value.""").failure
+        case ""           ⇒ RawStringResourceValue(locale, valueStr).success
+        case "plain"      ⇒ RawStringResourceValue(locale, valueStr).success
+        case "icu"        ⇒ IcuResourceValue(valueStr, locale)
+        case "empty-text" ⇒ impl.ZeroTextResourceValue(locale).success
+        case x            ⇒ ArgumentProblem(s""""$x" is not a valid type for a string based resource value.""").failure
       }
     } yield value
   }
