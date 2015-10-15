@@ -132,7 +132,7 @@
 						<!-- This is an optional element. It replaces the selection part whenever the selection-size-parameter is zero(nothing selected). If you omit this element 
 							you must handle the case of nothing being selected inside your selection-parts -->
 						<if-selection-size-is-zero>
-							Nothing
+							<plain>Nothing</plain>
 						</if-selection-size-is-zero>
 						<!-- This is an optional element. It renders the selected items based on the selection-size-parameter and both index parameters. You can place anything that 
 							renders a text inside. -->

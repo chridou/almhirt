@@ -575,9 +575,9 @@ private[almhirt] object ResourceNodeXml {
             rangeSelectionFormatterOpt ← rangeSelectionFormatterContainerElemOpt.map(elem ⇒ parseResourceValueContainer(locale, elem).flatMap(_.toFormatterFun)).validationOut
             amountSelectionFormatterContainerElemOpt ← (elem \? "amount-selection-part")
             amountSelectionFormatterOpt ← amountSelectionFormatterContainerElemOpt.map(elem ⇒ parseResourceValueContainer(locale, elem).flatMap(_.toFormatterFun)).validationOut
-            ifSelectionSizeIsZeroElemOpt ← (elem \? "if-selection-size-is-zero")
-            ifSelectionSizeIsZero ← ifSelectionSizeIsZeroElemOpt.map(elem ⇒ trimText(elem.text)).validationOut
-          } yield (rangeSelectionFormatterOpt, amountSelectionFormatterOpt, ifSelectionSizeIsZero)
+            ifSelectionSizeIsZeroFormatterContainerElemOpt ← (elem \? "if-selection-size-is-zero")
+            ifSelectionSizeIsZeroFormatterOpt ← ifSelectionSizeIsZeroFormatterContainerElemOpt.map(elem ⇒ parseResourceValueContainer(locale, elem).flatMap(_.toFormatterFun)).validationOut
+          } yield (rangeSelectionFormatterOpt, amountSelectionFormatterOpt, ifSelectionSizeIsZeroFormatterOpt)
         case None ⇒
           (None, None, None).success
       }
@@ -591,7 +591,7 @@ private[almhirt] object ResourceNodeXml {
       upperIndexParameter = upperIndexParameter,
       ifAllItemsCountParamIsZero = ifAllItemsCountParamIsZero,
       ifSelectionSizeEqualsAllItemsCountFormatter = ifSelectionSizeEqualsAllItemsCountFormatterOpt,
-      ifSelectionSizeIsZero = selectionParts._3,
+      ifSelectionSizeIsZeroFormatter = selectionParts._3,
       joiner = joinerOpt,
       rangeSelectionFormatter = selectionParts._1,
       amountSelectionFormatter = selectionParts._2,

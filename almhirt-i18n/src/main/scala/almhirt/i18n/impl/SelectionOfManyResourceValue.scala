@@ -20,7 +20,7 @@ private[almhirt] final class SelectionOfManyResourceValue(
     upperIndexParameter: Option[String],
     ifAllItemsCountParamIsZero: String,
     ifSelectionSizeEqualsAllItemsCountFormatter: Option[() ⇒ AlmFormatter],
-    ifSelectionSizeIsZero: Option[String],
+    ifSelectionSizeIsZeroFormatter: Option[() ⇒ AlmFormatter],
     joiner: Option[String],
     rangeSelectionFormatter: Option[() ⇒ AlmFormatter],
     amountSelectionFormatter: Option[() ⇒ AlmFormatter],
@@ -59,8 +59,8 @@ private[almhirt] final class SelectionOfManyResourceValue(
         }
 
       val preResV: AlmValidation[StringBuffer] =
-        if (effSelectionSize == 0 && ifSelectionSizeIsZero.isDefined) {
-          appendTo.append(ifSelectionSizeIsZero.get).success
+        if (effSelectionSize == 0 && ifSelectionSizeIsZeroFormatter.isDefined) {
+          ifSelectionSizeIsZeroFormatter.get().formatArgsInto(appendTo, createParamsMap(alienParameters, selectionSizeParamName -> effSelectionSize, allItemsCountParamName -> allItemsCount))
         } else if (effSelectionSize == allItemsCount && ifSelectionSizeEqualsAllItemsCountFormatter.isDefined) {
           ifSelectionSizeEqualsAllItemsCountFormatter.get().formatArgsInto(appendTo, createParamsMap(alienParameters, selectionSizeParamName -> effSelectionSize, allItemsCountParamName -> allItemsCount))
         } else {
