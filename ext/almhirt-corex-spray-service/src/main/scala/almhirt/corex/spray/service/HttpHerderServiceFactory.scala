@@ -128,11 +128,10 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
                 val fut = (herder ? CircuitMessages.ReportCircuitStates)(maxCallDuration).mapCastTo[CircuitMessages.CircuitStates].map(_.states)
                 fut.fold(
                   problem ⇒ implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, problem),
-                  states ⇒ if (isUiEnabled) {
-                    ctx.complete(StatusCodes.OK, createCircuitsUi(states))
-                  } else {
-                    ctx.complete(StatusCodes.OK, states.map { case (name, state) ⇒ s"$name → $state" }.mkString("\n"))
-                  })
+                  states ⇒ {
+                    val html = createCircuitsUi(states, !isUiEnabled)
+                    ctx.complete(StatusCodes.OK, html)
+                  } )
               }
             }
           } ~ pathPrefix(Segment / Segment) { (appName, componentName) ⇒
@@ -195,10 +194,9 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
                 val fut = (herder ? ComponentControlMessages.ReportComponentStates)(maxCallDuration).mapCastTo[ComponentControlMessages.ComponentStates].map(_.states)
                 fut.fold(
                   problem ⇒ implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, problem),
-                  states ⇒ if (isUiEnabled) {
-                    ctx.complete(StatusCodes.OK, createComponentsUi(states))
-                  } else {
-                    ctx.complete(StatusCodes.OK, states.map { case (name, state) ⇒ s"$name → $state" }.mkString("\n"))
+                  states ⇒ {
+                    val html = createComponentsUi(states, !isUiEnabled)
+                    ctx.complete(StatusCodes.OK, html)
                   })
               }
             }
@@ -385,14 +383,18 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
     </html>
   }
 
-  private def createCircuitsUi(state: Seq[(ComponentId, CircuitState)]) = {
+  private def createCircuitsUi(state: Seq[(ComponentId, CircuitState)], isReport: Boolean) = {
     <html>
       <head>
         <title>Circuits</title>
       </head>
       <body>
-        { createCircuitsContent(state, false) }
-        <br><a href="../herder">Dashboard</a></br>
+        { createCircuitsContent(state, isReport) }
+        {
+          if (!isReport) {
+            <br><a href="../herder">Dashboard</a></br>
+          }
+        }
         <br>{ almhirtContext.getUtcTimestamp.toString }</br>
       </body>
     </html>
@@ -537,14 +539,18 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
     }
   }
 
-  private def createComponentsUi(state: Seq[(ComponentId, ComponentState)]) = {
+  private def createComponentsUi(state: Seq[(ComponentId, ComponentState)], isReport: Boolean) = {
     <html>
       <head>
         <title>Components</title>
       </head>
       <body>
-        { createComponentsContent(state, false) }
-        <br><a href="../herder">Dashboard</a></br>
+        { createComponentsContent(state, isReport) }
+        {
+          if (!isReport) {
+            <br><a href="../herder">Dashboard</a></br>
+          }
+        }
         <br>{ almhirtContext.getUtcTimestamp.toString }</br>
       </body>
     </html>
@@ -693,10 +699,6 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
           <td>{ component.app.value }</td>
           <td>{ component.component.value }</td>
           { createStateItem(state) }
-          { createPauseAction(component, state) }
-          { createResumeAction(component, state) }
-          { createRestartAction(component, state) }
-          { createPrepareForShutdownAction(component, state) }
         </tr>
       }
     }
