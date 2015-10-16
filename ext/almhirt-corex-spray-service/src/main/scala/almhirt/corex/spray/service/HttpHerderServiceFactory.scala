@@ -131,7 +131,7 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
                   states ⇒ {
                     val html = createCircuitsUi(states, !isUiEnabled)
                     ctx.complete(StatusCodes.OK, html)
-                  } )
+                  })
               }
             }
           } ~ pathPrefix(Segment / Segment) { (appName, componentName) ⇒
@@ -703,26 +703,14 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
       }
     }
 
-    // Yes, they do the same... 
-    if (isReport) {
-      <table border="1">
-        <tr>
-          <th>App</th>
-          <th>Component</th>
-          <th>Component State</th>
-        </tr>
-        { state.map { case (component, state) ⇒ createRow(component, state, true) } }
-      </table>
-    } else {
-      <table border="1">
-        <tr>
-          <th>App</th>
-          <th>Component</th>
-          <th>Component State</th>
-        </tr>
-        { state.map { case (component, state) ⇒ createRow(component, state, true) } }
-      </table>
-    }
+    <table border="1">
+      <tr>
+        <th>App</th>
+        <th>Component</th>
+        <th>Component State</th>
+      </tr>
+      { state.map { case (component, state) ⇒ createRow(component, state, isReport) } }
+    </table>
   }
 
   def createFailuresReport(entries: Seq[(ComponentId, BadThingsHistory[FailuresEntry])], pathToHerder: String) = {
