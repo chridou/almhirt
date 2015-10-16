@@ -1598,8 +1598,8 @@ trait HttpHerderServiceFactory extends Directives { me: AlmActor with AlmActorLo
             </th>
           </tr>
           <tr>
-            <td>{ createCircuitsContent(circuitsStates, true) }</td>
-            <td>{ createComponentsContent(componentStates, true) }</td>
+            <td>{ createCircuitsContent(circuitsStates, false) }</td>
+            <td>{ createComponentsContent(componentStates, false) }</td>
           </tr>
           <tr>
             <th>
