@@ -79,7 +79,8 @@ object RuntimeStateRecordedPackaging extends ComponentEventPackagingTemplate[Run
       P("usedMemory", what.usedMemory) ~>
       P("totalMemory", what.totalMemory) ~>
       P("usedFractionFromTotal", what.usedFractionFromTotal) ~>
-      P("usedFractionFromMax", what.usedFractionFromMax)
+      P("usedFractionFromMax", what.usedFractionFromMax) ~>
+      P("systemLoadAverage", what.systemLoadAverage)
   }
 
   def extractEventParams(from: WarpObjectLookUp, header: EventHeader, origin: GlobalComponentId)(implicit unpackers: WarpUnpackers): AlmValidation[RuntimeStateRecorded] = {
@@ -90,12 +91,14 @@ object RuntimeStateRecordedPackaging extends ComponentEventPackagingTemplate[Run
       totalMemory ← from.getAs[Long]("totalMemory")
       usedFractionFromTotal ← from.getAs[Double]("usedFractionFromTotal")
       usedFractionFromMax ← from.getAs[Double]("usedFractionFromMax")
+      systemLoadAverage ← from.getAs[Double]("systemLoadAverage")
     } yield RuntimeStateRecorded(header, origin,
       freeMemory = freeMemory,
       usedMemory = usedMemory,
       totalMemory = totalMemory,
       maxMemory = maxMemory,
       usedFractionFromTotal = usedFractionFromTotal,
-      usedFractionFromMax = usedFractionFromMax)
+      usedFractionFromMax = usedFractionFromMax,
+      systemLoadAverage = systemLoadAverage)
   }
 }

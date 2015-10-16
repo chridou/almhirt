@@ -3,6 +3,7 @@ package almhirt.herder
 import java.time.LocalDateTime
 import almhirt.common.CanCreateDateTime
 import almhirt.collections.CircularBuffer
+import java.lang.management.OperatingSystemMXBean
 
 final case class RuntimeHistoryEntry(
   timestamp: LocalDateTime,
@@ -13,7 +14,8 @@ final case class RuntimeHistoryEntry(
   // The total amount of memory in the Java virtual machine. The value returned by this method may vary over time, depending on the host environment.
   totalMemory: Long,
   // The maximum amount of memory that the Java virtual machine will attempt to use. If there is no inherent limit then the value Long.MAX_VALUE will be returned. 
-  maxMemory: Long) {
+  maxMemory: Long,
+  systemLoadAverage: Double) {
 
   def usedMemoryRelative: Double =
     usedMemory.toDouble / totalMemory
@@ -27,20 +29,23 @@ final case class RuntimeHistoryEntry(
          |Total memory: ${Math.round(totalMemory.toDouble / 1000000.0)}MB (${Math.round(totalMemory.toDouble / 1048576.0)}MiB)
          |Max memory: ${Math.round(maxMemory.toDouble / 1000000.0)}MB (${Math.round(maxMemory.toDouble / 1048576.0)}MiB)
          |Used(relative): ${Math.round(usedMemoryRelative * 100.0)}%
-         |Used(absolute): ${Math.round(usedMemoryAbsolute * 100.0)}%""".stripMargin
+         |Used(absolute): ${Math.round(usedMemoryAbsolute * 100.0)}%
+         |systemLoadAverage: ${systemLoadAverage}%""".stripMargin
 }
 
 object RuntimeHistoryEntry {
-  def apply(runtime: Runtime)(implicit ccuad: CanCreateDateTime): RuntimeHistoryEntry = {
+  def apply(runtime: Runtime, osBean: OperatingSystemMXBean)(implicit ccuad: CanCreateDateTime): RuntimeHistoryEntry = {
     val free = runtime.freeMemory()
     val total = runtime.totalMemory()
     val used = total - free
-    RuntimeHistoryEntry(
+    val systemLoadAverage = osBean.getSystemLoadAverage()
+   RuntimeHistoryEntry(
       timestamp = ccuad.getUtcTimestamp,
       freeMemory = free,
       usedMemory = used,
       totalMemory = total,
-      maxMemory = runtime.maxMemory())
+      maxMemory = runtime.maxMemory(),
+      systemLoadAverage = systemLoadAverage)
   }
 }
 

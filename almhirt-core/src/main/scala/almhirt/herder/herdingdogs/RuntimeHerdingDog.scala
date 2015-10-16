@@ -52,6 +52,15 @@ private[almhirt] class RuntimeHerdingDog(
         None
     }
 
+  val osBean: java.lang.management.OperatingSystemMXBean = {
+    val bean = java.lang.management.ManagementFactory.getOperatingSystemMXBean()
+    if (bean != null)
+      bean
+    else {
+      throw new Exception("Could not aquire the os bean!")
+    }
+  }
+
   implicit override val componentNameProvider = new ActorComponentIdProvider {
     val componentId = RuntimeHerdingDog.componentId
   }
@@ -68,7 +77,7 @@ private[almhirt] class RuntimeHerdingDog(
 
   def receiveRunning: Receive = {
     case PollRuntime ⇒
-      val newEntry = RuntimeHistoryEntry(runtime)
+      val newEntry = RuntimeHistoryEntry(runtime, osBean)
       val timestamp = almhirtContext.getUtcTimestamp
       almhirtContext.fireNonStreamEvent(RuntimeStateRecorded(newEntry)(EventHeader(EventId(almhirtContext.getUniqueString()), timestamp), GlobalComponentId(this.componentNameProvider.componentId)))
       history.add(newEntry)
