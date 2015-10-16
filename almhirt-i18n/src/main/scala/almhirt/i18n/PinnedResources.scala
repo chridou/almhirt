@@ -442,6 +442,8 @@ private[almhirt] object ResourceNodeXml {
           parseSelectionFromManyFormatterValue(locale, elemFormatterElem)
         } else if (typeDescriptor == "custom-selection-of-many") {
           parseCustomSelectionFromManyFormatterValue(locale, elemFormatterElem)
+        } else if (typeDescriptor == "boolean-format-switch") {
+          parseBoleanFormatterSwitchValue(locale, elemFormatterElem)
         } else {
           ArgumentProblem(s""""$typeDescriptor" is not a valid type for a resource value.""").failure
         }
@@ -621,6 +623,24 @@ private[almhirt] object ResourceNodeXml {
       allItemsCountParameter = allItemsCountParameter,
       upperIndexParameter = upperIndexParameter,
       formatter = formatter)
+  }
+
+  def parseBoleanFormatterSwitchValue(locale: ULocale, elem: Elem): AlmValidation[ResourceValue] = {
+    import almhirt.i18n.impl.BooleanFormatterSwitch
+    def getParameterValueOpt(elem: Elem, name: String): AlmValidation[Option[String]] =
+      (elem \@? name).map(_.trim().notEmptyOrWhitespace()).validationOut
+
+    for {
+      conditionParameter ← getParameterValueOpt(elem, "condition-parameter")
+      defaultValue ← getParameterValueOpt(elem, "default-value").flatMap(_.map(_.toBooleanAlm).validationOut)
+      trueFormatter ← (elem \! "if-true").flatMap(elem ⇒ parseResourceValueContainer(locale, elem).flatMap(_.toFormatterFun))
+      falseFormatter ← (elem \! "if-false").flatMap(elem ⇒ parseResourceValueContainer(locale, elem).flatMap(_.toFormatterFun))
+    } yield new BooleanFormatterSwitch(
+      locale = locale,
+      conditionParameter = conditionParameter,
+      noParamDefaultsTo = defaultValue,
+      trueFormatter = trueFormatter,
+      falseFormatter = falseFormatter)
   }
 
   def checkName(name: String): AlmValidation[String] =

@@ -222,4 +222,19 @@
 
 		</group>
 	</section>
+	<section name="section_3">
+		<group name="group_1">
+			<key name="boolean-format-switch">
+				<!-- [default-value] is optional and will be used if condition parameter is not provided. -->
+				<boolean-format-switch condition-parameter="condition" default-value="false">
+					<if-true>
+						<empty-text />
+					</if-true>
+					<if-false>
+						<empty-text />
+					</if-false>
+				</boolean-format-switch>
+			</key>
+		</group>
+	</section>
 </localized>
