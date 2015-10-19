@@ -19,6 +19,10 @@ object Serialization {
     rw.unpackers.addTyped(EventNotProcessedWarpPackaging)
     rw.packers.addTyped(CommandRejectedWarpPackaging)
     rw.unpackers.addTyped(CommandRejectedWarpPackaging)
+    rw.packers.addTyped(SystemStartedPackaging)
+    rw.unpackers.addTyped(SystemStartedPackaging)
+    rw.packers.addTyped(SystemStoppedPackaging)
+    rw.unpackers.addTyped(SystemStoppedPackaging)
     rw.packers.addTyped(RuntimeStateRecordedPackaging)
     rw.unpackers.addTyped(RuntimeStateRecordedPackaging)
     rw

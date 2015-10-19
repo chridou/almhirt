@@ -25,3 +25,6 @@ object CommandRejected {
   def apply(command: CommandRepresentation, severity: almhirt.problem.Severity)(header: EventHeader, origin: GlobalComponentId): CommandRejected =
     CommandRejected(header, origin, command, severity: almhirt.problem.Severity)
 }
+
+final case class SystemStarted(header: EventHeader, origin: GlobalComponentId) extends ComponentEvent
+final case class SystemStopped(header: EventHeader, origin: GlobalComponentId) extends ComponentEvent

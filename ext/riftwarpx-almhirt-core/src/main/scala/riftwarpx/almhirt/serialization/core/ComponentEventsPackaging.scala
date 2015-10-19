@@ -68,6 +68,32 @@ object CommandRejectedWarpPackaging extends ComponentEventPackagingTemplate[Comm
   }
 }
 
+object SystemStartedPackaging extends ComponentEventPackagingTemplate[SystemStarted] {
+  val warpDescriptor = WarpDescriptor("SystemStarted")
+  val alternativeWarpDescriptors = WarpDescriptor(classOf[SystemStarted]) :: Nil
+
+  def addEventParams(what: SystemStarted, into: WarpObject)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
+    into.success
+  }
+
+  def extractEventParams(from: WarpObjectLookUp, header: EventHeader, origin: GlobalComponentId)(implicit unpackers: WarpUnpackers): AlmValidation[SystemStarted] = {
+    SystemStarted(header, origin).success
+  }
+}
+
+object SystemStoppedPackaging extends ComponentEventPackagingTemplate[SystemStopped] {
+  val warpDescriptor = WarpDescriptor("SystemStopped")
+  val alternativeWarpDescriptors = WarpDescriptor(classOf[SystemStopped]) :: Nil
+
+  def addEventParams(what: SystemStopped, into: WarpObject)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
+    into.success
+  }
+
+  def extractEventParams(from: WarpObjectLookUp, header: EventHeader, origin: GlobalComponentId)(implicit unpackers: WarpUnpackers): AlmValidation[SystemStopped] = {
+    SystemStopped(header, origin).success
+  }
+}
+
 object RuntimeStateRecordedPackaging extends ComponentEventPackagingTemplate[RuntimeStateRecorded] {
   val warpDescriptor = WarpDescriptor("RuntimeStateRecorded")
   val alternativeWarpDescriptors = WarpDescriptor(classOf[RuntimeStateRecorded]) :: Nil

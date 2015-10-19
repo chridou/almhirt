@@ -254,6 +254,8 @@ object AlmhirtContext {
                   log.info("Stopping.")
                   context.actorSelection(theLocalActorPaths.herder) ! HerderMessages.OnSystemShutdown
                   //streams.stop()
+                  val event = almhirt.akkax.events.SystemStopped(EventHeader()(almhirtContext), GlobalComponentId(componentNameProvider.componentId)(almhirtContext))
+                  almhirtContext.fireNonStreamEvent(event)
                   context.system.scheduler.scheduleOnce(5.seconds)(context.stop(self))
                 }
               }
@@ -288,6 +290,8 @@ object AlmhirtContext {
                 }
 
               sender() ! componentactors.EventPublisherHubRegistered
+              val event = almhirt.akkax.events.SystemStarted(EventHeader()(almhirtContext), GlobalComponentId(this.componentNameProvider.componentId)(almhirtContext))
+              almhirtContext.fireNonStreamEvent(event)
 
             case AlmhirtContextMessages.StreamsNotCreated(prob) ⇒
               logError(s"Could not create streams:\n$prob")
