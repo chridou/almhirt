@@ -52,6 +52,32 @@ private[almhirt] class EventSinksSupervisorImpl(factories: EventSinkHub.EventSin
 
   override val requestStrategy = ZeroRequestStrategy
   case object Start
+  private case class IncomingEvent(event: Event)
+
+  val eventsByType = new scala.collection.mutable.HashMap[Class[_], Long]()
+  val eventsByComponent = new scala.collection.mutable.HashMap[String, Long]()
+  var numEventsReceived = 0L
+
+  private def countReceivedEvent(event: Event): Unit = {
+    numEventsReceived = numEventsReceived + 1L
+
+    val eventType = event.getClass()
+    eventsByType get eventType match {
+      case None        ⇒ eventsByType += (eventType -> 1L)
+      case Some(count) ⇒ eventsByType.update(eventType, count + 1L)
+    }
+
+    event match {
+      case e: almhirt.akkax.events.ComponentEvent ⇒
+        val cidString = e.origin.toPathString
+        eventsByComponent get cidString match {
+          case None        ⇒ eventsByComponent += (cidString -> 1L)
+          case Some(count) ⇒ eventsByComponent.update(cidString, count + 1L)
+        }
+      case _ ⇒
+        ()
+    }
+  }
 
   def receiveInitialize: Receive = startup() {
     reportsStatusF(onReportRequested = createStatusReport) {
@@ -63,6 +89,8 @@ private[almhirt] class EventSinksSupervisorImpl(factories: EventSinkHub.EventSin
 
   def receiveRunning: Receive = running() {
     reportsStatusF(onReportRequested = createStatusReport) {
+      case IncomingEvent(event) ⇒
+        countReceivedEvent(event)
       case Terminated(actor) ⇒
         logInfo(s"Member ${actor.path.name} terminated.")
     }
@@ -72,7 +100,7 @@ private[almhirt] class EventSinksSupervisorImpl(factories: EventSinkHub.EventSin
 
   private def createInitialMembers() {
     if (!factories.isEmpty) {
-      val eventsSourceFannedOut = Source(almhirtContext.eventStream).runWith(Sink.fanoutPublisher[Event](1, AlmMath.nextPowerOf2(factories.size)))
+      val eventsSourceFannedOut = Source(almhirtContext.eventStream).runWith(Sink.fanoutPublisher[Event](1, AlmMath.nextPowerOf2(factories.size + 1)))
       val flow =
         buffersize match {
           case Some(bfs) if bfs > 0 ⇒
@@ -93,16 +121,29 @@ private[almhirt] class EventSinksSupervisorImpl(factories: EventSinkHub.EventSin
               Source(eventsSourceFannedOut).to(Sink(subscriber)).run()
           }
       }
+      Source(eventsSourceFannedOut).runForeach { event ⇒ self ! IncomingEvent(event) }
     } else if (factories.isEmpty && withBlackHoleIfEmpty) {
       logWarning("No members, but I created a black hole!")
-      Source(almhirtContext.eventStream).runForeach(_ ⇒ ())
+      Source(almhirtContext.eventStream).runForeach { event ⇒ self ! IncomingEvent(event) }
     } else {
       logWarning("No members. Nothing will be subscribed")
     }
   }
 
   def createStatusReport(options: StatusReportOptions): AlmFuture[StatusReport] = {
-    val baseReport = StatusReport(s"${this.getClass.getSimpleName}-Report").withComponentState(componentState)
+
+    val byTypeReport = StatusReport() ~~ (
+      eventsByType.toStream.map { case (clazz, count) ⇒ ezreps.toField(clazz.getName, count) }.toIterable)
+
+    val byComponentReport = StatusReport() ~~ (
+      eventsByComponent.toStream.map { ezreps.toField(_) }.toIterable)
+
+    val eventStatsReport = StatusReport() addMany (
+      "number-of-events-received" -> numEventsReceived,
+      "number-of-events-received-by-type" -> byTypeReport,
+      "number-of-events-received-by-component" -> byComponentReport)
+
+    val baseReport = StatusReport(s"${this.getClass.getSimpleName}-Report").withComponentState(componentState) ~ ("received-events-stats" -> eventStatsReport)
 
     appendToReportFromCollector(baseReport)(options)
   }
