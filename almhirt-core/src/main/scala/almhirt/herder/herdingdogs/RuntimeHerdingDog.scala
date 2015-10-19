@@ -8,6 +8,7 @@ import almhirt.context._
 import almhirt.akkax._
 import almhirt.herder._
 import akka.actor.ActorRef
+import almhirt.herder.HerderMessages.OnSystemShutdown
 
 object RuntimeHerdingDog {
   import com.typesafe.config.Config
@@ -96,6 +97,16 @@ private[almhirt] class RuntimeHerdingDog(
       }
 
       context.system.scheduler.scheduleOnce(runtimePollingInterval, self, PollRuntime)
+
+    case OnSystemShutdown ⇒
+      val timestamp = almhirtContext.getUtcTimestamp
+      val entry = RuntimeStateRecorded.empty(EventHeader(EventId(almhirtContext.getUniqueString()), timestamp, Map("shutdown" -> "true")), GlobalComponentId(this.componentNameProvider.componentId))
+      almhirtContext.fireNonStreamEvent(entry)
+      context.become(receiveShutdown)
+  }
+
+  def receiveShutdown: Receive = {
+    case _ ⇒ ()
   }
 
   override def receive: Receive = receiveRunning

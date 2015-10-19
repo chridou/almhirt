@@ -11,6 +11,7 @@ import almhirt.tooling.Reporter
 import almhirt.streaming.AlmhirtStreams
 import almhirt.akkax.ActorMessages
 import almhirt.akkax.ComponentId
+import almhirt.herder.HerderMessages
 import com.typesafe.config._
 
 trait AlmhirtContext extends CanCreateUuidsAndDateTimes with AlmhirtStreams with HasExecutionContexts {
@@ -228,6 +229,7 @@ object AlmhirtContext {
             case AlmhirtContextMessages.StreamsCreated(streams) ⇒
               log.info("Created streams. Next: Create context")
               val ccuad = specificCcuad getOrElse CanCreateUuidsAndDateTimes()
+              val theLocalActorPaths = ContextActorPaths.local(system)
               val ctx = new AlmhirtContext with Stoppable {
                 val config = system.settings.config
                 val futuresContext = futuresExecutor
@@ -241,7 +243,7 @@ object AlmhirtContext {
                 val eventStream = streams.eventStream
                 val commandBroker = streams.commandBroker
                 val commandStream = streams.commandStream
-                val localActorPaths = ContextActorPaths.local(system)
+                val localActorPaths = theLocalActorPaths
                 def tellHerder(what: almhirt.herder.HerderMessages.HerderNotificicationMessage) { tellTheHerder(what) }
                 def createReporter(forComponent: ComponentId): Reporter = new TellHerderReporter(this, forComponent)
                 def publishNonStreamEvent(event: Event, maxDur: FiniteDuration = 3.seconds): AlmFuture[Event] = publishANonStreamEvent(event, maxDur)
@@ -250,8 +252,9 @@ object AlmhirtContext {
 
                 def stop() {
                   log.info("Stopping.")
+                  context.actorSelection(theLocalActorPaths.herder) ! HerderMessages.OnSystemShutdown
                   //streams.stop()
-                  context.stop(self)
+                  context.system.scheduler.scheduleOnce(5.seconds)(context.stop(self))
                 }
               }
               _ctx = ctx

@@ -9,6 +9,8 @@ import almhirt.tracking.CommandRepresentation
 
 object HerderMessages {
   sealed trait HerderNotificicationMessage
+  
+  case object OnSystemShutdown
 
   object CircuitMessages {
     sealed trait CircuitMessage

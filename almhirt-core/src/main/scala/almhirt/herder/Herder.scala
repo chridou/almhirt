@@ -11,14 +11,15 @@ import almhirt.akkax._
 import almhirt.components.EventSinkHub
 import almhirt.components.EventSinkHubMessage
 import almhirt.herder.herdingdogs._
+import almhirt.herder.HerderMessages.OnSystemShutdown
 
 object Herder {
   def propsRaw(
-      failuresHerdingDogProps: Props, 
-      rejectedCommandsHerdingDogProps: Props, 
-      missedEventsHerdingDogProps: Props,
-      informationHerdingDogProps: Props, 
-      runtimeHerdingDogProps: Props)(implicit ctx: AlmhirtContext): Props =
+    failuresHerdingDogProps: Props,
+    rejectedCommandsHerdingDogProps: Props,
+    missedEventsHerdingDogProps: Props,
+    informationHerdingDogProps: Props,
+    runtimeHerdingDogProps: Props)(implicit ctx: AlmhirtContext): Props =
     Props(new Pastor(failuresHerdingDogProps, rejectedCommandsHerdingDogProps, missedEventsHerdingDogProps, informationHerdingDogProps, runtimeHerdingDogProps))
 
   def props(address: Address)(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
@@ -69,19 +70,22 @@ private[almhirt] class Pastor(
   context.actorSelection(almhirtContext.localActorPaths.almhirt / "streams" / "command-broker") ! almhirt.streaming.InternalBrokerMessages.InternalEnableNotifyOnNoDemand(5.minutes)
 
   def receiveRunning: Receive = {
-    case m: HerderMessages.CircuitMessages.CircuitMessage                   ⇒ circuitsHerdingDog forward m
+    case m: HerderMessages.CircuitMessages.CircuitMessage ⇒ circuitsHerdingDog forward m
 
     case m: HerderMessages.ComponentControlMessages.ComponentControlMessage ⇒ componentControlHerdingDog forward m
 
-    case m: HerderMessages.FailureMessages.FailuresMessage                  ⇒ failuresHerdingDog forward m
+    case m: HerderMessages.FailureMessages.FailuresMessage ⇒ failuresHerdingDog forward m
 
-    case m: HerderMessages.CommandMessages.CommandsMessage                  ⇒ rejectedCommandsHerdingDog forward m
+    case m: HerderMessages.CommandMessages.CommandsMessage ⇒ rejectedCommandsHerdingDog forward m
 
-    case m: HerderMessages.EventMessages.EventsMessage                      ⇒ missedEventsHerdingDog forward m
+    case m: HerderMessages.EventMessages.EventsMessage ⇒ missedEventsHerdingDog forward m
 
-    case m: HerderMessages.InformationMessages.InformationMessage           ⇒ informationHerdingDog forward m
+    case m: HerderMessages.InformationMessages.InformationMessage ⇒ informationHerdingDog forward m
 
-    case m: HerderMessages.StatusReportMessages.StatusReportMessage                     ⇒ reportHerdingDog forward m
+    case m: HerderMessages.StatusReportMessages.StatusReportMessage ⇒ reportHerdingDog forward m
+
+    case OnSystemShutdown ⇒ context.children.foreach { _ ! OnSystemShutdown }
+
   }
 
   def receive = receiveRunning
