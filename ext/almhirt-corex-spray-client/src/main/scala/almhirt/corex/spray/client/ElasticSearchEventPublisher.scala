@@ -13,7 +13,7 @@ import almhirt.akkax.reporting._
 import almhirt.akkax.reporting.Implicits._
 import almhirt.serialization.SerializationParams
 import almhirt.components.EventPublisher
-import almhirt.akkax.events.ComponentEvent
+import almhirt.akkax.events.FailureReported
 
 object ElasticSearchEventPublisher {
   final case class ElasticSearchSettings(
@@ -114,9 +114,9 @@ private[client] class ElasticSearchEventPublisherActor(
     reportsStatus(onReportRequested = createStatusReport) {
       case EventPublisher.PublishEvent(event) ⇒
         val toDispatch = event match {
-          case e: ComponentEvent if e.origin == myGlobalComponentId ⇒
+          case e: FailureReported if e.origin == myGlobalComponentId ⇒
             ownEventsOmmitted = ownEventsOmmitted + 1L
-            logInfo("I do not publish my own published events")
+            logInfo("I do not record my own published events")
             sender() ! EventPublisher.EventNotPublished(event, UnspecifiedProblem("That was my own event!"))
             None
           case x ⇒ Some(x)
@@ -134,7 +134,7 @@ private[client] class ElasticSearchEventPublisherActor(
         }
       case EventPublisher.FireEvent(event) ⇒
         val toDispatch = event match {
-          case e: ComponentEvent if e.origin == myGlobalComponentId ⇒
+          case e: FailureReported if e.origin == myGlobalComponentId ⇒
             ownEventsOmmitted = ownEventsOmmitted + 1L
             logInfo("I do not record my own fired events")
             None
