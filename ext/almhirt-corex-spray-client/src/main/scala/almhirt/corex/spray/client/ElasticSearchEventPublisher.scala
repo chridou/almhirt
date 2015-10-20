@@ -13,6 +13,7 @@ import almhirt.akkax.reporting._
 import almhirt.akkax.reporting.Implicits._
 import almhirt.serialization.SerializationParams
 import almhirt.components.EventPublisher
+import almhirt.akkax.events.ComponentEvent
 
 object ElasticSearchEventPublisher {
   final case class ElasticSearchSettings(
@@ -101,26 +102,50 @@ private[client] class ElasticSearchEventPublisherActor(
   implicit override val componentNameProvider: ActorComponentIdProvider = DefaultComponentIdProvider
   override def componentControl = LocalComponentControl(self, ComponentControlActions.none, Some(logWarning))
 
+  val myGlobalComponentId = GlobalComponentId(almhirtContext.localNodeName, this.componentNameProvider.componentId)
+
   val numEventsNotDispatched = new java.util.concurrent.atomic.AtomicLong(0L)
   val numEventsDispatched = new java.util.concurrent.atomic.AtomicLong(0L)
   val eventsInFlight = new java.util.concurrent.atomic.AtomicInteger(0)
   var eventsReceived = 0L
+  var ownEventsOmmitted = 0L
 
   def receiveRunning: Receive = running() {
     reportsStatus(onReportRequested = createStatusReport) {
       case EventPublisher.PublishEvent(event) ⇒
-        eventsReceived = eventsReceived + 1L
-        if (eventsInFlight.get < maxParallel) {
-          publishEvent(event, elSettings).mapOrRecoverThenPipeTo(
-            map = _ ⇒ EventPublisher.EventPublished(event),
-            recover = EventPublisher.EventNotPublished(event, _))(sender())
-        } else {
-          sender() ! EventPublisher.EventNotPublished(event, ServiceBusyProblem("Too many events in flight."))
+        val toDispatch = event match {
+          case e: ComponentEvent if e.origin == myGlobalComponentId ⇒
+            ownEventsOmmitted = ownEventsOmmitted + 1L
+            logInfo("I do not publish my own published events")
+            sender() ! EventPublisher.EventNotPublished(event, UnspecifiedProblem("That was my own event!"))
+            None
+          case x ⇒ Some(x)
+        }
+
+        toDispatch.foreach { event ⇒
+          eventsReceived = eventsReceived + 1L
+          if (eventsInFlight.get < maxParallel) {
+            publishEvent(event, elSettings).mapOrRecoverThenPipeTo(
+              map = _ ⇒ EventPublisher.EventPublished(event),
+              recover = EventPublisher.EventNotPublished(event, _))(sender())
+          } else {
+            sender() ! EventPublisher.EventNotPublished(event, ServiceBusyProblem("Too many events in flight."))
+          }
         }
       case EventPublisher.FireEvent(event) ⇒
-        eventsReceived = eventsReceived + 1L
-        if (eventsInFlight.get < maxParallel) {
-          publishEvent(event, elSettings)
+        val toDispatch = event match {
+          case e: ComponentEvent if e.origin == myGlobalComponentId ⇒
+            ownEventsOmmitted = ownEventsOmmitted + 1L
+            logInfo("I do not record my own fired events")
+            None
+          case x ⇒ Some(x)
+        }
+
+        toDispatch.foreach { event ⇒
+          eventsReceived = eventsReceived + 1L
+          if (eventsInFlight.get < maxParallel) {
+            publishEvent(event, elSettings)
+          }
         }
     }
   }
@@ -163,6 +188,7 @@ private[client] class ElasticSearchEventPublisherActor(
       "number-of-events-dispatched" -> numEventsDispatched.get,
       "number-of-events-not-dispatched" -> numEventsNotDispatched.get,
       "number-of-events-in-flight" -> eventsInFlight.get,
+      "number-of-own-events-ommitted" -> ownEventsOmmitted,
       "elastic-search-settings" -> elSettingsRep,
       "max-parallel" -> maxParallel)
 
@@ -171,13 +197,13 @@ private[client] class ElasticSearchEventPublisherActor(
 
   override def preStart() {
     super.preStart()
+    registerCircuitControl(circuitBreaker)
     registerComponentControl()
     context.parent ! ActorMessages.ConsiderMeForReporting
     circuitBreaker.defaultActorListeners(self)
       .onWarning((n, max) ⇒ logWarning(s"$n failures in a row. $max will cause the circuit to open."))
 
     registerStatusReporter(description = Some("Logs events into an ElasticSearch instance."))
-    registerCircuitControl(circuitBreaker)
     logInfo("Starting..")
   }
 
