@@ -20,8 +20,8 @@ trait AlmActor extends Actor with HasAlmhirtContext with AlmActorSupport {
 
   implicit def componentNameProvider: ActorComponentIdProvider = DefaultComponentIdProvider
 
-//  implicit def CommandToCommandRepresentation(cmd: Command): CommandRepresentation = CommandRepresentation.FullCommand(cmd)
-//  implicit def CommandIdToCommandRepresentation(id: CommandId): CommandRepresentation = CommandRepresentation.CommandIdOnly(id)
+  //  implicit def CommandToCommandRepresentation(cmd: Command): CommandRepresentation = CommandRepresentation.FullCommand(cmd)
+  //  implicit def CommandIdToCommandRepresentation(id: CommandId): CommandRepresentation = CommandRepresentation.CommandIdOnly(id)
 
   protected val born = java.time.ZonedDateTime.now()
   protected val bornUtc = java.time.LocalDateTime.now(java.time.ZoneOffset.UTC)
@@ -71,6 +71,10 @@ trait AlmActor extends Actor with HasAlmhirtContext with AlmActorSupport {
     val timestamp = almhirtContext.getUtcTimestamp
     almhirtContext.tellHerder(HerderMessages.FailureMessages.FailureOccured(cnp.componentId, failure, CriticalSeverity, timestamp))
     almhirtContext.fireNonStreamEvent(events.FailureReported(failure.toProblem, CriticalSeverity)(EventHeader(EventId(almhirtContext.getUniqueString()), timestamp), GlobalComponentId(cnp.componentId)))
+  }
+  
+  def fireComponentEvent(create: GlobalComponentId => Event)(implicit cnp: ActorComponentIdProvider): Unit = {
+    almhirtContext.fireNonStreamEvent(create(GlobalComponentId(cnp.componentId)))
   }
 
   def inform(message: String, importance: Importance)(implicit cnp: ActorComponentIdProvider): Unit = {
