@@ -4,7 +4,7 @@ import java.time._;
 
 class TimeRangeTracker(numberOfBuckets: Int, bucketSpan: Duration) {
   final case class TimeRange(begin: LocalDateTime, end: LocalDateTime)
-  final case class OccurencesInTimeRange(timeRange: TimeRange, count: Long)
+  final case class OccurencesInTimeRange(timeRange: TimeRange, var count: Long)
 
   private var _buckets = List[OccurencesInTimeRange]()
   private val _initTime = LocalDateTime.now
@@ -21,11 +21,10 @@ class TimeRangeTracker(numberOfBuckets: Int, bucketSpan: Duration) {
     })
   }
 
-  def add(occurrence: LocalDateTime): Unit = _buckets map (bucket ⇒ {
+  //
+  def add(occurrence: LocalDateTime): Unit = _buckets foreach (bucket ⇒ {
     if (occurrence.isAfter(bucket.timeRange.begin) && occurrence.isBefore(bucket.timeRange.end))
-      new OccurencesInTimeRange(bucket.timeRange, bucket.count + 1L)
-    else
-      bucket
+      bucket.count = bucket.count + 1L
   })
 
   def adjust(currentTime: LocalDateTime): Unit = ???
