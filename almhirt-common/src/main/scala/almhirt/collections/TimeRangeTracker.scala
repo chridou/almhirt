@@ -7,20 +7,27 @@ class TimeRangeTracker(numberOfBuckets: Int, bucketSpan: Duration) {
   final case class OccurencesInTimeRange(timeRange: TimeRange, count: Long)
 
   private var _buckets = List[OccurencesInTimeRange]()
+  private val _initTime = LocalDateTime.now
   initializeBuckets()
 
   private def initializeBuckets() = {
-    (1 to numberOfBuckets) foreach (index => {
+    (1 to numberOfBuckets) foreach (index ⇒ {
       val beginOffset = (index - 1) * bucketSpan.getNano
       val endOffset = index * bucketSpan.getNano
-      val begin = LocalDateTime.now.plusNanos(beginOffset.toLong)
-      val end = LocalDateTime.now.plusNanos(endOffset.toLong)
+      val begin = _initTime.plusNanos(beginOffset.toLong)
+      val end = _initTime.plusNanos(endOffset.toLong)
       val timeRange = new TimeRange(begin, end)
       _buckets :+ new OccurencesInTimeRange(timeRange, 0L)
     })
   }
 
-  def add(occurrence: LocalDateTime): Unit = ???
+  def add(occurrence: LocalDateTime): Unit = _buckets map (bucket ⇒ {
+    if (occurrence.isAfter(bucket.timeRange.begin) && occurrence.isBefore(bucket.timeRange.end))
+      new OccurencesInTimeRange(bucket.timeRange, bucket.count + 1L)
+    else
+      bucket
+  })
+
   def adjust(currentTime: LocalDateTime): Unit = ???
 
   def latestBucket(currentTime: LocalDateTime): OccurencesInTimeRange = ???
