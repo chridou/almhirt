@@ -62,6 +62,8 @@ trait StatusReportingActor { me: AlmActor ⇒
           respondForStatusReportResult(onReportRequested(options))(sender())
         case ActorMessages.ConsiderMeForReporting ⇒
           statusReportsCollector.foreach { _.register(NoResolvingRequired(sender())) }
+        case ActorMessages.ForgetMeForReporting ⇒
+          statusReportsCollector.foreach { _.remove(NoResolvingRequired(sender())) }
       }: Receive)
 
     def termininateStatusReportingF(onReportRequested: EzOptions ⇒ AlmFuture[EzReport])(implicit executor: ExecutionContext) =
@@ -70,11 +72,15 @@ trait StatusReportingActor { me: AlmActor ⇒
           onReportRequested(options).pipeReportTo(sender())
         case ActorMessages.ConsiderMeForReporting ⇒
           statusReportsCollector.foreach { _.register(NoResolvingRequired(sender())) }
+        case ActorMessages.ForgetMeForReporting ⇒
+          statusReportsCollector.foreach { _.remove(NoResolvingRequired(sender())) }
       }: Receive)
 
     def terminateRegisterForCollector = self orElse ({
       case ActorMessages.ConsiderMeForReporting ⇒
         statusReportsCollector.foreach { _.register(NoResolvingRequired(sender())) }
+        case ActorMessages.ForgetMeForReporting ⇒
+          statusReportsCollector.foreach { _.remove(NoResolvingRequired(sender())) }
     }: Receive)
   }
 

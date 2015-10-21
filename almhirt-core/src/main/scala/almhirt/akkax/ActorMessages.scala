@@ -51,6 +51,7 @@ object ActorMessages {
   final case class ReportStatusFailed(cause: almhirt.problem.ProblemCause) extends SendStatusReportRsp
 
   case object ConsiderMeForReporting
+  case object ForgetMeForReporting
 }
 
 object CreateChildActorHelper {

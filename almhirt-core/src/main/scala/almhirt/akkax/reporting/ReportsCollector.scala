@@ -20,12 +20,12 @@ object StatusReportsCollector {
 final class StatusReportsCollector private (context: ActorContext, defaultQueryDur: FiniteDuration)(implicit executor: ExecutionContext) {
   import Implicits._
   type Query = (StatusReportOptions, FiniteDuration) ⇒ AlmFuture[StatusReport]
-  private case class Entry(label: String, query: Query, maxQueryDur: FiniteDuration)
+  private case class Entry(label: String, query: Query, maxQueryDur: FiniteDuration, registrationKey: ToResolve)
 
   private var entries = Vector[Entry]()
 
   def register(toRegister: ToResolve, label: Option[String] = None, maxQueryDur: Option[FiniteDuration] = None): Unit = {
-    val (effeciveLabel, query) = toRegister match {
+    val (effectiveLabel, query) = toRegister match {
       case NoResolvingRequired(actorRef) ⇒
         (s"${actorRef.path.name}-report",
           (options: StatusReportOptions, maxDur: FiniteDuration) ⇒ (actorRef ? ActorMessages.SendStatusReport(options))(maxDur).mapCastTo[ActorMessages.SendStatusReportRsp].mapV {
@@ -46,13 +46,18 @@ final class StatusReportsCollector private (context: ActorContext, defaultQueryD
           })
     }
 
-    val newEntries = entries.filterNot { _.label == effeciveLabel } :+ Entry(effeciveLabel, query, maxQueryDur = maxQueryDur getOrElse defaultQueryDur)
+    val newEntries = entries.filterNot { _.label == effectiveLabel } :+ Entry(effectiveLabel, query, maxQueryDur = maxQueryDur getOrElse defaultQueryDur, registrationKey = toRegister)
+    entries = newEntries
+  }
+
+  def remove(toForget: ToResolve): Unit = {
+    val newEntries = entries.filterNot { _.registrationKey == toForget }
     entries = newEntries
   }
 
   def queryReports(maxQueryDurOverride: Option[FiniteDuration] = None)(options: StatusReportOptions): AlmFuture[Vector[ezreps.ast.EzField]] = {
     val futs = entries.map {
-      case Entry(label, query, maxDur) ⇒
+      case Entry(label, query, maxDur, _) ⇒
         val effMaxDur = maxQueryDurOverride getOrElse maxDur
         query(options, effMaxDur).materializedValidation.map { reportV ⇒ ezreps.ast.EzField(label, reportV) }
     }
