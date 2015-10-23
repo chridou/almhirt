@@ -76,7 +76,7 @@ object RiftWarpPrimitiveAppenders {
 
   @inline
   def appendBigDecimal(v: BigDecimal, writer: BinaryWriter): BinaryWriter = {
-    val bytes = v.toString.getBytes()
+    val bytes = v.toString.getBytes("UTF-8")
     appendExt(bytes, RiftwarpTypecodes.BigDecimalCode, writer)
   }
 
@@ -88,19 +88,19 @@ object RiftWarpPrimitiveAppenders {
 
   @inline
   def appendUri(v: java.net.URI, writer: BinaryWriter): BinaryWriter = {
-    val bytes = v.toString.getBytes()
+    val bytes = v.toString.getBytes("UTF-8")
     appendExt(bytes, RiftwarpTypecodes.UriCode, writer)
   }
 
   @inline
   def appendDateTime(v: java.time.ZonedDateTime, writer: BinaryWriter): BinaryWriter = {
-    val bytes = v.toString().getBytes()
+    val bytes = v.toString().getBytes("UTF-8")
     appendExt(bytes, RiftwarpTypecodes.DateTimeCode, writer)
   }
 
   @inline
   def appendLocalDateTime(v: java.time.LocalDateTime, writer: BinaryWriter): BinaryWriter = {
-    val bytes = v.toString().getBytes()
+    val bytes = v.toString().getBytes("UTF-8")
     appendExt(bytes, RiftwarpTypecodes.LocalDateTimeCode, writer)
   }
 
