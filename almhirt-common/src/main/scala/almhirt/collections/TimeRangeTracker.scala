@@ -2,9 +2,15 @@ package almhirt.collections
 
 import java.time._;
 
-class TimeRangeTracker(numberOfBuckets: Int, bucketSpan: Duration) {
-  final case class TimeRange(begin: LocalDateTime, end: LocalDateTime)
-  final case class OccurencesInTimeRange(timeRange: TimeRange, var count: Long)
+trait TimeRangeTracker {
+  def coveredRange: (LocalDateTime, LocalDateTime) = ???
+  def add(occurrence: LocalDateTime): Unit
+  def occurences(from: LocalDateTime, to: LocalDateTime): Long
+}
+
+class TimeRangeTrackerImpl(numberOfBuckets: Int, bucketSpan: Duration) {
+  case class TimeRange(begin: LocalDateTime, end: LocalDateTime)
+  case class OccurencesInTimeRange(timeRange: TimeRange, var count: Long)
 
   private var _buckets = List[OccurencesInTimeRange]()
   private val _initTime = LocalDateTime.now
