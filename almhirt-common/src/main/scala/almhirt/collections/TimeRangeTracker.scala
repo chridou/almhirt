@@ -3,52 +3,35 @@ package almhirt.collections
 import java.time._;
 
 trait TimeRangeTracker {
-  def coveredRange: (LocalDateTime, LocalDateTime) = ???
+  def coveredRange: (LocalDateTime, LocalDateTime)
   def add(occurrence: LocalDateTime): Unit
   def occurences(from: LocalDateTime, to: LocalDateTime): Long
 }
 
-class TimeRangeTrackerImpl(numberOfBuckets: Int, bucketSpan: Duration) {
+class TimeRangeTrackerImpl(numberOfBuckets: Int, bucketSpan: Duration, startTime: LocalDateTime = LocalDateTime.now) extends TimeRangeTracker {
   case class TimeRange(begin: LocalDateTime, end: LocalDateTime)
   case class OccurencesInTimeRange(timeRange: TimeRange, var count: Long)
 
-  private var _buckets = List[OccurencesInTimeRange]()
-  private val _initTime = LocalDateTime.now
-  initializeBuckets()
+  val buckets = (1 to numberOfBuckets) map (index ⇒ {
+    val beginOffset = (index - 1) * bucketSpan.toNanos
+    val endOffset = index * bucketSpan.toNanos
+    val begin = startTime.plusNanos(beginOffset.toLong)
+    val end = index match {
+      case `numberOfBuckets` ⇒ startTime.plusNanos(endOffset.toLong)
+      case _                 ⇒ startTime.plusNanos(endOffset.toLong - 1L)
+    }
+    OccurencesInTimeRange(TimeRange(begin, end), 0L)
+  })
 
-  private def initializeBuckets() = {
-    (1 to numberOfBuckets) foreach (index ⇒ {
-      val beginOffset = (index - 1) * bucketSpan.getNano
-      val endOffset = index * bucketSpan.getNano
-      val begin = _initTime.plusNanos(beginOffset.toLong)
-      val end = _initTime.plusNanos(endOffset.toLong)
-      val timeRange = new TimeRange(begin, end)
-      _buckets :+ new OccurencesInTimeRange(timeRange, 0L)
-    })
-  }
-
-  //
-  def add(occurrence: LocalDateTime): Unit = _buckets foreach (bucket ⇒ {
-    if (occurrence.isAfter(bucket.timeRange.begin) && occurrence.isBefore(bucket.timeRange.end))
+  def add(occurrence: LocalDateTime): Unit = buckets foreach (bucket ⇒ {
+    if (occurrence.isAfter(bucket.timeRange.begin.minusNanos(1L)) && occurrence.isBefore(bucket.timeRange.end.plusNanos(1L)))
       bucket.count = bucket.count + 1L
   })
 
-  def adjust(currentTime: LocalDateTime): Unit = ???
-
-  def latestBucket(currentTime: LocalDateTime): OccurencesInTimeRange = ???
-
-  // muss hier aktualisiert werden? vielleicht eine Methode die aktualisiert und eine die es niocht tut?
-  def bucketAt(targetTime: LocalDateTime): Option[OccurencesInTimeRange] = ???
-
-  // muss hier aktualisiert werden? vielleicht eine Methode die aktualisiert und eine die es nicht tut? bucketByIndex(0) == latestBucket 
-  def bucketByIndex(index: Int): Option[OccurencesInTimeRange] = ???
-
-  def occurences(currentTime: LocalDateTime): OccurencesInTimeRange = ???
-
-  def buckets(currentTime: LocalDateTime): Seq[OccurencesInTimeRange] = ???
-
-  def coveredTime(currentTime: LocalDateTime): TimeRange = ???
-
-  def coveredDuration(currentTime: LocalDateTime): Duration = ???
+  def coveredRange: (LocalDateTime, LocalDateTime) = (buckets.head.timeRange.begin, buckets.last.timeRange.end)
+  def occurences(from: LocalDateTime, to: LocalDateTime): Long = buckets
+//    .filter(bucket ⇒
+//    bucket.timeRange.begin.isAfter(from.minusNanos(1L)) && bucket.timeRange.end.isBefore(to.plusNanos(1L)))
+    .map(_.count).sum
 
 }
