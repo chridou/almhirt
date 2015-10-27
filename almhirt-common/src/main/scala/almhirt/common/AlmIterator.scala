@@ -38,6 +38,8 @@ trait AlmIterator[+A] extends TraversableOnce[A] with Function0[Option[A]] {
 object AlmIterator {
   def apply[A](elems: A*): AlmIterator[A] = new AlmIteratorWrapper(elems.iterator)
 
+  def fromIterator[A](iterator: Iterator[A]): AlmIterator[A] = new AlmIteratorWrapper(iterator)
+
   def fromElementsProducer[A](elementsProducer: () ⇒ Option[A]): AlmIterator[A] = {
     var _next = elementsProducer()
     new AlmIteratorWrapper(new scala.collection.AbstractIterator[A] {
