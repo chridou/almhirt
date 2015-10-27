@@ -3,36 +3,50 @@ package almhirt.collections
 import java.time._;
 
 trait TimeRangeTracker {
-  def coveredRange: (LocalDateTime, LocalDateTime)
+  def coveredRange: (Option[LocalDateTime], Option[LocalDateTime])
   def add(occurrence: LocalDateTime): Unit
-  def occurences(from: LocalDateTime, to: LocalDateTime): Long
+  def occurences(time: Duration): Long
 }
 
-class TimeRangeTrackerImpl(numberOfBuckets: Int, bucketSpan: Duration, startTime: LocalDateTime = LocalDateTime.now) extends TimeRangeTracker {
+class TimeRangeTrackerImpl(numberOfBuckets: Int, bucketSpan: Duration, getTime: () => LocalDateTime) extends TimeRangeTracker {
   case class TimeRange(begin: LocalDateTime, end: LocalDateTime)
   case class OccurencesInTimeRange(timeRange: TimeRange, var count: Long)
 
-  val buckets = ((1 to numberOfBuckets) map (index ⇒ {
-    val beginOffset = (index - 1) * bucketSpan.toNanos
-    val endOffset = index * bucketSpan.toNanos
-    val begin = index match {
-      case 1 ⇒ startTime.plusNanos(beginOffset.toLong)
-      case _ ⇒ startTime.plusNanos(beginOffset.toLong + 1L)
+  val buckets = new CircularBuffer[OccurencesInTimeRange](numberOfBuckets)
+
+  def add(occurrence: LocalDateTime): Unit = {
+    val currentTime = getTime()
+    if (buckets.size == 0)
+      buckets.push(OccurencesInTimeRange(TimeRange(currentTime, currentTime.plusNanos(bucketSpan.toNanos)), 1L))
+    else {
+      val filteredBuckets = buckets.toVector.filter(bucket ⇒
+        occurrence.isAfter(bucket.timeRange.begin.minusNanos(1L)) && occurrence.isBefore(bucket.timeRange.end.plusNanos(1L)))
+      if (filteredBuckets.isEmpty)
+        buckets.push(OccurencesInTimeRange(TimeRange(currentTime, currentTime.plusNanos(bucketSpan.toNanos)), 1L))
+      else
+        filteredBuckets foreach (bucket => bucket.count = bucket.count + 1L)
     }
-    val end =  startTime.plusNanos(endOffset.toLong)
-    OccurencesInTimeRange(TimeRange(begin, end), 0L)
-  })).toSeq
+  }
 
-  def add(occurrence: LocalDateTime): Unit = buckets foreach (bucket ⇒ {
-    if (occurrence.isAfter(bucket.timeRange.begin.minusNanos(1L)) && occurrence.isBefore(bucket.timeRange.end.plusNanos(1L)))
-      bucket.count = bucket.count + 1L
-  })
+  def coveredRange: (Option[LocalDateTime], Option[LocalDateTime]) = {
+    val begin = buckets.headOption match {
+      case Some(bucket) => Some(bucket.timeRange.begin)
+      case None         => None
+    }
 
-  def coveredRange: (LocalDateTime, LocalDateTime) = (buckets.head.timeRange.begin, buckets.last.timeRange.end)
+    val end = buckets.lastOption match {
+      case Some(bucket) => Some(bucket.timeRange.end)
+      case None         => None
+    }
 
-  def occurences(from: LocalDateTime, to: LocalDateTime): Long = buckets
-    .filter(bucket =>
-      bucket.timeRange.begin.isAfter(from.minusNanos(1L)) && bucket.timeRange.end.isBefore(to.plusNanos(1L)))
-    .map(_.count).sum
+    (begin, end)
+  }
+
+  def occurences(time: Duration): Long = {
+    val currentTime = getTime()
+    val from = currentTime.minusNanos(time.toNanos)
+    buckets.toVector.filter(bucket => bucket.timeRange.begin.isAfter(from.minusNanos(1L)) && bucket.timeRange.end.isBefore(currentTime.plusNanos(1L)))
+      .map(_.count).sum
+  }
 
 }
