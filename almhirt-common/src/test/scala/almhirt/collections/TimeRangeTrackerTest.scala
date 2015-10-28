@@ -10,9 +10,9 @@ class TimeRangeTrackerTest extends FunSuite with Matchers {
     val duration = Duration.ofMinutes(1L)
     val numberOfBuckets = 2
     val startTime = LocalDateTime.now
-    val coveredRange = new TimeRangeTrackerImpl(numberOfBuckets, duration, () => startTime).coveredRange
-    coveredRange._1 should equal (None)
-    coveredRange._2 should equal (None)
+    val (begin, end) = new TimeRangeTrackerImpl(numberOfBuckets, duration, () => startTime).coveredRange
+    begin should equal (None)
+    end should equal (None)
   }
 
 //  test("must have 10 occurences in 60 seconds") {
