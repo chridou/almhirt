@@ -192,7 +192,7 @@ private[almhirt] class CommandEndpointImpl(
       "number-of-commands-rejected" -> numCommandsRejected,
       "number-of-commands-rejected-due-to-missing-demand" -> numCommandsRejectedDueToMissingDemand)
     val outgoing = StatusReport() addMany (
-      "number-command-dispatched" -> lastCommandDispatched,
+      "last-command-dispatched" -> lastCommandDispatched,
       "number-of-accepted-responses" -> numResponsesAccepted,
       "number-of-not-accepted-responses" -> numResponsesNotAccepted,
       "number-of-commands-sent-to-tracker" -> numCommandsSentToTracker,
