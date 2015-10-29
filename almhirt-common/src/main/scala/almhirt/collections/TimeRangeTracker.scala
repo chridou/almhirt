@@ -14,16 +14,17 @@ class TimeRangeTrackerImpl(numberOfBuckets: Int, bucketSpan: Duration, getTime: 
 
   val buckets = new CircularBuffer[OccurencesInTimeRange](numberOfBuckets)
 
-  def add(occurrence: LocalDateTime): Unit = {
+  def add(occurrence: LocalDateTime): Unit = this.synchronized {
     if (buckets.size == 0)
       buckets.push(OccurencesInTimeRange(TimeRange(occurrence, occurrence.plusNanos(bucketSpan.toNanos)), 1L))
     else {
       val filteredBuckets = buckets.toVector.filter(bucket ⇒
         occurrence.isAfter(bucket.timeRange.begin.minusNanos(1L)) && occurrence.isBefore(bucket.timeRange.end))
+        
       if (filteredBuckets.isEmpty)
         addBucketInTimeInterval(occurrence)
       else
-        filteredBuckets foreach (bucket => bucket.count = bucket.count + 1L)
+        filteredBuckets foreach (bucket => bucket.count = bucket.count + 1L)    
     }
   }
 
@@ -35,7 +36,6 @@ class TimeRangeTrackerImpl(numberOfBuckets: Int, bucketSpan: Duration, getTime: 
 
     var newBucketTimeFound = false
     val occurrenceIsAfterFirstEntry = occurrence.isAfter(firstTimeRange.begin.minusNanos(1L))
-    println(occurrenceIsAfterFirstEntry)
     var newTimeRange = firstTimeRange
 
     while (!newBucketTimeFound) {
@@ -45,10 +45,16 @@ class TimeRangeTrackerImpl(numberOfBuckets: Int, bucketSpan: Duration, getTime: 
       } else {
         if (occurrenceIsAfterFirstEntry)
           newTimeRange = TimeRange(newTimeRange.end, newTimeRange.end.plusNanos(bucketSpan.toNanos))
-        else 
+        else
           newTimeRange = TimeRange(newTimeRange.begin.minusNanos(bucketSpan.toNanos), newTimeRange.begin)
       }
     }
+
+    buckets.toVector
+      .sortBy(bucket => bucket.timeRange.begin)(Ordering.fromLessThan(_ isBefore _))
+      .zipWithIndex foreach {
+        case (bucket, idx) => buckets.setItemAt(idx, bucket)
+      }
   }
 
   def coveredRange: (Option[LocalDateTime], Option[LocalDateTime]) = (buckets.headOption, buckets.lastOption) match {

@@ -15,23 +15,30 @@ class TimeRangeTrackerTest extends FunSuite with Matchers {
     end should equal (None)
   }
 
-//  test("must have 10 occurences in 60 seconds") {
-//    val duration = Duration.ofMinutes(1L)
-//    val numberOfBuckets = 2
-//    val startTime = LocalDateTime.now
-//    val tracker = new TimeRangeTrackerImpl(numberOfBuckets, duration, startTime)
-//    (1 to 10) foreach(index => tracker.add(startTime.plusSeconds(index)))
-//    val count = tracker.occurences(startTime, startTime.plusSeconds(60))
-//    count should equal(10)
-//  }
-//  
+  test("must have 10 occurences in 60 seconds") {
+    val duration = Duration.ofSeconds(60L)
+    val numberOfBuckets = 2
+    var startTime = LocalDateTime.now
+    val tracker = new TimeRangeTrackerImpl(numberOfBuckets, duration, () => startTime)
+    (1 to 10) foreach(index => {
+      tracker.add(startTime)
+      startTime = startTime.plusSeconds(1L)
+     })
+    startTime = startTime.plusSeconds(50L)
+    val count = tracker.occurences(Duration.ofSeconds(60L))
+    count should equal(10)
+  }
+  
 //  test("must have 6 occurences") {
 //    val duration = Duration.ofMinutes(1L)
 //    val numberOfBuckets = 2
-//    val startTime = LocalDateTime.now
-//    val tracker = new TimeRangeTrackerImpl(numberOfBuckets, duration, startTime)
-//    (1 to 10) foreach(index => tracker.add(startTime.plusSeconds(index*10)))
-//    val count = tracker.occurences(startTime, startTime.plusSeconds(60))
+//    var startTime = LocalDateTime.now
+//    val tracker = new TimeRangeTrackerImpl(numberOfBuckets, duration, () => startTime)
+//    (1 to 10) foreach(index => {
+//      tracker.add(startTime)
+//      startTime = startTime.plusSeconds(index*10)
+//    })
+//    val count = tracker.occurences(Duration.ofSeconds(60L))
 //    count should equal(6)
 //  }
 //  
