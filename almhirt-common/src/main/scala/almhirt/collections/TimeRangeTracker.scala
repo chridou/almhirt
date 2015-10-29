@@ -32,35 +32,31 @@ class TimeRangeTrackerImpl(numberOfBuckets: Int, bucketSpan: Duration, getTime: 
       case Some(bucket) => TimeRange(bucket.timeRange.end, bucket.timeRange.end.plusNanos(bucketSpan.toNanos))
       case None         => TimeRange(occurrence, occurrence.plusNanos(bucketSpan.toNanos))
     }
-    
+
     var newBucketTimeFound = false
     val occurrenceIsAfterFirstEntry = occurrence.isAfter(firstTimeRange.begin.minusNanos(1L))
     println(occurrenceIsAfterFirstEntry)
     var newTimeRange = firstTimeRange
-    
-    while(!newBucketTimeFound){
-      if(occurrence.isAfter(newTimeRange.begin.minusNanos(1L)) && occurrence.isBefore(newTimeRange.end)){
+
+    while (!newBucketTimeFound) {
+      if (occurrence.isAfter(newTimeRange.begin.minusNanos(1L)) && occurrence.isBefore(newTimeRange.end)) {
         buckets.push(OccurencesInTimeRange(TimeRange(newTimeRange.begin, newTimeRange.end), 1L))
         newBucketTimeFound = true
-      }else{
-        if(occurrenceIsAfterFirstEntry)
+      } else {
+        if (occurrenceIsAfterFirstEntry)
           newTimeRange = TimeRange(newTimeRange.end, newTimeRange.end.plusNanos(bucketSpan.toNanos))
-        else{
-//          newTimeRange = TimeRange(newTimeRange.begin.minusNanos(1L), newTimeRange.begin.minusNanos(bucketSpan.toNanos + 1L))
-//          println(newTimeRange)
-          //TODO
-          ???
-        }
-      }        
+        else 
+          newTimeRange = TimeRange(newTimeRange.begin.minusNanos(bucketSpan.toNanos), newTimeRange.begin)
+      }
     }
   }
 
   def coveredRange: (Option[LocalDateTime], Option[LocalDateTime]) = (buckets.headOption, buckets.lastOption) match {
-      case (Some(headBucket), Some(lastBucket)) => (Some(headBucket.timeRange.begin),Some(lastBucket.timeRange.end))
-      case (Some(headBucket), None) => (Some(headBucket.timeRange.begin),None)
-      case (None, Some(lastBucket)) => (None,Some(lastBucket.timeRange.end))
-      case (None, None) => (None,None)
-    }
+    case (Some(headBucket), Some(lastBucket)) => (Some(headBucket.timeRange.begin), Some(lastBucket.timeRange.end))
+    case (Some(headBucket), None)             => (Some(headBucket.timeRange.begin), Some(headBucket.timeRange.end))
+    case (None, Some(lastBucket))             => (Some(lastBucket.timeRange.begin), Some(lastBucket.timeRange.end))
+    case (None, None)                         => (None, None)
+  }
 
   def occurences(time: Duration): Long = {
     val currentTime = getTime()
