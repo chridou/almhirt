@@ -151,7 +151,10 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
       case None ⇒
         NoSuchElementProblem("BSONDocument for payload not found").failure
     }).leftMap { p ⇒
-      val prob = MappingProblem("Could not deserialize BSONDocument to domain event.", cause = Some(p))
+      val docStr = BSONDocument.pretty(document)
+      val msg = s"""Could not deserialize BSONDocument with field "_id"=${document.getAs[BSONValue]("_id")} as a domain event."""
+      val completeMsg = "$msg\n$docStr"
+      val prob = MappingProblem(completeMsg, cause = Some(p))
       logError(prob.toString)
       prob
     }

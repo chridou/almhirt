@@ -669,7 +669,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
       exitReason match {
         case None ⇒
           handleCommandExecutedWithCleanup(persisted, currentCommand)
-        case Some(exitCause) =>
+        case Some(exitCause) ⇒
           logWarning("Exiting because of a previously error.")
           handleCommandFatallyFailedWithCleanup(persisted, currentCommand, exitCause, committedEvents)
       }
@@ -755,8 +755,9 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
 
   /** Ends with termination */
   private def onError(exn: AggregateRootDomainException, currentCommand: AggregateRootCommand, commitedEvents: Seq[E]) {
-    logError(s"Escalating! Something terrible happened executing a command(${currentCommand.getClass.getSimpleName} with agg id ${currentCommand.aggId.value})", exn)
-    val rsp = CommandNotExecuted(currentCommand, UnspecifiedProblem(s"""Something really bad happened: "${exn.getMessage}". Escalating.""", cause = Some(exn)))
+    val msg = s"""Something really bad happened: "${exn.getMessage}". Escalating. The current command is ${currentCommand.getClass.getSimpleName}(id=${currentCommand.commandId.value}) for aggregate root ${currentCommand.aggId.value})."""
+    logError(msg, exn)
+    val rsp = CommandNotExecuted(currentCommand, UnspecifiedProblem(msg, cause = Some(exn)))
     sendMessage(rsp)
     onAfterExecutingCommand(currentCommand, Some(rsp.problem), None)
     throw exn
