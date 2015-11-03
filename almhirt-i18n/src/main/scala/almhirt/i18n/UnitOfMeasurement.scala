@@ -1008,6 +1008,7 @@ object UnitsOfMeasurement {
       AstronomicalUnit,
       Lux,
       Lumen,
+      LumenPerWatt,
       Carat,
       Gram,
       Kilogram,
