@@ -149,8 +149,9 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
       case exn: RebuildAggregateRootFailedException ⇒
         reportCriticalFailure(exn)
         logError(s"Handling escalated error for ${sender.path.name} with a action Stop.", exn)
-        context.become(receiveErrorState(exn))
-        Stop
+        //context.become(receiveErrorState(exn))
+        Restart
+      // Stop
       //Escalate
       case exn: CouldNotDispatchAllAggregateRootEventsException ⇒
         reportMajorFailure(exn)
