@@ -323,10 +323,11 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
     val schedulerMagnet = implicitly[almhirt.almfuture.ActionSchedulingMagnet[S]]
     val p = Promise[AlmValidation[R]]
 
-    this.underlying.onComplete(p.complete)
+    this.underlying.onComplete(r => p.tryComplete(r))
+    
     schedulerMagnet.schedule(
       scheduler,
-      p.complete(scala.util.Success(OperationTimedOutProblem(s"A future did not complete timely(after ${after.defaultUnitString}. Be careful, timed out future might run forever.").failure)),
+      p.tryComplete(scala.util.Success(OperationTimedOutProblem(s"A future did not complete timely(after ${after.defaultUnitString}. Be careful, timed out future might run forever.").failure)),
       after,
       executor)
 
