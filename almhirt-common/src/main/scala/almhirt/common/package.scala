@@ -133,6 +133,7 @@ package object common extends ops.DeadlineExt with ops.FiniteDurationExt {
   val ServiceBrokenProblem = almhirt.problem.problemtypes.ServiceBrokenProblem
   val ServiceShutDownProblem = almhirt.problem.problemtypes.ServiceShutDownProblem
   val ServiceNotReadyProblem = almhirt.problem.problemtypes.ServiceNotReadyProblem
+  val NoTimelyResponseFromServiceProblem = almhirt.problem.problemtypes.NoTimelyResponseFromServiceProblem
   val DependencyNotFoundProblem = almhirt.problem.problemtypes.DependencyNotFoundProblem
   val NoConnectionProblem = almhirt.problem.problemtypes.NoConnectionProblem
   val OperationTimedOutProblem = almhirt.problem.problemtypes.OperationTimedOutProblem

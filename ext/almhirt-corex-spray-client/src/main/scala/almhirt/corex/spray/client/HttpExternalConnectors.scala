@@ -40,7 +40,7 @@ trait HttpExternalConnector {
     val start = Deadline.now
     pipeline(request).map { resp ⇒ (resp, start.lap)
     }.mapCastTo[(HttpResponse, FiniteDuration)].foldV(
-      fail ⇒ UnspecifiedProblem("The request failed.", cause = Some(fail)).failure,
+      fail ⇒ NoTimelyResponseFromServiceProblem("The request failed.", cause = Some(fail)).failure,
       succ ⇒ succ.success)
   }
 

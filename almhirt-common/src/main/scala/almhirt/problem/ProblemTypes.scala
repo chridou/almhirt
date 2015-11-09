@@ -84,6 +84,15 @@ object problemtypes {
     def unapply(problem: SingleProblem): Option[SingleProblem] = SingleProblem.unapplyAgainst(problem, ServiceNotReadyProblem)
   }
 
+    /**
+   * There is a service, but it is not yet ready to perform its duty
+   */
+  case object NoTimelyResponseFromServiceProblem extends ProblemType {
+    def apply(msg: String, args: Map[String, Any] = Map.empty, cause: Option[ProblemCause] = None): SingleProblem =
+      SingleProblem(msg, NoTimelyResponseFromServiceProblem, args, cause)
+    def unapply(problem: SingleProblem): Option[SingleProblem] = SingleProblem.unapplyAgainst(problem, NoTimelyResponseFromServiceProblem)
+  }
+  
   /**
    * A component couldn't find a dependency
    */
