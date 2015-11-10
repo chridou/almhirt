@@ -31,7 +31,6 @@ object BinarySnapshotRepository {
     compress: Boolean,
     initializeRetryPolicy: RetryPolicyExt,
     storageRetryPolicy: RetryPolicyExt,
-    circuitControlSettings: CircuitControlSettings,
     futuresExecutionContextSelector: ExtendedExecutionContextSelector,
     marshallingExecutionContextSelector: ExtendedExecutionContextSelector)(implicit almhirtContext: AlmhirtContext): Props =
     Props(new BinarySnapshotRepositoryActor(
@@ -44,7 +43,6 @@ object BinarySnapshotRepository {
       compress,
       initializeRetryPolicy,
       storageRetryPolicy,
-      circuitControlSettings,
       futuresExecutionContextSelector,
       marshallingExecutionContextSelector))
 
@@ -60,7 +58,6 @@ object BinarySnapshotRepository {
       collectionName ← section.v[String]("collection-name")
       writeWarningThreshold ← section.v[FiniteDuration]("write-warn-threshold")
       readWarningThreshold ← section.v[FiniteDuration]("read-warn-threshold")
-      circuitControlSettings ← section.v[CircuitControlSettings]("circuit-control")
       initializeRetryPolicy ← section.v[RetryPolicyExt]("initialize-retry-policy")
       storageRetryPolicy ← section.v[RetryPolicyExt]("storage-retry-policy")
       futuresExecutionContextSelector ← section.v[ExtendedExecutionContextSelector]("futures-context")
@@ -77,7 +74,6 @@ object BinarySnapshotRepository {
       compress,
       initializeRetryPolicy,
       storageRetryPolicy,
-      circuitControlSettings,
       futuresExecutionContextSelector,
       marshallingExecutionContextSelector)).leftMap(p ⇒ ConfigurationProblem(s"""Failed to configure BinarySnapshotRepository @$path.""", cause = Some(p)))
   }
@@ -118,7 +114,6 @@ private[snapshots] class BinarySnapshotRepositoryActor(
     compress: Boolean,
     initializeRetryPolicy: RetryPolicyExt,
     storageRetryPolicy: RetryPolicyExt,
-    circuitControlSettings: CircuitControlSettings,
     futuresExecutionContextSelector: ExtendedExecutionContextSelector,
     marshallingExecutionContextSelector: ExtendedExecutionContextSelector)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging with ControllableActor with StatusReportingActor {
   import almhirt.snapshots.SnapshotRepository
@@ -127,8 +122,6 @@ private[snapshots] class BinarySnapshotRepositoryActor(
 
   implicit val futuresContext = selectExecutionContext(futuresExecutionContextSelector)
   val marshallingContext = selectExecutionContext(marshallingExecutionContextSelector)
-
-  val circuitBreaker = AlmCircuitBreaker(circuitControlSettings, futuresContext, context.system.scheduler)
 
   private var numSnapshotsReceived = 0L
   private var numSnapshotsReceivedWhileUninitialized = 0L
@@ -161,7 +154,6 @@ private[snapshots] class BinarySnapshotRepositoryActor(
 
       case Initialized ⇒
         logInfo(s"Initialized.")
-        registerCircuitControl(circuitBreaker)
         context.become(receiveRunning)
 
       case InitializeFailed(cause) ⇒
@@ -208,7 +200,6 @@ private[snapshots] class BinarySnapshotRepositoryActor(
 
       case Initialized ⇒
         logInfo(s"Initialized.")
-        registerCircuitControl(circuitBreaker)
         context.become(receiveRunning)
 
       case InitializeFailed(cause) ⇒
@@ -242,7 +233,7 @@ private[snapshots] class BinarySnapshotRepositoryActor(
         val f = measureWrite {
           for {
             snapshot ← marshal(ar)
-            storedAggId ← circuitBreaker.fused(storeSnapshot(snapshot))
+            storedAggId ← storeSnapshot(snapshot)
           } yield {
             numSnapshotsStored.incrementAndGet()
             SnapshotRepository.SnapshotStored(storedAggId)
@@ -254,15 +245,15 @@ private[snapshots] class BinarySnapshotRepositoryActor(
         })(sender())
 
       case SnapshotRepository.MarkAggregateRootMortuus(id, version) ⇒
-        val f = measureWrite { circuitBreaker.fused(markSnapshotMortuus(PersistableMortuusSnapshotState(id, version))).map(SnapshotRepository.AggregateRootMarkedMortuus(_)) }
+        val f = measureWrite { markSnapshotMortuus(PersistableMortuusSnapshotState(id, version)).map(SnapshotRepository.AggregateRootMarkedMortuus(_)) }
         f.recoverThenPipeTo(fail ⇒ SnapshotRepository.MarkAggregateRootMortuusFailed(id, fail))(sender())
 
       case SnapshotRepository.DeleteSnapshot(id) ⇒
-        val f = measureWrite { circuitBreaker.fused(deleteSnapshot(id)).map(SnapshotRepository.SnapshotDeleted(_)) }
+        val f = measureWrite { deleteSnapshot(id).map(SnapshotRepository.SnapshotDeleted(_)) }
         f.recoverThenPipeTo(fail ⇒ SnapshotRepository.DeleteSnapshotFailed(id, fail))(sender())
 
       case SnapshotRepository.FindSnapshot(id) ⇒
-        val f = measureRead { circuitBreaker.fused(findSnapshot(id)) }
+        val f = measureRead { findSnapshot(id) }
         f.recoverThenPipeTo(fail ⇒ SnapshotRepository.FindSnapshotFailed(id, fail))(sender())
     }
   }
