@@ -111,7 +111,7 @@ private[almhirt] trait AggregateRootViewsSkeleton[E <: AggregateRootEvent] exten
   private var lastEscalatedViewErrorOn: Option[java.time.LocalDateTime] = None
 
   override val supervisorStrategy =
-    OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
+    OneForOneStrategy(maxNrOfRetries = 20, withinTimeRange = 1 minute) {
       case exn: Exception ⇒
         numEscalatedViewErrors = numEscalatedViewErrors + 1L
         lastEscalatedViewErrorOn = Some(almhirtContext.getUtcTimestamp)
