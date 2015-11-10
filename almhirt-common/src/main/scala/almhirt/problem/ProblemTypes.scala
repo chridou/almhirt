@@ -247,6 +247,12 @@ object problemtypes {
     def unapply(problem: SingleProblem): Option[SingleProblem] = SingleProblem.unapplyAgainst(problem, ConstraintViolatedProblem)
   }
 
+  case object VersionConflictProblem extends ProblemType {
+    def apply(msg: String, args: Map[String, Any] = Map.empty, cause: Option[ProblemCause] = None): SingleProblem =
+      SingleProblem(msg, VersionConflictProblem, args, cause)
+    def unapply(problem: SingleProblem): Option[SingleProblem] = SingleProblem.unapplyAgainst(problem, VersionConflictProblem)
+  }
+  
   /**
    * A String couldn't be parsed. Usually used for failures when parsing DSLs
    */

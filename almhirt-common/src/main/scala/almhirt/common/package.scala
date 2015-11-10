@@ -151,6 +151,7 @@ package object common extends ops.DeadlineExt with ops.FiniteDurationExt {
   val IndexOutOfBoundsProblem = almhirt.problem.problemtypes.IndexOutOfBoundsProblem
   val NotFoundProblem = almhirt.problem.problemtypes.NotFoundProblem
   val ConstraintViolatedProblem = almhirt.problem.problemtypes.ConstraintViolatedProblem
+  val VersionConflictProblem = almhirt.problem.problemtypes.VersionConflictProblem
   val ParsingProblem = almhirt.problem.problemtypes.ParsingProblem
   val BadDataProblem = almhirt.problem.problemtypes.BadDataProblem
   val CollisionProblem = almhirt.problem.problemtypes.CollisionProblem

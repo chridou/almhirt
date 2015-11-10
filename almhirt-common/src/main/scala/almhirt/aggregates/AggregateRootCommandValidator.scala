@@ -43,7 +43,7 @@ object AggregateRootCommandValidator {
             p match {
               case v: Vivus[AggregateRoot] ⇒
                 if (command.aggVersion != v.version)
-                  IllegalOperationProblem(
+                  VersionConflictProblem(
                     s"Versions do not match: Command(⇒${command.aggVersion.value}) vs Aggregate(${v.version.value}).").failure
                 else
                   command.success
