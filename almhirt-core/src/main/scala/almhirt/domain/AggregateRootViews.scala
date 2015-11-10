@@ -102,9 +102,21 @@ private[almhirt] trait AggregateRootViewsSkeleton[E <: AggregateRootEvent] exten
 
   override val componentControl = LocalComponentControl(self, ComponentControlActions.none, Some(logWarning))
 
+  private var numJettisonedSinceLastReport = 0L
+  private var numReportedViewErrors = 0L
+  private var numReportedViewWarnings = 0L
+
+  private var numEscalatedViewErrors = 0L
+  private var firstEscalatedViewErrorOn: Option[java.time.LocalDateTime] = None
+  private var lastEscalatedViewErrorOn: Option[java.time.LocalDateTime] = None
+
   override val supervisorStrategy =
     OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
       case exn: Exception ⇒
+        numEscalatedViewErrors = numEscalatedViewErrors + 1L
+        lastEscalatedViewErrorOn = Some(almhirtContext.getUtcTimestamp)
+        if (firstEscalatedViewErrorOn.isEmpty)
+          firstEscalatedViewErrorOn = Some(almhirtContext.getUtcTimestamp)
         informVeryImportant(s"""Handling escalated error of type ${exn.getClass.getName}("${exn.getMessage}") for ${sender.path.name} with action Restart.""")
         Restart
     }
@@ -123,10 +135,6 @@ private[almhirt] trait AggregateRootViewsSkeleton[E <: AggregateRootEvent] exten
   final override val requestStrategy = ZeroRequestStrategy
 
   private case object Resolve
-
-  private var numJettisonedSinceLastReport = 0L
-  private var numViewErrors = 0L
-  private var numViewWarnings = 0L
 
   def receiveResolve: Receive = startup() {
     reportsStatus(onReportRequested = createStatusReport) {
@@ -202,12 +210,12 @@ private[almhirt] trait AggregateRootViewsSkeleton[E <: AggregateRootEvent] exten
         logDebug(s"View ${sender().path.name} reported a debug message: $msg")
 
       case AggregateRootViewsInternals.ReportViewError(msg, cause) ⇒
-        numViewErrors = numViewErrors + 1L
+        numReportedViewErrors = numReportedViewErrors + 1L
         logError(s"View ${sender().path.name} reported an error: $msg")
         reportMajorFailure(cause)
 
       case AggregateRootViewsInternals.ReportViewWarning(msg, cause) ⇒
-        numViewWarnings = numViewWarnings + 1L
+        numReportedViewWarnings = numReportedViewWarnings + 1L
         logWarning(s"View ${sender().path.name} reported a warning: $msg")
         reportMinorFailure(cause)
 
@@ -223,10 +231,13 @@ private[almhirt] trait AggregateRootViewsSkeleton[E <: AggregateRootEvent] exten
     val numberOfViews = this.context.children.size
 
     val rep = StatusReport(s"${this.getClass.getSimpleName}-Report") addMany
-      ("number-of-views" -> numberOfViews,
-        "number-of-view-warnings" -> numViewWarnings,
-        "number-of-view-errors" -> numViewErrors,
-        "number-of-views-jettisoned-since-last-report" -> numJettisonedSinceLastReport)
+      ("number-of-views" -> numberOfViews) subReport ("errors",
+        "number-of-escalated-view-errors" -> numEscalatedViewErrors,
+        "first-escalated-view-error-on" -> firstEscalatedViewErrorOn,
+        "last-escalated-view-error-on" -> lastEscalatedViewErrorOn) subReport ("views",
+          "number-of-reported-view-warnings" -> numReportedViewWarnings,
+          "number-of-reported-view-errors" -> numReportedViewErrors,
+          "number-of-views-jettisoned-since-last-report" -> numJettisonedSinceLastReport)
 
     rep.success
   }
