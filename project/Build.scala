@@ -17,7 +17,7 @@ object BuildSettings {
   val scalazVersion = "7.1.3"
   val reactiveMongoVersion = "0.11.7"
   val json4sVersion = "3.2.11"
-  val ezRepsVersion = "0.6.1"
+  val ezRepsVersion = "0.6.2"
    
   val buildSettings = Defaults.defaultSettings ++ releaseSettings ++ Seq (
 	organization := buildOrganization,
