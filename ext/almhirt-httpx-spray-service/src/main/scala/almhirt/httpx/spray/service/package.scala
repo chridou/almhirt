@@ -18,6 +18,7 @@ package object service {
       case ServiceNotAvailableProblem(_) ⇒ StatusCodes.ServiceUnavailable
       case ServiceNotReadyProblem(_) ⇒ StatusCodes.ServiceUnavailable
       case ServiceBusyProblem(_) ⇒ StatusCodes.TooManyRequests
+      case VersionConflictProblem(_) ⇒ StatusCodes.Conflict
       case BadDataProblem(_) ⇒ StatusCodes.BadRequest
       case IllegalOperationProblem(_) ⇒ StatusCodes.BadRequest
       case ConstraintViolatedProblem(_) ⇒ StatusCodes.BadRequest

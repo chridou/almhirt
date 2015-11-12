@@ -118,17 +118,24 @@ trait AwaitingEntityResponse { self: HttpExternalConnector ⇒
             										|The problem received from server side is contained as this problem's cause.""".stripMargin, cause = Some(aProblem)).failure)
         },
         deserializedEntity ⇒ deserializedEntity.success)
-    else
-      // In case there is no problem contained, we check whether its the entity...
-      deserializeProblem(response).fold(
-        fail1 ⇒ deserializeEntity[T](response).fold(
-          fail2 ⇒ SerializationProblem(s"""	|
+    else {
+      if (response.status == StatusCodes.RequestEntityTooLarge) {
+        BadDataProblem(s"The request entity was too large.").failure
+      } else if (response.status == StatusCodes.RequestTimeout) {
+        NoTimelyResponseFromServiceProblem(s"The service did not respond in time.").failure
+      } else {
+        // In case there is no problem contained, we check whether its the entity...
+        deserializeProblem(response).fold(
+          fail1 ⇒ deserializeEntity[T](response).fold(
+            fail2 ⇒ SerializationProblem(s"""	|
         		  								|This is a strange failure(client side).
             									|1) This response(${response.status}) WAS NOT accepted as a success.
             									|2) The content was not a problem: "${fail1.message}"
             									|3) The content was not an entity.""".stripMargin, cause = Some(fail2)).failure,
-          succ ⇒ succ.success),
-        succ ⇒ succ.failure)
+            succ ⇒ succ.success),
+          succ ⇒ succ.failure)
+      }
+    }
   }
 
   def deserializeEntity[T: HttpDeserializer](response: HttpResponse): AlmValidation[T] =
