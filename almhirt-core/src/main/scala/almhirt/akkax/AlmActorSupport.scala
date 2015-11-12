@@ -2,6 +2,7 @@ package almhirt.akkax
 
 import scala.language.implicitConversions
 
+import scala.reflect.ClassTag
 import scala.concurrent._
 import scala.concurrent.duration._
 import scalaz.syntax.validation._
@@ -15,7 +16,7 @@ import scala.concurrent.ExecutionContext
 trait AlmActorSupport { me: Actor ⇒
 
   protected implicit val ContextSchedulerSchedulingMagnet = new almhirt.almfuture.ActionSchedulingMagnet[Scheduler] {
-    def schedule(to: Scheduler, actionBlock:  ⇒ Unit, in: scala.concurrent.duration.FiniteDuration, executor: scala.concurrent.ExecutionContext): Unit = {
+    def schedule(to: Scheduler, actionBlock: ⇒ Unit, in: scala.concurrent.duration.FiniteDuration, executor: scala.concurrent.ExecutionContext): Unit = {
       to.scheduleOnce(in) { actionBlock }(executor)
     }
   }
@@ -52,7 +53,12 @@ trait AlmActorSupport { me: Actor ⇒
   implicit def almFuture2PipeableFuture[T](future: AlmFuture[T]): PipeableAlmFuture[T] = new PipeableAlmFuture(future)
   implicit def future2PipeableFuture[T](future: Future[T])(implicit executor: ExecutionContext): PipeableAlmFuture[T] = new PipeableAlmFuture(future.toAlmFuture)
 
+  def askActorTyped[T: ClassTag](actor: ActorRef, message: Any)(timeout: FiniteDuration)(implicit executor: ExecutionContext): AlmFuture[T] =
+    akka.pattern.ask(actor, message)(timeout).mapCastTo[T]
+
   class PipeableAlmFuture[T](future: AlmFuture[T]) extends AnyRef {
+    def timeout(after: FiniteDuration)(implicit executor: ExecutionContext): AlmFuture[T] = future.timeout(after, me.context.system.scheduler)
+
     def pipeTo(receiver: ActorRef, unwrapProblem: Boolean = true)(implicit executionContext: ExecutionContext): AlmFuture[T] = {
       import almhirt.problem._
       future.onComplete(
