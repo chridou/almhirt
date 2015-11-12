@@ -120,7 +120,7 @@ trait AwaitingEntityResponse { self: HttpExternalConnector ⇒
         deserializedEntity ⇒ deserializedEntity.success)
     else {
       if (response.status == StatusCodes.RequestEntityTooLarge) {
-        BadDataProblem(s"The request entity was too large.").failure
+        TooMuchDataProblem(s"The request entity was too large.").failure
       } else if (response.status == StatusCodes.RequestTimeout) {
         NoTimelyResponseFromServiceProblem(s"The service did not respond in time.").failure
       } else {
