@@ -274,7 +274,7 @@ object problemtypes {
   }
 
   /**
-   * Something has been changed by someone else. Stale data etc..
+   * Some action collides with another..
    */
   case object CollisionProblem extends ProblemType {
     def apply(msg: String, args: Map[String, Any] = Map.empty, cause: Option[ProblemCause] = None): SingleProblem =
@@ -343,6 +343,12 @@ object problemtypes {
     def apply(msg: String, args: Map[String, Any] = Map.empty, cause: Option[ProblemCause] = None): SingleProblem =
       SingleProblem(msg, NoSuchElementProblem, args, cause)
     def unapply(problem: SingleProblem): Option[SingleProblem] = SingleProblem.unapplyAgainst(problem, NoSuchElementProblem)
+  }
+
+  case object TooMuchDataProblem extends ProblemType {
+    def apply(msg: String, args: Map[String, Any] = Map.empty, cause: Option[ProblemCause] = None): SingleProblem =
+      SingleProblem(msg, TooMuchDataProblem, args, cause)
+    def unapply(problem: SingleProblem): Option[SingleProblem] = SingleProblem.unapplyAgainst(problem, TooMuchDataProblem)
   }
   
   /**
