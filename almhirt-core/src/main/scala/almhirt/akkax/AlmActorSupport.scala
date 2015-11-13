@@ -57,7 +57,7 @@ trait AlmActorSupport { me: Actor ⇒
     akka.pattern.ask(actor, message)(timeout).mapCastTo[T]
 
   class PipeableAlmFuture[T](future: AlmFuture[T]) extends AnyRef {
-    def timeout(after: FiniteDuration)(implicit executor: ExecutionContext): AlmFuture[T] = future.timeout(after, me.context.system.scheduler)
+    def withTimeout(after: FiniteDuration)(implicit executor: ExecutionContext): AlmFuture[T] = future.timeout(after, me.context.system.scheduler)
 
     def pipeTo(receiver: ActorRef, unwrapProblem: Boolean = true)(implicit executionContext: ExecutionContext): AlmFuture[T] = {
       import almhirt.problem._
