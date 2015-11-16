@@ -241,6 +241,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
   private var suppliesRequestedSinceThrottlingStateChanged = 0
 
   private var numberOfCommandsThatCanBeRequested: Int = commandBuffersize
+  private var numberOfCommandsRequestedFromUpstream = 0L
   private var bufferedCommandStatusEventsToDispatch: Vector[CommandStatusChanged] = Vector.empty
   private var overdueActions: Set[AggregateRootId] = Set.empty
 
@@ -267,6 +268,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
         context.system.scheduler.scheduleOnce(1.minute, self, ReportThrottlingState)
       } else if (numberOfCommandsThatCanBeRequested > 0) {
         request(numberOfCommandsThatCanBeRequested)
+        numberOfCommandsRequestedFromUpstream = numberOfCommandsRequestedFromUpstream + 1L
         numberOfCommandsThatCanBeRequested = 0
       }
     }
@@ -542,6 +544,8 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
     val overdueAggIds = ezreps.ast.EzField("overdue-agg-ids", traversableToEzCollection(overdueActions.toTraversable))
 
     val rep = StatusReport(s"Hive-${this.hiveDescriptor.value}-Report").withComponentState(componentState).subReport("command-stats",
+      "number-of-commands-requested-from-upstream" -> numberOfCommandsRequestedFromUpstream,
+      "number-of-commands-that-can-currently-be-requested-from-upstream" -> numberOfCommandsThatCanBeRequested,
       "last-command-received-on" -> lastCommandReceivedOn,
       "number-of-commands-received" -> numCommandsReceived,
       "number-of-commands-succeeded" -> numCommandsSucceeded,
@@ -559,7 +563,8 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
             "number-of-drones" -> this.context.children.size,
             "amount-of-jettisoned-cargo-since-last-report" -> numJet).configSection(
               "command-buffer-size" -> commandBuffersize,
-              "enqueued-events-throttling-threshold" -> enqueuedEventsThrottlingThreshold)
+              "enqueued-events-throttling-threshold" -> enqueuedEventsThrottlingThreshold,
+              "snapshot-storage" -> snapshotting.map(_._1.path.toStringWithoutAddress))
 
     scalaz.Success(rep)
   }
