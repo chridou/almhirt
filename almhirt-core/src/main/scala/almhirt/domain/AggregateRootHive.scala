@@ -240,6 +240,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
   private var totalSuppliesRequested = 0
   private var suppliesRequestedSinceThrottlingStateChanged = 0
 
+  private var numCommandsInFlight = 0
   private var numberOfCommandsThatCanBeRequested: Int = commandBuffersize
   private var numberOfCommandsRequestedFromUpstream = 0L
   private var bufferedCommandStatusEventsToDispatch: Vector[CommandStatusChanged] = Vector.empty
@@ -268,7 +269,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
         context.system.scheduler.scheduleOnce(1.minute, self, ReportThrottlingState)
       } else if (numberOfCommandsThatCanBeRequested > 0) {
         request(numberOfCommandsThatCanBeRequested)
-        numberOfCommandsRequestedFromUpstream = numberOfCommandsRequestedFromUpstream + 1L
+        numberOfCommandsRequestedFromUpstream = numberOfCommandsRequestedFromUpstream + numberOfCommandsThatCanBeRequested
         numberOfCommandsThatCanBeRequested = 0
       }
     }
@@ -276,10 +277,12 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
 
   private def receivedCommandResponse() {
     numberOfCommandsThatCanBeRequested = numberOfCommandsThatCanBeRequested + 1
+    numCommandsInFlight = numCommandsInFlight - 1
   }
 
   private def receivedInvalidCommand() {
     numberOfCommandsThatCanBeRequested = numberOfCommandsThatCanBeRequested + 1
+    numCommandsInFlight = numCommandsInFlight - 1
   }
 
   private def enqueueEvent(event: CommandStatusChanged) {
@@ -339,6 +342,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
               }
           }
           drone ! aggregateCommand
+          numCommandsInFlight = numCommandsInFlight + 1
           enqueueEvent(CommandExecutionInitiated(aggregateCommand))
         } else {
           numCommandsFailedInternal += 1
@@ -551,6 +555,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
     val overdueAggIds = ezreps.ast.EzField("overdue-agg-ids", traversableToEzCollection(overdueActions.toTraversable))
 
     val rep = StatusReport(s"Hive-${this.hiveDescriptor.value}-Report").withComponentState(componentState).subReport("command-stats",
+      "number-og-commands-in-flight" -> numCommandsInFlight,
       "number-of-commands-requested-from-upstream" -> numberOfCommandsRequestedFromUpstream,
       "number-of-commands-that-can-currently-be-requested-from-upstream" -> numberOfCommandsThatCanBeRequested,
       "last-command-received-on" -> lastCommandReceivedOn,
