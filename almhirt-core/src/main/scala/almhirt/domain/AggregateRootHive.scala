@@ -555,7 +555,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
     val overdueAggIds = ezreps.ast.EzField("overdue-agg-ids", traversableToEzCollection(overdueActions.toTraversable))
 
     val rep = StatusReport(s"Hive-${this.hiveDescriptor.value}-Report").withComponentState(componentState).subReport("command-stats",
-      "number-og-commands-in-flight" -> numCommandsInFlight,
+      "number-of-commands-in-flight" -> numCommandsInFlight,
       "number-of-commands-requested-from-upstream" -> numberOfCommandsRequestedFromUpstream,
       "number-of-commands-that-can-currently-be-requested-from-upstream" -> numberOfCommandsThatCanBeRequested,
       "last-command-received-on" -> lastCommandReceivedOn,
