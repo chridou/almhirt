@@ -559,7 +559,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
         "last-command-status-events-delivered-on" -> lastCommandStatusEventsDeliveredOn,
         "last-command-status-events-offered-on" -> lastCommandStatusEventsOfferedOn).subReport("overdue-drones",
           "number-of-overdue-actions" -> overdueActions.size,
-          overdueAggIds).addMany(
+          overdueAggIds).subReport("misc",
             "number-of-drones" -> this.context.children.size,
             "amount-of-jettisoned-cargo-since-last-report" -> numJet).configSection(
               "command-buffer-size" -> commandBuffersize,
