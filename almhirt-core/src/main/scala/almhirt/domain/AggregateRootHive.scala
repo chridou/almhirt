@@ -201,7 +201,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
   def numCommandsSucceeded = numCommandsSucceededInternal
   def numCommandsFailed = numCommandsFailedInternal
 
-  private var aggregateEventLog: ActorRef = null
+  private var aggregateEventLog: Option[ActorRef] = None
   private var snapshotting: Option[(ActorRef, SnapshottingPolicyProvider)] = None
 
   private case object ReportThrottlingState
@@ -219,7 +219,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
         logInfo("Found dependencies.")
         signContract(eventsBroker)
 
-        aggregateEventLog = dependencies("aggregateeventlog")
+        aggregateEventLog = Some(dependencies("aggregateeventlog"))
         snapshotting = dependencies.get("snapshotting").map((_, snapshottingToResolve.get._2))
 
         context.become(receiveInitialize)
@@ -320,15 +320,22 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
             case Some(drone) ⇒
               drone
             case None ⇒
-              droneFactory(aggregateCommand, aggregateEventLog, snapshotting) match {
-                case scalaz.Success(props) ⇒
-                  val droneActor = context.actorOf(props, aggregateCommand.aggId.value)
-                  context watch droneActor
-                  droneActor
-                case scalaz.Failure(problem) ⇒ {
-                  reportCriticalFailure(problem.withArg("hive", hiveDescriptor.value))
-                  throw new Exception(s"Could not create a drone for command ${aggregateCommand.header}:\n$problem")
-                }
+              aggregateEventLog match {
+                case Some(aggEventLog) ⇒
+                  droneFactory(aggregateCommand, aggEventLog, snapshotting) match {
+                    case scalaz.Success(props) ⇒
+                      val droneActor = context.actorOf(props, aggregateCommand.aggId.value)
+                      context watch droneActor
+                      droneActor
+                    case scalaz.Failure(problem) ⇒ {
+                      reportCriticalFailure(problem.withArg("hive", hiveDescriptor.value))
+                      throw new Exception(s"Could not create a drone for command ${aggregateCommand.header}:\n$problem")
+                    }
+                  }
+                case None ⇒
+                  val exn = new Exception(s"There is no aggregate root event log!")
+                  reportCriticalFailure(exn)
+                  throw exn
               }
           }
           drone ! aggregateCommand
@@ -564,7 +571,8 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
             "amount-of-jettisoned-cargo-since-last-report" -> numJet).configSection(
               "command-buffer-size" -> commandBuffersize,
               "enqueued-events-throttling-threshold" -> enqueuedEventsThrottlingThreshold,
-              "snapshot-storage" -> snapshotting.map(_._1.path.toStringWithoutAddress))
+              "snapshot-storage" -> snapshotting.map(_._1.path.toStringWithoutAddress),
+              "aggregate-event-log" -> aggregateEventLog.map(_.path.toStringWithoutAddress))
 
     scalaz.Success(rep)
   }
