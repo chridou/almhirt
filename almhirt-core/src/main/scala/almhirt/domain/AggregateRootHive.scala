@@ -316,6 +316,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
   def receiveRunning: Receive = running() {
     reportsStatus(onReportRequested = createStatusReport) {
       case ActorSubscriberMessage.OnNext(aggregateCommand: AggregateRootCommand) ⇒
+        numCommandsInFlight = numCommandsInFlight + 1
         numCommandsReceivedInternal += 1
         lastCommandReceivedOn = Some(almhirtContext.getUtcTimestamp)
         if (overdueActions.isEmpty) {
@@ -342,7 +343,6 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
               }
           }
           drone ! aggregateCommand
-          numCommandsInFlight = numCommandsInFlight + 1
           enqueueEvent(CommandExecutionInitiated(aggregateCommand))
         } else {
           numCommandsFailedInternal += 1
