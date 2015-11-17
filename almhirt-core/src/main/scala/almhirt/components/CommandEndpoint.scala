@@ -194,7 +194,6 @@ private[almhirt] class CommandEndpointImpl(
             trackingResult ⇒ {
               val rsp = TrackedCommandResult(command.commandId, trackingResult)
               stakeholder.tell(rsp, ActorRef.noSender)
-              logDebug(s"responded to ${stakeholder.path.toStringWithoutAddress} ofr ${command.commandId.value}")
             }),
 
           deadline = maxTrackingDuration.fromNow)
