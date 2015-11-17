@@ -102,21 +102,23 @@ private[almhirt] class CommandEndpointImpl(
     reportsStatus(onReportRequested = createStatusReport) {
 
       case cmd: AggregateRootCommand ⇒
+        val pinnedSender = sender()
         numCommandsReceived = numCommandsReceived + 1L
         lastCommandReceived = Some(almhirtContext.getUtcTimestamp)
-        lastCommandReceivedFrom = Some(sender().path.toStringWithoutAddress)
+        lastCommandReceivedFrom = Some(pinnedSender.path.toStringWithoutAddress)
         lastCommandReceivedCommandId = Some(cmd.commandId)
         nexus match {
-          case Some(nx) ⇒ context.actorOf(Props(new SingleAggregateRootCommandDispatcher(cmd, sender(), nx, self)))
-          case None     ⇒ sender() ! CommandNotAccepted(cmd.commandId, IllegalOperationProblem("There is no nexus."))
+          case Some(nx) ⇒ context.actorOf(Props(new SingleAggregateRootCommandDispatcher(cmd, pinnedSender, nx)))
+          case None     ⇒ pinnedSender ! CommandNotAccepted(cmd.commandId, IllegalOperationProblem("There is no nexus."))
         }
 
       case cmd: Command ⇒
+        val pinnedSender = sender()
         numCommandsReceived = numCommandsReceived + 1L
         lastCommandReceived = Some(almhirtContext.getUtcTimestamp)
-        lastCommandReceivedFrom = Some(sender().path.toStringWithoutAddress)
+        lastCommandReceivedFrom = Some(pinnedSender.path.toStringWithoutAddress)
         lastCommandReceivedCommandId = Some(cmd.commandId)
-        sender() ! CommandNotAccepted(cmd.commandId, OperationNotSupportedProblem("Handle a non aggregate root command."))
+        pinnedSender ! CommandNotAccepted(cmd.commandId, OperationNotSupportedProblem("Handle a non aggregate root command."))
     }
   }
 
@@ -167,7 +169,7 @@ private[almhirt] class CommandEndpointImpl(
     logInfo("Stopped")
   }
 
-  private class SingleAggregateRootCommandDispatcher(command: AggregateRootCommand, stakeholder: ActorRef, nexus: ActorRef, actIntheNameOf: ActorRef) extends Actor {
+  private class SingleAggregateRootCommandDispatcher(command: AggregateRootCommand, stakeholder: ActorRef, nexus: ActorRef) extends Actor {
     def receive: Receive = {
       case CommandAccepted(_) ⇒
         sendCommandToTracker()
@@ -185,13 +187,13 @@ private[almhirt] class CommandEndpointImpl(
           callback = cmdRes ⇒ cmdRes.fold(
             fail ⇒ {
               val rsp = TrackingFailed(command.commandId, fail)
-              stakeholder.tell(rsp, actIntheNameOf)
+              stakeholder.tell(rsp, ActorRef.noSender)
               reportMinorFailure(fail)
               reportRejectedCommand(command, MinorSeverity, fail)
             },
             trackingResult ⇒ {
               val rsp = TrackedCommandResult(command.commandId, trackingResult)
-              stakeholder.tell(rsp, actIntheNameOf)
+              stakeholder.tell(rsp, ActorRef.noSender)
               logDebug(s"responded to ${stakeholder.path.toStringWithoutAddress} ofr ${command.commandId.value}")
             }),
 
