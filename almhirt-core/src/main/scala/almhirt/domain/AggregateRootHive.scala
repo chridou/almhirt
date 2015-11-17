@@ -23,7 +23,7 @@ object AggregateRootHive {
     aggregateEventLogToResolve: ToResolve,
     snapshottingToResolve: Option[(ToResolve, SnapshottingPolicyProvider)],
     resolveSettings: ResolveSettings,
-    commandBuffersize: Int,
+    maxParallelism: Int,
     droneFactory: AggregateRootDroneFactory,
     otherThanContextEventBroker: Option[StreamBroker[Event]],
     enqueuedEventsThrottlingThreshold: Int)(implicit ctx: AlmhirtContext): Props =
@@ -32,7 +32,7 @@ object AggregateRootHive {
       aggregateEventLogToResolve,
       snapshottingToResolve,
       resolveSettings,
-      commandBuffersize,
+      maxParallelism,
       droneFactory,
       otherThanContextEventBroker.getOrElse(ctx.eventBroker),
       enqueuedEventsThrottlingThreshold))
@@ -54,14 +54,14 @@ object AggregateRootHive {
           SnapshottingPolicyProvider.snapshootAllByConfig(cfg).map(provider ⇒ Some((snapshotRepositoryToResolve, provider)))
       }
       resolveSettings ← section.v[ResolveSettings]("resolve-settings")
-      commandBuffersize ← section.v[Int]("command-buffer-size")
+      maxParallelism ← section.v[Int]("max-parallelism")
       enqueuedEventsThrottlingThreshold ← section.v[Int]("enqueued-events-throttling-threshold")
     } yield propsRaw(
       hiveDescriptor,
       aggregateEventLogToResolve,
       snapshottingToResolve,
       resolveSettings,
-      commandBuffersize,
+      maxParallelism,
       droneFactory,
       Some(ctx.eventBroker),
       enqueuedEventsThrottlingThreshold)
