@@ -171,6 +171,7 @@ private[almhirt] class CommandEndpointImpl(
     def receive: Receive = {
       case CommandAccepted(_) ⇒
         sendCommandToTracker()
+        this.context.stop(self)
 
       case m: CommandNotAccepted ⇒
         stakeholder ! m

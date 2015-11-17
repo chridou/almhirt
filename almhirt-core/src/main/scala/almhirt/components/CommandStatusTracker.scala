@@ -125,6 +125,8 @@ private[almhirt] class MyCommandStatusTracker(
   private var numReceivedExecutedStatusChangedEvents = 0L
   private var numReceivedNotExecutedStatusChangedEvents = 0L
   private var numReceivedTrackingRequests = 0L
+  private var lastReceivedTrackingRequestOn: Option[java.time.LocalDateTime] = None
+  private var lastReceivedTrackingRequestCommandId: Option[CommandId] = None
   private var numEffectivelyRemovedSubscriptions = 0L
   private var numSubscriptionsRegularlyNotified = 0L
 
@@ -155,6 +157,8 @@ private[almhirt] class MyCommandStatusTracker(
 
       case TrackCommand(commandId, callback, deadline) ⇒
         numReceivedTrackingRequests = numReceivedTrackingRequests + 1L
+        lastReceivedTrackingRequestOn = Some(almhirtContext.getUtcTimestamp)
+        lastReceivedTrackingRequestCommandId = Some(commandId)
         cachedStatusLookUp.get(commandId) match {
           case Some(res) ⇒
             callback(res.success)
@@ -296,6 +300,8 @@ private[almhirt] class MyCommandStatusTracker(
         "max-cached-commands" -> shrinkCacheAt,
         "number-of-tracked-commands" -> trackingSubscriptions.size,
         "number-of-received-tracking-requests" -> numReceivedTrackingRequests,
+        "last-received-tracking-request-on" -> lastReceivedTrackingRequestOn,
+        "last-received-tracking-request-command-id" -> lastReceivedTrackingRequestCommandId.map(_.value),
         "subscriptions-details" -> subscriptionDetails,
         "status-changed-events-details" -> eventDetails)
     rep.success
