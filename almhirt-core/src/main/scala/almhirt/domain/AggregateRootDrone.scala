@@ -97,7 +97,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
   def notifyHiveAboutUnstoredEventsAfterPerEvent: Option[FiniteDuration]
 
   def rebuildWarnDuration: Option[FiniteDuration] = Some(0.5.seconds)
-  def commandExecutionWarnDuration: Option[FiniteDuration] = Some(1.0.seconds)
+  def commandExecutionWarnDuration: Option[FiniteDuration] = Some(1.5.seconds)
   def asyncInitMaxDur = 30.0.seconds
   def asyncPreStoreEventActionMaxDur = 30.0.seconds
   def asyncCleanUpMaxDur = 30.0.seconds
