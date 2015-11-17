@@ -215,7 +215,7 @@ class AggregateRootHiveTests(_system: ActorSystem)
         NoResolvingRequired(eventlogActor),
         None,
         ResolveSettings.default,
-        commandBuffersize = 16,
+        maxParallelism = 4,
         droneFactory = droneFactory,
         almhirtContext.eventBroker,
         enqueuedEventsThrottlingThreshold = 8))

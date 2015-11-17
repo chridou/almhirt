@@ -13,17 +13,11 @@ import almhirt.almfuture.all._
 trait CanDispatchEvents {
   def eventBroker: StreamBroker[Event]
 }
-trait CanDispatchCommands {
-  def commandBroker: StreamBroker[Command]
-}
 trait EventStream {
   def eventStream: Publisher[Event]
 }
-trait CommandStream {
-  def commandStream: Publisher[Command]
-}
 
-trait AlmhirtStreams extends EventStream with CommandStream with CanDispatchEvents with CanDispatchCommands
+trait AlmhirtStreams extends EventStream with CanDispatchEvents 
 
 object AlmhirtStreams {
   import akka.stream.scaladsl._
@@ -142,27 +136,9 @@ object AlmhirtStreams {
             if (soakEvents)
               Source(eventsPub).to(Sink.ignore)
 
-            // commands
-
-            val commandShipperActor = context.actorOf(StreamShipper.props(), "command-broker")
-            val (commandShipperIn, commandShipperOut, stopCommandShipper) = StreamShipper[Command](commandShipperActor)
-
-            val commandsDrain = Sink.fanoutPublisher[Command](initialFanoutCommands, maxFanoutCommands)
-            val commandFlow =
-              if (commandBufferSize > 0)
-                Flow[Command].buffer(commandBufferSize, OverflowStrategy.backpressure)
-              else
-                Flow[Command]
-            val (_, commandsPub) = commandFlow.runWith(Source(commandShipperOut), commandsDrain)
-
-            if (soakCommands)
-              Source(commandsPub).to(Sink.ignore)
-
             new AlmhirtStreams with Stoppable {
               override val eventBroker = eventShipperIn
               override val eventStream = eventsPub
-              override val commandBroker = commandShipperIn
-              override val commandStream = commandsPub
               def stop() {
                 context.stop(self)
               }

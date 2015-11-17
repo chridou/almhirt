@@ -37,8 +37,6 @@ trait AlmhirtContext extends CanCreateUuidsAndDateTimes with AlmhirtStreams with
       def getUtcTimestamp() = AlmhirtContext.this.getUtcTimestamp
       val eventBroker = AlmhirtContext.this.eventBroker
       val eventStream = AlmhirtContext.this.eventStream
-      val commandBroker = AlmhirtContext.this.commandBroker
-      val commandStream = AlmhirtContext.this.commandStream
       val localActorPaths = AlmhirtContext.this.localActorPaths
       def tellHerder(what: almhirt.herder.HerderMessages.HerderNotificicationMessage) {
         AlmhirtContext.this.tellHerder(what)
@@ -62,8 +60,6 @@ trait AlmhirtContext extends CanCreateUuidsAndDateTimes with AlmhirtStreams with
       def getUtcTimestamp() = AlmhirtContext.this.getUtcTimestamp
       val eventBroker = AlmhirtContext.this.eventBroker
       val eventStream = AlmhirtContext.this.eventStream
-      val commandBroker = AlmhirtContext.this.commandBroker
-      val commandStream = AlmhirtContext.this.commandStream
       val localActorPaths = AlmhirtContext.this.localActorPaths
       def tellHerder(what: almhirt.herder.HerderMessages.HerderNotificicationMessage) {
         AlmhirtContext.this.tellHerder(what)
@@ -87,8 +83,6 @@ trait AlmhirtContext extends CanCreateUuidsAndDateTimes with AlmhirtStreams with
       def getUtcTimestamp() = AlmhirtContext.this.getUtcTimestamp
       val eventBroker = AlmhirtContext.this.eventBroker
       val eventStream = AlmhirtContext.this.eventStream
-      val commandBroker = AlmhirtContext.this.commandBroker
-      val commandStream = AlmhirtContext.this.commandStream
       val localActorPaths = AlmhirtContext.this.localActorPaths
       def tellHerder(what: almhirt.herder.HerderMessages.HerderNotificicationMessage) {
         AlmhirtContext.this.tellHerder(what)
@@ -241,8 +235,6 @@ object AlmhirtContext {
                 def getUtcTimestamp() = ccuad.getUtcTimestamp
                 val eventBroker = streams.eventBroker
                 val eventStream = streams.eventStream
-                val commandBroker = streams.commandBroker
-                val commandStream = streams.commandStream
                 val localActorPaths = theLocalActorPaths
                 def tellHerder(what: almhirt.herder.HerderMessages.HerderNotificicationMessage) { tellTheHerder(what) }
                 def createReporter(forComponent: ComponentId): Reporter = new TellHerderReporter(this, forComponent)
@@ -362,8 +354,6 @@ object AlmhirtContext {
               def getUtcTimestamp() = ccuad.getUtcTimestamp
               val eventBroker = streams.eventBroker
               val eventStream = streams.eventStream
-              val commandBroker = streams.commandBroker
-              val commandStream = streams.commandStream
               val localActorPaths = null
               def tellHerder(what: almhirt.herder.HerderMessages.HerderNotificicationMessage) {}
               def createReporter(forComponent: ComponentId): Reporter = Reporter.DevNull
