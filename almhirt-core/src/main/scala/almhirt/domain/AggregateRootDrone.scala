@@ -80,15 +80,13 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
 
   implicit protected def arTag: scala.reflect.ClassTag[T]
 
-  implicit def executor: ExecutionContext = this.context.dispatcher
-  
   type TPayload = Any
 
   //*************
   // User API 
   //*************
 
-  def futuresContext: ExecutionContext
+  implicit def futuresContext: ExecutionContext
   def aggregateEventLog: ActorRef
   def snapshotting: Option[SnapshottingForDrone]
   def eventsBroker: StreamBroker[Event]
