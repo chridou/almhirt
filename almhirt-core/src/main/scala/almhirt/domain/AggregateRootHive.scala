@@ -261,11 +261,6 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
         throttled = true
         context.system.scheduler.scheduleOnce(1.minute, self, ReportThrottlingState)
       }
-      //      else if (numberOfCommandsThatCanBeRequested > 0) {
-      //        request(numberOfCommandsThatCanBeRequested)
-      //        numberOfCommandsRequestedFromUpstream = numberOfCommandsRequestedFromUpstream + numberOfCommandsThatCanBeRequested
-      //        numberOfCommandsThatCanBeRequested = 0
-      //      }
     }
   }
 
@@ -306,7 +301,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
           val prob = ServiceBusyProblem(s"I throttling since i cannot dispatch my command status events fast enough.")
           reportRejectedCommand(aggregateCommand, MinorSeverity, prob)
           sender() ! CommandNotAccepted(aggregateCommand.commandId, prob)
-        } else if (numCommandsInFlight >= maxParallelism) {
+        } else if (numCommandsInFlight < maxParallelism) {
           val drone = context.child(aggregateCommand.aggId.value) match {
             case Some(drone) ⇒
               drone
