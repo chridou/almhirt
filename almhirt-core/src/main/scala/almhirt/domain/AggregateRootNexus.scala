@@ -49,6 +49,7 @@ private[almhirt] class AggregateRootNexus(
   case object Start
 
   private var commandsReceived = 0L
+  private var lastCommandReceivedCommandId: Option[CommandId] = None
 
   def receiveInitialize: Receive = startup() {
     reportsStatusF(onReportRequested = createStatusReport) {
@@ -62,6 +63,7 @@ private[almhirt] class AggregateRootNexus(
     reportsStatusF(onReportRequested = createStatusReport) {
       case cmd: AggregateRootCommand ⇒
         commandsReceived = commandsReceived + 1
+        lastCommandReceivedCommandId = Some(cmd.commandId)
         hives.find(_._1(cmd)) match {
           case Some(hive) ⇒
             hive._2 forward cmd
@@ -101,23 +103,10 @@ private[almhirt] class AggregateRootNexus(
     }.toList
   }
 
-  //  private def createInitialHives(): List[ActorRef] = {
-  //    import akka.stream.OverflowStrategy
-  //    val commandsSource = Source(ActorPublisher[AggregateRootCommand](self)).runWith(Sink.fanoutPublisher[AggregateRootCommand](1, AlmMath.nextPowerOf2(hiveSelector.size)))
-  //    hiveSelector.map {
-  //      case (descriptor, f) ⇒
-  //        val props = hiveFactory.props(descriptor).resultOrEscalate
-  //        val actor = context.actorOf(props, s"hive-${descriptor.value}")
-  //        context watch actor
-  //        val hive = Sink(ActorSubscriber[AggregateRootCommand](actor))
-  //        Source(commandsSource).buffer(16, OverflowStrategy.backpressure).filter(cmd ⇒ f(cmd)).to(hive).run()
-  //        actor
-  //    }.toList
-  //  }
-
   def createStatusReport(options: StatusReportOptions): AlmFuture[StatusReport] = {
-    val rep = StatusReport(s"AggregateRootNexus-Report") ~
-      ("number-of-commands-received" -> commandsReceived)
+    val rep = StatusReport(s"AggregateRootNexus-Report") addMany
+      ("last-command-received-command-id" -> lastCommandReceivedCommandId.map(_.value),
+        "number-of-commands-received" -> commandsReceived)
 
     appendToReportFromCollector(rep)(options)
   }

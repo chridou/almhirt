@@ -119,6 +119,8 @@ private[almhirt] class MyCommandStatusTracker(
   private var numTimedOutSubscriptions = 0L
   private var numSubscriptionsRemovedDueToShrinking = 0L
   private var numReceivedStatusChangedEvents = 0L
+  private var lastReceivedStatusChangedEventReceivedOn: Option[java.time.LocalDateTime] = None
+  private var lastReceivedStatusChangedEventCommandId: Option[CommandId] = None
   private var numReceivedInitiatedStatusChangedEvents = 0L
   private var numReceivedExecutedStatusChangedEvents = 0L
   private var numReceivedNotExecutedStatusChangedEvents = 0L
@@ -168,6 +170,8 @@ private[almhirt] class MyCommandStatusTracker(
 
       case ActorSubscriberMessage.OnNext(next: CommandStatusChanged) ⇒
         numReceivedStatusChangedEvents = numReceivedStatusChangedEvents + 1L
+        lastReceivedStatusChangedEventReceivedOn = Some(almhirtContext.getUtcTimestamp)
+        lastReceivedStatusChangedEventCommandId = Some(next.commandHeader.id)
 
         next.status match {
           case r: CommandResult ⇒
@@ -186,7 +190,7 @@ private[almhirt] class MyCommandStatusTracker(
         request(1)
 
       case ActorSubscriberMessage.OnNext(x) ⇒
-        log.warning(s"Received unprocessable element $x")
+        logWarning(s"Received unprocessable element $x")
         request(1)
 
       case CheckTimeouts ⇒
@@ -251,17 +255,10 @@ private[almhirt] class MyCommandStatusTracker(
           reportMajorFailure(p)
         }
 
-        //Adjust current subscriptions
         trackingSubscriptions = trackingSubscriptions.map {
           case (commandId, entries) ⇒
             (commandId, entries -- (toRemove.get(commandId).toSeq.flatten))
         }
-
-        //        logDebug(s"""|Stats after removing timed outs:
-        //                   |Number of tracked commands: ${trackingSubscriptions.size}
-        //                   |Number of subscriptions: ${trackingSubscriptions.values.map { _.size }.sum}
-        //                   |To remove due to shrinking: ${removedDueToShrinking.size}(after removal)
-        //                   |""".stripMargin)
 
         context.system.scheduler.scheduleOnce(checkTimeoutInterval, self, CheckTimeouts)
 
@@ -281,6 +278,8 @@ private[almhirt] class MyCommandStatusTracker(
 
   private def createStatusReport(options: StatusReportOptions): AlmValidation[StatusReport] = {
     val eventDetails = StatusReport().addMany(
+      "last-received-status-changed-event-command-id" -> lastReceivedStatusChangedEventCommandId.map(_.value),
+      "last-received-status-changed-event-received-on" -> lastReceivedStatusChangedEventReceivedOn,
       "number-of-received-status-changed-events" -> numReceivedStatusChangedEvents,
       "number-of-received-initiated-status-changed-events" -> numReceivedInitiatedStatusChangedEvents,
       "number-of-received-executed-status-changed-events" -> numReceivedExecutedStatusChangedEvents,

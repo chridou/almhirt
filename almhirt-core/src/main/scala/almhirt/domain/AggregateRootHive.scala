@@ -243,6 +243,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
   private var throttlingSince: Option[java.time.LocalDateTime] = None
 
   private var lastCommandReceivedOn: Option[java.time.LocalDateTime] = None
+  private var lastCommandReceivedCommandId: Option[CommandId] = None
 
   private var lastCommandStatusEventsDeliveredOn: Option[java.time.LocalDateTime] = None
   private var lastCommandStatusEventsOfferedOn: Option[java.time.LocalDateTime] = None
@@ -297,6 +298,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
       case aggregateCommand: AggregateRootCommand ⇒
         numCommandsReceivedInternal += 1
         lastCommandReceivedOn = Some(almhirtContext.getUtcTimestamp)
+        lastCommandReceivedCommandId = Some(aggregateCommand.commandId)
         if (throttled) {
           val prob = ServiceBusyProblem(s"I throttling since i cannot dispatch my command status events fast enough.")
           reportRejectedCommand(aggregateCommand, MinorSeverity, prob)
@@ -423,6 +425,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
         numCommandsReceivedInternal += 1
         numCommandsFailedInternal += 1
         lastCommandReceivedOn = Some(almhirtContext.getUtcTimestamp)
+        lastCommandReceivedCommandId = Some(aggregateCommand.commandId)
         val msg = s"Rejecting command because I am in error state."
         val prob = ServiceBrokenProblem(msg, cause = Some(cause)).withArg("hive", hiveDescriptor.value)
         reportRejectedCommand(aggregateCommand, MajorSeverity, prob)
@@ -517,6 +520,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
     val overdueAggIds = ezreps.ast.EzField("overdue-agg-ids", traversableToEzCollection(overdueActions.toTraversable))
 
     val rep = StatusReport(s"Hive-${this.hiveDescriptor.value}-Report").withComponentState(componentState).subReport("command-stats",
+      "last-command-received-command-id" -> lastCommandReceivedCommandId.map(_.value),
       "number-of-commands-in-flight" -> numCommandsInFlight,
       "last-command-received-on" -> lastCommandReceivedOn,
       "number-of-commands-received" -> numCommandsReceived,

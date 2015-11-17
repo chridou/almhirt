@@ -69,6 +69,8 @@ private[almhirt] class CommandEndpointImpl(
   private var numResponsesNotAccepted = 0L
   private var numCommandsSentToTracker = 0L
   private var lastCommandReceived: Option[java.time.LocalDateTime] = None
+  private var lastCommandReceivedFrom: Option[String] = None
+  private var lastCommandReceivedCommandId: Option[CommandId] = None
   private var lastCommandDispatched: Option[java.time.LocalDateTime] = None
 
   def receiveResolve: Receive = startup() {
@@ -91,6 +93,7 @@ private[almhirt] class CommandEndpointImpl(
       case cmd: Command ⇒
         numCommandsReceivedWhileInactive = numCommandsReceivedWhileInactive + 1L
         lastCommandReceived = Some(almhirtContext.getUtcTimestamp)
+        lastCommandReceivedCommandId = Some(cmd.commandId)
         sender() ! CommandNotAccepted(cmd.commandId, ServiceNotAvailableProblem("Command endpoint not ready! Try again later."))
     }
   }
@@ -101,6 +104,8 @@ private[almhirt] class CommandEndpointImpl(
       case cmd: AggregateRootCommand ⇒
         numCommandsReceived = numCommandsReceived + 1L
         lastCommandReceived = Some(almhirtContext.getUtcTimestamp)
+        lastCommandReceivedFrom = Some(sender().path.toStringWithoutAddress)
+        lastCommandReceivedCommandId = Some(cmd.commandId)
         nexus match {
           case Some(nx) ⇒ context.actorOf(Props(new SingleAggregateRootCommandDispatcher(cmd, sender(), nx)))
           case None     ⇒ sender() ! CommandNotAccepted(cmd.commandId, IllegalOperationProblem("There is no nexus."))
@@ -109,6 +114,8 @@ private[almhirt] class CommandEndpointImpl(
       case cmd: Command ⇒
         numCommandsReceived = numCommandsReceived + 1L
         lastCommandReceived = Some(almhirtContext.getUtcTimestamp)
+        lastCommandReceivedFrom = Some(sender().path.toStringWithoutAddress)
+        lastCommandReceivedCommandId = Some(cmd.commandId)
         sender() ! CommandNotAccepted(cmd.commandId, OperationNotSupportedProblem("Handle a non aggregate root command."))
     }
   }
@@ -126,7 +133,9 @@ private[almhirt] class CommandEndpointImpl(
 
   private def createStatusReport(option: StatusReportOptions): AlmValidation[StatusReport] = {
     val incoming = StatusReport() addMany (
+      "last-command-received-command-id" -> lastCommandReceivedCommandId.map(_.value),
       "last-command-received" -> lastCommandReceived,
+      "last-command-received-from" -> lastCommandReceivedFrom,
       "number-of-commands-received" -> numCommandsReceived,
       "number-of-commands-received-while-inactive" -> numCommandsReceivedWhileInactive,
       "number-of-commands-rejected" -> numCommandsRejected,
@@ -161,14 +170,14 @@ private[almhirt] class CommandEndpointImpl(
   private class SingleAggregateRootCommandDispatcher(command: AggregateRootCommand, stakeholder: ActorRef, nexus: ActorRef) extends Actor {
     def receive: Receive = {
       case CommandAccepted(_) ⇒
-        dispatchCommand()
+        sendCommandToTracker()
 
       case m: CommandNotAccepted ⇒
         stakeholder ! m
         this.context.stop(self)
     }
 
-    private def dispatchCommand() {
+    private def sendCommandToTracker() {
       if (command.isTrackable) {
         commandStatusTracker ! TrackCommand(
           commandId = command.commandId,
