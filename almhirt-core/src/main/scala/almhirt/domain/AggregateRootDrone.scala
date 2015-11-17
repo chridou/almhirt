@@ -74,12 +74,14 @@ private[almhirt] object AggregateRootDroneInternal {
  *  Simply send an [[AggregateRootCommand]] to the drone to have it executed.
  *  The drone can only execute on command at a time.
  */
-trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends StateChangingActorContractor[Event] {
+trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends StateChangingActorContractor[Event] with almhirt.akkax.AlmActorSupport{
   me: AggregateRootEventHandler[T, E] ⇒
   import almhirt.eventlog.AggregateRootEventLog._
 
   implicit protected def arTag: scala.reflect.ClassTag[T]
 
+  implicit def executor: ExecutionContext = this.context.dispatcher
+  
   type TPayload = Any
 
   //*************
@@ -94,8 +96,13 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
   def notifyHiveAboutUndispatchedEventsAfter: Option[FiniteDuration]
   def notifyHiveAboutUnstoredEventsAfterPerEvent: Option[FiniteDuration]
 
-  def rebuildWarnDuration: Option[FiniteDuration] = Some(0.1.seconds)
-  def commandExecutionWarnDuration: Option[FiniteDuration] = Some(0.3.seconds)
+  def rebuildWarnDuration: Option[FiniteDuration] = Some(0.5.seconds)
+  def commandExecutionWarnDuration: Option[FiniteDuration] = Some(1.0.seconds)
+  def asyncInitMaxDur = 30.0.seconds
+  def asyncPreStoreEventActionMaxDur = 30.0.seconds
+  def asyncCleanUpMaxDur = 30.0.seconds
+
+  def asyncInitializeForCommand(cmd: AggregateRootCommand, state: AggregateRootLifecycle[T]): Option[AlmFuture[Unit]] = None
 
   def onBeforeExecutingCommand(cmd: AggregateRootCommand, state: AggregateRootLifecycle[T]): Unit = {
 
@@ -105,13 +112,8 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
 
   }
 
-  def asyncInitializeForCommand(cmd: AggregateRootCommand, state: AggregateRootLifecycle[T]): Option[AlmFuture[Unit]] = None
 
   def asyncCleanupAfterCommand(cmd: AggregateRootCommand, problem: Option[Problem], state: Option[AggregateRootLifecycle[T]]): Option[AlmFuture[Unit]] = None
-
-  def logDebug(msg: ⇒ String): Unit = {
-    sendMessage(AggregateRootHiveInternals.ReportDroneDebug(msg))
-  }
 
   def logWarning(msg: ⇒ String, cause: Option[almhirt.problem.ProblemCause]): Unit = {
     sendMessage(AggregateRootHiveInternals.ReportDroneWarning(msg, cause))
@@ -214,7 +216,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
   private var cancelWaitingForDispatchedEventsNotification: Option[Cancellable] = None
   private var cancelWaitingForLoggedEventsNotification: Option[Cancellable] = None
 
-  // My aggregate root id. If Some(id) already received a command and have probalby been initialized...
+  // My aggregate root id. If Some(id): Already received a command and have probaby been initialized...
   private var capturedId: Option[AggregateRootId] = None
 
   private var lastSnapshotState: SnapshotState = SnapshotState.SnapshotVacat
@@ -285,7 +287,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
             context.become(receiveWaitingForCommandResult(nextCommand, persistedState))
           case Some(fut) ⇒
             context.become(receiveAcceptingCommand(persistedState, false))
-            fut.onComplete(
+            fut.withTimeout(asyncInitMaxDur).onComplete(
               fail ⇒ self ! AsyncInitializeForCommandFailed(nextCommand, persistedState, fail),
               succ ⇒ self ! AsyncInitializedForCommand(nextCommand, persistedState))(futuresContext)
         }
@@ -390,7 +392,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
           commandStartedOn = Deadline.now
           handleAggregateCommand(DefaultConfirmationContext)(currentCommand, arState)
         case Some(fut) ⇒
-          fut.onComplete(
+          fut.withTimeout(asyncInitMaxDur).onComplete(
             fail ⇒ self ! AsyncInitializeForCommandFailed(currentCommand, arState, fail),
             succ ⇒ self ! AsyncInitializedForCommand(currentCommand, arState))(futuresContext)
       }
@@ -420,7 +422,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
           fail ⇒ self ! PreStoreEventActionFailed(fail),
           succ ⇒ self ! PreStoreEventActionSucceeded)
       case PreStoreEventAction.AsyncPreStoreAction(actionFut) ⇒
-        actionFut().onComplete(
+        actionFut().withTimeout(asyncPreStoreEventActionMaxDur).onComplete(
           fail ⇒ self ! PreStoreEventActionFailed(fail),
           succ ⇒ self ! PreStoreEventActionSucceeded)(futuresContext)
     }
@@ -614,17 +616,14 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
     startedStoring: Deadline,
     correlationId: CorrelationId): Receive = {
     case RetryLogEvent ⇒
-      logDebug(s"Retry to log event ${inFlight.eventId.value} for AR ${inFlight.aggId.value}.")
       aggregateEventLog ! GetAggregateRootEvent(inFlight.eventId)
 
     case FetchedAggregateRootEvent(_, None) ⇒
-      logDebug("Retry to log event in event log.")
       // Not already logged? Store it while we can...
       aggregateEventLog ! CommitAggregateRootEvent(inFlight)
       context.become(receiveCommitEvents(currentCommand, inFlight, rest, done, unpersisted, startedStoring, correlationId))
 
     case FetchedAggregateRootEvent(_, Some(e)) ⇒
-      logDebug("Recovered. Event was already stored")
       // Impersonate the event log....
       context.become(receiveCommitEvents(currentCommand, inFlight, rest, done, unpersisted, startedStoring, correlationId))
       self ! AggregateRootEventCommitted(e.eventId)
@@ -670,7 +669,6 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
         case None ⇒
           handleCommandExecutedWithCleanup(persisted, currentCommand)
         case Some(exitCause) ⇒
-          logWarning("Exiting because of a previously error.")
           handleCommandFatallyFailedWithCleanup(persisted, currentCommand, exitCause, committedEvents)
       }
 
@@ -774,7 +772,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
         handleCommandFailedAfterCleanup(persistedState, command, problem)
       case Some(fut) ⇒
         context.become(receiveWaitForCleanUpAfterFailedCommand(persistedState, problem))
-        fut.onComplete(
+        fut.withTimeout(asyncCleanUpMaxDur).onComplete(
           fail ⇒ self ! AsyncCleanUpAfterCommandFailed(command, fail),
           succ ⇒ self ! AsyncCleanedUpAfterCommand(command, persistedState))(futuresContext)
     }
@@ -782,7 +780,6 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
 
   private def handleCommandFailedAfterCleanup(persistedState: AggregateRootLifecycle[T], command: AggregateRootCommand, prob: Problem): Unit = {
     val newProb = persistedState.idOption.fold(prob)(id ⇒ prob.withArg("aggregate-root-id", id.value))
-    logDebug(s"Executing a command(${command.getClass.getSimpleName} with agg id ${command.aggId.value}) failed: ${prob.message}")
     val rsp = CommandNotExecuted(command, newProb)
     sendMessage(rsp)
     onAfterExecutingCommand(command, Some(rsp.problem), Some(persistedState))
@@ -811,7 +808,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
         handleCommandExecutedAfterCleanup(persistedState, command)
       case Some(fut) ⇒
         context.become(receiveWaitForCleanUpAfterExecutedCommand(persistedState))
-        fut.onComplete(
+        fut.withTimeout(asyncCleanUpMaxDur).onComplete(
           fail ⇒ self ! AsyncCleanUpAfterCommandFailed(command, fail),
           succ ⇒ self ! AsyncCleanedUpAfterCommand(command, persistedState))(futuresContext)
     }

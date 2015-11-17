@@ -172,8 +172,6 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
         val returnToUnitializedAfter = None
         val preStoreActionFor = (e: UserEvent) ⇒ PreStoreEventAction.NoAction
 
-        override def logDebug(msg: ⇒ String): Unit = {}
-
         override def logWarning(msg: ⇒ String, cause: Option[almhirt.problem.ProblemCause]): Unit = {}
 
         override def logWarning(msg: ⇒ String): Unit = {}

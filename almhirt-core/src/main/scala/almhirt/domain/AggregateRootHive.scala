@@ -77,7 +77,6 @@ private[almhirt] object AggregateRootHiveInternals {
 
   sealed trait AggregateDroneLoggingMessage extends AggregateDroneMessage
 
-  final case class ReportDroneDebug(msg: String) extends AggregateDroneLoggingMessage
   final case class ReportDroneError(msg: String, cause: ProblemCause) extends AggregateDroneLoggingMessage
   final case class ReportDroneWarning(msg: String, cause: Option[ProblemCause]) extends AggregateDroneLoggingMessage
 
@@ -409,9 +408,6 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
       case OnContractExpired ⇒
         logInfo(s"Contract with broker expired. There are ${bufferedCommandStatusEventsToDispatch.size} events still to deliver.")
 
-      case ReportDroneDebug(msg) ⇒
-        logDebug(s"Drone ${sender().path.name} reported a debug message: $msg")
-
       case ReportDroneError(msg, cause) ⇒
         logError(s"Drone ${sender().path.name} reported an error: $msg")
         reportMajorFailure(cause.mapProblem { _.withArg("hive", hiveDescriptor.value) })
@@ -510,9 +506,6 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
 
       case OnContractExpired ⇒
         logInfo(s"Contract with broker expired. There are ${bufferedCommandStatusEventsToDispatch.size} events still to deliver.")
-
-      case ReportDroneDebug(msg) ⇒
-        logDebug(s"Drone ${sender().path.name} reported a debug message: $msg")
 
       case ReportDroneError(msg, cause) ⇒
         logError(s"Drone ${sender().path.name} reported an error: $msg")
