@@ -320,18 +320,7 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
   }
 
   def timeout[S: almhirt.almfuture.ActionSchedulingMagnet](after: scala.concurrent.duration.FiniteDuration, scheduler: S)(implicit executor: ExecutionContext): AlmFuture[R] = {
-    val schedulerMagnet = implicitly[almhirt.almfuture.ActionSchedulingMagnet[S]]
-    val p = Promise[AlmValidation[R]]
-
-    this.underlying.onComplete(r => p.tryComplete(r))
-    
-    schedulerMagnet.schedule(
-      scheduler,
-      p.tryComplete(scala.util.Success(OperationTimedOutProblem(s"A future did not complete timely(after ${after.defaultUnitString}. Be careful, timed out future might run forever.").failure)),
-      after,
-      executor)
-
-    new AlmFuture(p.future)
+    AlmFuture.timeout(this)(after, scheduler)
   }
 
   /** Convert this future to a successful future containing the underlying validation that might also be a failure */
@@ -376,6 +365,21 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
 
 object AlmFuture {
   import scala.language.higherKinds
+
+  def timeout[T, S: almhirt.almfuture.ActionSchedulingMagnet](f: AlmFuture[T])(after: scala.concurrent.duration.FiniteDuration, scheduler: S)(implicit executor: ExecutionContext): AlmFuture[T] = {
+    val schedulerMagnet = implicitly[almhirt.almfuture.ActionSchedulingMagnet[S]]
+    val p = Promise[AlmValidation[T]]
+
+    f.underlying.onComplete(r ⇒ p.tryComplete(r))
+
+    schedulerMagnet.schedule(
+      scheduler,
+      p.tryComplete(scala.util.Success(OperationTimedOutProblem(s"A future did not complete timely(after ${after.defaultUnitString}. Be careful, timed out future might run forever.").failure)),
+      after,
+      executor)
+
+    new AlmFuture(p.future)
+  }
 
   /** Start a computation which can fail */
   def apply[T](compute: ⇒ AlmValidation[T])(implicit executionContext: ExecutionContext) = new AlmFuture[T](Future { compute }(executionContext))
