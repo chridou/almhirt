@@ -107,7 +107,7 @@ private[almhirt] class CommandEndpointImpl(
         lastCommandReceivedFrom = Some(sender().path.toStringWithoutAddress)
         lastCommandReceivedCommandId = Some(cmd.commandId)
         nexus match {
-          case Some(nx) ⇒ context.actorOf(Props(new SingleAggregateRootCommandDispatcher(cmd, sender(), nx)))
+          case Some(nx) ⇒ context.actorOf(Props(new SingleAggregateRootCommandDispatcher(cmd, sender(), nx, self)))
           case None     ⇒ sender() ! CommandNotAccepted(cmd.commandId, IllegalOperationProblem("There is no nexus."))
         }
 
@@ -167,7 +167,7 @@ private[almhirt] class CommandEndpointImpl(
     logInfo("Stopped")
   }
 
-  private class SingleAggregateRootCommandDispatcher(command: AggregateRootCommand, stakeholder: ActorRef, nexus: ActorRef) extends Actor {
+  private class SingleAggregateRootCommandDispatcher(command: AggregateRootCommand, stakeholder: ActorRef, nexus: ActorRef, actIntheNameOf: ActorRef) extends Actor {
     def receive: Receive = {
       case CommandAccepted(_) ⇒
         sendCommandToTracker()
@@ -184,14 +184,17 @@ private[almhirt] class CommandEndpointImpl(
           commandId = command.commandId,
           callback = cmdRes ⇒ cmdRes.fold(
             fail ⇒ {
-              fail match {
-                case OperationTimedOutProblem(p) ⇒ stakeholder ! TrackingFailed(command.commandId, p)
-                case _                           ⇒ stakeholder ! TrackingFailed(command.commandId, fail)
-              }
+              val rsp = TrackingFailed(command.commandId, fail)
+              stakeholder.tell(rsp, actIntheNameOf)
               reportMinorFailure(fail)
               reportRejectedCommand(command, MinorSeverity, fail)
             },
-            trackingResult ⇒ stakeholder ! TrackedCommandResult(command.commandId, trackingResult)),
+            trackingResult ⇒ {
+              val rsp = TrackedCommandResult(command.commandId, trackingResult)
+              stakeholder.tell(rsp, actIntheNameOf)
+              logDebug(s"responded to ${stakeholder.path.toStringWithoutAddress} ofr ${command.commandId.value}")
+            }),
+
           deadline = maxTrackingDuration.fromNow)
       } else {
         stakeholder ! CommandAccepted(command.commandId)
