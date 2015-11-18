@@ -231,12 +231,30 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
       context.become(receiveRunning)
   }
 
+  private case class OverdueDroneEntry(aggId: AggregateRootId, since: java.time.LocalDateTime, msg: String, count: Int) {
+    def toReport: StatusReport =
+      StatusReport() addMany (
+        "agg-id" -> aggId.value,
+        "count" -> count,
+        "last-message" -> msg,
+        "last-occurence" -> since)
+  }
+
   private var totalSuppliesRequested = 0
   private var suppliesRequestedSinceThrottlingStateChanged = 0
 
   private var numCommandsInFlight = 0
   private var bufferedCommandStatusEventsToDispatch: Vector[CommandStatusChanged] = Vector.empty
-  private var overdueActions: Set[AggregateRootId] = Set.empty
+  private val overdueDrones = scala.collection.mutable.HashMap[AggregateRootId, OverdueDroneEntry]()
+
+  private def addToOverdueDrones(aggId: AggregateRootId, msg: String): Unit = {
+    overdueDrones get aggId match {
+      case None ⇒
+        overdueDrones += (aggId -> OverdueDroneEntry(aggId, almhirtContext.getUtcTimestamp, msg, 1))
+      case Some(old) ⇒
+        overdueDrones.update(aggId, OverdueDroneEntry(aggId, almhirtContext.getUtcTimestamp, msg, old.count + 1))
+    }
+  }
 
   private var throttled = false
   private var throttlingSince: Option[java.time.LocalDateTime] = None
@@ -366,15 +384,15 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
 
       case AggregateRootHiveInternals.DispatchEventsToStreamTakesTooLong(aggId, elapsed) ⇒
         logWarning(s"Drone ${aggId.value} is overdue on dispatching events after ${elapsed.defaultUnitString}.")
-        overdueActions = overdueActions + aggId
+        addToOverdueDrones(aggId, s"Dispatch took too long: ${elapsed.defaultUnitString}")
 
       case AggregateRootHiveInternals.LogEventsTakesTooLong(aggId, elapsed) ⇒
         logWarning(s"Drone ${aggId.value} is overdue on logging events after ${elapsed.defaultUnitString}.")
-        overdueActions = overdueActions + aggId
+        addToOverdueDrones(aggId, s"Log events took too long: ${elapsed.defaultUnitString}")
 
       case m: AggregateRootHiveInternals.SomethingOverdueGotDone ⇒
         logInfo(s"Drone ${m.aggId.value} got it's stuff done.")
-        overdueActions = overdueActions - m.aggId
+        overdueDrones -= m.aggId
 
       case OnDeliverSuppliesNow(amount) ⇒
         deliverEvents(amount)
@@ -405,7 +423,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
         }
 
       case Terminated(actor) ⇒
-        overdueActions = overdueActions - AggregateRootId(actor.path.name)
+        overdueDrones -= AggregateRootId(actor.path.name)
         logDebug(s"""${actor} terminated.""")
     }
   }
@@ -449,15 +467,15 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
 
       case AggregateRootHiveInternals.DispatchEventsToStreamTakesTooLong(aggId, elapsed) ⇒
         logWarning(s"Drone ${aggId.value} is overdue on dispatching events after ${elapsed.defaultUnitString}.")
-        overdueActions = overdueActions + aggId
+        addToOverdueDrones(aggId, s"Dispatch took too long: ${elapsed.defaultUnitString}")
 
       case AggregateRootHiveInternals.LogEventsTakesTooLong(aggId, elapsed) ⇒
         logWarning(s"Drone ${aggId.value} is overdue on logging events after ${elapsed.defaultUnitString}.")
-        overdueActions = overdueActions + aggId
+        addToOverdueDrones(aggId, s"Log events took too long: ${elapsed.defaultUnitString}")
 
       case m: AggregateRootHiveInternals.SomethingOverdueGotDone ⇒
         logInfo(s"Drone ${m.aggId.value} got it's stuff done.")
-        overdueActions = overdueActions - m.aggId
+        overdueDrones -= m.aggId
 
       case OnDeliverSuppliesNow(amount) ⇒
         deliverEvents(amount)
@@ -488,7 +506,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
         }
 
       case Terminated(actor) ⇒
-        overdueActions = overdueActions - AggregateRootId(actor.path.name)
+        overdueDrones -= AggregateRootId(actor.path.name)
         logDebug(s"""${actor} terminated.""")
     }
   }
@@ -499,7 +517,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
     val numJet = numJettisonedSinceLastReport
     this.numJettisonedSinceLastReport = 0
 
-    val overdueAggIds = ezreps.ast.EzField("overdue-agg-ids", traversableToEzCollection(overdueActions.toTraversable))
+    val overdueAggIds = ezreps.ast.EzField("overdue-drones", traversableToEzCollection(overdueDrones.values.map(_.toReport)))
 
     val rep = StatusReport(s"Hive-${this.hiveDescriptor.value}-Report").withComponentState(componentState).subReport("command-stats",
       "last-command-received-command-id" -> lastCommandReceivedCommandId.map(_.value),
@@ -516,7 +534,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
         "throttled-since" -> throttlingSince,
         "last-command-status-events-delivered-on" -> lastCommandStatusEventsDeliveredOn,
         "last-command-status-events-offered-on" -> lastCommandStatusEventsOfferedOn).subReport("overdue-drones",
-          "number-of-overdue-actions" -> overdueActions.size,
+          "number-of-overdue-actions" -> overdueDrones.size,
           overdueAggIds).subReport("misc",
             "number-of-drones" -> this.context.children.size,
             "amount-of-jettisoned-cargo-since-last-report" -> numJet).configSection(

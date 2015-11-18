@@ -63,15 +63,9 @@ private[almhirt] class CommandEndpointImpl(
   private var numCommandsReceived = 0L
   private var numCommandsReceivedWhileInactive = 0L
   private var numCommandsRejected = 0L
-  private var numCommandsRejectedDueToMissingDemand = 0L
-  private var numCommandsDispatched = 0L
-  private var numResponsesAccepted = 0L
-  private var numResponsesNotAccepted = 0L
-  private var numCommandsSentToTracker = 0L
   private var lastCommandReceived: Option[java.time.LocalDateTime] = None
   private var lastCommandReceivedFrom: Option[String] = None
   private var lastCommandReceivedCommandId: Option[CommandId] = None
-  private var lastCommandDispatched: Option[java.time.LocalDateTime] = None
 
   def receiveResolve: Receive = startup() {
     reportsStatus(onReportRequested = createStatusReport) {
@@ -94,6 +88,7 @@ private[almhirt] class CommandEndpointImpl(
         numCommandsReceivedWhileInactive = numCommandsReceivedWhileInactive + 1L
         lastCommandReceived = Some(almhirtContext.getUtcTimestamp)
         lastCommandReceivedCommandId = Some(cmd.commandId)
+        numCommandsRejected = numCommandsRejected + 1L
         sender() ! CommandNotAccepted(cmd.commandId, ServiceNotAvailableProblem("Command endpoint not ready! Try again later."))
     }
   }
@@ -140,18 +135,10 @@ private[almhirt] class CommandEndpointImpl(
       "last-command-received-from" -> lastCommandReceivedFrom,
       "number-of-commands-received" -> numCommandsReceived,
       "number-of-commands-received-while-inactive" -> numCommandsReceivedWhileInactive,
-      "number-of-commands-rejected" -> numCommandsRejected,
-      "number-of-commands-rejected-due-to-missing-demand" -> numCommandsRejectedDueToMissingDemand)
-    val outgoing = StatusReport() addMany (
-      "last-command-dispatched" -> lastCommandDispatched,
-      "number-of-accepted-responses" -> numResponsesAccepted,
-      "number-of-not-accepted-responses" -> numResponsesNotAccepted,
-      "number-of-commands-sent-to-tracker" -> numCommandsSentToTracker,
-      "number-of-commands-dispatched" -> numCommandsDispatched)
+      "number-of-commands-rejected" -> numCommandsRejected)
     val rep = StatusReport("CommandEndpoint-Report").withComponentState(componentState) addMany (
       "max-tracking-duration" -> maxTrackingDuration,
-      "incoming" -> incoming,
-      "outgoing" -> outgoing)
+      "incoming" -> incoming)
     rep.success
   }
 
@@ -189,7 +176,6 @@ private[almhirt] class CommandEndpointImpl(
               val rsp = TrackingFailed(command.commandId, fail)
               stakeholder.tell(rsp, ActorRef.noSender)
               reportMinorFailure(fail)
-              reportRejectedCommand(command, MinorSeverity, fail)
             },
             trackingResult ⇒ {
               val rsp = TrackedCommandResult(command.commandId, trackingResult)
