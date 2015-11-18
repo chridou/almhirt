@@ -113,14 +113,6 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
 
   def asyncCleanupAfterCommand(cmd: AggregateRootCommand, problem: Option[Problem], state: Option[AggregateRootLifecycle[T]]): Option[AlmFuture[Unit]] = None
 
-  def logWarning(msg: ⇒ String, cause: Option[almhirt.problem.ProblemCause]): Unit = {
-    sendMessage(AggregateRootHiveInternals.ReportDroneWarning(msg, cause))
-  }
-
-  def logWarning(msg: ⇒ String): Unit = {
-    sendMessage(AggregateRootHiveInternals.ReportDroneWarning(msg, None))
-  }
-
   def logError(msg: ⇒ String, cause: almhirt.problem.ProblemCause): Unit = {
     sendMessage(AggregateRootHiveInternals.ReportDroneError(msg, cause))
   }
@@ -343,7 +335,6 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
     case SnapshotRepository.FoundSnapshot(untypedAr) ⇒
       untypedAr.castTo[T].fold(
         fail ⇒ {
-          logWarning(s"Failed to cast snapshot for ${untypedAr.id.value}. Rebuild all from log.")
           context.become(receiveRebuildFrom(currentCommand, Vacat))
           aggregateEventLog ! GetAggregateRootEventsFor(currentCommand.aggId, FromStart, ToEnd, skip.none takeAll)
         },
@@ -366,7 +357,6 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
       context.become(receiveMortuus(Mortuus(id, version)))
 
     case SnapshotRepository.FindSnapshotFailed(id, prob) ⇒
-      logWarning(s"Failed to load snapshot for ${id.value}. Rebuild all from log.", Some(prob))
       context.become(receiveRebuildFrom(currentCommand, Vacat))
       aggregateEventLog ! GetAggregateRootEventsFor(currentCommand.aggId, FromStart, ToEnd, skip.none takeAll)
 
@@ -380,9 +370,9 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
 
   private def receiveEvaluateRebuildResult(currentCommand: AggregateRootCommand): Receive = {
     case InternalArBuildResult(arState) ⇒
-      rebuildWarnDuration.foreach { rbdur ⇒
-        rebuildStartedOn.whenTooLate(rbdur, dur ⇒ logWarning(s"""Rebuild took more than ${rbdur.defaultUnitString}: ${dur.defaultUnitString}"""))
-      }
+//      rebuildWarnDuration.foreach { rbdur ⇒
+//        rebuildStartedOn.whenTooLate(rbdur, dur ⇒ logWarning(s"""Rebuild took more than ${rbdur.defaultUnitString}: ${dur.defaultUnitString}"""))
+//      }
       asyncInitializeForCommand(currentCommand, arState) match {
         case None ⇒
           context.become(receiveWaitingForCommandResult(currentCommand, arState))
@@ -512,7 +502,6 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
     case AggregateRootEventNotCommitted(id, cause) ⇒
       retryEventLogActionDelay match {
         case Some(delay) ⇒
-          logWarning(s"Failed to log event ${inFlight.eventId.value} for AR ${inFlight.aggId.value}(Initiate a retry...).", Some(cause))
           context.system.scheduler.scheduleOnce(delay, self, RetryLogEvent)(context.dispatcher)
           context.become(receiveRetryLogEventInFlight(currentCommand, inFlight, rest, done, unpersisted, startedStoring, correlationId))
 
@@ -559,7 +548,6 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
       self ! DispatchEvents
 
     case rsp: SnapshotRepository.FailedSnapshottingAction ⇒
-      logWarning(s"Failed to store a snapshot for version ${persisted.version.value}.", Some(rsp.problem))
       context.become(receiveDispatchEvents(currentCommand, persisted, eventsToDispatch, exitReason))
       self ! DispatchEvents
 
@@ -627,7 +615,6 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
       self ! AggregateRootEventCommitted(e.eventId)
 
     case GetAggregateRootEventFailed(eventId, cause) ⇒
-      logWarning(s"Could not verify whether event ${inFlight.eventId.value} for AR ${inFlight.aggId.value} was logged(retrying to store the event).", Some(cause))
       retryEventLogActionDelay.foreach { delay ⇒
         context.system.scheduler.scheduleOnce(delay, self, RetryLogEvent)(context.dispatcher)
       }
@@ -813,9 +800,9 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
   }
 
   private def handleCommandExecutedAfterCleanup(persistedState: AggregateRootLifecycle[T], command: AggregateRootCommand) {
-    commandExecutionWarnDuration.foreach { comdur ⇒
-      commandStartedOn.whenTooLate(comdur, dur ⇒ logWarning(s"""Execution of command(including cleanup) "${command.commandId.value}" took more than ${comdur.defaultUnitString}: ${dur.defaultUnitString}"""))
-    }
+//    commandExecutionWarnDuration.foreach { comdur ⇒
+//      commandStartedOn.whenTooLate(comdur, dur ⇒ logWarning(s"""Execution of command(including cleanup) "${command.commandId.value}" took more than ${comdur.defaultUnitString}: ${dur.defaultUnitString}"""))
+//    }
     val rsp = CommandExecuted(command)
     sendMessage(rsp)
     onAfterExecutingCommand(command, None, Some(persistedState))
@@ -830,7 +817,6 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
 
   override def preRestart(reason: Throwable, message: Option[Any]) {
     super.preRestart(reason, message)
-    logWarning(s"Restarting. Caused by message $message", Some(reason))
     cancelContract()
   }
 

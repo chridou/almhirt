@@ -76,7 +76,6 @@ private[almhirt] object AggregateRootHiveInternals {
   sealed trait AggregateDroneLoggingMessage extends AggregateDroneMessage
 
   final case class ReportDroneError(msg: String, cause: ProblemCause) extends AggregateDroneLoggingMessage
-  final case class ReportDroneWarning(msg: String, cause: Option[ProblemCause]) extends AggregateDroneLoggingMessage
 
   final case class CargoJettisoned(aggId: AggregateRootId) extends AggregateDroneMessage
 
@@ -392,14 +391,6 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
         logError(s"Drone ${sender().path.name} reported an error: $msg")
         reportMajorFailure(cause.mapProblem { _.withArg("hive", hiveDescriptor.value) })
 
-      case ReportDroneWarning(msg, causeOpt) ⇒
-        causeOpt match {
-          case None ⇒
-            logWarning(s"""Drone ${sender().path.name} reported a warning with message "$msg".""")
-          case Some(cause) ⇒
-            logWarning(s"""Drone ${sender().path.name} reported a warning with message "$msg" and and a problem with message "${cause.message}".""")
-        }
-
       case AggregateRootHiveInternals.CargoJettisoned(id) ⇒
         this.numJettisonedSinceLastReport += 1
 
@@ -482,15 +473,6 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
       case ReportDroneError(msg, cause) ⇒
         logError(s"Drone ${sender().path.name} reported an error: $msg")
         reportMajorFailure(cause.mapProblem { _.withArg("hive", hiveDescriptor.value) })
-
-      case ReportDroneWarning(msg, causeOpt) ⇒
-        causeOpt match {
-          case None ⇒
-            logWarning(s"""Drone ${sender().path.name} reported a warning with message "$msg".""")
-          case Some(cause) ⇒
-            logWarning(s"""Drone ${sender().path.name} reported a warning with message "$msg" and and a problem with message "${cause.message}".""")
-            reportMinorFailure(cause.mapProblem { _.withArg("hive", hiveDescriptor.value) })
-        }
 
       case AggregateRootHiveInternals.CargoJettisoned(id) ⇒
         this.numJettisonedSinceLastReport += 1
