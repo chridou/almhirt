@@ -59,7 +59,7 @@ object Dependencies {
 
 	lazy val scalaz       = "org.scalaz" %% "scalaz-core" % BuildSettings.scalazVersion
 
-	lazy val play2_iteratees   = "com.typesafe.play" %% "play-iteratees" % "2.3.9"
+	lazy val play2_iteratees   = "com.typesafe.play" %% "play-iteratees" % "2.3.10"
 
   lazy val json4s   = "org.json4s" %% "json4s-native" % json4sVersion % "compile"
 
