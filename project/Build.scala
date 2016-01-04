@@ -15,10 +15,10 @@ object BuildSettings {
   val scalatestVersion = "2.2.5"
   val sprayVersion = "1.3.3"
   val scalazVersion = "7.1.3"
-  val reactiveMongoVersion = "0.11.7"
+  val reactiveMongoVersion = "0.11.9"
   val json4sVersion = "3.2.11"
   val ezRepsVersion = "0.6.2"
-   
+
   val buildSettings = Defaults.defaultSettings ++ releaseSettings ++ Seq (
 	organization := buildOrganization,
   scalaVersion := buildScalaVersion,
@@ -32,22 +32,22 @@ object BuildSettings {
   releaseProcess <<= thisProjectRef apply { ref =>
     import ReleaseStateTransformations._
       Seq[ReleaseStep](
-        checkSnapshotDependencies,              
-        inquireVersions,                       
-        //runTest,                              
-        setReleaseVersion,                   
-        commitReleaseVersion,               
-        tagRelease,                        
-        publishArtifacts,                 
-        setNextVersion,                  
-        commitNextVersion,              
+        checkSnapshotDependencies,
+        inquireVersions,
+        //runTest,
+        setReleaseVersion,
+        commitReleaseVersion,
+        tagRelease,
+        publishArtifacts,
+        setNextVersion,
+        commitNextVersion,
         pushChanges)
     }
   )
 }
 
 object Resolvers {
-  val sonatypeSnapshots = "Sonatype snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/" 
+  val sonatypeSnapshots = "Sonatype snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/"
   val typesafeSnapshot  = "Typesafe Snapshots Repository" at "http://repo.typesafe.com/typesafe/snapshots/"
   val scalatools = "Scala Tools" at "https://oss.sonatype.org/content/groups/scala-tools/"
   val sprayRepo = "Spray Repo" at "http://repo.spray.io"
@@ -57,22 +57,22 @@ object Dependencies {
   import BuildSettings._
 	lazy val scala_reflect = "org.scala-lang" % "scala-reflect" % BuildSettings.buildScalaVersion
 
-	lazy val scalaz       = "org.scalaz" %% "scalaz-core" % BuildSettings.scalazVersion 
+	lazy val scalaz       = "org.scalaz" %% "scalaz-core" % BuildSettings.scalazVersion
 
-	lazy val play2_iteratees   = "com.typesafe.play" %% "play-iteratees" % "2.3.9" 
+	lazy val play2_iteratees   = "com.typesafe.play" %% "play-iteratees" % "2.3.9"
 
   lazy val json4s   = "org.json4s" %% "json4s-native" % json4sVersion % "compile"
 
   lazy val ezReps = "org.chridou" %% "ezreps-core" % ezRepsVersion % "compile"
   lazy val ezRepsJson4s = "org.chridou" %% "ezreps-json4s" % ezRepsVersion % "compile"
-	
+
 	lazy val akka_actor  = "com.typesafe.akka" %% "akka-actor" % BuildSettings.akkaVersion % "provided"
 	lazy val akka_agent  = "com.typesafe.akka" %% "akka-agent" % BuildSettings.akkaVersion % "provided"
 	lazy val akka_streams  = "com.typesafe.akka" %% "akka-stream-experimental" % BuildSettings.akkaStreamsVersion % "provided"
 
-	lazy val apache_codecs = "commons-codec" % "commons-codec" % "1.10" 
-	lazy val apache_commons_io = "commons-io" % "commons-io" % "2.4" 
-	lazy val icu4j = "com.ibm.icu" % "icu4j" % "55.1" 
+	lazy val apache_codecs = "commons-codec" % "commons-codec" % "1.10"
+	lazy val apache_commons_io = "commons-io" % "commons-io" % "2.4"
+	lazy val icu4j = "com.ibm.icu" % "icu4j" % "55.1"
 
 	lazy val spray_routing = "io.spray" %% "spray-routing" % BuildSettings.sprayVersion % "provided"
 	lazy val spray_testkit =  "io.spray" %% "spray-testkit" % BuildSettings.sprayVersion % "test"
@@ -84,8 +84,8 @@ object Dependencies {
   lazy val logback = "ch.qos.logback" % "logback-classic" % "1.1.3" % "provided"
 	lazy val typesafe_config = "com.typesafe" % "config" % "1.3.0" % "provided"
 
-	
-  lazy val scalatest = "org.scalatest" %% "scalatest" % BuildSettings.scalatestVersion % "test"	
+
+  lazy val scalatest = "org.scalatest" %% "scalatest" % BuildSettings.scalatestVersion % "test"
 	lazy val akka_testkit = "com.typesafe.akka" %% "akka-testkit" % BuildSettings.akkaVersion % "test"
   lazy val pegdown = "org.pegdown" % "pegdown" % "1.4.2" % "test"
 
@@ -94,7 +94,7 @@ object Dependencies {
 trait CommonBuild {
   import Dependencies._
   import Resolvers._
-  def commonProject(name: String, baseFile: java.io.File) = 
+  def commonProject(name: String, baseFile: java.io.File) =
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
 	  libraryDependencies += apache_codecs,
 	  libraryDependencies += typesafe_config,
@@ -107,7 +107,7 @@ trait CommonBuild {
 trait I18nBuild {
   import Dependencies._
   import Resolvers._
-  def i18nProject(name: String, baseFile: java.io.File) = 
+  def i18nProject(name: String, baseFile: java.io.File) =
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
 	  libraryDependencies += apache_commons_io,
     libraryDependencies += icu4j,
@@ -120,7 +120,7 @@ trait I18nBuild {
 trait HttpxSprayBuild {
   import Dependencies._
   import Resolvers._
-  def httpxSprayProject(name: String, baseFile: java.io.File) = 
+  def httpxSprayProject(name: String, baseFile: java.io.File) =
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
   	  resolvers += sprayRepo,
 	  libraryDependencies += akka_actor,
@@ -135,7 +135,7 @@ trait HttpxSprayBuild {
 trait CorexSprayClientBuild {
   import Dependencies._
   import Resolvers._
-  def corexSprayClientProject(name: String, baseFile: java.io.File) = 
+  def corexSprayClientProject(name: String, baseFile: java.io.File) =
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
   	  resolvers += sprayRepo,
 	  libraryDependencies += akka_actor,
@@ -153,7 +153,7 @@ trait CorexSprayClientBuild {
 trait HttpxSprayServiceBuild {
   import Dependencies._
   import Resolvers._
-  def httpxSprayServiceProject(name: String, baseFile: java.io.File) = 
+  def httpxSprayServiceProject(name: String, baseFile: java.io.File) =
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
   	  resolvers += sprayRepo,
 	  libraryDependencies += akka_actor,
@@ -170,7 +170,7 @@ trait HttpxSprayServiceBuild {
 trait AlmhirtxReactiveMongoBuild {
   import Dependencies._
   import Resolvers._
-  def almhirtxReactiveMongoProject(name: String, baseFile: java.io.File) = 
+  def almhirtxReactiveMongoProject(name: String, baseFile: java.io.File) =
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
 	  libraryDependencies += scalaz,
 	  libraryDependencies += typesafe_config,
@@ -186,7 +186,7 @@ trait AlmhirtxReactiveMongoBuild {
 trait CoreBuild {
   import Dependencies._
   import Resolvers._
-  def coreProject(name: String, baseFile: java.io.File) = 
+  def coreProject(name: String, baseFile: java.io.File) =
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
 	  libraryDependencies += scalaz,
 	  libraryDependencies += play2_iteratees,
@@ -203,7 +203,7 @@ trait CoreBuild {
 trait DashboardBuild {
   import Dependencies._
   import Resolvers._
-  def dashboardProject(name: String, baseFile: java.io.File) = 
+  def dashboardProject(name: String, baseFile: java.io.File) =
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
 	  libraryDependencies += scalaz,
 	  libraryDependencies += akka_streams,
@@ -218,7 +218,7 @@ trait DashboardBuild {
 trait CorexMongoBuild {
   import Dependencies._
   import Resolvers._
-  def corexMongoProject(name: String, baseFile: java.io.File) = 
+  def corexMongoProject(name: String, baseFile: java.io.File) =
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
 	  resolvers += sonatypeSnapshots,
 	  libraryDependencies += scalaz,
@@ -261,7 +261,7 @@ trait CorexSprayServiceBuild {
 trait RiftWarpBuild {
   import Dependencies._
   import Resolvers._
-  def riftwarpProject(name: String, baseFile: java.io.File) = 
+  def riftwarpProject(name: String, baseFile: java.io.File) =
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
 	  libraryDependencies += scala_reflect,
 	  libraryDependencies += apache_codecs,
@@ -275,7 +275,7 @@ trait RiftWarpBuild {
 trait RiftWarpHttpSprayBuild {
   import Dependencies._
   import Resolvers._
-  def riftwarpHttpSprayProject(name: String, baseFile: java.io.File) = 
+  def riftwarpHttpSprayProject(name: String, baseFile: java.io.File) =
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
 	  libraryDependencies += scala_reflect,
     libraryDependencies += akka_actor,
@@ -290,12 +290,12 @@ trait RiftWarpHttpSprayBuild {
 trait RiftWarpMongoExtBuild {
   import Dependencies._
   import Resolvers._
-  def riftwarpMongoExtProject(name: String, baseFile: java.io.File) = 
+  def riftwarpMongoExtProject(name: String, baseFile: java.io.File) =
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
 	  resolvers += sonatypeSnapshots,
 	  libraryDependencies += scala_reflect,
 	  libraryDependencies += apache_codecs,
-	  libraryDependencies += "org.reactivemongo" %% "reactivemongo-bson" % BuildSettings.reactiveMongoVersion % "provided"     
+	  libraryDependencies += "org.reactivemongo" %% "reactivemongo-bson" % BuildSettings.reactiveMongoVersion % "provided"
 		exclude("ch.qos.logback", "logback-core")
 		exclude("ch.qos.logback", "logback-classic"),
 	  libraryDependencies += scalaz,
@@ -307,7 +307,7 @@ trait RiftWarpMongoExtBuild {
 trait RiftAlmhirtCoreExtBuild {
   import Dependencies._
   import Resolvers._
-  def riftwarpAlmhirtCoreExtProject(name: String, baseFile: java.io.File) = 
+  def riftwarpAlmhirtCoreExtProject(name: String, baseFile: java.io.File) =
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
 	  resolvers += sonatypeSnapshots,
     libraryDependencies += akka_actor,
@@ -321,7 +321,7 @@ trait RiftAlmhirtCoreExtBuild {
 trait RiftWarpAutomaticBuild {
   import Dependencies._
   import Resolvers._
-  def riftwarpAutomaticProject(name: String, baseFile: java.io.File) = 
+  def riftwarpAutomaticProject(name: String, baseFile: java.io.File) =
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
 	  libraryDependencies += apache_codecs,
 	  libraryDependencies += scalaz,
@@ -330,41 +330,41 @@ trait RiftWarpAutomaticBuild {
   )
 }
 
-object AlmHirtBuild extends Build 
-	with CommonBuild 
-	with I18nBuild 
+object AlmHirtBuild extends Build
+	with CommonBuild
+	with I18nBuild
 	with HttpxSprayBuild
 	with AlmhirtxReactiveMongoBuild
 	with CorexSprayClientBuild
 	with HttpxSprayServiceBuild
-	with CoreBuild 
-	with DashboardBuild 
-	with CorexMongoBuild 
-	with CorexSprayServiceBuild 
-	with RiftWarpBuild 
+	with CoreBuild
+	with DashboardBuild
+	with CorexMongoBuild
+	with CorexSprayServiceBuild
+	with RiftWarpBuild
 	with RiftWarpHttpSprayBuild
-	with RiftWarpMongoExtBuild 
-	with RiftAlmhirtCoreExtBuild 
+	with RiftWarpMongoExtBuild
+	with RiftAlmhirtCoreExtBuild
 	with RiftWarpAutomaticBuild {
   lazy val root = Project(
     id = "almhirt",
 		settings = BuildSettings.buildSettings,
 	  base = file("."))
       .settings(unidocSettings: _*)
-      .aggregate(	common, 
-									i18n, 
-									httpxSpray, 
-									corexSprayClient, 
-									httpxSprayService, 
-									almhirtxReactiveMongo, 
-									core, 
-									dashboard, 
-									mongoExtensions, 
-									corexSprayService, 
-									riftwarp, 
-									riftwarpHttpSpray, 
+      .aggregate(	common,
+									i18n,
+									httpxSpray,
+									corexSprayClient,
+									httpxSprayService,
+									almhirtxReactiveMongo,
+									core,
+									dashboard,
+									mongoExtensions,
+									corexSprayService,
+									riftwarp,
+									riftwarpHttpSpray,
 									riftwarpMongoProject,
-                  riftwarpAlmhirtCoreProject)	
+                  riftwarpAlmhirtCoreProject)
   lazy val common = commonProject(	name = "almhirt-common",
                        			baseFile = file("almhirt-common"))
 
@@ -376,15 +376,15 @@ object AlmHirtBuild extends Build
 
   lazy val corexSprayClient = corexSprayClientProject(	name = "almhirt-corex-spray-client",
                        			baseFile = file("./ext/almhirt-corex-spray-client")) dependsOn(common, httpxSpray, core)
-								
+
   lazy val httpxSprayService = httpxSprayServiceProject(	name = "almhirt-httpx-spray-service",
                        			baseFile = file("./ext/almhirt-httpx-spray-service")) dependsOn(common, httpxSpray)
-								
+
   lazy val almhirtxReactiveMongo = almhirtxReactiveMongoProject(	name = "almhirt-reactivemongox",
                        			baseFile = file("./ext/almhirt-reactivemongox")) dependsOn(common)
 
   lazy val core = coreProject(	name = "almhirt-core",
-		baseFile = file("almhirt-core")) dependsOn(	common % "compile; test->compile; test->test", i18n/*, 
+		baseFile = file("almhirt-core")) dependsOn(	common % "compile; test->compile; test->test", i18n/*,
 																								corexRiftwarp % "test",
 																								riftwarp % "test->test"*/)
 
@@ -392,13 +392,13 @@ object AlmHirtBuild extends Build
 
   lazy val mongoExtensions = corexMongoProject(	name = "almhirt-corex-mongo",
                        			baseFile = file("./ext/almhirt-corex-mongo")) dependsOn(common, core, almhirtxReactiveMongo, riftwarp % "test->test", riftwarpMongoProject % "test")
-								
+
   lazy val corexSprayService = corexSprayServiceProject(	name = "almhirt-corex-spray-service",
 	                       				baseFile = file("./ext/almhirt-corex-spray-service")) dependsOn(common, httpxSprayService, core, riftwarp % "test")
-										
+
   lazy val riftwarp = riftwarpProject(	name = "riftwarp",
                        			baseFile = file("riftwarp")) dependsOn(common)
-								
+
   lazy val riftwarpMongoProject = riftwarpMongoExtProject(	name = "riftwarpx-mongo",
                        			baseFile = file("./ext/riftwarpx-mongo")) dependsOn(common, riftwarp)
 
@@ -407,11 +407,11 @@ object AlmHirtBuild extends Build
 
 	lazy val riftwarpHttpSpray = riftwarpHttpSprayProject(	name = "riftwarpx-http-spray",
                        			baseFile = file("./ext/riftwarpx-http-spray")) dependsOn(common, riftwarp, httpxSpray)
-								
+
 /*
   lazy val riftwarpAutomatic = riftwarpAutomaticProject(	name = "riftwarp-automatic",
                        			baseFile = file("./ext/riftwarp-automatic")) dependsOn(common, riftwarp)
 
 */
-								
+
 }
