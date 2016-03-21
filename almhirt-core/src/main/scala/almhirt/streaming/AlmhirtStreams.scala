@@ -17,7 +17,7 @@ trait EventStream {
   def eventStream: Publisher[Event]
 }
 
-trait AlmhirtStreams extends EventStream with CanDispatchEvents 
+trait AlmhirtStreams extends EventStream with CanDispatchEvents
 
 object AlmhirtStreams {
   import akka.stream.scaladsl._
@@ -113,7 +113,7 @@ object AlmhirtStreams {
     implicit val ctx = actorRefFactory.dispatcher
     val supervisorProps = Props(new Actor with ActorLogging {
       override val supervisorStrategy: SupervisorStrategy = OneForOneStrategy(maxNrOfRetries = 0) {
-        case scala.util.control.NonFatal(e) ⇒ 
+        case scala.util.control.NonFatal(e) ⇒
           log.error(e, "Escalating!")
           SupervisorStrategy.Escalate
       }
@@ -125,16 +125,16 @@ object AlmhirtStreams {
             val eventShipperActor = context.actorOf(StreamShipper.props(), "event-broker")
             val (eventShipperIn, eventShipperOut, stopEventShipper) = StreamShipper[Event](eventShipperActor)
 
-            val eventsSink = Sink.fanoutPublisher[Event](initialFanoutEvents, maxFanoutEvents)
+            val eventsSink = Sink.asPublisher[Event](fanout = true)
             val eventFlow =
               if (eventBufferSize > 0)
                 Flow[Event].buffer(eventBufferSize, OverflowStrategy.backpressure)
               else
                 Flow[Event]
-            val (_, eventsPub) = eventFlow.runWith(Source(eventShipperOut), eventsSink)
+            val (_, eventsPub) = eventFlow.runWith(Source.fromPublisher(eventShipperOut), eventsSink)
 
             if (soakEvents)
-              Source(eventsPub).to(Sink.ignore)
+              Source.fromPublisher(eventsPub).to(Sink.ignore)
 
             new AlmhirtStreams with Stoppable {
               override val eventBroker = eventShipperIn
@@ -152,7 +152,7 @@ object AlmhirtStreams {
       def receiveRunning: Receive = {
         case x ⇒ sys.error(s"Received a message ${x}")
       }
-      
+
       def receive: Receive = receiveInit
 
       override def preRestart(reason: Throwable, message: Option[Any]) {

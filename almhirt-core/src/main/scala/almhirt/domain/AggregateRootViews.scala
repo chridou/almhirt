@@ -60,7 +60,7 @@ object AggregateRootViews {
   def subscribeTo[E <: Event](
     publisher: Publisher[Event],
     views: ActorRef)(implicit mat: Materializer, tag: scala.reflect.ClassTag[E]) {
-    Source(publisher).filter(p ⇒ tag.runtimeClass.isInstance(p)).map(_.asInstanceOf[E]).to(Sink(ActorSubscriber[E](views))).run()
+    Source.fromPublisher(publisher).filter(p ⇒ tag.runtimeClass.isInstance(p)).map(_.asInstanceOf[E]).to(Sink.fromSubscriber(ActorSubscriber[E](views))).run()
   }
 }
 

@@ -55,7 +55,7 @@ abstract class ActorConsumerHttpPublisher[T](
   def receiveCircuitClosed: Receive = running() {
     reportsStatus(onReportRequested = createStatusReport) {
       case Start ⇒
-        autoConnectTo.foreach(pub ⇒ Source[Event](pub).to(Sink(ActorSubscriber[Event](self))).run())
+        autoConnectTo.foreach(pub ⇒ Source.fromPublisher[Event](pub).to(Sink.fromSubscriber(ActorSubscriber[Event](self))).run())
         request(1)
 
       case ActorSubscriberMessage.OnNext(element) ⇒

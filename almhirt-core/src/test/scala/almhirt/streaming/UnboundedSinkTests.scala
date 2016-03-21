@@ -26,7 +26,7 @@ class UnboundedSinkTests(_system: ActorSystem) extends TestKit(_system) with Fun
     val eventSink = UnboundedSink[String](sinkActor)
     val probe = TestProbe()
     val subscr = DelegatingSubscriber[String](probe.ref)
-    Source(ActorPublisher[String](sinkActor)).to(Sink(subscr)).run
+    Source.fromPublisher(ActorPublisher[String](sinkActor)).to(Sink.fromSubscriber(subscr)).run
     eventSink.publish("1")
     probe.expectMsg("1")
     eventSink.stop()
@@ -38,7 +38,7 @@ class UnboundedSinkTests(_system: ActorSystem) extends TestKit(_system) with Fun
     val eventSink = UnboundedSink[String](sinkActor)
     val probe = TestProbe()
     val subscr = DelegatingSubscriber[String](probe.ref)
-    Source[String](ActorPublisher[String](sinkActor)).to(Sink(subscr)).run
+    Source.fromPublisher[String](ActorPublisher[String](sinkActor)).to(Sink.fromSubscriber(subscr)).run
     eventSink.publish("1")
     eventSink.publish("2")
     probe.expectMsg("1")
@@ -52,7 +52,7 @@ class UnboundedSinkTests(_system: ActorSystem) extends TestKit(_system) with Fun
     val eventSink = UnboundedSink[String](sinkActor)
     val probe = TestProbe()
     val subscr = DelegatingSubscriber[String](probe.ref)
-    Source[String](ActorPublisher[String](sinkActor)).to(Sink(subscr)).run
+    Source.fromPublisher[String](ActorPublisher[String](sinkActor)).to(Sink.fromSubscriber(subscr)).run
     (1 to 100).map(_.toString).foreach(eventSink.publish(_))
     val items = probe.receiveN(100).map(_.asInstanceOf[String]).toList
     items should equal((1 to 100).map(_.toString))

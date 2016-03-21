@@ -152,7 +152,7 @@ private[almhirt] class MyCommandStatusTracker(
     reportsStatus(onReportRequested = createStatusReport) {
       case AutoConnect ⇒
         logInfo("Subscribing to event stream.")
-        Source(almhirtContext.eventStream).collect { case e: CommandStatusChanged ⇒ e }.to(Sink(CommandStatusTracker(self))).run()
+        Source.fromPublisher(almhirtContext.eventStream).collect { case e: CommandStatusChanged ⇒ e }.to(Sink.fromSubscriber(CommandStatusTracker(self))).run()
         request(1)
 
       case TrackCommand(commandId, callback, deadline) ⇒

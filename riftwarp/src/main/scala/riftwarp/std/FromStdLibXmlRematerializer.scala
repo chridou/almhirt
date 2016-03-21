@@ -72,7 +72,7 @@ object FromStdLibXmlRematerializer extends Rematerializer[XmlElem] {
 
   private def extractTreeNodes(from: XmlElem): AlmValidation[Tree[WarpPackage]] = 
     from.label match {
-      case "leaf" ⇒ from.firstChildNode.flatMap(x ⇒ extract(x).map(Tree(_)))
+      case "leaf" ⇒ from.firstChildNode.flatMap(x ⇒ extract(x).map(Leaf(_)))
       case "node" ⇒ 
         for {
           labelElem ← from \! ("label")

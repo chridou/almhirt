@@ -130,7 +130,7 @@ trait AlmHttpEndpoint {
       ctx.completeAlmAcceptedPF(self, pf)
 
     def completeRequestPostMapped[U: Marshaller](pf: PartialFunction[T, PostMappedResult[U]])(implicit ctx: RequestContext, problemTerminator: AlmHttpProblemTerminator, problemMarshaller: Marshaller[Problem]): Unit =
-      ctx.completeAlmPostMapped[U, T](self, pf)
+      ctx.completePostMapped[U, T](self, pf)
   }
 
   implicit protected class AlmFutureOps[T](self: AlmFuture[T]) {
@@ -153,7 +153,7 @@ trait AlmHttpEndpoint {
       ctx.completeAlmAcceptedFPF(self, pf)
 
     def completeRequestPostMapped[U: Marshaller](pf: PartialFunction[T, PostMappedResult[U]])(implicit ctx: RequestContext, problemTerminator: AlmHttpProblemTerminator, executionContext: ExecutionContext, problemMarshaller: Marshaller[Problem]): Unit =
-      ctx.completeAlmPostMappedF[U, T](self, pf)
+      ctx.completePostMappedF[U, T](self, pf)
   }
 
   implicit protected class AlmFutureCommandResponseOps(self: AlmFuture[CommandResponse]) {

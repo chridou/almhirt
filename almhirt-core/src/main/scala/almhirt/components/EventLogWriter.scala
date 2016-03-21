@@ -113,7 +113,7 @@ private[almhirt] class EventLogWriterImpl(
     reportsStatusF(onReportRequested = createStatusReport) {
       case AutoConnect ⇒
         logInfo("Subscribing to event stream.")
-        Source(almhirtContext.eventStream).to(Sink(EventLogWriter(self))).run()
+        Source.fromPublisher(almhirtContext.eventStream).to(Sink.fromSubscriber(EventLogWriter(self))).run()
         request(1)
 
       case ActorSubscriberMessage.OnNext(event: Event) ⇒

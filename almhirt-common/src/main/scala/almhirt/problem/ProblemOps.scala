@@ -25,7 +25,7 @@ trait ProblemOps0 extends Ops[NonEmptyList[Problem]] {
   import inst._
 
   def aggregate(): AggregatedProblem = {
-     AggregatedProblem(problems = self.list)
+     AggregatedProblem(problems = self.list.toList)
   }
 }
 

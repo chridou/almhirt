@@ -100,7 +100,7 @@ private[almhirt] class EventSinksSupervisorImpl(factories: EventSinkHub.EventSin
 
   private def createInitialMembers() {
     if (!factories.isEmpty) {
-      val eventsSourceFannedOut = Source(almhirtContext.eventStream).runWith(Sink.fanoutPublisher[Event](1, AlmMath.nextPowerOf2(factories.size + 1)))
+      val eventsSourceFannedOut = Source.fromPublisher(almhirtContext.eventStream).runWith(Sink.asPublisher[Event](fanout = true))
       val flow =
         buffersize match {
           case Some(bfs) if bfs > 0 ⇒
@@ -116,15 +116,15 @@ private[almhirt] class EventSinksSupervisorImpl(factories: EventSinkHub.EventSin
           val subscriber = ActorSubscriber[Event](actor)
           filterOpt match {
             case Some(filter) ⇒
-              Source(eventsSourceFannedOut).via(filter).to(Sink(subscriber)).run()
+              Source.fromPublisher(eventsSourceFannedOut).via(filter).to(Sink.fromSubscriber(subscriber)).run()
             case None ⇒
-              Source(eventsSourceFannedOut).to(Sink(subscriber)).run()
+              Source.fromPublisher(eventsSourceFannedOut).to(Sink.fromSubscriber(subscriber)).run()
           }
       }
-      Source(eventsSourceFannedOut).runForeach { event ⇒ self ! IncomingEvent(event) }
+      Source.fromPublisher(eventsSourceFannedOut).runForeach { event ⇒ self ! IncomingEvent(event) }
     } else if (factories.isEmpty && withBlackHoleIfEmpty) {
       logWarning("No members, but I created a black hole!")
-      Source(almhirtContext.eventStream).runForeach { event ⇒ self ! IncomingEvent(event) }
+      Source.fromPublisher(almhirtContext.eventStream).runForeach { event ⇒ self ! IncomingEvent(event) }
     } else {
       logWarning("No members. Nothing will be subscribed")
     }

@@ -20,7 +20,7 @@ trait ArgsFuns {
           getValue[Map[String, Any]](rest.head, currLevel).flatMap(subArgs ⇒
             diveDeeper(rest.tail, subArgs))
       }
-    diveDeeper(path.list, theMap)
+    diveDeeper(path.list.toList, theMap)
   }
 
   def getFromPath(path: String, sep: Char, theMap: Map[String, Any]): AlmValidation[Any] =

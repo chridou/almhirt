@@ -268,7 +268,7 @@ class CommandStatusTrackerTests(_system: ActorSystem)
   case class FixtureParam(
     testId: Int,
     tracker: ActorRef,
-    systemEventSink: Sink[SystemEvent, Unit])
+    systemEventSink: Sink[SystemEvent, akka.NotUsed])
 
   def withFixture(test: OneArgTest) = {
     val testId = nextTestId
@@ -281,7 +281,7 @@ class CommandStatusTrackerTests(_system: ActorSystem)
     val trackerProps = CommandStatusTracker.propsRaw(100, 110, trackerTimeoutScanInterval)
     val trackerActor = system.actorOf(trackerProps, s"tracker-$testId")
     val trackingSubscriber = CommandStatusTracker(trackerActor)
-    val systemEventSink = Flow[SystemEvent].collect { case e: CommandStatusChanged ⇒ e }.to(Sink(trackingSubscriber))
+    val systemEventSink = Flow[SystemEvent].collect { case e: CommandStatusChanged ⇒ e }.to(Sink.fromSubscriber(trackingSubscriber))
 
     try {
       withFixture(test.toNoArgTest(FixtureParam(testId, trackerActor, systemEventSink)))

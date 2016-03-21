@@ -10,14 +10,15 @@ object BuildSettings {
   val buildOrganization = "org.almhirt"
   val buildScalaVersion = "2.11.7"
 
-  val akkaVersion = "2.4.1"
-  val akkaStreamsVersion = "1.0"
+  val akkaVersion = "2.4.2"
   val scalatestVersion = "2.2.5"
   val sprayVersion = "1.3.3"
-  val scalazVersion = "7.1.3"
-  val reactiveMongoVersion = "0.11.9"
-  val json4sVersion = "3.2.11"
+  val scalazVersion = "7.2.1"
+  val reactiveMongoVersion = "0.11.10"
+  val json4sVersion = "3.3.0"
   val ezRepsVersion = "0.6.2"
+  val scalaXmlVersion = "1.0.5"
+  val scalaParserVersion = "1.0.4"
 
   val buildSettings = Defaults.defaultSettings ++ releaseSettings ++ Seq (
 	organization := buildOrganization,
@@ -56,10 +57,12 @@ object Resolvers {
 object Dependencies {
   import BuildSettings._
 	lazy val scala_reflect = "org.scala-lang" % "scala-reflect" % BuildSettings.buildScalaVersion
+	lazy val scala_xml = "org.scala-lang.modules" %% "scala-xml" % BuildSettings.scalaXmlVersion
+	lazy val scala_parser = "org.scala-lang.modules" %% "scala-parser-combinators" % BuildSettings.scalaParserVersion
 
 	lazy val scalaz       = "org.scalaz" %% "scalaz-core" % BuildSettings.scalazVersion
 
-	lazy val play2_iteratees   = "com.typesafe.play" %% "play-iteratees" % "2.3.10"
+	lazy val play2_iteratees   = "com.typesafe.play" %% "play-iteratees" % "2.5.0"
 
   lazy val json4s   = "org.json4s" %% "json4s-native" % json4sVersion % "compile"
 
@@ -68,11 +71,11 @@ object Dependencies {
 
 	lazy val akka_actor  = "com.typesafe.akka" %% "akka-actor" % BuildSettings.akkaVersion % "provided"
 	lazy val akka_agent  = "com.typesafe.akka" %% "akka-agent" % BuildSettings.akkaVersion % "provided"
-	lazy val akka_streams  = "com.typesafe.akka" %% "akka-stream-experimental" % BuildSettings.akkaStreamsVersion % "provided"
+	lazy val akka_streams  = "com.typesafe.akka" % "akka-stream_2.11" % BuildSettings.akkaVersion
 
 	lazy val apache_codecs = "commons-codec" % "commons-codec" % "1.10"
 	lazy val apache_commons_io = "commons-io" % "commons-io" % "2.4"
-	lazy val icu4j = "com.ibm.icu" % "icu4j" % "55.1"
+	lazy val icu4j = "com.ibm.icu" % "icu4j" % "56.1"
 
 	lazy val spray_routing = "io.spray" %% "spray-routing" % BuildSettings.sprayVersion % "provided"
 	lazy val spray_testkit =  "io.spray" %% "spray-testkit" % BuildSettings.sprayVersion % "test"
@@ -80,14 +83,14 @@ object Dependencies {
 	lazy val spray_httpx = "io.spray" %% "spray-httpx" % BuildSettings.sprayVersion % "provided"
 	lazy val spray_can = "io.spray" %% "spray-can" % BuildSettings.sprayVersion % "provided"
 
-  lazy val snappy = "org.xerial.snappy" % "snappy-java" % "1.1.2-RC3"
-  lazy val logback = "ch.qos.logback" % "logback-classic" % "1.1.3" % "provided"
+  lazy val snappy = "org.xerial.snappy" % "snappy-java" % "1.1.2.1"
+  lazy val logback = "ch.qos.logback" % "logback-classic" % "1.1.6" % "provided"
 	lazy val typesafe_config = "com.typesafe" % "config" % "1.3.0" % "provided"
 
 
   lazy val scalatest = "org.scalatest" %% "scalatest" % BuildSettings.scalatestVersion % "test"
 	lazy val akka_testkit = "com.typesafe.akka" %% "akka-testkit" % BuildSettings.akkaVersion % "test"
-  lazy val pegdown = "org.pegdown" % "pegdown" % "1.4.2" % "test"
+  lazy val pegdown = "org.pegdown" % "pegdown" % "1.6.0"
 
 }
 
@@ -97,6 +100,7 @@ trait CommonBuild {
   def commonProject(name: String, baseFile: java.io.File) =
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
 	  libraryDependencies += apache_codecs,
+	  libraryDependencies += scala_xml,
 	  libraryDependencies += typesafe_config,
 	  libraryDependencies += scalaz,
 	  libraryDependencies += scalatest,
@@ -140,6 +144,7 @@ trait CorexSprayClientBuild {
   	  resolvers += sprayRepo,
 	  libraryDependencies += akka_actor,
 	  libraryDependencies += akka_streams,
+	  libraryDependencies += scala_xml,
 	  libraryDependencies += spray_httpx,
 	  libraryDependencies += spray_client,
 	  libraryDependencies += ezReps,
@@ -160,6 +165,7 @@ trait HttpxSprayServiceBuild {
 	  libraryDependencies += spray_httpx,
 	  libraryDependencies += spray_routing,
 	  libraryDependencies += ezReps,
+	  libraryDependencies += scala_xml,
 	  libraryDependencies += typesafe_config,
 	  libraryDependencies += scalaz,
 	  libraryDependencies += scalatest,
@@ -174,6 +180,7 @@ trait AlmhirtxReactiveMongoBuild {
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
 	  libraryDependencies += scalaz,
 	  libraryDependencies += typesafe_config,
+	  libraryDependencies += scala_xml,
 	  libraryDependencies += ezReps,
 	  libraryDependencies += "org.reactivemongo" %% "reactivemongo" % BuildSettings.reactiveMongoVersion % "provided"
 		exclude("ch.qos.logback", "logback-core")
@@ -192,6 +199,7 @@ trait CoreBuild {
 	  libraryDependencies += play2_iteratees,
 	  libraryDependencies += akka_streams,
 	  libraryDependencies += akka_actor,
+	  libraryDependencies += scala_xml,
 	  libraryDependencies += ezReps,
 	  libraryDependencies += logback,
 	  libraryDependencies += akka_testkit,
@@ -208,6 +216,7 @@ trait DashboardBuild {
 	  libraryDependencies += scalaz,
 	  libraryDependencies += akka_streams,
 	  libraryDependencies += akka_actor,
+	  libraryDependencies += scala_xml,
 	  libraryDependencies += logback,
 	  libraryDependencies += akka_testkit,
 	  libraryDependencies += scalatest,
@@ -224,6 +233,7 @@ trait CorexMongoBuild {
 	  libraryDependencies += scalaz,
 	  libraryDependencies += akka_actor,
 	  libraryDependencies += akka_streams,
+	  libraryDependencies += scala_xml,
 	  libraryDependencies += ezReps,
 	  libraryDependencies += play2_iteratees,
 	  libraryDependencies += typesafe_config,
@@ -247,6 +257,7 @@ trait CorexSprayServiceBuild {
 	  libraryDependencies += akka_streams,
 	  libraryDependencies += play2_iteratees,
 	  libraryDependencies += spray_routing,
+	  libraryDependencies += scala_xml,
 	  libraryDependencies += spray_testkit,
 	  libraryDependencies += spray_can,
 	  libraryDependencies += ezRepsJson4s,
@@ -265,6 +276,8 @@ trait RiftWarpBuild {
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
 	  libraryDependencies += scala_reflect,
 	  libraryDependencies += apache_codecs,
+	  libraryDependencies += scala_xml,
+	  libraryDependencies += scala_parser,
 	  libraryDependencies += scalaz,
 //	  libraryDependencies += "com.chuusai" %% "shapeless" % "1.2.4",
 	  libraryDependencies += scalatest,

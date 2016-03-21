@@ -120,7 +120,7 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
         val streamSubscriber = streams.eventBroker.newSubscriber
         within(10 seconds) {
           streams.eventStream.subscribe(streamSubscriber)
-          Source(List[Event](event)).to(Sink(subscriber)).run()
+          Source(List[Event](event)).to(Sink.fromSubscriber(subscriber)).run()
           subscriberProbeEvent.expectMsg(100 millis, event)
         }
       }
@@ -136,9 +136,9 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
         val streamSubscriber2 = streams.eventBroker.newSubscriber
         within(10 seconds) {
           streams.eventStream.subscribe(subscriber)
-          Source(List[Event](event1)).to(Sink(streamSubscriber1)).run()
+          Source(List[Event](event1)).to(Sink.fromSubscriber(streamSubscriber1)).run()
           subscriberProbeEvent.expectMsg(100 millis, event1)
-          Source(List[Event](event2)).to(Sink(streamSubscriber2)).run()
+          Source(List[Event](event2)).to(Sink.fromSubscriber(streamSubscriber2)).run()
           subscriberProbeEvent.expectMsg(100 millis, event2)
         }
       }
