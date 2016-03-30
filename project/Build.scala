@@ -182,7 +182,8 @@ trait AlmhirtxReactiveMongoBuild {
 	  libraryDependencies += typesafe_config,
 	  libraryDependencies += scala_xml,
 	  libraryDependencies += ezReps,
-	  libraryDependencies += "org.reactivemongo" %% "reactivemongo" % BuildSettings.reactiveMongoVersion % "provided"
+	  libraryDependencies += "org.reactivemongo" %% "reactivemongo" % BuildSettings.reactiveMongoVersion % "provided",
+	  libraryDependencies += "org.reactivemongo" % "reactivemongo-iteratees_2.11" % BuildSettings.reactiveMongoVersion
 		exclude("ch.qos.logback", "logback-core")
 		exclude("ch.qos.logback", "logback-classic"),
  	  libraryDependencies += scalatest,

@@ -8,6 +8,7 @@ import almhirt.common._
 import reactivemongo.api.commands._
 import reactivemongo.api._
 import reactivemongo.bson.{ BSONDocument, BSONDocumentReader }
+import reactivemongo.play.iteratees._
 import play.api.libs.iteratee.{ Enumerator, Enumeratee }
 import almhirt.configuration._
 import com.typesafe.config.Config
@@ -21,15 +22,16 @@ package object reactivemongox {
       val effSel = selector getOrElse BSONDocument.empty
       val effProj = projection getOrElse BSONDocument.empty
       val effSort = sort getOrElse BSONDocument.empty
+      val onError = if(stopOnError == true) Cursor.FailOnError[Unit]() else Cursor.Ignore();
       traverse match {
         case TraverseWindow(TraverseWindow.SkipNone, TraverseWindow.TakeAll) ⇒
-          self.find(effSel, effProj).sort(effSort).cursor[T](readPreference = readPreference).enumerate(stopOnError = stopOnError)
+          self.find(effSel, effProj).sort(effSort).cursor[T](readPreference = readPreference).enumerator(err = onError)
         case TraverseWindow(TraverseWindow.SkipNone, TraverseWindow.Take(take: Int)) ⇒
-          self.find(effSel, effProj).sort(effSort).cursor[T](readPreference = readPreference).enumerate(maxDocs = take, stopOnError = stopOnError) &> Enumeratee.take(take)
+          self.find(effSel, effProj).sort(effSort).cursor[T](readPreference = readPreference).enumerator(maxDocs = take, err = onError) &> Enumeratee.take(take)
         case TraverseWindow(TraverseWindow.Skip(skip: Int), TraverseWindow.TakeAll) ⇒
-          self.find(effSel, effProj).options(new QueryOpts(skipN = skip)).sort(effSort).cursor[T](readPreference = readPreference).enumerate(stopOnError = stopOnError)
+          self.find(effSel, effProj).options(new QueryOpts(skipN = skip)).sort(effSort).cursor[T](readPreference = readPreference).enumerator(err = onError)
         case TraverseWindow(TraverseWindow.Skip(skip: Int), TraverseWindow.Take(take: Int)) ⇒
-          self.find(effSel, effProj).options(new QueryOpts(skipN = skip)).sort(effSort).cursor[T](readPreference = readPreference).enumerate(maxDocs = take, stopOnError = stopOnError) &> Enumeratee.take(take)
+          self.find(effSel, effProj).options(new QueryOpts(skipN = skip)).sort(effSort).cursor[T](readPreference = readPreference).enumerator(maxDocs = take, err = onError) &> Enumeratee.take(take)
       }
     }
 
