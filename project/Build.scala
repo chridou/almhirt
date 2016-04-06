@@ -10,11 +10,11 @@ object BuildSettings {
   val buildOrganization = "org.almhirt"
   val buildScalaVersion = "2.11.7"
 
-  val akkaVersion = "2.4.2"
+  val akkaVersion = "2.4.3"
   val scalatestVersion = "2.2.6"
   val sprayVersion = "1.3.3"
   val scalazVersion = "7.2.1"
-  val reactiveMongoVersion = "0.11.10"
+  val reactiveMongoVersion = "0.11.11"
   val json4sVersion = "3.3.0"
   val ezRepsVersion = "0.6.2"
   val scalaXmlVersion = "1.0.5"
@@ -62,7 +62,7 @@ object Dependencies {
 
 	lazy val scalaz       = "org.scalaz" %% "scalaz-core" % BuildSettings.scalazVersion
 
-	lazy val play2_iteratees   = "com.typesafe.play" %% "play-iteratees" % "2.5.0"
+	lazy val play2_iteratees   = "com.typesafe.play" %% "play-iteratees" % "2.5.1"
 
   lazy val json4s   = "org.json4s" %% "json4s-native" % json4sVersion % "compile"
 
