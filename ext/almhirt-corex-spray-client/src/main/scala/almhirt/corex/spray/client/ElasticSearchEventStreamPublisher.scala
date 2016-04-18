@@ -92,7 +92,7 @@ private[almhirt] class ElasticSearchEventStreamPublisherImpl(
     val typeName = fixedTypeName.getOrElse(event.getClass().getSimpleName())
     ttl match {
       case Some(timeToLive) ⇒
-        Uri(s"""$uriprefix/$typeName/${event.eventId}?op_type=create&timestamp=${event.timestamp}&ttl=${timeToLive.toMillis}""")
+        Uri(s"""$uriprefix/$typeName/${event.eventId}?op_type=create&timestamp=${event.timestamp}&ttl=${timeToLive.toMinutes}m""")
       case None ⇒
         Uri(s"""$uriprefix/$typeName/${event.eventId}?op_type=create&timestamp=${event.timestamp}""")
     }

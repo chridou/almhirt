@@ -26,7 +26,7 @@ object ElasticSearchEventPublisher {
       val typeName = fixedTypeName.getOrElse(event.getClass().getSimpleName())
       ttl match {
         case Some(timeToLive) ⇒
-          Uri(s"""$uriPrefix/$typeName/${event.eventId}?op_type=create&timestamp=${event.timestamp}&ttl=${timeToLive.toMillis}""")
+          Uri(s"""$uriPrefix/$typeName/${event.eventId}?op_type=create&timestamp=${event.timestamp}&ttl=${timeToLive.toMinutes}m""")
         case None ⇒
           Uri(s"""$uriPrefix/$typeName/${event.eventId}?op_type=create&timestamp=${event.timestamp}""")
       }
