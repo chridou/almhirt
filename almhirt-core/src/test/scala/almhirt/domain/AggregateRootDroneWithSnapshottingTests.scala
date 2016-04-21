@@ -16,7 +16,7 @@ class AggregateRootDroneWithSnapshottingTests(_system: ActorSystem)
 
   implicit val executionContext = system.dispatchers.defaultGlobalDispatcher
   implicit val ccuad = {
-    val dt = LocalDateTime.of(0: Int, 0: Int, 0: Int, 0: Int, 0: Int)
+    val dt = LocalDateTime.of(1: Int, 1: Int, 1: Int, 1: Int, 1: Int)
     new CanCreateUuidsAndDateTimes {
       override def getUuid(): java.util.UUID = ???
       override def getUniqueString(): String = "unique"
