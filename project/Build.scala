@@ -34,15 +34,8 @@ object BuildSettings {
     import ReleaseStateTransformations._
       Seq[ReleaseStep](
         checkSnapshotDependencies,
-        inquireVersions,
         //runTest,
-        setReleaseVersion,
-        commitReleaseVersion,
-        tagRelease,
-        publishArtifacts,
-        setNextVersion,
-        commitNextVersion,
-        pushChanges)
+        publishArtifacts)
     }
   )
 }
