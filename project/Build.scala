@@ -33,9 +33,7 @@ object BuildSettings {
   releaseProcess <<= thisProjectRef apply { ref =>
     import ReleaseStateTransformations._
       Seq[ReleaseStep](
-        checkSnapshotDependencies,
-        //runTest,
-        publishArtifacts)
+        checkSnapshotDependencies)
     }
   )
 }
