@@ -38,7 +38,7 @@ class AggregateRootDronePreStoreEventActionTests(_system: ActorSystem)
               val FixtureParam(testId, drone, eventlog, probe, counter) = fixture
               within(10 seconds) {
                 probe.send(drone, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
-                probe.expectMsgType[CommandExecuted]
+                probe.expectMsgType[CommandExecuted](5.seconds)
                 counter.get should equal(0)
               }
             }
@@ -48,10 +48,10 @@ class AggregateRootDronePreStoreEventActionTests(_system: ActorSystem)
               val FixtureParam(testId, drone, eventlog, probe, counter) = fixture
               within(10 seconds) {
                 probe.send(drone, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
-                probe.expectMsgType[CommandExecuted]
+                probe.expectMsgType[CommandExecuted](5.seconds)
                 counter.get should equal(0)
                 probe.send(drone, ChangeUserSurname(CommandHeader(), "a", 1L, "miller"))
-                probe.expectMsgType[CommandExecuted]
+                probe.expectMsgType[CommandExecuted](5.seconds)
                 counter.get should equal(1)
               }
             }
@@ -59,11 +59,11 @@ class AggregateRootDronePreStoreEventActionTests(_system: ActorSystem)
               val FixtureParam(testId, drone, eventlog, probe, counter) = fixture
               within(10 seconds) {
                 probe.send(drone, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
-                probe.expectMsgType[CommandExecuted]
+                probe.expectMsgType[CommandExecuted](5.seconds)
                 probe.send(drone, ChangeUserSurname(CommandHeader(), "a", 1L, "miller"))
-                probe.expectMsgType[CommandExecuted]
+                probe.expectMsgType[CommandExecuted](5.seconds)
                 probe.send(eventlog, GetAggregateRootEventsFrom("a", 0L))
-                val eventsEnumerator = probe.expectMsgType[FetchedAggregateRootEvents].enumerator
+                val eventsEnumerator = probe.expectMsgType[FetchedAggregateRootEvents](5.seconds).enumerator
                 val iteratee = Iteratee.fold[AggregateRootEvent, Vector[AggregateRootEvent]](Vector.empty) { case (acc, cur) ⇒ acc :+ cur }
                 val events: Vector[AggregateRootEvent] = Await.result(eventsEnumerator.run(iteratee), 100.millis.dilated)
                 events should equal(List(
@@ -77,13 +77,13 @@ class AggregateRootDronePreStoreEventActionTests(_system: ActorSystem)
               val FixtureParam(testId, drone, eventlog, probe, counter) = fixture
               within(10 seconds) {
                 probe.send(drone, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
-                probe.expectMsgType[CommandExecuted]
+                probe.expectMsgType[CommandExecuted](5.seconds)
                 counter.get should equal(0)
                 probe.send(drone, ChangeUserSurname(CommandHeader(), "a", 1L, "miller"))
-                probe.expectMsgType[CommandExecuted]
+                probe.expectMsgType[CommandExecuted](5.seconds)
                 counter.get should equal(1)
                 probe.send(drone, ChangeUserAge(CommandHeader(), "a", 2L, 25))
-                probe.expectMsgType[CommandExecuted]
+                probe.expectMsgType[CommandExecuted](5.seconds)
                 counter.get should equal(1)
               }
             }
@@ -93,16 +93,16 @@ class AggregateRootDronePreStoreEventActionTests(_system: ActorSystem)
               val FixtureParam(testId, drone, eventlog, probe, counter) = fixture
               within(10 seconds) {
                 probe.send(drone, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
-                probe.expectMsgType[CommandExecuted]
+                probe.expectMsgType[CommandExecuted](5.seconds)
                 counter.get should equal(0)
                 probe.send(drone, ChangeUserSurname(CommandHeader(), "a", 1L, "miller"))
-                probe.expectMsgType[CommandExecuted]
+                probe.expectMsgType[CommandExecuted](5.seconds)
                 counter.get should equal(1)
                 probe.send(drone, ChangeUserAge(CommandHeader(), "a", 2L, 25))
-                probe.expectMsgType[CommandExecuted]
+                probe.expectMsgType[CommandExecuted](5.seconds)
                 counter.get should equal(1)
                 probe.send(drone, ChangeUserSurname(CommandHeader(), "a", 3L, "smith"))
-                probe.expectMsgType[CommandExecuted]
+                probe.expectMsgType[CommandExecuted](5.seconds)
                 counter.get should equal(2)
               }
             }
@@ -112,10 +112,10 @@ class AggregateRootDronePreStoreEventActionTests(_system: ActorSystem)
               val FixtureParam(testId, drone, eventlog, probe, counter) = fixture
               within(10 seconds) {
                 probe.send(drone, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
-                probe.expectMsgType[CommandExecuted]
+                probe.expectMsgType[CommandExecuted](5.seconds)
                 counter.get should equal(0)
                 probe.send(drone, ChangeUserLastname(CommandHeader(), "a", 1L, "miller"))
-                probe.expectMsgType[CommandNotExecuted]
+                probe.expectMsgType[CommandNotExecuted](5.seconds)
                 counter.get should equal(0)
               }
             }
@@ -123,11 +123,11 @@ class AggregateRootDronePreStoreEventActionTests(_system: ActorSystem)
               val FixtureParam(testId, drone, eventlog, probe, counter) = fixture
               within(10 seconds) {
                 probe.send(drone, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
-                probe.expectMsgType[CommandExecuted]
+                probe.expectMsgType[CommandExecuted](5.seconds)
                 probe.send(drone, ChangeUserLastname(CommandHeader(), "a", 1L, "miller"))
-                probe.expectMsgType[CommandNotExecuted]
+                probe.expectMsgType[CommandExecuted](5.seconds)
                 probe.send(eventlog, GetAggregateRootEventsFrom("a", 0L))
-                val eventsEnumerator = probe.expectMsgType[FetchedAggregateRootEvents].enumerator
+                val eventsEnumerator = probe.expectMsgType[FetchedAggregateRootEvents](5.seconds).enumerator
                 val iteratee = Iteratee.fold[AggregateRootEvent, Vector[AggregateRootEvent]](Vector.empty) { case (acc, cur) ⇒ acc :+ cur }
                 val events: Vector[AggregateRootEvent] = Await.result(eventsEnumerator.run(iteratee), 100.millis.dilated)
                 events should equal(List(UserCreated(EventHeader(), "a", 0, "hans", "meier")))

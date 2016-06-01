@@ -66,8 +66,8 @@ class AggregateRootHiveTests(_system: ActorSystem)
           Source.fromPublisher(streams.eventStream).collect { case e: SystemEvent ⇒ e }.to(Sink.fromSubscriber(DelegatingSubscriber[SystemEvent](statusProbe.ref))).run()
           within(10 seconds) {
             Source(CreateUser(CommandHeader(), "a", 0L, "hans", "meier") :: Nil).to(Sink.fromSubscriber(commandSubscriber)).run()
-            statusProbe.expectMsgType[CommandStatusChanged].status should equal(CommandStatus.Initiated)
-            statusProbe.expectMsgType[CommandStatusChanged].status should equal(CommandStatus.Executed)
+            statusProbe.expectMsgType[CommandStatusChanged](5.seconds).status should equal(CommandStatus.Initiated)
+            statusProbe.expectMsgType[CommandStatusChanged](5.seconds).status should equal(CommandStatus.Executed)
           }
         }
       }
