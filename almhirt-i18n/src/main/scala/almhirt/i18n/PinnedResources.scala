@@ -478,7 +478,7 @@ private[almhirt] object ResourceNodeXml {
         minFractionDigits ← (format \? "min-fraction-digits").flatMap(e ⇒ e.map { _.text.toIntAlm }.validationOut)
         maxFractionDigits ← (format \? "max-fraction-digits").flatMap(e ⇒ e.map { _.text.toIntAlm }.validationOut)
         useDigitGroup ← (format \? "use-digit-groups").flatMap(e ⇒ e.map { _.text.toBooleanAlm }.validationOut)
-        rangeSeparator ← (elem \? "range-separator").map(e ⇒ e.map(_.text))
+        rangeSeparator ← (format \? "range-separator").map(e ⇒ e.map(_.text))
       } yield impl.MeasuredFormatResourceValue.FormatDefinition(uom, minFractionDigits, maxFractionDigits, useDigitGroup, rangeSeparator)
 
     val paramNameV = for {
