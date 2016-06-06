@@ -12,6 +12,7 @@
 						<unit-of-measurement>meter</unit-of-measurement>
 						<min-fraction-digits>0</min-fraction-digits>
 						<max-fraction-digits>0</max-fraction-digits>
+						<range-separator>__________________</range-separator>
 					</default-format>
 					<selective>
 						<format>
@@ -19,6 +20,7 @@
 							<unit-of-measurement>fathom</unit-of-measurement>
 							<min-fraction-digits>2</min-fraction-digits>
 							<max-fraction-digits>2</max-fraction-digits>
+						<range-separator>__________________</range-separator>
 						</format>
 					</selective>
 				</measured-value>
