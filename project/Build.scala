@@ -10,11 +10,11 @@ object BuildSettings {
   val buildOrganization = "org.almhirt"
   val buildScalaVersion = "2.11.7"
 
-  val akkaVersion = "2.4.4"
+  val akkaVersion = "2.4.7"
   val scalatestVersion = "2.2.6"
   val sprayVersion = "1.3.3"
   val scalazVersion = "7.2.1"
-  val reactiveMongoVersion = "0.11.11"
+  val reactiveMongoVersion = "0.11.12"
   val json4sVersion = "3.3.0"
   val ezRepsVersion = "0.6.2"
   val scalaXmlVersion = "1.0.5"
