@@ -83,7 +83,7 @@ object MongoAggregateRootEventLog {
     for {
       section ← ctx.config.v[com.typesafe.config.Config](path)
       dbName ← section.v[String]("db-name")
-      db ← inTryCatch { connection(dbName)(ctx.futuresContext) }
+      db ← inTryCatch { Await.result(connection.database(dbName)(ctx.futuresContext), 10.seconds) }
       props ← propsWithDb(
         db,
         serializeAggregateRootEvent,
