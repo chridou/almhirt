@@ -169,7 +169,7 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
         _ ← if (writeResult.ok)
           AlmFuture.successful(())
         else {
-          val msg = writeResult.errmsg.getOrElse("unknown error")
+          val msg = writeResult.writeErrors.mkString(",")
           AlmFuture.failed(PersistenceProblem(msg))
         }
       } yield start

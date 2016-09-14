@@ -19,7 +19,7 @@ import reactivemongo.api.indexes.{ Index ⇒ MIndex }
 import reactivemongo.api.indexes.IndexType
 import reactivemongo.api.commands.WriteConcern
 import almhirt.reactivemongox._
-import scala.concurrent.Await
+import scala.concurrent.Await 
 
 object BinarySnapshotRepository {
   def propsRaw(
@@ -295,7 +295,7 @@ private[snapshots] class BinarySnapshotRepositoryActor(
           if (res.ok) {
             scalaz.Success(snapshot.aggId)
           } else {
-            val prob = PersistenceProblem(s"""Failed to upsert snapshot for ${snapshot.aggId.value} with version ${snapshot.version.value}: ${res.message}""")
+            val prob = PersistenceProblem(s"""Failed to upsert snapshot for ${snapshot.aggId.value} with version ${snapshot.version.value}: ${res.errmsg}""")
             reportMajorFailure(prob)
             scalaz.Failure(prob)
           }))
@@ -310,7 +310,7 @@ private[snapshots] class BinarySnapshotRepositoryActor(
           if (res.ok) {
             scalaz.Success(snapshot.aggId)
           } else {
-            val prob = PersistenceProblem(s"""Failed to mark snapshot for ${snapshot.aggId.value} with version ${snapshot.version.value} as mortuus: ${res.message}""")
+            val prob = PersistenceProblem(s"""Failed to mark snapshot for ${snapshot.aggId.value} with version ${snapshot.version.value} as mortuus: ${res.errmsg}""")
             reportMajorFailure(prob)
             scalaz.Failure(prob)
           }))
@@ -325,7 +325,7 @@ private[snapshots] class BinarySnapshotRepositoryActor(
           if (res.ok) {
             scalaz.Success(id)
           } else {
-            val prob = PersistenceProblem(s"""Failed to delete snapshot for ${id.value}: ${res.message}""")
+            val prob = PersistenceProblem(s"""Failed to delete snapshot for ${id.value}: Error Code ${res.code}""")
             reportMajorFailure(prob)
             scalaz.Failure(prob)
           }))
