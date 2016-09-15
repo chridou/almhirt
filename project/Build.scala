@@ -11,7 +11,7 @@ object BuildSettings {
   val buildScalaVersion = "2.11.8"
 
   val akkaVersion = "2.4.10"
-  val playVersion = "2.5.6"
+  val playVersion = "2.5.8"
   val scalatestVersion = "2.2.6"
   val sprayVersion = "1.3.3"
   val scalazVersion = "7.2.1"
