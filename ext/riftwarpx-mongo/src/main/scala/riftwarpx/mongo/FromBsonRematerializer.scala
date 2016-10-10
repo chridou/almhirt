@@ -25,7 +25,8 @@ object FromBsonRematerializer extends Rematerializer[BSONValue] {
     }
 
   private def extractObject(what: BSONDocument, path: List[String]): AlmValidation[WarpObject] = {
-    val elements = scala.collection.mutable.HashMap(what.elements: _*)
+    val elementSeq = what.elements.map(element => (element.name -> element.value)).toSeq
+    val elements = scala.collection.mutable.HashMap(elementSeq: _*)
     for {
       warpdescriptor ← elements.get(WarpDescriptor.defaultKey) match {
         case Some(BSONString(str)) ⇒
