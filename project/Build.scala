@@ -15,7 +15,7 @@ object BuildSettings {
   val scalatestVersion = "3.0.0"
   val sprayVersion = "1.3.3"
   val scalazVersion = "7.2.1"
-  val reactiveMongoVersion = "0.12-RC6"
+  val reactiveMongoVersion = "0.12.0"
   val json4sVersion = "3.3.0"
   val ezRepsVersion = "0.6.2"
   val scalaXmlVersion = "1.0.5"
