@@ -13,7 +13,7 @@ object BuildSettings {
   val akkaVersion = "2.4.16"
   val playVersion = "2.5.10"
   val scalatestVersion = "3.0.1"
-  val sprayVersion = "1.3.4"
+  val sprayVersion = "1.3.3"
   val scalazVersion = "7.2.8"
   val reactiveMongoVersion = "0.12.1"
   val json4sVersion = "3.5.0"
