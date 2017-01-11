@@ -282,7 +282,7 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
           } else {
             logInfo(s"""Collection "$collectionName" does not yet exist.""")
             val collection = db(collectionName)
-            collection.indexesManager.ensure(MIndex(List("aggid" → IndexType.Ascending, "version" → IndexType.Ascending), name = Some("idx_aggid_version"), unique = false))
+            collection.indexesManager.ensure(MIndex(List("aggid" → IndexType.Ascending, "version" → IndexType.Descending), name = Some("idx_aggid_version"), unique = false))
           }
         } yield createonRes).toAlmFuture
 

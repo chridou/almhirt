@@ -10,8 +10,8 @@ object BuildSettings {
   val buildOrganization = "org.almhirt"
   val buildScalaVersion = "2.11.8"
 
-  val akkaVersion = "2.4.14"
-  val playVersion = "2.5.10"
+  val akkaVersion = "2.4.16"
+  val playVersion = "2.6.1"
   val scalatestVersion = "3.0.1"
   val sprayVersion = "1.3.4"
   val scalazVersion = "7.2.8"
@@ -175,7 +175,7 @@ trait AlmhirtxReactiveMongoBuild {
 	  libraryDependencies += scala_xml,
 	  libraryDependencies += ezReps,
 	  libraryDependencies += "org.reactivemongo" %% "reactivemongo" % BuildSettings.reactiveMongoVersion % "provided",
-	  libraryDependencies += "org.reactivemongo" % "reactivemongo-iteratees_2.11" % BuildSettings.reactiveMongoVersion
+	  libraryDependencies += "org.reactivemongo" %% "reactivemongo-iteratees" % BuildSettings.reactiveMongoVersion
 		exclude("ch.qos.logback", "logback-core")
 		exclude("ch.qos.logback", "logback-classic"),
  	  libraryDependencies += scalatest,
