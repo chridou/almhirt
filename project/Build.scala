@@ -11,6 +11,7 @@ object BuildSettings {
   val buildScalaVersion = "2.11.8"
 
   val akkaVersion = "2.4.16"
+  val akkaHttpVersion = "10.0.1"
   val playVersion = "2.6.1"
   val scalatestVersion = "3.0.1"
   val sprayVersion = "1.3.4"
@@ -69,6 +70,9 @@ object Dependencies {
 	lazy val apache_commons_io = "commons-io" % "commons-io" % "2.4"
 	lazy val icu4j = "com.ibm.icu" % "icu4j" % "56.1"
 
+	lazy val akkaHttp = "com.typesafe.akka" %% "akka-http" % akkaHttpVersion
+	lazy val akkaHttpCore = "com.typesafe.akka" %% "akka-http-core" % akkaHttpVersion
+	
 	lazy val spray_routing = "io.spray" %% "spray-routing" % BuildSettings.sprayVersion % "provided"
 	lazy val spray_testkit =  "io.spray" %% "spray-testkit" % BuildSettings.sprayVersion % "test"
 	lazy val spray_client = "io.spray" %% "spray-client" % BuildSettings.sprayVersion % "provided"
