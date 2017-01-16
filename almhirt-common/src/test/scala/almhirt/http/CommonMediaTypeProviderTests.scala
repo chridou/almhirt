@@ -9,7 +9,7 @@ class CommonMediaTypeProviderTests extends FunSuite with Matchers {
       override val vendorProvider = AlmhirtMediaTypeVendorProvider
     }
     val booleanMediaTypesProvider = provider.booleanAlmMediaTypesProvider
-    booleanMediaTypesProvider.targetMediaTypes should not be ('empty)
+    booleanMediaTypesProvider.targetMediaType should be (AlmMediaTypes.`application/json`)
   }
 
 //  test("The delegating providers should supply a int media types provider") {

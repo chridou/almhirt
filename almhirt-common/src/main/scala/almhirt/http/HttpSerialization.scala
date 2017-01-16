@@ -22,7 +22,7 @@ trait HttpSerializer[T] {
     }
 
   final def serializeIfSupported(what: T, mediaType: AlmMediaType)(implicit params: SerializationParams = SerializationParams.empty, mp: AlmMediaTypesProvider[T]): AlmValidation[AlmHttpBody] =
-    if (mp.targetMediaTypes.contains(mediaType)) {
+    if (mp.targetMediaType == mediaType) {
       serialize(what, mediaType)
     } else {
       NoSuchElementProblem(s"""Media type "${mediaType.value}" is not supported for Http serialization.""").failure

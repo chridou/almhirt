@@ -132,6 +132,21 @@ trait HttpxSprayBuild {
   )
 }
 
+trait HttpxAkkaHttpBuild {
+  import Dependencies._
+  import Resolvers._
+  def httpxAkkaHttpProject(name: String, baseFile: java.io.File) =
+  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
+  	  resolvers += sprayRepo,
+	  libraryDependencies += akka_actor,
+	  libraryDependencies += akkaHttp,
+	  libraryDependencies += typesafe_config,
+	  libraryDependencies += scalaz,
+	  libraryDependencies += scalatest,
+    libraryDependencies += pegdown
+  )
+}
+
 trait CorexSprayClientBuild {
   import Dependencies._
   import Resolvers._
@@ -297,6 +312,21 @@ trait RiftWarpHttpSprayBuild {
   )
 }
 
+trait RiftWarpHttpAkkaHttpBuild {
+  import Dependencies._
+  import Resolvers._
+  def riftwarpHttpAkkaHttpProject(name: String, baseFile: java.io.File) =
+  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
+	  libraryDependencies += scala_reflect,
+    libraryDependencies += akka_actor,
+	  libraryDependencies += apache_codecs,
+	  libraryDependencies += akkaHttp,
+	  libraryDependencies += scalaz,
+	  libraryDependencies += scalatest,
+    libraryDependencies += pegdown
+  )
+}
+
 trait RiftWarpMongoExtBuild {
   import Dependencies._
   import Resolvers._
@@ -344,6 +374,7 @@ object AlmHirtBuild extends Build
 	with CommonBuild
 	with I18nBuild
 	with HttpxSprayBuild
+	with HttpxAkkaHttpBuild
 	with AlmhirtxReactiveMongoBuild
 	with CorexSprayClientBuild
 	with HttpxSprayServiceBuild
@@ -353,6 +384,7 @@ object AlmHirtBuild extends Build
 	with CorexSprayServiceBuild
 	with RiftWarpBuild
 	with RiftWarpHttpSprayBuild
+	with RiftWarpHttpAkkaHttpBuild
 	with RiftWarpMongoExtBuild
 	with RiftAlmhirtCoreExtBuild
 	with RiftWarpAutomaticBuild {
@@ -383,6 +415,9 @@ object AlmHirtBuild extends Build
 
   lazy val httpxSpray = httpxSprayProject(	name = "almhirt-httpx-spray",
                        			baseFile = file("./ext/almhirt-httpx-spray")) dependsOn(common)
+								
+  lazy val httpxAkkaHttp = httpxAkkaHttpProject(	name = "almhirt-httpx-akka-http",
+                       			baseFile = file("./ext/almhirt-httpx-akka-http")) dependsOn(common)
 
   lazy val corexSprayClient = corexSprayClientProject(	name = "almhirt-corex-spray-client",
                        			baseFile = file("./ext/almhirt-corex-spray-client")) dependsOn(common, httpxSpray, core)
@@ -417,6 +452,8 @@ object AlmHirtBuild extends Build
 
 	lazy val riftwarpHttpSpray = riftwarpHttpSprayProject(	name = "riftwarpx-http-spray",
                        			baseFile = file("./ext/riftwarpx-http-spray")) dependsOn(common, riftwarp, httpxSpray)
+  lazy val riftwarpHttpAkkaHttp = riftwarpHttpAkkaHttpProject(	name = "riftwarpx-http-akka-http",
+                       			baseFile = file("./ext/riftwarpx-http-akka-http")) dependsOn(common, riftwarp, httpxAkkaHttp)
 
 /*
   lazy val riftwarpAutomatic = riftwarpAutomaticProject(	name = "riftwarp-automatic",

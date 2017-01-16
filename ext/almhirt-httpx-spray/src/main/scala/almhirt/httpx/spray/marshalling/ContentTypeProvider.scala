@@ -3,6 +3,7 @@ package almhirt.httpx.spray.marshalling
 import spray.http._
 import almhirt.httpx.spray._
 import almhirt.http._
+
 trait MarshallingContentTypesProvider[T] {
   def marshallingContentTypes: Seq[ContentType]
 }
@@ -22,7 +23,7 @@ object MarshallingContentTypesProvider {
   def apply[T: AlmMediaTypesProvider](implicit defaultEncoding: AlmCharacterEncoding): MarshallingContentTypesProvider[T] = {
     val mdt = implicitly[AlmMediaTypesProvider[T]]
     new MarshallingContentTypesProvider[T] {
-      val marshallingContentTypes = mdt.targetMediaTypes.toSprayContentTypes
+      val marshallingContentTypes = ???//mdt.targetMediaTypes.toSprayHttpContentTypes
     }
   }
 }
@@ -36,7 +37,7 @@ object UnmarshallingContentTypesProvider {
   def apply[T: AlmMediaTypesProvider](implicit defaultEncoding: AlmCharacterEncoding): UnmarshallingContentTypesProvider[T] = {
     val mdt = implicitly[AlmMediaTypesProvider[T]]
     new UnmarshallingContentTypesProvider[T] {
-      val unmarshallingContentTypes = mdt.sourceMediaTypes.toSprayContentTypes
+      val unmarshallingContentTypes = ???//mdt.sourceMediaTypes.toSprayHttpContentTypes
     }
   }
 }
@@ -59,7 +60,7 @@ object FullContentTypeProvider {
   def apply[T: AlmMediaTypesProvider](implicit defaultEncoding: AlmCharacterEncoding): FullContentTypeProvider[T] = {
     val mdt = implicitly[AlmMediaTypesProvider[T]]
     new FullContentTypeProvider[T] {
-      val marshallingContentTypes = mdt.targetMediaTypes.toSprayContentTypes
+      val marshallingContentTypes = ???// mdt.targetMediaTypes.toSprayContentTypes
       val unmarshallingContentTypes = mdt.sourceMediaTypes.toSprayContentTypes
     }
   }
