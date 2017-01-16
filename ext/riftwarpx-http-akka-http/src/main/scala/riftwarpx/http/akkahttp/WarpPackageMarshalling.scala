@@ -11,7 +11,7 @@ import scala.concurrent.ExecutionContext
 import akka.stream.Materializer
 
 object WarpPackageMarshalling {
-  import almhirt.httpx.spray.marshalling.Helper._
+  import almhirt.httpx.akkahttp.marshalling.Helper._
 
   private val akkaHttpMarshallableContentTypeTypes: Seq[ContentType] = almhirt.httpx.akkahttp.almMediaTypes2AkkaHttpContentTypes(Seq(
     AlmMediaTypes.`text/html`,
