@@ -166,6 +166,24 @@ trait CorexSprayClientBuild {
   )
 }
 
+trait CorexAkkaHttpClientBuild {
+  import Dependencies._
+  import Resolvers._
+  def corexAkkaHttpClientProject(name: String, baseFile: java.io.File) =
+  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
+  	  resolvers += sprayRepo,
+	  libraryDependencies += akka_actor,
+	  libraryDependencies += akka_streams,
+	  libraryDependencies += scala_xml,
+	  libraryDependencies += akkaHttp,
+	  libraryDependencies += ezReps,
+	  libraryDependencies += typesafe_config,
+	  libraryDependencies += scalaz,
+	  libraryDependencies += scalatest,
+    libraryDependencies += pegdown
+  )
+}
+
 trait HttpxSprayServiceBuild {
   import Dependencies._
   import Resolvers._
@@ -377,6 +395,7 @@ object AlmHirtBuild extends Build
 	with HttpxAkkaHttpBuild
 	with AlmhirtxReactiveMongoBuild
 	with CorexSprayClientBuild
+	with CorexAkkaHttpClientBuild
 	with HttpxSprayServiceBuild
 	with CoreBuild
 	with DashboardBuild
@@ -421,6 +440,9 @@ object AlmHirtBuild extends Build
 
   lazy val corexSprayClient = corexSprayClientProject(	name = "almhirt-corex-spray-client",
                        			baseFile = file("./ext/almhirt-corex-spray-client")) dependsOn(common, httpxSpray, core)
+								
+  lazy val corexAkkaHttpClient = corexAkkaHttpClientProject(	name = "almhirt-corex-akka-http-client",
+                       			baseFile = file("./ext/almhirt-corex-akka-http-client")) dependsOn(common, httpxAkkaHttp, core)
 
   lazy val httpxSprayService = httpxSprayServiceProject(	name = "almhirt-httpx-spray-service",
                        			baseFile = file("./ext/almhirt-httpx-spray-service")) dependsOn(common, httpxSpray)
