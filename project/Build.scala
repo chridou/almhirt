@@ -64,7 +64,7 @@ object Dependencies {
 
 	lazy val akka_actor  = "com.typesafe.akka" %% "akka-actor" % BuildSettings.akkaVersion % "provided"
 	lazy val akka_agent  = "com.typesafe.akka" %% "akka-agent" % BuildSettings.akkaVersion % "provided"
-	lazy val akka_streams  = "com.typesafe.akka" % "akka-stream_2.11" % BuildSettings.akkaVersion
+	lazy val akka_streams  = "com.typesafe.akka" %% "akka-stream" % BuildSettings.akkaVersion
 
 	lazy val apache_codecs = "commons-codec" % "commons-codec" % "1.10"
 	lazy val apache_commons_io = "commons-io" % "commons-io" % "2.4"
@@ -202,6 +202,23 @@ trait HttpxSprayServiceBuild {
   )
 }
 
+trait HttpxAkkaHttpServiceBuild {
+  import Dependencies._
+  import Resolvers._
+  def httpxAkkaHttpServiceProject(name: String, baseFile: java.io.File) =
+  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
+  	  resolvers += sprayRepo,
+	  libraryDependencies += akka_actor,
+	  libraryDependencies += akkaHttp,
+	  libraryDependencies += ezReps,
+	  libraryDependencies += scala_xml,
+	  libraryDependencies += typesafe_config,
+	  libraryDependencies += scalaz,
+	  libraryDependencies += scalatest,
+    libraryDependencies += pegdown
+  )
+}
+
 trait AlmhirtxReactiveMongoBuild {
   import Dependencies._
   import Resolvers._
@@ -290,6 +307,28 @@ trait CorexSprayServiceBuild {
 	  libraryDependencies += scala_xml,
 	  libraryDependencies += spray_testkit,
 	  libraryDependencies += spray_can,
+	  libraryDependencies += ezRepsJson4s,
+	  libraryDependencies += json4s,
+	  libraryDependencies += scalatest,
+    libraryDependencies += pegdown
+	  )
+	  }
+}
+
+trait CorexAkkaHttpServiceBuild {
+  import Dependencies._
+  import Resolvers._
+  def corexAkkaHttpServiceProject(name: String, baseFile: java.io.File) = {
+ 	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
+	  resolvers += sprayRepo,
+	  libraryDependencies += scalaz,
+	  libraryDependencies += akka_actor,
+	  libraryDependencies += akka_streams,
+	  libraryDependencies += play2_iteratees,
+	  libraryDependencies += scala_xml,
+	  libraryDependencies += akkaHttp,
+	  libraryDependencies += akkaHttpCore,
+	  libraryDependencies += akka_testkit,
 	  libraryDependencies += ezRepsJson4s,
 	  libraryDependencies += json4s,
 	  libraryDependencies += scalatest,
@@ -397,10 +436,12 @@ object AlmHirtBuild extends Build
 	with CorexSprayClientBuild
 	with CorexAkkaHttpClientBuild
 	with HttpxSprayServiceBuild
+	with HttpxAkkaHttpServiceBuild
 	with CoreBuild
 	with DashboardBuild
 	with CorexMongoBuild
 	with CorexSprayServiceBuild
+	with CorexAkkaHttpServiceBuild
 	with RiftWarpBuild
 	with RiftWarpHttpSprayBuild
 	with RiftWarpHttpAkkaHttpBuild
@@ -446,6 +487,9 @@ object AlmHirtBuild extends Build
 
   lazy val httpxSprayService = httpxSprayServiceProject(	name = "almhirt-httpx-spray-service",
                        			baseFile = file("./ext/almhirt-httpx-spray-service")) dependsOn(common, httpxSpray)
+								
+  lazy val httpxAkkaHttpService = httpxAkkaHttpServiceProject(	name = "almhirt-httpx-akka-http-service",
+                       			baseFile = file("./ext/almhirt-httpx-akka-http-service")) dependsOn(common, httpxAkkaHttp)
 
   lazy val almhirtxReactiveMongo = almhirtxReactiveMongoProject(	name = "almhirt-reactivemongox",
                        			baseFile = file("./ext/almhirt-reactivemongox")) dependsOn(common)
@@ -462,6 +506,8 @@ object AlmHirtBuild extends Build
 
   lazy val corexSprayService = corexSprayServiceProject(	name = "almhirt-corex-spray-service",
 	                       				baseFile = file("./ext/almhirt-corex-spray-service")) dependsOn(common, httpxSprayService, core, riftwarp % "test")
+  //lazy val corexAkkaHttpService = corexAkkaHttpServiceProject(	name = "almhirt-corex-akka-http-service",
+//                       				baseFile = file("./ext/almhirt-corex-akka-http-service")) dependsOn(common, httpxAkkaHttpService, core, riftwarp % "test")										
 
   lazy val riftwarp = riftwarpProject(	name = "riftwarp",
                        			baseFile = file("riftwarp")) dependsOn(common)
