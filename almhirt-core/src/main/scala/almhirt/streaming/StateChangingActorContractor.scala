@@ -50,7 +50,7 @@ trait StateChangingActorContractor[TElement] extends Actor {
     enterSignContract(broker, Some(nextState), appendix, initialPayload)
   }
 
-   /**
+  /**
    * Offer items to the broker you have previously signed a contract with. The delivery confirmed by sending a [[DeliveryResult]]
    *  to the state the actor was in when calling this method.
    *
@@ -115,17 +115,19 @@ trait StateChangingActorContractor[TElement] extends Actor {
   protected def payload: Option[TPayload] = payloadInternal
   protected def setPayload(payload: TPayload) { payloadInternal = Some(payload) }
   protected def modPayload(f: TPayload ⇒ TPayload) { payloadInternal = payloadInternal.map(f) }
-  
+
   private var stockroom: Option[Stockroom[TElement]] = None
   private var payloadInternal: Option[TPayload] = None
   private var nextState: Option[Receive] = None
-  
+
   private def enterDelivery(items: Seq[TElement], nextState: Option[Receive], appendix: Receive, initialPayload: Option[TPayload]) {
     stockroom match {
       case Some(sr) ⇒
         if (items.isEmpty) {
+          nextState.foreach(nx ⇒ context.become(nx))
           self ! DeliveryResult(DeliveryJobDone(), initialPayload)
         } else if (!toDeliverInCurrentJob.isEmpty) {
+          nextState.foreach(nx ⇒ context.become(nx))
           self ! DeliveryResult(DeliveryJobFailed(IllegalOperationProblem("There is already a delivery job running. Please wait for completion until issueing another job.")), initialPayload)
         } else {
           sr.offerSupplies(items.size)
@@ -134,6 +136,7 @@ trait StateChangingActorContractor[TElement] extends Actor {
           context.become(receiveWaitForDelivery orElse appendix, true)
         }
       case None ⇒
+        nextState.foreach(nx ⇒ context.become(nx))
         self ! DeliveryResult(DeliveryJobFailed(IllegalOperationProblem("No contract signed. Please sign a contract with your favorite local broker.")), initialPayload)
     }
   }
@@ -165,7 +168,6 @@ trait StateChangingActorContractor[TElement] extends Actor {
     }
   }
 
- 
   private def receiveWaitForStockroom: Receive = {
     case OnStockroom(theStockroom: Stockroom[TElement]) ⇒
       this.stockroom = Some(theStockroom)
