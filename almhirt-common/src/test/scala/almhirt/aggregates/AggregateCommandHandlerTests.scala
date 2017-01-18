@@ -19,7 +19,7 @@ class AggregateCommandHandlerTests extends FlatSpec with Matchers with UserComma
   implicit val cv = AggregateRootCommandValidator.Validated
 
   implicit val ccuad = {
-    val dt = LocalDateTime.of(0: Int, 0: Int, 0: Int, 0: Int, 0: Int)
+    val dt = LocalDateTime.now
     new CanCreateUuidsAndDateTimes {
       override def getUuid(): java.util.UUID = ???
       override def getUniqueString(): String = "unique"
