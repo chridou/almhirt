@@ -9,8 +9,8 @@ import almhirt.common._
 import almhirt.almfuture.all._
 import almhirt.almvalidation.kit._
 import almhirt.context.AlmhirtContext
-import almhirt.httpx.spray.marshalling._
-import almhirt.httpx.spray.service.AlmHttpEndpoint
+import almhirt.httpx.akkahttp.marshalling._
+import almhirt.httpx.akkahttp.service.AlmHttpEndpoint
 import almhirt.akkax._
 import almhirt.context.HasAlmhirtContext
 import akka.http.scaladsl.server.Directives._

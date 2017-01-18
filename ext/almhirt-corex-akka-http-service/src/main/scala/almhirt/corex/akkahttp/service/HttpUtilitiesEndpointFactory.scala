@@ -4,15 +4,13 @@ import scala.language.postfixOps
 import scalaz.Validation.FlatMap._
 import akka.actor.Actor
 import almhirt.common._
-import almhirt.httpx.spray.service.AlmHttpEndpoint
+import almhirt.httpx.akkahttp.service.AlmHttpEndpoint
 import almhirt.context.{ HasAlmhirtContext, AlmhirtContext }
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Directives
 import akka.http.scaladsl.marshalling._
 import java.time.{ LocalDateTime, ZonedDateTime }
-import akka.http.scaladsl.model.HttpEntity
-import akka.http.scaladsl.model.HttpResponse
-import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model._
 
 object HttpUtilitiesEndpointFactory {
   final case class HttpUtilitiesEndpointParams(

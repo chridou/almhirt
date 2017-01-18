@@ -8,7 +8,7 @@ import akka.http.scaladsl.server.Directives
 import akka.http.scaladsl.marshalling._
 import akka.http.scaladsl.unmarshalling._
 import almhirt.akkax._
-import almhirt.httpx.spray.marshalling._
+import almhirt.httpx.akkahttp.marshalling._
 
 trait HttpEventEndpointFactory extends Directives { 
   def publish(payload: AnyRef)

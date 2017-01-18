@@ -10,7 +10,7 @@ class MediaTypeConversionTests extends FunSuite with Matchers {
     mt.binary should equal(true)
   }
 
-  test("Covert a custom spray media type to an alm media type") {
+  test("Covert a custom akkahttp media type to an alm media type") {
     val amt = MediaType.custom("application/vnd.dial.VestigoDocumentCommand+msgpack", true, MediaType.Compressible, List.empty).toAlmMediaType
     info(amt.value)
   }

@@ -9,8 +9,8 @@ import almhirt.common._
 import almhirt.almfuture.all._
 import almhirt.almvalidation.kit._
 import almhirt.context.AlmhirtContext
-import almhirt.httpx.spray.marshalling._
-import almhirt.httpx.spray.service.AlmHttpEndpoint
+import almhirt.httpx.akkahttp.marshalling._
+import almhirt.httpx.akkahttp.service._
 import almhirt.aggregates.{ ValidatedAggregateRootId, AggregateRootVersion }
 import almhirt.context.HasAlmhirtContext
 import almhirt.akkax._

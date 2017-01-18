@@ -23,6 +23,9 @@ import almhirt.herder.HerderMessages._
 import almhirt.httpx.akkahttp.service._
 import almhirt.problem._
 import scalaz.Validation.FlatMap._
+import scala.util.Success
+import scala.util.Failure
+import almhirt.corex.akkahttp.service.HerderServiceApp.HttpBound
 
 object HttpHerderServiceFactory {
   final case class HttpHerderServiceParams(
@@ -64,15 +67,22 @@ object HttpHerderService {
 }
 
 private[almhirt] class HttpHerderServiceActor(params: HttpHerderServiceFactory.HttpHerderServiceParams)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging with HttpHerderServiceFactory {
-  override def actorRefFactory = this.context
+  def actorRefFactory = this.context
   implicit val actorSystem = this.context.system
   implicit val materializer = ActorMaterializer()
+  implicit val executionContext = this.context.dispatcher
 
   val route = this.createHerderServiceEndpoint(params)
 
   override def receive: Receive = {
     case HttpBind(interface, port) =>
-      Http().bindAndHandle(route, interface = interface, port = port)
+      Http().bindAndHandle(route, interface = interface, port = port).onComplete {
+        case Success(binding) => this.context.parent ! HttpBound
+        case Failure(exception) =>
+          logError(s"Could not bind http because of: ${exception}")
+          reportCriticalFailure(ExceptionCaughtProblem(exception))
+          throw exception
+      }
   }
 }
 

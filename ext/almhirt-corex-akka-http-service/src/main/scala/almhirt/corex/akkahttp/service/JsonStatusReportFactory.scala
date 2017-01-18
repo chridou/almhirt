@@ -31,8 +31,7 @@ class JsonStatusReportFactory(private val context: ActorContext)(implicit almhir
 
   def serializeAst(what: ezreps.ast.EzValue): JValue = ezreps.json4sx.SerializeJson4s.serializeAst(what)
 
-  implicit override val json4sFormats = org.json4s.native.Serialization.formats(NoTypeHints)
-  //implicit override val json4sFormats = org.json4s.DefaultFormats + new Json4SComponentStateSerializer
+  implicit val json4sFormats = org.json4s.native.Serialization.formats(NoTypeHints)
 
   def createJsonStatusReportRoute(maxCallDuration: FiniteDuration)(implicit executor: ExecutionContext) = {
     path(Segment / Segment) { (appName, componentName) ⇒

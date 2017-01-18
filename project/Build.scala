@@ -21,6 +21,7 @@ object BuildSettings {
   val ezRepsVersion = "0.6.2"
   val scalaXmlVersion = "1.0.5"
   val scalaParserVersion = "1.0.4"
+  val akkaHttpJson4sVersion = "1.11.0"
 
   val buildSettings = Defaults.defaultSettings ++ releaseSettings ++ Seq (
 	organization := buildOrganization,
@@ -44,7 +45,6 @@ object Resolvers {
   val sonatypeSnapshots = "Sonatype snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/"
   val typesafeSnapshot  = "Typesafe Snapshots Repository" at "http://repo.typesafe.com/typesafe/snapshots/"
   val scalatools = "Scala Tools" at "https://oss.sonatype.org/content/groups/scala-tools/"
-  val sprayRepo = "Spray Repo" at "http://repo.spray.io"
 }
 
 object Dependencies {
@@ -73,14 +73,8 @@ object Dependencies {
 	lazy val akkaHttp = "com.typesafe.akka" %% "akka-http" % akkaHttpVersion
 	lazy val akkaHttpCore = "com.typesafe.akka" %% "akka-http-core" % akkaHttpVersion
 	lazy val akkaHttpCoreSprayJson = "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion
-	lazy val akkaHttpJsonSupport = "de.heikoseeberger" %% "akka-http-json4s" % "1.11.0"
+	lazy val akkaHttpJsonSupport = "de.heikoseeberger" %% "akka-http-json4s" % akkaHttpJson4sVersion
 	lazy val akkaHttpXmlSupport = "com.typesafe.akka" %% "akka-http-xml" % akkaHttpVersion
-	
-	lazy val spray_routing = "io.spray" %% "spray-routing" % BuildSettings.sprayVersion % "provided"
-	lazy val spray_testkit =  "io.spray" %% "spray-testkit" % BuildSettings.sprayVersion % "test"
-	lazy val spray_client = "io.spray" %% "spray-client" % BuildSettings.sprayVersion % "provided"
-	lazy val spray_httpx = "io.spray" %% "spray-httpx" % BuildSettings.sprayVersion % "provided"
-	lazy val spray_can = "io.spray" %% "spray-can" % BuildSettings.sprayVersion % "provided"
 
   lazy val snappy = "org.xerial.snappy" % "snappy-java" % "1.1.2.1"
   lazy val logback = "ch.qos.logback" % "logback-classic" % "1.1.6" % "provided"
@@ -120,21 +114,6 @@ trait I18nBuild {
   )
 }
 
-trait HttpxSprayBuild {
-  import Dependencies._
-  import Resolvers._
-  def httpxSprayProject(name: String, baseFile: java.io.File) =
-  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
-  	  resolvers += sprayRepo,
-	  libraryDependencies += akka_actor,
-	  libraryDependencies += spray_httpx,
-	  libraryDependencies += typesafe_config,
-	  libraryDependencies += scalaz,
-	  libraryDependencies += scalatest,
-    libraryDependencies += pegdown
-  )
-}
-
 trait HttpxAkkaHttpBuild {
   import Dependencies._
   import Resolvers._
@@ -142,25 +121,6 @@ trait HttpxAkkaHttpBuild {
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
 	  libraryDependencies += akka_actor,
 	  libraryDependencies += akkaHttp,
-	  libraryDependencies += typesafe_config,
-	  libraryDependencies += scalaz,
-	  libraryDependencies += scalatest,
-    libraryDependencies += pegdown
-  )
-}
-
-trait CorexSprayClientBuild {
-  import Dependencies._
-  import Resolvers._
-  def corexSprayClientProject(name: String, baseFile: java.io.File) =
-  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
-  	  resolvers += sprayRepo,
-	  libraryDependencies += akka_actor,
-	  libraryDependencies += akka_streams,
-	  libraryDependencies += scala_xml,
-	  libraryDependencies += spray_httpx,
-	  libraryDependencies += spray_client,
-	  libraryDependencies += ezReps,
 	  libraryDependencies += typesafe_config,
 	  libraryDependencies += scalaz,
 	  libraryDependencies += scalatest,
@@ -185,24 +145,6 @@ trait CorexAkkaHttpClientBuild {
   )
 }
 
-trait HttpxSprayServiceBuild {
-  import Dependencies._
-  import Resolvers._
-  def httpxSprayServiceProject(name: String, baseFile: java.io.File) =
-  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
-  	  resolvers += sprayRepo,
-	  libraryDependencies += akka_actor,
-	  libraryDependencies += spray_httpx,
-	  libraryDependencies += spray_routing,
-	  libraryDependencies += ezReps,
-	  libraryDependencies += scala_xml,
-	  libraryDependencies += typesafe_config,
-	  libraryDependencies += scalaz,
-	  libraryDependencies += scalatest,
-    libraryDependencies += pegdown
-  )
-}
-
 trait HttpxAkkaHttpServiceBuild {
   import Dependencies._
   import Resolvers._
@@ -210,7 +152,7 @@ trait HttpxAkkaHttpServiceBuild {
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
 	  libraryDependencies += akka_actor,
 	  libraryDependencies += akkaHttp,
-	  libraryDependencies += akkaHttpJsonSupport, 
+	  libraryDependencies += akkaHttpJsonSupport,
 	  libraryDependencies += akkaHttpXmlSupport,
 	  libraryDependencies += ezReps,
 	  libraryDependencies += scala_xml,
@@ -295,28 +237,6 @@ trait CorexMongoBuild {
   )
 }
 
-trait CorexSprayServiceBuild {
-  import Dependencies._
-  import Resolvers._
-  def corexSprayServiceProject(name: String, baseFile: java.io.File) = {
- 	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
-	  resolvers += sprayRepo,
-	  libraryDependencies += scalaz,
-	  libraryDependencies += akka_actor,
-	  libraryDependencies += akka_streams,
-	  libraryDependencies += play2_iteratees,
-	  libraryDependencies += spray_routing,
-	  libraryDependencies += scala_xml,
-	  libraryDependencies += spray_testkit,
-	  libraryDependencies += spray_can,
-	  libraryDependencies += ezRepsJson4s,
-	  libraryDependencies += json4s,
-	  libraryDependencies += scalatest,
-    libraryDependencies += pegdown
-	  )
-	  }
-}
-
 trait CorexAkkaHttpServiceBuild {
   import Dependencies._
   import Resolvers._
@@ -328,8 +248,8 @@ trait CorexAkkaHttpServiceBuild {
 	  libraryDependencies += play2_iteratees,
 	  libraryDependencies += scala_xml,
 	  libraryDependencies += akkaHttp,
-	  libraryDependencies += akkaHttpCore,	  
-	  libraryDependencies += akkaHttpJsonSupport, 
+	  libraryDependencies += akkaHttpCore,
+	  libraryDependencies += akkaHttpJsonSupport,
 	  libraryDependencies += akkaHttpXmlSupport,
 	  libraryDependencies += akka_testkit,
 	  libraryDependencies += ezRepsJson4s,
@@ -352,21 +272,6 @@ trait RiftWarpBuild {
 	  libraryDependencies += scala_parser,
 	  libraryDependencies += scalaz,
 //	  libraryDependencies += "com.chuusai" %% "shapeless" % "1.2.4",
-	  libraryDependencies += scalatest,
-    libraryDependencies += pegdown
-  )
-}
-
-trait RiftWarpHttpSprayBuild {
-  import Dependencies._
-  import Resolvers._
-  def riftwarpHttpSprayProject(name: String, baseFile: java.io.File) =
-  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
-	  libraryDependencies += scala_reflect,
-    libraryDependencies += akka_actor,
-	  libraryDependencies += apache_codecs,
-	  libraryDependencies += spray_httpx,
-	  libraryDependencies += scalaz,
 	  libraryDependencies += scalatest,
     libraryDependencies += pegdown
   )
@@ -433,20 +338,15 @@ trait RiftWarpAutomaticBuild {
 object AlmHirtBuild extends Build
 	with CommonBuild
 	with I18nBuild
-	with HttpxSprayBuild
 	with HttpxAkkaHttpBuild
 	with AlmhirtxReactiveMongoBuild
-	with CorexSprayClientBuild
 	with CorexAkkaHttpClientBuild
-	with HttpxSprayServiceBuild
 	with HttpxAkkaHttpServiceBuild
 	with CoreBuild
 	with DashboardBuild
 	with CorexMongoBuild
-	with CorexSprayServiceBuild
 	with CorexAkkaHttpServiceBuild
 	with RiftWarpBuild
-	with RiftWarpHttpSprayBuild
 	with RiftWarpHttpAkkaHttpBuild
 	with RiftWarpMongoExtBuild
 	with RiftAlmhirtCoreExtBuild
@@ -458,16 +358,16 @@ object AlmHirtBuild extends Build
       .settings(unidocSettings: _*)
       .aggregate(	common,
 									i18n,
-									httpxSpray,
-									corexSprayClient,
-									httpxSprayService,
+									httpxAkkaHttp,
+									corexAkkaHttpClient,
+									httpxAkkaHttpService,
 									almhirtxReactiveMongo,
 									core,
 									dashboard,
 									mongoExtensions,
-									corexSprayService,
+									corexAkkaHttpService,
 									riftwarp,
-									riftwarpHttpSpray,
+									riftwarpHttpAkkaHttp,
 									riftwarpMongoProject,
                   riftwarpAlmhirtCoreProject)
   lazy val common = commonProject(	name = "almhirt-common",
@@ -476,21 +376,12 @@ object AlmHirtBuild extends Build
   lazy val i18n = i18nProject(	name = "almhirt-i18n",
                        			baseFile = file("almhirt-i18n")) dependsOn(common)
 
-  lazy val httpxSpray = httpxSprayProject(	name = "almhirt-httpx-spray",
-                       			baseFile = file("./ext/almhirt-httpx-spray")) dependsOn(common)
-								
   lazy val httpxAkkaHttp = httpxAkkaHttpProject(	name = "almhirt-httpx-akka-http",
                        			baseFile = file("./ext/almhirt-httpx-akka-http")) dependsOn(common)
 
-  lazy val corexSprayClient = corexSprayClientProject(	name = "almhirt-corex-spray-client",
-                       			baseFile = file("./ext/almhirt-corex-spray-client")) dependsOn(common, httpxSpray, core)
-								
   lazy val corexAkkaHttpClient = corexAkkaHttpClientProject(	name = "almhirt-corex-akka-http-client",
                        			baseFile = file("./ext/almhirt-corex-akka-http-client")) dependsOn(common, httpxAkkaHttp, core)
 
-  lazy val httpxSprayService = httpxSprayServiceProject(	name = "almhirt-httpx-spray-service",
-                       			baseFile = file("./ext/almhirt-httpx-spray-service")) dependsOn(common, httpxSpray)
-								
   lazy val httpxAkkaHttpService = httpxAkkaHttpServiceProject(	name = "almhirt-httpx-akka-http-service",
                        			baseFile = file("./ext/almhirt-httpx-akka-http-service")) dependsOn(common, httpxAkkaHttp)
 
@@ -502,15 +393,13 @@ object AlmHirtBuild extends Build
 																								corexRiftwarp % "test",
 																								riftwarp % "test->test"*/)
 
-  lazy val dashboard = dashboardProject(	name = "almhirt-dashboard", baseFile = file("./ext/almhirt-dashboard")) dependsOn(common, core, httpxSprayService)
+  lazy val dashboard = dashboardProject(	name = "almhirt-dashboard", baseFile = file("./ext/almhirt-dashboard")) dependsOn(common, core, httpxAkkaHttpService)
 
   lazy val mongoExtensions = corexMongoProject(	name = "almhirt-corex-mongo",
                        			baseFile = file("./ext/almhirt-corex-mongo")) dependsOn(common, core, almhirtxReactiveMongo, riftwarp % "test->test", riftwarpMongoProject % "test")
 
-  lazy val corexSprayService = corexSprayServiceProject(	name = "almhirt-corex-spray-service",
-	                       				baseFile = file("./ext/almhirt-corex-spray-service")) dependsOn(common, httpxSprayService, core, riftwarp % "test")
   lazy val corexAkkaHttpService = corexAkkaHttpServiceProject(	name = "almhirt-corex-akka-http-service",
-                       				baseFile = file("./ext/almhirt-corex-akka-http-service")) dependsOn(common, httpxAkkaHttpService, core, riftwarp % "test")										
+                       				baseFile = file("./ext/almhirt-corex-akka-http-service")) dependsOn(common, httpxAkkaHttpService, core, riftwarp % "test")
 
   lazy val riftwarp = riftwarpProject(	name = "riftwarp",
                        			baseFile = file("riftwarp")) dependsOn(common)
@@ -521,8 +410,6 @@ object AlmHirtBuild extends Build
   lazy val riftwarpAlmhirtCoreProject = riftwarpAlmhirtCoreExtProject(	name = "riftwarpx-almhirt-core",
                        			baseFile = file("./ext/riftwarpx-almhirt-core")) dependsOn(common, core, riftwarp)
 
-	lazy val riftwarpHttpSpray = riftwarpHttpSprayProject(	name = "riftwarpx-http-spray",
-                       			baseFile = file("./ext/riftwarpx-http-spray")) dependsOn(common, riftwarp, httpxSpray)
   lazy val riftwarpHttpAkkaHttp = riftwarpHttpAkkaHttpProject(	name = "riftwarpx-http-akka-http",
                        			baseFile = file("./ext/riftwarpx-http-akka-http")) dependsOn(common, riftwarp, httpxAkkaHttp)
 

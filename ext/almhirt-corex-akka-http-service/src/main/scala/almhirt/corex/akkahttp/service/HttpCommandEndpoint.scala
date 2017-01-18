@@ -8,8 +8,8 @@ import akka.pattern._
 import almhirt.common._
 import almhirt.almfuture.all._
 import almhirt.tracking._
-import almhirt.httpx.spray.marshalling._
-import almhirt.httpx.spray.service.AlmHttpEndpoint
+import almhirt.httpx.akkahttp.marshalling._
+import almhirt.httpx.akkahttp.service.AlmHttpEndpoint
 import almhirt.context.AlmhirtContext
 import almhirt.akkax._
 import akka.http.scaladsl.server.Directives._
