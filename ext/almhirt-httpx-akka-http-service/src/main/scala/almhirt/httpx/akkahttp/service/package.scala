@@ -7,6 +7,8 @@ import almhirt.problem.HasAThrowable
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.RequestContext
 import akka.http.scaladsl.marshalling._
+import scala.concurrent.Future
+import akka.http.scaladsl.server.RouteResult
 
 package object service {
   def determineStatusCode(problem: Problem): StatusCode = {
@@ -44,7 +46,7 @@ package object service {
   }
 
   implicit object DefaultAlmHttpProblemTerminator extends AlmHttpProblemTerminator {
-    def terminateProblem(ctx: RequestContext, problem: Problem)(implicit problemMarshaller: ToEntityMarshaller[Problem]) =
+    def terminateProblem(ctx: RequestContext, problem: Problem)(implicit problemMarshaller: ToEntityMarshaller[Problem]): Future[RouteResult] =
       ctx.complete(determineStatusCode(problem), problem)
   }
 }

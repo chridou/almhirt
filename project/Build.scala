@@ -72,6 +72,9 @@ object Dependencies {
 
 	lazy val akkaHttp = "com.typesafe.akka" %% "akka-http" % akkaHttpVersion
 	lazy val akkaHttpCore = "com.typesafe.akka" %% "akka-http-core" % akkaHttpVersion
+	lazy val akkaHttpCoreSprayJson = "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion
+	lazy val akkaHttpJsonSupport = "de.heikoseeberger" %% "akka-http-json4s" % "1.11.0"
+	lazy val akkaHttpXmlSupport = "com.typesafe.akka" %% "akka-http-xml" % akkaHttpVersion
 	
 	lazy val spray_routing = "io.spray" %% "spray-routing" % BuildSettings.sprayVersion % "provided"
 	lazy val spray_testkit =  "io.spray" %% "spray-testkit" % BuildSettings.sprayVersion % "test"
@@ -137,7 +140,6 @@ trait HttpxAkkaHttpBuild {
   import Resolvers._
   def httpxAkkaHttpProject(name: String, baseFile: java.io.File) =
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
-  	  resolvers += sprayRepo,
 	  libraryDependencies += akka_actor,
 	  libraryDependencies += akkaHttp,
 	  libraryDependencies += typesafe_config,
@@ -171,7 +173,6 @@ trait CorexAkkaHttpClientBuild {
   import Resolvers._
   def corexAkkaHttpClientProject(name: String, baseFile: java.io.File) =
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
-  	  resolvers += sprayRepo,
 	  libraryDependencies += akka_actor,
 	  libraryDependencies += akka_streams,
 	  libraryDependencies += scala_xml,
@@ -207,9 +208,10 @@ trait HttpxAkkaHttpServiceBuild {
   import Resolvers._
   def httpxAkkaHttpServiceProject(name: String, baseFile: java.io.File) =
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
-  	  resolvers += sprayRepo,
 	  libraryDependencies += akka_actor,
 	  libraryDependencies += akkaHttp,
+	  libraryDependencies += akkaHttpJsonSupport, 
+	  libraryDependencies += akkaHttpXmlSupport,
 	  libraryDependencies += ezReps,
 	  libraryDependencies += scala_xml,
 	  libraryDependencies += typesafe_config,
@@ -320,14 +322,15 @@ trait CorexAkkaHttpServiceBuild {
   import Resolvers._
   def corexAkkaHttpServiceProject(name: String, baseFile: java.io.File) = {
  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
-	  resolvers += sprayRepo,
 	  libraryDependencies += scalaz,
 	  libraryDependencies += akka_actor,
 	  libraryDependencies += akka_streams,
 	  libraryDependencies += play2_iteratees,
 	  libraryDependencies += scala_xml,
 	  libraryDependencies += akkaHttp,
-	  libraryDependencies += akkaHttpCore,
+	  libraryDependencies += akkaHttpCore,	  
+	  libraryDependencies += akkaHttpJsonSupport, 
+	  libraryDependencies += akkaHttpXmlSupport,
 	  libraryDependencies += akka_testkit,
 	  libraryDependencies += ezRepsJson4s,
 	  libraryDependencies += json4s,
@@ -506,8 +509,8 @@ object AlmHirtBuild extends Build
 
   lazy val corexSprayService = corexSprayServiceProject(	name = "almhirt-corex-spray-service",
 	                       				baseFile = file("./ext/almhirt-corex-spray-service")) dependsOn(common, httpxSprayService, core, riftwarp % "test")
-  //lazy val corexAkkaHttpService = corexAkkaHttpServiceProject(	name = "almhirt-corex-akka-http-service",
-//                       				baseFile = file("./ext/almhirt-corex-akka-http-service")) dependsOn(common, httpxAkkaHttpService, core, riftwarp % "test")										
+  lazy val corexAkkaHttpService = corexAkkaHttpServiceProject(	name = "almhirt-corex-akka-http-service",
+                       				baseFile = file("./ext/almhirt-corex-akka-http-service")) dependsOn(common, httpxAkkaHttpService, core, riftwarp % "test")										
 
   lazy val riftwarp = riftwarpProject(	name = "riftwarp",
                        			baseFile = file("riftwarp")) dependsOn(common)

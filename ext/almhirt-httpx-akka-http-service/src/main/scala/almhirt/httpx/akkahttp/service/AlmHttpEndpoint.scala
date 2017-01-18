@@ -9,9 +9,10 @@ import akka.http.scaladsl.marshalling._
 import scala.concurrent.ExecutionContext
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server._
+import scala.concurrent.Future
 
 trait AlmHttpProblemTerminator {
-  def terminateProblem(ctx: RequestContext, problem: Problem)(implicit problemMarshaller: ToEntityMarshaller[Problem])
+  def terminateProblem(ctx: RequestContext, problem: Problem)(implicit problemMarshaller: ToEntityMarshaller[Problem]): Future[RouteResult]
 }
 
 trait AlmHttpEndpoint {
