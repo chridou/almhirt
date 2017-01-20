@@ -14,9 +14,8 @@ object BuildSettings {
   val akkaHttpVersion = "10.0.1"
   val playVersion = "2.6.1"
   val scalatestVersion = "3.0.1"
-  val sprayVersion = "1.3.4"
   val scalazVersion = "7.2.8"
-  val reactiveMongoVersion = "0.12.0"
+  val reactiveMongoVersion = "0.12.1"
   val json4sVersion = "3.5.0"
   val ezRepsVersion = "0.6.2"
   val scalaXmlVersion = "1.0.5"
@@ -72,7 +71,6 @@ object Dependencies {
 
 	lazy val akkaHttp = "com.typesafe.akka" %% "akka-http" % akkaHttpVersion
 	lazy val akkaHttpCore = "com.typesafe.akka" %% "akka-http-core" % akkaHttpVersion
-	lazy val akkaHttpCoreSprayJson = "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion
 	lazy val akkaHttpJsonSupport = "de.heikoseeberger" %% "akka-http-json4s" % akkaHttpJson4sVersion
 	lazy val akkaHttpXmlSupport = "com.typesafe.akka" %% "akka-http-xml" % akkaHttpVersion
 
