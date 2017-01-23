@@ -15,7 +15,7 @@ object BuildSettings {
   val scalatestVersion = "3.0.1"
   val sprayVersion = "1.3.4"
   val scalazVersion = "7.2.8"
-  val reactiveMongoVersion = "0.12.0"
+  val reactiveMongoVersion = "0.12.1"
   val json4sVersion = "3.5.0"
   val ezRepsVersion = "0.6.4-SNAPSHOT"
   val scalaXmlVersion = "1.0.6"
@@ -69,7 +69,7 @@ object Dependencies {
 	lazy val apache_commons_io = "commons-io" % "commons-io" % "2.4"
 	lazy val icu4j = "com.ibm.icu" % "icu4j" % "56.1"
 
-	lazy val spray_routing = "io.spray" %% "spray-routing" % BuildSettings.sprayVersion % "provided"
+	lazy val spray_routing = "io.spray" %% "spray-routing-shapeless23" % BuildSettings.sprayVersion % "provided"
 	lazy val spray_testkit =  "io.spray" %% "spray-testkit" % BuildSettings.sprayVersion % "test"
 	lazy val spray_client = "io.spray" %% "spray-client" % BuildSettings.sprayVersion % "provided"
 	lazy val spray_httpx = "io.spray" %% "spray-httpx" % BuildSettings.sprayVersion % "provided"
