@@ -17,7 +17,7 @@ class AggregateRootHiveTests(_system: ActorSystem)
     extends TestKit(_system) with fixture.WordSpecLike with Matchers with BeforeAndAfterAll {
   def this() = this(ActorSystem("AggregateRootHiveTests", almhirt.TestConfigs.logErrorConfig))
 
-  implicit def implicitFlowMaterializer = akka.stream.ActorMaterializer()(_system)
+   implicit def implicitFlowMaterializer = akka.stream.ActorMaterializer()(_system)
 
   implicit val executionContext = system.dispatchers.defaultGlobalDispatcher
   implicit val ccuad = {
@@ -58,104 +58,100 @@ class AggregateRootHiveTests(_system: ActorSystem)
       StatusEventResults(i.size, o.size, f.size) should equal(StatusEventResults(initiated, ok, failed))
     }
 
-//    "receiving valid commands" when {
-//      "an aggregate root is created" should {
-//        "should emit the status events [Initiated, Executed]" in { fixture ⇒
-//          val FixtureParam(testId, commandSubscriber, eventlog, streams) = fixture
-//          val statusProbe = TestProbe()
-//          Source.fromPublisher(streams.eventStream).map {
-//            case e: SystemEvent ⇒
-//              println(e)
-//              e
-//          }.to(Sink.fromSubscriber(DelegatingSubscriber[SystemEvent](statusProbe.ref))).run()
-//          within(10 seconds) {
-//            Source(CreateUser(CommandHeader(), "a", 0L, "hans", "meier") :: Nil).to(Sink.fromSubscriber(commandSubscriber)).run()
-//            statusProbe.expectMsgType[CommandStatusChanged](5.seconds).status should equal(CommandStatus.Initiated)
-//            statusProbe.expectMsgType[CommandStatusChanged](5.seconds).status should equal(CommandStatus.Executed)
-//          }
-//        }
-//      }
-//      "2 aggregate roots are created" should {
-//        "emit the status events [Initiated(a), Executed(a)] and [Initiated(b), Executed(b)]" in { fixture ⇒
-//          val FixtureParam(testId, commandSubscriber, eventlog, streams) = fixture
-//          val statusProbe = TestProbe()
-//          Source.fromPublisher(streams.eventStream).map { case e: SystemEvent ⇒ e }.to(Sink.fromSubscriber(DelegatingSubscriber[SystemEvent](statusProbe.ref))).run()
-//          within(10 seconds) {
-//            Source(List(
-//              CreateUser(CommandHeader(), "a", 0L, "hans", "meier"),
-//              CreateUser(CommandHeader(), "b", 0L, "hans", "meier"))).to(Sink.fromSubscriber(commandSubscriber)).run()
-//            assertStatusEvents(initiated = 2, ok = 2, failed = 0, statusProbe.receiveN(2 * 2, 30 seconds))
-//          }
-//        }
-//      }
-//      val n = 100
-//      s"$n aggregate roots are created" should {
-//        s"emit the status events [Initiated, Executed] $n times" in { fixture ⇒
-//          val FixtureParam(testId, commandSubscriber, eventlog, streams) = fixture
-//          val statusProbe = TestProbe()
-//          Source.fromPublisher(streams.eventStream).collect { case e: SystemEvent ⇒ e }.to(Sink.fromSubscriber(DelegatingSubscriber[SystemEvent](statusProbe.ref))).run()
-//          val start = Deadline.now
-//          within(10 seconds) {
-//            Source((1 to n).toSeq.map(id ⇒ CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"))).to(Sink.fromSubscriber(commandSubscriber)).run()
-//            assertStatusEvents(initiated = n, ok = n, failed = 0, statusProbe.receiveN(n * 2, 30 seconds))
-//          }
-//          val time = start.lap
-//          info(s"Dispatched ${n} in ${start.lap.defaultUnitString}((${(n * 1000).toDouble / time.toMillis}/s)).")
-//        }
-//      }
-//      s"$n aggregate roots are created and then updated" should {
-//        s"emit the status events ([Initiated, Executed]x2) $n times" in { fixture ⇒
-//          val FixtureParam(testId, commandSubscriber, eventlog, streams) = fixture
-//          val statusProbe = TestProbe()
-//          Source.fromPublisher(streams.eventStream).collect { case e: SystemEvent ⇒ e }.to(Sink.fromSubscriber(DelegatingSubscriber[SystemEvent](statusProbe.ref))).run()
-//          val flow = Source(
-//            (1 to n).toSeq.map(id ⇒ CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"): AggregateRootCommand) ++
-//              (1 to n).toSeq.map(id ⇒ ChangeUserLastname(CommandHeader(), s"$id", 1L, "müller"): AggregateRootCommand))
-//          val start = Deadline.now
-//          within(10 seconds) {
-//            flow.to(Sink.fromSubscriber(commandSubscriber)).run()
-//            assertStatusEvents(initiated = 2 * n, ok = 2 * n, failed = 0, statusProbe.receiveN(2 * n * 2, 30 seconds))
-//          }
-//          val time = start.lap
-//          info(s"Dispatched ${n} commands in ${start.lap.defaultUnitString}((${(n * 1000).toDouble / time.toMillis}/s)).")
-//        }
-//      }
-//      s"$n aggregate roots are created, updated and then deleted" should {
-//        s"emit the status events ([Initiated, Executed]x3) $n times" in { fixture ⇒
-//          val FixtureParam(testId, commandSubscriber, eventlog, streams) = fixture
-//          val statusProbe = TestProbe()
-//          Source.fromPublisher(streams.eventStream).collect { case e: SystemEvent ⇒ e }.to(Sink.fromSubscriber(DelegatingSubscriber[SystemEvent](statusProbe.ref))).run()
-//          val flow = Source((1 to n).toSeq.map(id ⇒ CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"): AggregateRootCommand) ++
-//            (1 to n).toSeq.map(id ⇒ ChangeUserLastname(CommandHeader(), s"$id", 1L, "müller"): AggregateRootCommand) ++
-//            (1 to n).toSeq.map(id ⇒ ConfirmUserDeath(CommandHeader(), s"$id", 2L): AggregateRootCommand))
-//          val start = Deadline.now
-//          within(30 seconds) {
-//            flow.to(Sink.fromSubscriber(commandSubscriber)).run()
-//            assertStatusEvents(initiated = 3 * n, ok = 3 * n, failed = 0, statusProbe.receiveN(3 * n * 2, 30 seconds))
-//          }
-//          val time = start.lap
-//          info(s"Dispatched ${n} commands in ${start.lap.defaultUnitString}((${(n * 1000).toDouble / time.toMillis}/s)).")
-//        }
-//      }
-//      val bigN = 500
-//      s"$bigN aggregate roots are created, updated and then deleted" should {
-//        s"emit the status events ([Initiated, Executed]x3) $bigN times" in { fixture ⇒
-//          val FixtureParam(testId, commandSubscriber, eventlog, streams) = fixture
-//          val statusProbe = TestProbe()
-//          Source.fromPublisher(streams.eventStream).collect { case e: SystemEvent ⇒ e }.to(Sink.fromSubscriber(DelegatingSubscriber[SystemEvent](statusProbe.ref))).run()
-//          val flow = Source((1 to bigN).toSeq.map(id ⇒ CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"): AggregateRootCommand) ++
-//            (1 to bigN).toSeq.map(id ⇒ ChangeUserLastname(CommandHeader(), s"$id", 1L, "müller"): AggregateRootCommand) ++
-//            (1 to bigN).toSeq.map(id ⇒ ConfirmUserDeath(CommandHeader(), s"$id", 2L): AggregateRootCommand))
-//          val start = Deadline.now
-//          within(10 seconds) {
-//            flow.to(Sink.fromSubscriber(commandSubscriber)).run()
-//            assertStatusEvents(initiated = 3 * bigN, ok = 3 * bigN, failed = 0, statusProbe.receiveN(3 * bigN * 2, 30 seconds))
-//          }
-//          val time = start.lap
-//          info(s"Dispatched ${bigN} commands in ${start.lap.defaultUnitString}((${(bigN * 1000).toDouble / time.toMillis}/s)).")
-//        }
-//      }
-//    }
+    "receiving valid commands" when {
+      "an aggregate root is created" should {
+        "should emit the status events [Initiated, Executed]" in { fixture ⇒
+          val FixtureParam(testId, commandSubscriber, eventlog, streams) = fixture
+          val statusProbe = TestProbe()
+          Source.fromPublisher(streams.eventStream).collect { case e: SystemEvent ⇒ e }.to(Sink.fromSubscriber(DelegatingSubscriber[SystemEvent](statusProbe.ref))).run()
+          within(10 seconds) {
+            Source(CreateUser(CommandHeader(), "a", 0L, "hans", "meier") :: Nil).to(Sink.fromSubscriber(commandSubscriber)).run()
+            statusProbe.expectMsgType[CommandStatusChanged](5.seconds).status should equal(CommandStatus.Initiated)
+            statusProbe.expectMsgType[CommandStatusChanged](5.seconds).status should equal(CommandStatus.Executed)
+          }
+        }
+      }
+      "2 aggregate roots are created" should {
+        "emit the status events [Initiated(a), Executed(a)] and [Initiated(b), Executed(b)]" in { fixture ⇒
+          val FixtureParam(testId, commandSubscriber, eventlog, streams) = fixture
+          val statusProbe = TestProbe()
+          Source.fromPublisher(streams.eventStream).collect { case e: SystemEvent ⇒ e }.to(Sink.fromSubscriber(DelegatingSubscriber[SystemEvent](statusProbe.ref))).run()
+          within(30 seconds) {
+            Source(List(
+              CreateUser(CommandHeader(), "a", 0L, "hans", "meier"),
+              CreateUser(CommandHeader(), "b", 0L, "hans", "meier"))).to(Sink.fromSubscriber(commandSubscriber)).run()
+            assertStatusEvents(initiated = 2, ok = 2, failed = 0, statusProbe.receiveN(2 * 2, 30 seconds))
+          }
+        }
+      }
+      val n = 100
+      s"$n aggregate roots are created" should {
+        s"emit the status events [Initiated, Executed] $n times" in { fixture ⇒
+          val FixtureParam(testId, commandSubscriber, eventlog, streams) = fixture
+          val statusProbe = TestProbe()
+          Source.fromPublisher(streams.eventStream).collect { case e: SystemEvent ⇒ e }.to(Sink.fromSubscriber(DelegatingSubscriber[SystemEvent](statusProbe.ref))).run()
+          val start = Deadline.now
+          within(30 seconds) {
+            Source((1 to n).toSeq.map(id ⇒ CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"))).to(Sink.fromSubscriber(commandSubscriber)).run()
+            assertStatusEvents(initiated = n, ok = n, failed = 0, statusProbe.receiveN(n * 2, 30 seconds))
+          }
+          val time = start.lap
+          info(s"Dispatched ${n} in ${start.lap.defaultUnitString}((${(n * 1000).toDouble / time.toMillis}/s)).")
+        }
+      }
+      s"$n aggregate roots are created and then updated" should {
+        s"emit the status events ([Initiated, Executed]x2) $n times" in { fixture ⇒
+          val FixtureParam(testId, commandSubscriber, eventlog, streams) = fixture
+          val statusProbe = TestProbe()
+          Source.fromPublisher(streams.eventStream).collect { case e: SystemEvent ⇒ e }.to(Sink.fromSubscriber(DelegatingSubscriber[SystemEvent](statusProbe.ref))).run()
+          val flow = Source(
+            (1 to n).toSeq.map(id ⇒ CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"): AggregateRootCommand) ++
+              (1 to n).toSeq.map(id ⇒ ChangeUserLastname(CommandHeader(), s"$id", 1L, "müller"): AggregateRootCommand))
+          val start = Deadline.now
+          within(30 seconds) {
+            flow.to(Sink.fromSubscriber(commandSubscriber)).run()
+            assertStatusEvents(initiated = 2 * n, ok = 2 * n, failed = 0, statusProbe.receiveN(2 * n * 2, 30 seconds))
+          }
+          val time = start.lap
+          info(s"Dispatched ${n} commands in ${start.lap.defaultUnitString}((${(n * 1000).toDouble / time.toMillis}/s)).")
+        }
+      }
+      s"$n aggregate roots are created, updated and then deleted" should {
+        s"emit the status events ([Initiated, Executed]x3) $n times" in { fixture ⇒
+          val FixtureParam(testId, commandSubscriber, eventlog, streams) = fixture
+          val statusProbe = TestProbe()
+          Source.fromPublisher(streams.eventStream).collect { case e: SystemEvent ⇒ e }.to(Sink.fromSubscriber(DelegatingSubscriber[SystemEvent](statusProbe.ref))).run()
+          val flow = Source((1 to n).toSeq.map(id ⇒ CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"): AggregateRootCommand) ++
+            (1 to n).toSeq.map(id ⇒ ChangeUserLastname(CommandHeader(), s"$id", 1L, "müller"): AggregateRootCommand) ++
+            (1 to n).toSeq.map(id ⇒ ConfirmUserDeath(CommandHeader(), s"$id", 2L): AggregateRootCommand))
+          val start = Deadline.now
+          within(30 seconds) {
+            flow.to(Sink.fromSubscriber(commandSubscriber)).run()
+            assertStatusEvents(initiated = 3 * n, ok = 3 * n, failed = 0, statusProbe.receiveN(3 * n * 2, 30 seconds))
+          }
+          val time = start.lap
+          info(s"Dispatched ${n} commands in ${start.lap.defaultUnitString}((${(n * 1000).toDouble / time.toMillis}/s)).")
+        }
+      }
+      val bigN = 500
+      s"$bigN aggregate roots are created, updated and then deleted" should {
+        s"emit the status events ([Initiated, Executed]x3) $bigN times" in { fixture ⇒
+          val FixtureParam(testId, commandSubscriber, eventlog, streams) = fixture
+          val statusProbe = TestProbe()
+          Source.fromPublisher(streams.eventStream).collect { case e: SystemEvent ⇒ e }.to(Sink.fromSubscriber(DelegatingSubscriber[SystemEvent](statusProbe.ref))).run()
+          val flow = Source((1 to bigN).toSeq.map(id ⇒ CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"): AggregateRootCommand) ++
+            (1 to bigN).toSeq.map(id ⇒ ChangeUserLastname(CommandHeader(), s"$id", 1L, "müller"): AggregateRootCommand) ++
+            (1 to bigN).toSeq.map(id ⇒ ConfirmUserDeath(CommandHeader(), s"$id", 2L): AggregateRootCommand))
+          val start = Deadline.now
+          within(30 seconds) {
+            flow.to(Sink.fromSubscriber(commandSubscriber)).run()
+            assertStatusEvents(initiated = 3 * bigN, ok = 3 * bigN, failed = 0, statusProbe.receiveN(3 * bigN * 2, 30 seconds))
+          }
+          val time = start.lap
+          info(s"Dispatched ${bigN} commands in ${start.lap.defaultUnitString}((${(bigN * 1000).toDouble / time.toMillis}/s)).")
+        }
+      }
+    }
   }
 
   private val currentTestId = new java.util.concurrent.atomic.AtomicInteger(1)
@@ -201,13 +197,13 @@ class AggregateRootHiveTests(_system: ActorSystem)
       import scalaz._, Scalaz._
       def propsForCommand(command: AggregateRootCommand, ars: ActorRef, snapshotting: Option[(ActorRef, almhirt.snapshots.SnapshottingPolicyProvider)]): AlmValidation[Props] = {
         command match {
-          case c: UserCommand ⇒
+          case c: UserCommand ⇒ 
             snapshotting match {
-              case None                   => droneProps(ars, None).success
-              case Some((repo, provider)) => provider.apply("user").map(policy => droneProps(ars, Some(SnapshottingForDrone(repo, policy))))
-            }
-
-          case x ⇒
+            case None => droneProps(ars, None).success
+            case Some((repo, provider)) => provider.apply("user").map(policy => droneProps(ars, Some(SnapshottingForDrone(repo, policy))))
+          }
+            
+          case x              ⇒
             NoSuchElementProblem(s"I don't have props for command $x").failure
         }
       }

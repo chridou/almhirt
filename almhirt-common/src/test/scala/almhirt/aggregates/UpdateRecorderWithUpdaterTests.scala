@@ -12,7 +12,7 @@ class UpdateRecorderWithUpdaterTests extends FlatSpec with Matchers with Inside
   import aggregatesforthelazyones._
 
   implicit val ccuad = {
-    val dt = LocalDateTime.now
+    val dt = LocalDateTime.of(0: Int, 0: Int, 0: Int, 0: Int, 0: Int)
     new CanCreateUuidsAndDateTimes {
       override def getUuid(): java.util.UUID = ???
       override def getUniqueString(): String = "unique"
