@@ -75,7 +75,7 @@ object Dependencies {
 	lazy val akkaHttpXmlSupport = "com.typesafe.akka" %% "akka-http-xml" % akkaHttpVersion
 
   lazy val snappy = "org.xerial.snappy" % "snappy-java" % "1.1.2.1"
-  lazy val logback = "ch.qos.logback" % "logback-classic" % "1.1.6" % "provided"
+  lazy val logback = "ch.qos.logback" % "logback-classic" % "1.1.7" % "provided"
 	lazy val typesafe_config = "com.typesafe" % "config" % "1.3.0" % "provided"
 
 
