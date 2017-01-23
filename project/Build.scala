@@ -17,8 +17,8 @@ object BuildSettings {
   val scalazVersion = "7.2.8"
   val reactiveMongoVersion = "0.12.1"
   val json4sVersion = "3.5.0"
-  val ezRepsVersion = "0.6.2"
-  val scalaXmlVersion = "1.0.5"
+  val ezRepsVersion = "0.6.4-SNAPSHOT"
+  val scalaXmlVersion = "1.0.6"
   val scalaParserVersion = "1.0.4"
   val akkaHttpJson4sVersion = "1.11.0"
 
