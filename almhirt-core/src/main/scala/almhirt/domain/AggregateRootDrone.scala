@@ -411,7 +411,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
           succ ⇒ self ! PreStoreEventActionSucceeded)
       case PreStoreEventAction.AsyncPreStoreAction(actionFut) ⇒
         actionFut().withTimeout(asyncPreStoreEventActionMaxDur).onComplete(
-          fail ⇒ self ! PreStoreEventActionFailed(fail),
+          fail ⇒  self ! PreStoreEventActionFailed(fail),
           succ ⇒ self ! PreStoreEventActionSucceeded)(futuresContext)
     }
   }

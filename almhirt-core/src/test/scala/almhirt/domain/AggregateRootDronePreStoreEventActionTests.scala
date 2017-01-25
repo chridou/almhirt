@@ -125,7 +125,7 @@ class AggregateRootDronePreStoreEventActionTests(_system: ActorSystem)
                 probe.send(drone, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
                 probe.expectMsgType[CommandExecuted](5.seconds)
                 probe.send(drone, ChangeUserLastname(CommandHeader(), "a", 1L, "miller"))
-                probe.expectMsgType[CommandExecuted](5.seconds)
+                probe.expectMsgType[CommandNotExecuted](5.seconds)
                 probe.send(eventlog, GetAggregateRootEventsFrom("a", 0L))
                 val eventsEnumerator = probe.expectMsgType[FetchedAggregateRootEvents](5.seconds).enumerator
                 val iteratee = Iteratee.fold[AggregateRootEvent, Vector[AggregateRootEvent]](Vector.empty) { case (acc, cur) ⇒ acc :+ cur }
