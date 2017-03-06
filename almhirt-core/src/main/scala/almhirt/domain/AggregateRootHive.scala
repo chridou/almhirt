@@ -185,18 +185,18 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
   def eventsBroker: StreamBroker[Event]
   def enqueuedEventsThrottlingThreshold: Int
 
-  private var numCommandsReceivedInternal = 0
-  private var numCommandsSucceededInternal = 0
-  private var numCommandsFailedInternal = 0
+  @volatile private var numCommandsReceivedInternal = 0
+  @volatile private var numCommandsSucceededInternal = 0
+  @volatile private var numCommandsFailedInternal = 0
 
-  private var numJettisonedSinceLastReport = 0
+  @volatile private var numJettisonedSinceLastReport = 0
 
   def numCommandsReceived = numCommandsReceivedInternal
   def numCommandsSucceeded = numCommandsSucceededInternal
   def numCommandsFailed = numCommandsFailedInternal
 
-  private var aggregateEventLog: Option[ActorRef] = None
-  private var snapshotting: Option[(ActorRef, SnapshottingPolicyProvider)] = None
+  @volatile private var aggregateEventLog: Option[ActorRef] = None
+  @volatile private var snapshotting: Option[(ActorRef, SnapshottingPolicyProvider)] = None
 
   private case object ReportThrottlingState
 
@@ -240,11 +240,11 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
         "last-occurence" -> since)
   }
 
-  private var totalSuppliesRequested = 0
-  private var suppliesRequestedSinceThrottlingStateChanged = 0
+  @volatile private var totalSuppliesRequested = 0
+  @volatile private var suppliesRequestedSinceThrottlingStateChanged = 0
 
-  private var numCommandsInFlight = 0
-  private var bufferedCommandStatusEventsToDispatch: Vector[CommandStatusChanged] = Vector.empty
+  @volatile private var numCommandsInFlight = 0
+  @volatile private var bufferedCommandStatusEventsToDispatch: Vector[CommandStatusChanged] = Vector.empty
   private val overdueDrones = scala.collection.mutable.HashMap[AggregateRootId, OverdueDroneEntry]()
 
   private def addToOverdueDrones(aggId: AggregateRootId, msg: String): Unit = {
@@ -256,16 +256,16 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
     }
   }
 
-  private var throttled = false
-  private var throttlingSince: Option[java.time.LocalDateTime] = None
+  @volatile private var throttled = false
+  @volatile private var throttlingSince: Option[java.time.LocalDateTime] = None
 
-  private var lastCommandReceivedOn: Option[java.time.LocalDateTime] = None
-  private var lastCommandReceivedCommandId: Option[CommandId] = None
+  @volatile private var lastCommandReceivedOn: Option[java.time.LocalDateTime] = None
+  @volatile private var lastCommandReceivedCommandId: Option[CommandId] = None
 
-  private var lastCommandStatusEventsDeliveredOn: Option[java.time.LocalDateTime] = None
-  private var lastCommandStatusEventsOfferedOn: Option[java.time.LocalDateTime] = None
-  private var numCommandStatusEventsOffered = 0L
-  private var numCommandStatusEventsDelivered = 0L
+  @volatile private var lastCommandStatusEventsDeliveredOn: Option[java.time.LocalDateTime] = None
+  @volatile private var lastCommandStatusEventsOfferedOn: Option[java.time.LocalDateTime] = None
+  @volatile private var numCommandStatusEventsOffered = 0L
+  @volatile private var numCommandStatusEventsDelivered = 0L
 
   private def throttleIfNeccessary() {
     if (!throttled) {
@@ -477,6 +477,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
       case m: AggregateRootHiveInternals.SomethingOverdueGotDone ⇒
         logInfo(s"Drone ${m.aggId.value} got it's stuff done.")
         overdueDrones -= m.aggId
+        numCommandsInFlight = numCommandsInFlight - 1
 
       case OnDeliverSuppliesNow(amount) ⇒
         deliverEvents(amount)
