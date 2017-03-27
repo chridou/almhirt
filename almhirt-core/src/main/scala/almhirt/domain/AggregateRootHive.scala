@@ -393,7 +393,6 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
       case m: AggregateRootHiveInternals.SomethingOverdueGotDone ⇒
         logInfo(s"Drone ${m.aggId.value} got it's stuff done.")
         overdueDrones -= m.aggId
-        numCommandsInFlight = numCommandsInFlight - 1
 
       case OnDeliverSuppliesNow(amount) ⇒
         deliverEvents(amount)
@@ -424,7 +423,6 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
         }
 
       case Terminated(actor) ⇒
-        numCommandsInFlight = numCommandsInFlight - 1
         overdueDrones -= AggregateRootId(actor.path.name)
         logDebug(s"""${actor} terminated.""")
     }
@@ -478,7 +476,6 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
       case m: AggregateRootHiveInternals.SomethingOverdueGotDone ⇒
         logInfo(s"Drone ${m.aggId.value} got it's stuff done.")
         overdueDrones -= m.aggId
-        numCommandsInFlight = numCommandsInFlight - 1
 
       case OnDeliverSuppliesNow(amount) ⇒
         deliverEvents(amount)
@@ -509,7 +506,6 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
         }
 
       case Terminated(actor) ⇒
-        numCommandsInFlight = numCommandsInFlight - 1
         overdueDrones -= AggregateRootId(actor.path.name)
         logDebug(s"""${actor} terminated.""")
     }
